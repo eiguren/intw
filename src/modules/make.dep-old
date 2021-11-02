@@ -1,0 +1,75 @@
+add_m_nu_lambda_text.o : utility.o useful_constants.o reading.o input_parameters.o
+add_q_m_nu.o : utility.o useful_constants.o reading.o input_parameters.o
+allocate_nlpot.o : intw_pseudo.o spin_orb.o uspp.o uspp.o us.o reading.o
+allocate_phq.o : ph_module.o phcom.o phcom.o uspp.o uspp.o becmod.o reading.o
+all_wfcs.o : utility.o symmetries.o useful_constants.o fft.o reading.o
+atom.o : radial_grids.o
+band_crossing.o : W90_to_intw.o input_parameters.o utility.o useful_constants.o
+becmod.o : reading.o haritz.o
+chi_0.o : kramers_kronig.o band_crossing.o W90_to_intw.o input_parameters.o useful_constants.o
+density_of_states.o : chi_0.o kramers_kronig.o band_crossing.o W90_to_intw.o input_parameters.o useful_constants.o
+dft_fftw.o : fft.o utility.o reading.o useful_constants.o
+DM_q2Rp.o : ph_module.o useful_constants.o reading.o
+DM_Rp2q.o : W90_to_intw.o useful_constants.o reading.o
+DM_Rp2q_original.o : W90_to_intw.o useful_constants.o reading.o
+dvqpsi_us_only.o : becmod.o phcom.o uspp.o uspp.o useful_constants.o fft.o reading.o
+dvqpsi_us_only_haritz.o : becmod.o phcom.o uspp.o uspp.o useful_constants.o fft.o reading.o
+fft.o : utility.o reading.o useful_constants.o
+fft_interp.o : useful_constants.o reading.o
+force_linearity_G.o : useful_constants.o reading.o input_parameters.o
+gaussian.o : useful_constants.o
+G_kqw2kqb.o : useful_constants.o reading.o input_parameters.o
+G_kqw2ReRpw.o : useful_constants.o reading.o input_parameters.o
+gk_sort.o : reading.o
+G_ReRpw2kqw.o : useful_constants.o reading.o input_parameters.o
+H_kb2Rew.o : all_wfcs.o W90_to_intw.o useful_constants.o reading.o
+H_Rew2kb.o : W90_to_intw.o useful_constants.o reading.o
+haritz.o : input_parameters.o useful_constants.o utility.o fft.o reading.o
+imselfen2reselfen_t0.o : useful_constants.o reading.o input_parameters.o
+init_us_1.o : spin_orb.o fft.o uspp.o uspp.o us.o intw_pseudo.o reading.o atom.o uspp.o
+init_us_2.o : fft.o uspp.o uspp.o us.o useful_constants.o intw_pseudo.o reading.o
+input_parameters.o : useful_constants.o
+intw2wannier.o : all_wfcs.o reading.o fft.o matrix_elements.o symmetries.o utility.o useful_constants.o
+intw_pseudo.o : atom.o uspp.o radial_grids.o upf.o pseudo_types.o input_parameters.o useful_constants.o reading.o
+intw_pseudo_original.o : atom.o uspp.o radial_grids.o upf.o pseudo_types.o input_parameters.o useful_constants.o reading.o
+krakro_peio.o : W90_to_intw.o useful_constants.o reading.o
+kramers_kronig.o : useful_constants.o
+lambda_calculate.o : useful_constants.o reading.o input_parameters.o
+matrix_elements.o : dft_fftw.o fft.o utility.o reading.o input_parameters.o useful_constants.o
+multiply_psi_by_KB.o : uspp.o uspp.o fft.o reading.o useful_constants.o
+new_interpolate.o : utility.o useful_constants.o
+phcom.o : becmod.o
+ph_module.o : phcom.o fft.o set_asr.o symmetries.o input_parameters.o useful_constants.o reading.o utility.o
+phq_init.o : fft.o uspp.o phcom.o useful_constants.o reading.o ph_module.o atom.o
+plane_wave_interpolate.o : plane_wave_setup.o symmetries.o matrix_elements.o W90_to_intw.o new_interpolate.o input_parameters.o reading.o utility.o useful_constants.o
+plane_wave_setup.o : symmetries.o matrix_elements.o W90_to_intw.o new_interpolate.o input_parameters.o utility.o useful_constants.o
+product_basis.o : W90_to_intw.o reading.o input_parameters.o utility.o useful_constants.o
+pseudo_types.o : radial_grids.o
+qvan2.o : uspp.o uspp.o us.o
+reading.o : useful_constants.o utility.o input_parameters.o
+read_upf_v1.o : pseudo_types.o radial_grids.o
+read_upf_v2.o : radial_grids.o pseudo_types.o
+rotaxis.o : reading.o
+selfeliash_calculate.o : useful_constants.o reading.o input_parameters.o
+selfeliash_calculate_froga_ondo.o : useful_constants.o reading.o input_parameters.o
+selfeliash_calculate_original.o : useful_constants.o reading.o input_parameters.o
+selfen_add_terms.o : utility.o useful_constants.o reading.o input_parameters.o
+set_asr.o : reading.o input_parameters.o
+setup.o : W90_to_intw.o fft.o symmetries.o reading.o useful_constants.o utility.o input_parameters.o
+spectral_function_im_re_selfen.o : useful_constants.o reading.o input_parameters.o
+spin_kb2Rw.o : all_wfcs.o W90_to_intw.o useful_constants.o reading.o
+spin_orb.o : uspp.o
+spin_Rw2kb.o : W90_to_intw.o useful_constants.o reading.o
+symmetries_asier.o : fft.o input_parameters.o reading.o utility.o useful_constants.o
+symmetries.o : fft.o input_parameters.o reading.o utility.o useful_constants.o
+symmetries_original.o : fft.o input_parameters.o reading.o utility.o useful_constants.o
+tests.o : plane_wave_setup.o fft.o matrix_elements.o symmetries.o W90_to_intw.o reading.o utility.o input_parameters.o useful_constants.o
+tetra.o : utility.o
+tria_diag.o : useful_constants.o
+tria_diag_good.o : useful_constants.o
+upf.o : radial_grids.o write_upf_v2.o read_upf_v2.o read_upf_v1.o pseudo_types.o
+uspp.o : useful_constants.o pseudo_types.o
+utility.o : useful_constants.o
+W90_to_intw.o : reading.o useful_constants.o
+write_upf_v2.o : radial_grids.o pseudo_types.o
+ylmr2.o : useful_constants.o

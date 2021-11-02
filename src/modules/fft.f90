@@ -1,0 +1,1099 @@
+!----------------------------------------------------------------------------!
+!	intw project.
+!
+!----------------------------------------------------------------------------!
+!
+module intw_fft
+!
+!----------------------------------------------------------------------------!
+!
+!       The subroutines in this module handle most of the g -> r and 
+!       r -> g tasks using FFT. 
+!
+!----------------------------------------------------------------------------!
+  !
+  use kinds,     only : dp
+  use intw_useful_constants 
+  use intw_reading
+!haritz
+  use intw_input_parameters
+!haritz
+  use intw_utility
+  !
+  implicit none
+
+  ! correspondence between the nr1 nr2 nr3 FFT grid with the G list (calculations).
+  integer, allocatable :: nl(:)
+  integer, allocatable :: g_fft_map( :, :, :)
+  integer, allocatable :: ig1(:), ig2(:), ig3(:)
+
+  real(dp), allocatable ::  gvec_cart(:,:), gg(:)
+
+  !The complex phases for each G and atomic position: exp( -2 pi i tau(1:nat).G )
+  complex(dp), allocatable   :: phase(:,:)
+
+  complex(dp), allocatable   :: eigts1(:,:), eigts2(:,:), eigts3(:,:), strf(:,:)
+  integer, allocatable       :: mill(:,:)
+  !
+  save
+  !
+  
+
+contains
+
+  subroutine allocate_fft()
+  !--------------------------------------------------------
+  ! This subroutine simply allocates the arrays needed
+  ! by the fft algorithms.
+  !--------------------------------------------------------
+  
+  allocate (nl(ngm), g_fft_map( nr1, nr2, nr3) )
+  allocate (ig1(ngm), ig2(ngm), ig3(ngm))
+  allocate (phase(ngm,nat) )
+  allocate (gvec_cart(3,ngm))
+  allocate (gg(ngm))
+  allocate (eigts1(-nr1:nr1, nat))
+  allocate (eigts2(-nr2:nr2, nat))
+  allocate (eigts3(-nr3:nr3, nat))
+  allocate (strf(ngm, ntyp))
+
+  allocate (mill(3,ngm))
+  
+  end subroutine allocate_fft
+
+  subroutine deallocate_fft()
+  !--------------------------------------------------------
+  ! This subroutine simply deallocates the arrays needed
+  ! by the fft algorithms.
+  !--------------------------------------------------------
+  deallocate (nl, g_fft_map )
+  deallocate (ig1, ig2, ig3)
+  deallocate (phase )
+  deallocate (gvec_cart)
+  deallocate (gg)
+ 
+  deallocate (eigts1)
+  deallocate (eigts2)
+  deallocate (eigts3)
+  deallocate (strf  )
+ 
+  deallocate (mill)
+
+  end subroutine deallocate_fft
+
+  subroutine generate_nl()
+  !------------------------------------------------------------------------
+  !  This subroutine generates information important for the 3D-FFT 
+  !  algorithm. 
+  ! 
+  !  A bit of theory:
+  !  --------------- 
+  !
+  !  Consider a mesh in real space described by nr1 x nr2 x nr3, such that
+  !            r(i,j,k) =  (i-1)/nr1 a1 +  (j-1)/nr2 a2 + (k-1)/nr3 a3   
+  !                        
+  !  with a1, a2, a3 the basis vectors of the real space lattice, and
+  !                1 <= i <= nr1, 1 <= j <= nr2, 1 <= k <= nr3.
+  !   
+  !  A reciprocal space lattice can then be defined:
+  !
+  !  G_fft(I,J,K)  =  (I-1) b1 +  (J-1) b2 + (K-1) b3
+  !  with b1, b2, b3 the basis vectors of the reciprocal space lattice.
+  !             As usual, a_i * b_j = 2 pi delta_{ij}
+  !
+  !  So that the phase factor is given by:
+  !
+  !     EXP [ i G_fft(I,J,K) * r(i,j,k) ] =
+  !   
+  !             EXP[ 2 pi i (  (I-1)(i-1)   + (J-1)(j-1)   + (K-1)(k-1) )]  
+  !                [        (  ---------      ----------     ---------  )]
+  !                [        (     nr1            nr2             nr3    )]
+  !
+  !     Then, clearly, the only independent phase factors correspond to
+  !                1 <= I <= nr1, 1 <= J <= nr2, 1 <= K <= nr3.
+  !     Any G vector outside of this box is periodically equivalent to 
+  !     a G vector inside the box.  
+  !
+  !  So, what does this subroutine do? 
+  !  ---------------------------------
+  ! 
+  !  The G vectors usually used are not defined in the box   
+  !                1 <= I <= nr1, 1 <= J <= nr2, 1 <= K <= nr3,
+  !  but rather they are symmetrically distributed around the origin. 
+  !  This makes sense from a physical point of view, which doesn't care
+  !  about FFT meshes.
+  !
+  !  THIS SUBROUTINE:
+  !
+  !             - finds the relationship between the usually defined
+  !               G vectors, stored in gvec in crystal coordinates, and
+  !               the FFT G vector mesh.
+  !
+  !             - It creates an array 
+  !                  G_fft_map(n1,n2,n3) = index of G vector in gvec which
+  !                                        corresponds to G_fft(n1,n2,n3)
+  !
+  !             - It creates an array nl(ng), which returns the scalar 
+  !               index "nl" corresponding to the triplet index (n1,n2,n3)
+  !               of the G vector gvec(ng). 
+  !
+  !             - It computes the phases
+  !                    phase(ng,na) = Exp ( -2 pi i gvec(ng) * tau(na) ) 
+  !
+  !------------------------------------------------------------------------
+    implicit none
+  
+    !local
+
+    integer  :: n1, n2, n3
+    integer  :: ng, na
+
+    integer  :: switch
+
+    logical  :: assigned(nr1,nr2,nr3)
+
+    integer :: nt, ipol
+
+    real(dp) :: arg, bgtau(3)
+    !output :: nl and ig1 ig2 ig3 and phase
+
+    g_fft_map(:,:,:) = 0
+    nl(:)            = 0
+    assigned         = .false.    
+
+    switch    =   1   ! triplet - to - singlet index
+
+
+
+    ! loop on all G vectors in the global array gvec 
+    do ng = 1, ngm
+       ! find the triplet index corresponding to the G_fft mesh
+       ! NOTE: the function "modulo" always returns a positive number in FORTRAN90
+       !       the function "mod" is more dangerous. 
+     
+      !n1 = nint (sum(g (:, ng) * at (:, 1))) + 1
+      !mill (1,ng) = n1 - 1
+       write(999,*) ng, gvec(:,ng)
+
+       n1       = modulo(gvec(1,ng), nr1)+1 !modulo(gvec(1,ng), nr1)+1
+       ig1 (ng) = n1 - 1
+
+       n2       = modulo(gvec(2,ng), nr2)+1
+       ig2 (ng) = n2 - 1
+
+       n3       = modulo(gvec(3,ng), nr3)+1
+       ig3 (ng) = n3 - 1
+
+
+       mill (1, ng) = gvec(1,ng) !ig1 (ng)
+       mill (2, ng) = gvec(2,ng) !ig2 (ng)
+       mill (3, ng) = gvec(3,ng) !ig3 (ng)
+
+       if (.not. assigned(n1,n2,n3) ) then
+
+                assigned(n1,n2,n3)  =  .true.  
+                g_fft_map(n1,n2,n3) =  ng
+
+                ! compute the scalar index corresponding to n1,n2,n3 and
+                ! assign it to nl(ng)
+
+                call switch_indices_zyx(nr1,nr2,nr3,nl(ng),n1,n2,n3,switch)
+
+       else
+                write(*,*) 'ERROR in generate_nl. FFT mesh too small?'
+                write(*,*) '    More than one G-vector in the gvec array are being'
+                write(*,*) '    assigned to the same FFT triplet (n1,n2,n3);      '
+                write(*,*) '    this suggests that the FFT mesh (nr1,nr2,nr3) is  '
+                write(*,*) '    too small.                                        '
+
+                stop 
+       endif
+    end do
+
+    !--------------------------------------------------
+    ! I think the code that follows is not useful
+    ! and should be removed (Bruno)
+    !--------------------------------------------------
+
+    ! Obtain the G vectors in cartesian coordinates.
+    gvec_cart(1:3,1:ngm) = gvec(1:3,1:ngm)
+    call cryst_to_cart (ngm, gvec_cart , bg, 1)
+
+    do ng=1, ngm
+      gg(ng) = (gvec_cart(1,ng)**2 + gvec_cart(2,ng)**2 + gvec_cart(3,ng)**2 ) 
+    enddo
+
+    ! Compute the phases
+    do na=1,nat     
+      do ng=1,ngm 
+        ! the tau vectors are in cartesian, alat units. 
+
+        phase(ng,na) = Exp ( -tpi*cmplx_i* &
+                          (  gvec_cart(1,ng)*tau(1,na)   &
+                           + gvec_cart(2,ng)*tau(2,na)   &
+                           + gvec_cart(3,ng)*tau(3,na) ) )
+      enddo
+    enddo
+ 
+  strf(:,:) = (0.d0,0.d0)
+  do nt = 1, ntyp
+     do na = 1, nat
+        if (ityp (na) .eq.nt) then
+           do ng = 1, ngm
+              arg = (gvec_cart (1, ng) * tau (1, na) + gvec_cart (2, ng) * tau (2, na) &
+                   + gvec_cart (3, ng) * tau (3, na) ) * tpi
+              strf (ng, nt) = strf (ng, nt) + CMPLX(cos (arg), -sin (arg),kind=DP)
+           enddo
+        endif
+     enddo
+  enddo
+
+  do na = 1, nat
+     do ipol = 1, 3
+        bgtau (ipol) = bg (1, ipol) * tau (1, na) + &
+                       bg (2, ipol) * tau (2, na) + &
+                       bg (3, ipol) * tau (3, na)
+     enddo
+     do n1 = - nr1, nr1
+        arg = tpi * n1 * bgtau (1)
+        eigts1 (n1, na) = CMPLX(cos (arg), - sin (arg) ,kind=DP)
+     enddo
+     do n2 = - nr2, nr2
+        arg = tpi * n2 * bgtau (2)
+        eigts2 (n2, na) = CMPLX(cos (arg), - sin (arg) ,kind=DP)
+     enddo
+     do n3 = - nr3, nr3
+        arg = tpi * n3 * bgtau (3)
+        eigts3 (n3, na) = CMPLX(cos (arg), - sin (arg) ,kind=DP)
+     enddo
+  enddo
+
+  end subroutine generate_nl
+!*******************************************************************************************************
+!-------------------------------------------------------------------------------------------------------
+  subroutine  wfc_by_expigr (kpoint, nbands, npol, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
+!-------------------------------------------------------------------------------------------------------
+
+    use intw_useful_constants 
+    !    use intw_reading 
+    use intw_utility 
+    !!use intw_fft,  only: find_iG
+    
+    implicit none
+
+    !I/O variables
+
+    integer,intent(in) :: nbands,npol,ng_max,list_iG_k_irr(nG_max) ! G vector indices for k_irr
+    integer,intent(in) :: G_sym_l(3)                               ! G vector such that  R*k + G_sym_l = sym_l * k_irr
+    real(dp),intent(in) :: kpoint(3)
+    complex(dp),intent(inout) :: wfc_k(ng_max,nbands,npol)
+    integer,intent(out) :: list_iG_k(nG_max)                       ! G vector indices for k, sorted
+
+    !local variables
+
+    complex(dp) :: wfc_k_irr(ng_max,nbands,npol)
+    integer :: list_iG(nG_max) 
+    integer :: p_i, i, j, alpha, iG_k_irr, iG_k
+    integer :: G_k_irr(3)              ! a vector for k in the IBZ
+    integer :: RG_k_irr(3)             ! ( symmetry operation )* G_k
+    integer :: G_k(3)                  ! a vector for Rk, the point in the 1BZ
+    integer :: permutations(nG_max)   ! index permutation which orders list_G_k 
+    integer :: nb, ipol, jpol, nG 
+    complex(dp) ::  phases(nG_max)
+    real(dp) :: axis(3), angle
+    complex(dp) :: S_u(2,2) 
+    real(dp)  :: kpoint_cart(1:3), gkmod (1:nG_max)
+
+    !Initialization
+    !
+    list_iG_k = 0
+    list_iG   = 0
+    kpoint_cart=matmul(bg,kpoint)
+    !
+    ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
+    !
+    nG=0 
+    !
+    do i=1,nG_max
+       !
+       iG_k_irr = list_iG_k_irr(i)
+       !
+       if (iG_k_irr == 0) exit ! the index array is zero-padded at the end. 
+       !
+       nG=nG+1
+       !
+       G_k(:) = gvec(:,iG_k_irr) - G_sym_l(:) ! minus, zeren horrela da konbentzioa exp(-igr) (testatuta dago intw2wan).
+       !
+       call find_iG(G_k,iG_k)
+       !
+       list_iG_k(nG) = iG_k
+       !
+    enddo
+    !
+    call HPSORT(nG,list_iG_k,permutations)
+    wfc_k_irr=wfc_k
+    wfc_k=cmplx_0
+    !
+    do i= 1, nG
+       !
+       p_i = permutations(i)
+       !
+       ! compute the wfc element
+       !
+       do nb=1,nbands
+          do ipol=1,nspin
+             !
+             wfc_k(i,nb,ipol) =  wfc_k_irr(p_i,nb,ipol)
+             !
+          enddo
+       enddo
+       !
+       gkmod (i) = sum( (kpoint_cart(:) + gvec_cart(:, list_iG_k(i)) )**2 )
+       !
+    enddo
+
+!I think this can be deleted, because we have decided to short our components in another fashion
+!    permutations=0
+!    call hpsort_eps (nG, gkmod(1:nG) , permutations(1:nG), 1.0E-8_dp)
+!    wfc_k_irr =  wfc_k
+!    wfc_k=cmplx_0
+!    list_iG=list_iG_k
+!    list_iG_k=0
+!    do i= 1, nG
+!       p_i          = permutations(i)
+!       list_iG_k(i) = list_iG(p_i)
+!       ! compute the wfc element
+!       do nb = 1,nbands
+!          do ipol=1,nspin
+!             wfc_k(i,nb,ipol) =  wfc_k_irr(p_i,nb,ipol)
+!          enddo
+!       end do
+!
+!    end do
+!
+    !
+    return
+
+  end subroutine wfc_by_expigr
+!*************************************************************
+!
+  subroutine wfc_from_g_to_r (list_iG,wfc_g, wfc_r)
+  !--------------------------------------------------------
+  !  This subroutine is a driver which uses the 3D-FFT
+  !  code to transform a wavefunction in G space to 
+  !  a wavefunction in r space.
+  !
+  !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+  !                  list_iG               : the indices of the G vectors used 
+  !                                          in the wave function
+  !
+  !     out::  wfc_r(nr1*nr2*nr3)          : The periodic part of the wave functions
+  !                                          in real space, with the space index
+  !                                          represented by a scalar.
+  !--------------------------------------------------------
+  implicit none
+
+  integer       :: i,  iG 
+  integer       :: list_iG(nG_max)
+
+  complex(dp)   :: wfc_g(nG_max)
+  complex(dp)   :: wfc_r(nr1*nr2*nr3)
+
+
+
+  ! initialize work array
+  wfc_r(:)  =  cmplx_0 
+
+  ! put wfc_g in wfc_r 
+  do i=1,nG_max
+      ! identify the G vector by its index, as stored in list_iG
+      iG = list_iG(i)
+
+      if (iG == 0) exit
+      ! use nl to identify which G_fft vector G corresponds to,
+      ! and assign the value of the wave function in the aux array
+      wfc_r(nl(iG)) = wfc_g(i)
+  enddo
+
+  ! perform fourier transform in place wfc_g(G) -> wfc_r(r) 
+  ! CONVENTION BY ASIER
+   call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r) ! 
+                             ! this convention reproduces
+                             ! the results of pw2wannier EXACTLY
+
+
+  end subroutine wfc_from_g_to_r 
+
+  subroutine wfc_from_r_to_g (list_iG,wfc_r, wfc_g)
+  !--------------------------------------------------------
+  !  This subroutine is a driver which uses the 3D-FFT
+  !  code to transform a wavefunction in G space to 
+  !  a wavefunction in r space.
+  !
+  !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+  !                  list_iG               : the indices of the G vectors used 
+  !                                          in the wave function
+  !
+  !     out::  wfc_r(nr1*nr2*nr3)          : The periodic part of the wave functions
+  !                                          in real space, with the space index
+  !                                          represented by a scalar.
+  !--------------------------------------------------------
+  implicit none
+
+  integer       :: i,  iG 
+  integer       :: list_iG(nG_max)
+
+  complex(dp),intent(out)   :: wfc_g(nG_max)
+  complex(dp),intent(in )   :: wfc_r(nr1*nr2*nr3)
+
+
+
+  ! initialize work array
+  wfc_g(:)  =  cmplx_0 
+
+
+  call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r) ! 
+                             ! this convention reproduces
+                             ! the results of pw2wannier EXACTLY
+
+  do ig=1,ng_max
+       wfc_g(ig)=wfc_r(nl(ig))
+  enddo 
+
+  end subroutine wfc_from_r_to_g
+ 
+  subroutine func_from_g_to_r (nfunc, nG_max, fg, fr)
+  !--------------------------------------------------------
+  !  This subroutine is a driver which uses the 3D-FFT
+  !  code to go from f(G) to f(r).
+  !
+  !  The code was copied from Asier's previous work,
+  !  and slightly modified and cleaned up by Bruno. 
+  !--------------------------------------------------------
+  implicit none
+
+  integer       :: nG_max      !this is local here!
+  integer       :: nfunc, mode, ig, ipol
+
+  complex(dp)   :: fg(nG_max,nspin,nfunc)
+  complex(dp)   :: fr(nr1*nr2*nr3,nspin,nfunc)
+  complex(dp)   :: aux(nr1*nr2*nr3)
+ 
+  do ipol=1,nspin
+    do mode=1,nfunc
+       ! initialize work array
+       aux(:)= cmplx_0
+
+       ! put fg in aux 
+       do ig=1,nG_max
+         aux(nl(ig)) = fg(ig, ipol, mode)
+       enddo
+
+       ! perform fourier transform in place aux(fg) -> aux(fr) 
+       call cfftnd(3,(/nr1,nr2,nr3/),1,aux) ! This is the right convention 
+
+       ! put aux in fr 
+       fr(:,ipol,mode)=aux(:)
+
+    enddo
+  enddo 
+
+  return
+  end subroutine func_from_g_to_r
+
+  subroutine r_function_by_exp_igr (g,nfunc, nr1,nr2, nr3, fr, fr_exp_igr)
+
+  integer,intent(in)       :: g(3), nr1,nr2, nr3
+  integer       :: nfunc, mode, ig
+
+  complex(dp),intent(in )   :: fr        (nr1*nr2*nr3,nspin,nfunc)
+  complex(dp),intent(out)   :: fr_exp_igr(nr1*nr2*nr3,nspin,nfunc)
+
+  integer :: i,j,k, ir
+  integer :: ipol, nfun
+
+  real(dp) :: phase
+
+  do ipol=1,nspin
+    do mode=1,nfunc
+
+     do ir=1,nr1*nr2*nr3
+
+      call switch_indices(nr1,nr2,nr3,ir,i,j,k,-1)
+  
+      phase = tpi*(g(1) * (i-1)/nr1+g(1) * (j-1)/nr2+ g(1) * (k-1)/nr3) 
+ 
+      fr_exp_igr(ir,ipol, mode) = fr (ir,ipol,mode) * exp ( cmplx_i * phase  )
+ 
+     enddo 
+    enddo
+   enddo
+
+
+  end subroutine r_function_by_exp_igr
+
+  subroutine func_from_r_to_g (nfunc, nG_max_loc, fr, fg)
+  !--------------------------------------------------------
+  !  This subroutine is a driver which uses the 3D-FFT
+  !  code to go from f(r) to f(G).
+  !
+  !  The code was copied from Asier's previous work,
+  !  and slightly modified and cleaned up by Bruno. 
+  !--------------------------------------------------------
+  implicit none
+
+  integer       :: nG_max_loc !this is local here!
+  integer       :: nfunc, mode, ig, ir, ipol
+
+  complex(dp)   :: fg(nG_max_loc,nspin,nfunc)
+  complex(dp)   :: fr(nr1*nr2*nr3,nspin,nfunc)
+  complex(dp)   :: aux(nr1*nr2*nr3)
+  
+  do ipol=1,nspin
+    do mode=1,nfunc
+
+      aux(:)= cmplx_0
+
+      do ir=1,nr1*nr2*nr3
+        aux(ir) = fr(ir, ipol,mode)
+      enddo
+
+      call cfftnd(3,(/nr1,nr2,nr3/),-1,aux)  ! this is the right convention
+
+      do ig=1,nG_max_loc
+        fg(ig,ipol,mode)=aux(nl(ig))
+      enddo 
+    enddo
+  enddo 
+
+  end subroutine func_from_r_to_g
+  
+  subroutine find_iG(G,iG)
+  !----------------------------------------------------------------------------!
+  !     Given a G vector in crystal coordinates, this subroutine 
+  !     finds the index iG to which this G vector corresponds to in the
+  !     global list of G vectors. In other words:
+  !
+  !     G = gvec(iG)
+  !
+  !     If G is not found, an error is thrown.
+  !----------------------------------------------------------------------------!
+  use intw_reading, only: gvec, ngm, nr1, nr2, nr3
+
+  implicit none
+
+  integer        :: G(3) 
+  integer        :: iG,   n1, n2, n3
+
+  ! Find the FFT G vector corresponding to G
+  n1 = modulo(G(1), nr1)+1
+  n2 = modulo(G(2), nr2)+1
+  n3 = modulo(G(3), nr3)+1
+
+  ! use the tabulated values to find iG
+  iG = g_fft_map(n1,n2,n3)
+
+  end subroutine find_iG
+
+
+  subroutine coarse_to_smooth(n1,n2,n3,FR_coarse, n1s,n2s,n3s,FR_smooth)
+  !-------------------------------------------
+  ! This subroutine puts the coarse force
+  ! constants in the smooth force constant
+  ! array
+  !-------------------------------------------
+  implicit none
+  
+  ! input/output variables
+  complex(dp)       :: FR_coarse(n1,n2,n3)
+  complex(dp)       :: FR_smooth(n1s,n2s,n3s)
+
+  integer           :: n1,n2,n3, n1s,n2s,n3s
+
+  ! local variables
+  integer           :: i1,i2,i3,i1s,i2s,i3s
+
+  ! local variables
+
+   FR_smooth(:,:,:) = cmplx_0
+
+   do i1 = 1, n1
+      if (i1 <= n1/2 ) then
+	  i1s = i1
+      else 
+	  i1s = n1s-n1+i1
+      end if
+
+      do i2 = 1, n2
+         if (i2 <= n2/2 ) then
+	    i2s = i2
+         else 
+	    i2s = n2s-n2+i2
+         end if
+
+         do i3 = 1, n3
+	   if (i3 <= n3/2 ) then
+	      i3s = i3
+           else 
+	      i3s = n3s-n3+i3
+	   end if
+
+	   FR_smooth(i1s,i2s,i3s) = FR_coarse(i1,i2,i3)
+
+         end do 
+      end do 
+   end do 
+
+ end subroutine coarse_to_smooth
+
+
+
+  subroutine build_H_ks_in_block(num_pack,H_R,fftw_in,fftw_out,fftw_backward_plan, &
+             i_qpt1, i_qpt2, i_qpt3, ikpts_min, ikpts_max, H_ks, H_ksq, nk_vec_max)
+  !----------------------------------------------------------------------------!
+  !     This subroutine uses FFT to compute the interpolated Hamiltonian
+  !     on the fine mesh, and then extracts only the relevant terms.
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: i_qpt1, i_qpt2, i_qpt3
+
+  complex(dp) :: H_R(nk1,nk2,nk3,num_pack)
+
+  integer*8   :: fftw_backward_plan
+  complex(dp) :: fftw_in (nk1s,nk2s,nk3s)
+  complex(dp) :: fftw_out(nk1s,nk2s,nk3s)
+        
+  complex(dp) :: H_ks   (num_pack,nk_vec_max)
+  complex(dp) :: H_ksq  (num_pack,nk_vec_max)
+
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts, block_ikpts 
+
+  integer     :: ik1s,  ik2s,  ik3s
+  integer     :: ikq1s, ikq2s, ikq3s
+  integer     :: switch
+
+  complex(dp) :: H_Rs_work(nk1s,nk2s,nk3s)
+  complex(dp) :: H_ks_work(nk1s,nk2s,nk3s)
+
+  switch = -1 ! singlet to triplet
+  ! loop on bands
+  do i_pack = 1, num_pack
+
+     call coarse_to_smooth(nk1, nk2, nk3,  H_R(:,:,:,i_pack), &
+                           nk1s,nk2s,nk3s, H_Rs_work)
+
+     fftw_in   = H_Rs_work
+     CALL DFFTW_EXECUTE(fftw_backward_plan)
+     H_ks_work = fftw_out
+
+     ! only keep the ks inside the block; discard the rest!
+     ! This may seem wasteful, but FFT is VERY fast; it is
+     ! sometimes, it is better to recompute than to store!
+     do ikpts = ikpts_min, ikpts_max
+
+        ! find the triplet index of ks
+	call switch_indices(nk1s,nk2s,nk3s,ikpts,ik1s,ik2s,ik3s,switch)
+
+	! find the triplet index of ks+q
+	ikq1s = modulo(ik1s+i_qpt1-2,nk1s)+1
+	ikq2s = modulo(ik2s+i_qpt2-2,nk2s)+1
+	ikq3s = modulo(ik3s+i_qpt3-2,nk3s)+1
+
+        ! define an index that starts at 1
+	block_ikpts = ikpts - ikpts_min+1
+
+        ! fish out the relevant elements!
+        H_ks (i_pack,block_ikpts) = H_ks_work(ik1s, ik2s, ik3s)
+        H_ksq(i_pack,block_ikpts) = H_ks_work(ikq1s,ikq2s,ikq3s)
+
+
+     end do ! ikpts
+  end do ! i_pack 
+
+
+  end subroutine build_H_ks_in_block
+
+
+  subroutine build_dH_ks_in_block(num_pack,iR_H_R,fftw_in,fftw_out,  &
+		fftw_backward_plan, i_qpt1, i_qpt2, i_qpt3, ikpts_min, &
+		ikpts_max, dH_ks, dH_ksq, nk_vec_max)
+  !----------------------------------------------------------------------------!
+  !     This subroutine uses FFT to compute the interpolated Hamiltonian
+  !     on the fine mesh, and then extracts only the relevant terms.
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: i_qpt1, i_qpt2, i_qpt3
+
+  complex(dp) :: iR_H_R(nk1,nk2,nk3,3,num_pack)
+
+  integer*8   :: fftw_backward_plan
+  complex(dp) :: fftw_in (nk1s,nk2s,nk3s)
+  complex(dp) :: fftw_out(nk1s,nk2s,nk3s)
+        
+  complex(dp) :: dH_ks   (num_pack,3,nk_vec_max)
+  complex(dp) :: dH_ksq  (num_pack,3,nk_vec_max)
+
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts, block_ikpts 
+
+  integer     :: alpha
+
+  integer     :: ik1s,  ik2s,  ik3s
+  integer     :: ikq1s, ikq2s, ikq3s
+  integer     :: switch
+
+  complex(dp) :: iR_H_Rs_work(nk1s,nk2s,nk3s)
+  complex(dp) :: dH_ks_work(nk1s,nk2s,nk3s,3)
+
+  switch = -1 ! singlet to triplet
+  ! loop on bands
+  do i_pack = 1, num_pack
+
+     do alpha = 1, 3
+        call coarse_to_smooth(nk1, nk2, nk3,  iR_H_R(:,:,:,alpha,i_pack), &
+                              nk1s,nk2s,nk3s, iR_H_Rs_work)
+
+        fftw_in   = iR_H_Rs_work
+        CALL DFFTW_EXECUTE(fftw_backward_plan)
+        dH_ks_work(:,:,:,alpha) = fftw_out
+     end do
+
+     ! only keep the ks inside the block; discard the rest!
+     ! This may seem wasteful, but FFT is VERY fast; it is
+     ! better to recompute than to store!
+     do ikpts = ikpts_min, ikpts_max
+
+        ! find the triplet index of ks
+	call switch_indices(nk1s,nk2s,nk3s,ikpts,ik1s,ik2s,ik3s,switch)
+
+	! find the triplet index of ks+q
+	ikq1s = modulo(ik1s+i_qpt1-2,nk1s)+1
+	ikq2s = modulo(ik2s+i_qpt2-2,nk2s)+1
+	ikq3s = modulo(ik3s+i_qpt3-2,nk3s)+1
+
+        ! define an index that starts at 1
+	block_ikpts = ikpts - ikpts_min+1
+
+        ! fish out the relevant elements!
+        do alpha = 1,3
+           dH_ks (i_pack,alpha,block_ikpts) = dH_ks_work(ik1s, ik2s, ik3s, alpha)
+           dH_ksq(i_pack,alpha,block_ikpts) = dH_ks_work(ikq1s,ikq2s,ikq3s,alpha)
+        end do
+
+     end do ! ikpts
+  end do ! i_pack 
+
+
+  end subroutine build_dH_ks_in_block
+
+  subroutine build_H_ks_to_file(num_pack,H_R,fftw_in,fftw_out, &
+			fftw_backward_plan, i_qpt1, i_qpt2, i_qpt3,Hk_io_unit)
+  !----------------------------------------------------------------------------!
+  !     This subroutine uses FFT to compute the interpolated Hamiltonian
+  !     on the fine mesh, and then stores the result to a binary file for
+  !	later recovery.
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: i_qpt1, i_qpt2, i_qpt3
+
+  complex(dp) :: H_R(nk1,nk2,nk3,num_pack)
+
+  integer*8   :: fftw_backward_plan
+  complex(dp) :: fftw_in (nk1s,nk2s,nk3s)
+  complex(dp) :: fftw_out(nk1s,nk2s,nk3s)
+        
+
+  integer     :: Hk_io_unit
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts, block_ikpts 
+
+  integer     :: ik1s,  ik2s,  ik3s
+  integer     :: ikq1s, ikq2s, ikq3s
+  integer     :: switch
+
+  complex(dp) :: H_Rs_work(nk1s,nk2s,nk3s)
+  complex(dp) :: H_ks_work(nk1s,nk2s,nk3s)
+
+  complex(dp) :: Hk(2)
+
+
+
+  integer     :: record_length, record_index
+
+
+  ! open a temporary file which will hold the Hamiltonian array
+
+ ! find a free unit
+  record_length = 2*direct_io_factor_cmplx
+
+  Hk_io_unit    = find_free_unit()
+
+  open(unit = Hk_io_unit ,       form = 'unformatted', &
+     status = 'scratch',       access = 'direct',      &
+       recl = record_length,   action = 'readwrite')
+
+  !----------------------------------------------------
+  ! Let the record index be defined as
+  !     record_index = num_pack*(ikpts-1)+ i_pack
+  ! This way, all the data for a given k point are
+  ! next to each other.
+  !----------------------------------------------------
+
+  switch = -1 ! singlet to triplet
+  ! loop on bands
+  do i_pack = 1, num_pack
+
+     call coarse_to_smooth(nk1, nk2, nk3,  H_R(:,:,:,i_pack), &
+                           nk1s,nk2s,nk3s, H_Rs_work)
+
+     fftw_in   = H_Rs_work
+     CALL DFFTW_EXECUTE(fftw_backward_plan)
+     H_ks_work = fftw_out
+
+     do ikpts = 1, nk1s*nk2s*nk3s
+
+        ! find the triplet index of ks
+	call switch_indices(nk1s,nk2s,nk3s,ikpts,ik1s,ik2s,ik3s,switch)
+
+	! find the triplet index of ks+q
+	ikq1s = modulo(ik1s+i_qpt1-2,nk1s)+1
+	ikq2s = modulo(ik2s+i_qpt2-2,nk2s)+1
+	ikq3s = modulo(ik3s+i_qpt3-2,nk3s)+1
+
+        ! write all the elements to bin files
+        record_index = num_pack*(ikpts-1)+ i_pack
+
+	Hk(:) =  (/H_ks_work(ik1s, ik2s, ik3s),H_ks_work(ikq1s,ikq2s,ikq3s)/)
+        write(Hk_io_unit,  rec=record_index) Hk
+
+     end do ! ikpts
+  end do ! i_pack 
+
+
+  end subroutine build_H_ks_to_file
+
+  subroutine build_dH_ks_to_file(num_pack,iR_H_R,fftw_in,fftw_out,  &
+		fftw_backward_plan, i_qpt1, i_qpt2, i_qpt3,dHk_io_unit )
+  !----------------------------------------------------------------------------!
+  !     This subroutine uses FFT to compute the interpolated Hamiltonian
+  !     on the fine mesh, and then extracts only the relevant terms.
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: i_qpt1, i_qpt2, i_qpt3
+
+  complex(dp) :: iR_H_R(nk1,nk2,nk3,3,num_pack)
+
+  integer*8   :: fftw_backward_plan
+  complex(dp) :: fftw_in (nk1s,nk2s,nk3s)
+  complex(dp) :: fftw_out(nk1s,nk2s,nk3s)
+        
+
+  integer     :: dHk_io_unit
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts
+
+  integer     :: alpha
+
+  integer     :: ik1s,  ik2s,  ik3s
+  integer     :: ikq1s, ikq2s, ikq3s
+  integer     :: switch
+
+  complex(dp) :: iR_H_Rs_work(nk1s,nk2s,nk3s)
+  complex(dp) :: dH_ks_work(nk1s,nk2s,nk3s,3)
+  complex(dp) :: dHk(6)
+
+  integer     :: record_length, record_index
+
+
+ ! find a free unit
+  record_length = 6*direct_io_factor_cmplx
+
+  dHk_io_unit    = find_free_unit()
+  open(unit = dHk_io_unit,       form = 'unformatted', &
+     status = 'scratch',       access = 'direct',      &
+       recl = record_length,   action = 'readwrite')
+
+  switch = -1 ! singlet to triplet
+  ! loop on bands
+  do i_pack = 1, num_pack
+
+     do alpha = 1, 3
+        call coarse_to_smooth(nk1, nk2, nk3,  iR_H_R(:,:,:,alpha,i_pack), &
+                              nk1s,nk2s,nk3s, iR_H_Rs_work)
+
+        fftw_in   = iR_H_Rs_work
+        CALL DFFTW_EXECUTE(fftw_backward_plan)
+        dH_ks_work(:,:,:,alpha) = fftw_out
+     end do
+
+     ! only keep the ks inside the block; discard the rest!
+     ! This may seem wasteful, but FFT is VERY fast; it is
+     ! better to recompute than to store!
+     do ikpts = 1, nk1s*nk2s*nk3s
+
+        ! find the triplet index of ks
+	call switch_indices(nk1s,nk2s,nk3s,ikpts,ik1s,ik2s,ik3s,switch)
+
+	! find the triplet index of ks+q
+	ikq1s = modulo(ik1s+i_qpt1-2,nk1s)+1
+	ikq2s = modulo(ik2s+i_qpt2-2,nk2s)+1
+	ikq3s = modulo(ik3s+i_qpt3-2,nk3s)+1
+
+        ! fish out the relevant elements!
+
+        record_index = num_pack*(ikpts-1)+ i_pack
+
+        dHk(1:3) = dH_ks_work(ik1s,ik2s,ik3s,:)  
+        dHk(4:6) = dH_ks_work(ikq1s,ikq2s,ikq3s,:) 
+
+        write(dHk_io_unit,rec=record_index) dHk
+
+     end do ! ikpts
+  end do ! i_pack 
+
+
+  end subroutine build_dH_ks_to_file
+
+  subroutine fetch_H_ks_from_file(num_pack, nk_vec_max, &
+              ikpts_min, ikpts_max, H_ks, H_ksq, Hk_io_unit)
+  !----------------------------------------------------------------------------!
+  !     This subroutine fetches the Hamiltonian matrix elements, which were 
+  !     previously computed and stored to a binary file.                      
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: Hk_io_unit
+
+  complex(dp) :: H_ks   (num_pack,nk_vec_max)
+  complex(dp) :: H_ksq  (num_pack,nk_vec_max)
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts, block_ikpts 
+
+  integer     :: record_index
+  complex(dp) :: Hk(2)
+
+  !----------------------------------------------------
+  ! Let the record index be defined as
+  !     record_index = num_pack*(ikpts-1)+ i_pack
+  ! This way, all the data for a given k point are
+  ! next to each other.
+  !----------------------------------------------------
+
+
+  do ikpts = ikpts_min, ikpts_max
+
+     block_ikpts = ikpts - ikpts_min+1
+
+     do i_pack = 1, num_pack
+
+        ! write all the elements to bin files
+        record_index = num_pack*(ikpts-1)+ i_pack
+
+        read(Hk_io_unit,  rec=record_index) Hk
+
+        H_ks  (i_pack,block_ikpts) = Hk(1)
+        H_ksq (i_pack,block_ikpts) = Hk(2)
+
+
+     end do ! i_pack 
+  end do ! ikpts
+
+
+  end subroutine fetch_H_ks_from_file
+
+  subroutine fetch_dH_ks_from_file(num_pack,nk_vec_max,          &
+		ikpts_min, ikpts_max, dH_ks, dH_ksq, dHk_io_unit)
+  !----------------------------------------------------------------------------!
+  !     This subroutine fetches the derivatives of the Hamiltonian, which
+  !     were previously computed and stored to various binary files.
+  !----------------------------------------------------------------------------!
+  implicit none
+
+  ! input variables
+  integer     :: num_pack,  nk_vec_max
+
+  integer     :: ikpts_min, ikpts_max
+
+  integer     :: dHk_io_unit
+
+
+  complex(dp) :: dH_ks   (num_pack,3,nk_vec_max)
+  complex(dp) :: dH_ksq  (num_pack,3,nk_vec_max)
+
+
+  ! local variables
+  integer     :: i_pack
+  integer     :: ikpts, block_ikpts 
+
+  integer     ::  record_index
+
+  complex(dp) :: dHk (6)
+
+
+  do ikpts = ikpts_min, ikpts_max
+
+     block_ikpts = ikpts - ikpts_min+1
+
+     do i_pack = 1, num_pack
+
+        ! fish out the relevant elements!
+        record_index = num_pack*(ikpts-1)+ i_pack
+
+        read(dHk_io_unit,rec=record_index) dHk
+
+	dH_ks(i_pack, :,block_ikpts) = dHk(1:3)
+        dH_ksq(i_pack,:,block_ikpts) = dHk(4:6)
+
+     end do ! i_pack 
+  end do ! ikpts
+
+
+  end subroutine fetch_dH_ks_from_file
+
+!----------------------------------------------------------------------------!
+!
+!
+  end module intw_fft
+!
+!
+!----------------------------------------------------------------------------!

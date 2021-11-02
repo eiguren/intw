@@ -1,0 +1,99 @@
+
+include ../make.sys
+
+# the modules for this project, intw
+MOD_OBJS = \
+add_m_nu_lambda_text.o \
+add_q_m_nu.o \
+allocate_nlpot.o \
+allocate_phq.o \
+all_wfcs.o \
+atom.o \
+band_crossing.o \
+becmod.o \
+cfftnd.o \
+dawson.o \
+dft_fftw.o \
+DM_q2Rp.o \
+DM_Rp2q.o \
+dvqpsi_us_only.o \
+fft.o \
+force_linearity_G.o \
+gaussian.o \
+G_kqw2kqb.o \
+G_kqw2ReRpw.o \
+gk_sort.o \
+G_ReRpw2kqw.o \
+H_kb2Rew.o \
+H_Rew2kb.o \
+imselfen2reselfen_t0.o \
+init_us_1.o \
+init_us_2.o \
+input_parameters.o \
+intw2wannier.o \
+intw_pseudo.o \
+kramers_kronig.o \
+lambda_calculate.o \
+matrix_elements.o \
+new_interpolate.o \
+phcom.o \
+ph_module.o \
+phq_init.o \
+plane_wave_setup.o \
+pseudo_types.o \
+qvan2.o \
+radial_grids.o \
+reading.o \
+read_upf_v1.o \
+read_upf_v2.o \
+rotaxis.o \
+sph_bes.o\
+selfeliash_calculate.o \
+selfen_add_terms.o \
+set_asr.o \
+setlocq.o \
+setup.o \
+sort.o \
+spectral_function_im_re_selfen.o \
+spin_kb2Rw.o \
+spin_orb.o \
+spin_Rw2kb.o \
+symmetries.o \
+tests.o \
+upf.o \
+useful_constants.o \
+us.o \
+uspp.o \
+utility.o \
+vlocal.o \
+W90_to_intw.o \
+wigner_seitz.o \
+wigner_seitz_wannier.o \
+write_upf_v2.o \
+ylmr2.o
+
+# Add my modules (haritz)
+MOD_OBJS += haritz.o
+MOD_OBJS += xsf.o
+MOD_OBJS += fft_interp.o
+MOD_OBJS += dvqpsi_us_only_haritz.o
+
+
+all: libintw_modules.a
+
+debug: FFLAGS = $(FFLAGS_DEBUG)
+debug: clean libintw_modules.a
+
+optim: FFLAGS = $(FFLAGS_OPTIM)
+optim: clean libintw_modules.a
+
+libintw_modules.a: $(MOD_OBJS)
+	$(AR) $(ARFLAGS) $@ $?
+	$(RANLIB) $@
+
+
+clean:
+	rm -f *.x *.o *.a *.mod
+
+include make.dep
+# DO NOT DELETE

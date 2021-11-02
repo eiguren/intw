@@ -1,0 +1,62 @@
+add_m_nu_lambda_text.o : add_m_nu_lambda_text.f90 utility.o useful_constants.o reading_new.o input_parameters.o kinds.o 
+add_q_m_nu.o : add_q_m_nu.f90 utility.o useful_constants.o reading_new.o input_parameters.o kinds.o 
+allocate_nlpot.o : allocate_nlpot.f90 spin_orb.o intw_pseudo2.o reading_new.o kinds.o 
+allocate_phq.o : allocate_phq.f90 input_parameters.o ph_module.o phcom.o phcom.o intw_pseudo2.o becmod.o reading_new.o kinds.o 
+all_wfcs.o : all_wfcs.f90 utility.o symmetries.o input_parameters.o useful_constants.o fft.o reading_new.o kinds.o 
+arpack_interface.o : arpack_interface.f90 
+becmod.o : becmod.f90 utility.o reading_new.o kinds.o 
+cfftnd.o : cfftnd.f90 
+crys_to_cart.o : crys_to_cart.f90 
+dft_fftw.o : dft_fftw.f90 fft.o utility.o reading_new.o useful_constants.o kinds.o 
+DM_q2Rp.o : DM_q2Rp.f90 ph_module.o useful_constants.o reading_new.o input_parameters.o kinds.o 
+DM_Rp2q.o : DM_Rp2q.f90 W90_to_intw.o useful_constants.o reading_new.o 
+DM_Rp2q_original.o : DM_Rp2q_original.f90 W90_to_intw.o useful_constants.o reading_new.o 
+dvqpsi_us_only.o : dvqpsi_us_only.f90 becmod.o phcom.o intw_pseudo2.o useful_constants.o fft.o reading_new.o kinds.o 
+dvqpsi_us_only_haritz.o : dvqpsi_us_only_haritz.f90 becmod.o phcom.o intw_pseudo2.o useful_constants.o fft.o reading_new.o kinds.o 
+fft.o : fft.f90 utility.o input_parameters.o reading_new.o useful_constants.o kinds.o 
+fft_interp.o : fft_interp.f90 reading_new.o useful_constants.o kinds.o 
+fft-k.o : fft-k.f90 
+force_linearity_G.o : force_linearity_G.f90 useful_constants.o reading_new.o input_parameters.o utility.o kinds.o 
+gaussian.o : gaussian.f90 useful_constants.o kinds.o 
+G_kqw2kqb.o : G_kqw2kqb.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+G_kqw2ReRpw.o : G_kqw2ReRpw.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+gk_sort.o : gk_sort.f90 reading_new.o kinds.o 
+G_ReRpw2kqw.o : G_ReRpw2kqw.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+haritz.o : haritz.f90 fft.o reading_new.o utility.o useful_constants.o input_parameters.o kinds.o 
+H_kb2Rew.o : H_kb2Rew.f90 all_wfcs.o W90_to_intw.o useful_constants.o reading_new.o 
+H_Rew2kb.o : H_Rew2kb.f90 W90_to_intw.o useful_constants.o reading_new.o 
+imselfen2reselfen_t0.o : imselfen2reselfen_t0.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+init_us_1.o : init_us_1.f90 utility.o spin_orb.o fft.o splinelib.o reading_new.o useful_constants.o intw_pseudo2.o kinds.o 
+init_us_2.o : init_us_2.f90 fft.o splinelib.o intw_pseudo2.o useful_constants.o reading_new.o kinds.o 
+input_parameters.o : input_parameters.f90 useful_constants.o kinds.o 
+intw2wannier.o : intw2wannier.f90 all_wfcs.o reading_new.o fft.o matrix_elements.o symmetries.o utility.o useful_constants.o kinds.o 
+intw_pseudo2.o : intw_pseudo2.f90 kinds.o input_parameters.o useful_constants.o reading_new.o utility.o 
+kinds.o : kinds.f90 
+lambda_calculate.o : lambda_calculate.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+matrix_elements.o : matrix_elements.f90 dft_fftw.o fft.o utility.o reading_new.o input_parameters.o useful_constants.o 
+multiply_psi_by_KB.o : multiply_psi_by_KB.f90 kinds.o fft.o reading_new.o useful_constants.o 
+phcom.o : phcom.f90 becmod.o kinds.o 
+ph_module.o : ph_module.f90 phcom.o fft.o set_asr.o kinds.o symmetries.o input_parameters.o useful_constants.o reading_new.o utility.o 
+phq_init.o : phq_init.f90 fft.o intw_pseudo2.o phcom.o useful_constants.o reading_new.o kinds.o ph_module.o 
+product_basis.o : product_basis.f90 W90_to_intw.o reading_new.o input_parameters.o utility.o useful_constants.o 
+reading_new.o : reading_new.f90 useful_constants.o kinds.o utility.o input_parameters.o 
+rot_ax_asier_zaharra.o : rot_ax_asier_zaharra.f90 
+rotaxis.o : rotaxis.f90 reading_new.o 
+selfeliash_calculate.o : selfeliash_calculate.f90 useful_constants.o reading_new.o input_parameters.o kinds.o 
+selfen_add_terms.o : selfen_add_terms.f90 utility.o useful_constants.o reading_new.o input_parameters.o kinds.o 
+set_asr.o : set_asr.f90 kinds.o utility.o reading_new.o input_parameters.o 
+setlocq.o : setlocq.f90 utility.o useful_constants.o kinds.o 
+setup.o : setup.f90 W90_to_intw.o fft.o symmetries.o reading_new.o useful_constants.o utility.o input_parameters.o 
+sort.o : sort.f90 kinds.o 
+sph_bes.o : sph_bes.f90 utility.o useful_constants.o kinds.o 
+spin_kb2Rw.o : spin_kb2Rw.f90 all_wfcs.o W90_to_intw.o useful_constants.o reading_new.o 
+spin_orb.o : spin_orb.f90 intw_pseudo2.o kinds.o 
+spin_Rw2kb.o : spin_Rw2kb.f90 W90_to_intw.o useful_constants.o reading_new.o 
+splinelib.o : splinelib.f90 utility.o kinds.o 
+symmetries.o : symmetries.f90 fft.o input_parameters.o reading_new.o utility.o useful_constants.o 
+useful_constants.o : useful_constants.f90 kinds.o 
+utility.o : utility.f90 useful_constants.o kinds.o 
+W90_to_intw.o : W90_to_intw.f90 utility.o input_parameters.o reading_new.o useful_constants.o 
+wigner_seitz.o : wigner_seitz.f90 kinds.o 
+wigner_seitz_wannier.o : wigner_seitz_wannier.f90 
+ylmr2.o : ylmr2.f90 utility.o useful_constants.o kinds.o 

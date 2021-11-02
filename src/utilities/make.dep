@@ -1,0 +1,241 @@
+ep_melements.x : ../modules/libintw_modules.a
+
+intw2W90.x : ../modules/libintw_modules.a
+
+intw2W90_2.x : ../modules/libintw_modules.a
+
+read_upf_tofile.x : ../modules/libintw_modules.a
+
+generate_irreducible_mesh.x : ../modules/libintw_modules.a
+
+print_wfc_test.x : ../modules/libintw_modules.a
+
+interpolatu_dV_ind_q.x : ../modules/libintw_modules.a
+
+phon_selfen_texture_q.x : ../modules/libintw_modules.a
+
+phon_selfen_texture_no_spin.x : ../modules/libintw_modules.a
+
+phon_selfen_texture_yes_spin.x : ../modules/libintw_modules.a
+
+phon_selfen_texture_q_indtot.x : ../modules/libintw_modules.a
+
+density_calculation.x : ../modules/libintw_modules.a
+
+transitions.x : ../modules/libintw_modules.a
+
+spin_texture.x : ../modules/libintw_modules.a
+
+spin_texture_spinor.x : ../modules/libintw_modules.a
+
+eliashberg_full_no_spin.x : ../modules/libintw_modules.a
+
+eliashberg_full.x : ../modules/libintw_modules.a
+
+lambda_full_nk_no_spin.x  : ../modules/libintw_modules.a
+
+print_bands_ekk_mathematica.x : ../modules/libintw_modules.a
+
+lambda_full_e_no_spin_graph.x : ../modules/libintw_modules.a
+
+lambda_full_graph.x : ../modules/libintw_modules.a
+
+selfen_direct.x : ../modules/libintw_modules.a
+
+selfen_el_full_nk.x : ../modules/libintw_modules.a
+
+eliashberg_full_no_spin_omega_omegap.x : ../modules/libintw_modules.a
+
+selfen_direct_nk.x : ../modules/libintw_modules.a
+
+imselfen2reselfen_eiguren_goiricelaya.x : ../modules/libintw_modules.a
+
+spectral_function_nk.x : ../modules/libintw_modules.a
+
+lambda_full_nk_texture.x : ../modules/libintw_modules.a
+
+ep_melements_K.x : ../modules/libintw_modules.a
+
+lambda_full_nk.x : ../modules/libintw_modules.a
+
+spin_energies.x : ../modules/libintw_modules.a
+
+phon_selfen_texture_q_indtot_AB.x : ../modules/libintw_modules.a
+
+phon_polarizations_Tl.x : ../modules/libintw_modules.a
+
+lambda_full_nk_no_spin_direct.x : ../modules/libintw_modules.a
+
+phonon_linewidths_nuq.x : ../modules/libintw_modules.a
+
+phonon_adiabatic_renormalization_nuq.x : ../modules/libintw_modules.a
+
+phonon_adiabatic_renormalization_dynmat.x : ../modules/libintw_modules.a
+
+lambda_full_ef_no_spin_direct.x : ../modules/libintw_modules.a
+
+lambda_full_irr_ef_no_spin_direct.x : ../modules/libintw_modules.a
+
+lambda_qe_nk_no_spin_direct.x : ../modules/libintw_modules.a
+
+lambda_qe_irr_ef_no_spin_direct.x : ../modules/libintw_modules.a
+
+surface_dv.x : ../modules/libintw_modules.a
+
+plot_wfc.x : ../modules/libintw_modules.a
+
+dv_qe.x : ../modules/libintw_modules.a
+
+dv_hand.x : ../modules/libintw_modules.a
+
+dv_hand_example.x : ../modules/libintw_modules.a
+
+dv_qe_Fe_1ML_MgO_Ag100.x : ../modules/libintw_modules.a
+
+dv_hand_Fe_1ML_MgO_Ag100.x : ../modules/libintw_modules.a
+
+gvecs_example.x : ../modules/libintw_modules.a
+
+interpolation_fft.x : ../modules/libintw_modules.a
+
+interpolation_fft_ONE_FE.x : ../modules/libintw_modules.a
+
+interpolation_fft_example.x : ../modules/libintw_modules.a
+
+interpolation_fft_ONE_FE_example.x : ../modules/libintw_modules.a
+
+ep_melements_haritz.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_1ML_MgO_Ag100.x : ../modules/libintw_modules.a
+
+add_pp_local_example.x : ../modules/libintw_modules.a
+
+add_pp_local_Fe_1ML_MgO_Ag100.x : ../modules/libintw_modules.a
+
+add_pp_local_Fe_1ML_MgO_Ag100_ONE_FE.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_1ML_MgO_Ag100_initial_1_pp_is1_iband_1288.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_1ML_MgO_Ag100_initial_2_pp_is1_iband_1288.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_1ML_MgO_Ag100_ONE_FE_initial_pp_is_1_iband_1274_1.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_1ML_MgO_Ag100_ONE_FE_initial_pp_is_1_iband_1274_2.x : ../modules/libintw_modules.a
+
+wfc_weight.x : ../modules/libintw_modules.a
+
+lambda_haritz_Fe_MgO_Ag100.x : ../modules/libintw_modules.a
+
+fc_Fe_MgO_Ag100.x : ../modules/libintw_modules.a
+
+fc_Fe_MgO_Ag100_ONE_FE.x : ../modules/libintw_modules.a
+
+proba_pp.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_vl_is_1_iband_1274_1.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_vl_is_1_iband_1274_2.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_nl_is_1_iband_1274_1.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_example_MPI.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_nl_example.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_vl_example.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_serial.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_Fe_MPI.x : ../modules/libintw_modules.a
+
+ep_melements_haritz_example_proba.x : ../modules/libintw_modules.a
+
+overlap_haritz.x : ../modules/libintw_modules.a
+
+overlap_haritz_MPI.x : ../modules/libintw_modules.a
+
+
+../modules/libintw_modules.a : ../modules/add_m_nu_lambda_text.f90 \
+                               ../modules/add_q_m_nu.f90 \
+                               ../modules/allocate_nlpot.f90 \
+                               ../modules/allocate_phq.f90 \
+                               ../modules/all_wfcs.f90 \
+                               ../modules/arpack_interface.f90 \
+                               ../modules/atom.f90 \
+                               ../modules/band_crossing.f90 \
+                               ../modules/becmod.f90 \
+                               ../modules/cfftnd.f90 \
+                               ../modules/crys_to_cart.f90 \
+                               ../modules/dawson.f90 \
+                               ../modules/density_of_states.f90 \
+                               ../modules/dft_fftw.f90 \
+                               ../modules/DM_q2Rp.f90 \
+                               ../modules/DM_Rp2q.f90 \
+                               ../modules/DM_Rp2q_original.f90 \
+                               ../modules/dvqpsi_us_only.f90 \
+                               ../modules/fft.f90 \
+                               ../modules/fft-k.f90 \
+                               ../modules/force_linearity_G.f90 \
+                               ../modules/gaussian.f90 \
+                               ../modules/G_kqw2kqb.f90 \
+                               ../modules/G_kqw2ReRpw.f90 \
+                               ../modules/gk_sort.f90 \
+                               ../modules/G_ReRpw2kqw.f90 \
+                               ../modules/H_kb2Rew.f90 \
+                               ../modules/H_Rew2kb.f90 \
+                               ../modules/imselfen2reselfen_t0.f90 \
+                               ../modules/init_us_1.f90 \
+                               ../modules/init_us_2.f90 \
+                               ../modules/init_vloc.f90 \
+                               ../modules/input_parameters.f90 \
+                               ../modules/intw2wannier.f90 \
+                               ../modules/intw_pseudo.f90 \
+                               ../modules/krakro_peio.f90 \
+                               ../modules/kramers_kronig.f90 \
+                               ../modules/lambda_calculate.f90 \
+                               ../modules/matrix_elements.f90 \
+                               ../modules/multiply_psi_by_KB.f90 \
+                               ../modules/new_interpolate.f90 \
+                               ../modules/phcom.f90 \
+                               ../modules/ph_module.f90 \
+                               ../modules/phq_init.f90 \
+                               ../modules/plane_wave_interpolate.f90 \
+                               ../modules/plane_wave_setup.f90 \
+                               ../modules/product_basis.f90 \
+                               ../modules/pseudo_types.f90 \
+                               ../modules/qvan2.f90 \
+                               ../modules/radial_grids.f90 \
+                               ../modules/reading.f90 \
+                               ../modules/read_upf_v1.f90 \
+                               ../modules/read_upf_v2.f90 \
+                               ../modules/rotaxis.f90 \
+                               ../modules/selfeliash_calculate.f90 \
+                               ../modules/selfen_add_terms.f90 \
+                               ../modules/set_asr.f90 \
+                               ../modules/setlocq.f90 \
+                               ../modules/setup.f90 \
+                               ../modules/sort.f90 \
+                               ../modules/spectral_function_im_re_selfen.f90 \
+                               ../modules/spin_kb2Rw.f90 \
+                               ../modules/spin_orb.f90 \
+                               ../modules/spin_Rw2kb.f90 \
+                               ../modules/symmetries.f90 \
+                               ../modules/tests.f90 \
+                               ../modules/tria_diag_good.f90 \
+                               ../modules/upf.f90 \
+                               ../modules/useful_constants.f90 \
+                               ../modules/us.f90 \
+                               ../modules/uspp.f90 \
+                               ../modules/utility.f90 \
+                               ../modules/vlocal.f90 \
+                               ../modules/W90_to_intw.f90 \
+                               ../modules/wigner_seitz.f90 \
+                               ../modules/wigner_seitz_wannier.f90 \
+                               ../modules/write_upf_v2.f90 \
+                               ../modules/ylmr2.f90 \
+                               ../modules/haritz.f90 \
+                               ../modules/xsf.f90 \
+                               ../modules/fft_interp.f90
+	( cd ../modules/ ; make all )
