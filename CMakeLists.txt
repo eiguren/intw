@@ -40,8 +40,8 @@ OPTION(USE_OPENMP "Use OpenMP for parallelization" OFF)
 
 
 #set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> ruv <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in QE and wannier
-set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cru <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in fftw3 and siesta
-#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in OpenBLAS and netlib lapack
+#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cru <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in fftw3 and siesta
+set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in OpenBLAS and netlib lapack
 # cr should be correct, c for crate, and r for replace (cmake uses q for quick-append instead of r).
 # v adds verbose output.
 # And I don't know how works u, and I'm getting a warning also...
@@ -71,15 +71,10 @@ find_package(LAPACK REQUIRED)
 
 
 # Quantum Espresso
-#set(QE_HOME "/home/haritz/Codes/quantum-espresso/espresso-4.3.2-intel")
-#set(QE_HOME "/home/asier/KODEAK/espresso-4.3.2")
-set(QE-LAST_HOME "/home/asier/KODEAK/q-e/")
-#set(QE-LAST_HOME "/home/asier/KODEAK/espresso-4.3.2")
+set(QE_HOME $ENV{QE_HOME})
 
 # Wannier90
-#set(W_HOME "/home/haritz/Codes/wannier90/wannier90-1.2-intel")
-set(W_HOME "/home/asier/KODEAK/wannier90-3.0.0/")
-
+set(W_HOME $ENV{W_HOME})
 
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
@@ -123,5 +118,6 @@ message("-- FFLAGS_DEBUG: ${CMAKE_Fortran_FLAGS_DEBUG}")
 message("-- FFLAGS_TESTING: ${CMAKE_Fortran_FLAGS_TESTING}")
 message("-- FFLAGS_RELWITHDEBINFO: ${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}")
 message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
-
+message("-- QE_HOME: ${QE_HOME}")
+message("-- W_HOME: ${W_HOME}")
 message("")

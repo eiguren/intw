@@ -2,14 +2,13 @@
 
 Hau intw-ren lehenengo bertsioa da QE 6.4 eta nC-PP gure formatua erabiliz.
 
-Konpilatzeko CMakelist.txt fitxategian dagoen `set(QE-LAST_HOME "/home/asier/KODEAK/q-e/")` aldatu 
-behar da. Ondoren, intw3.3 direktorio nagusian,
+Konpilatzeko intw3.3 direktorio nagusian,
 
 ```bash
 mkdir build
 cd build
-cmake ..
-make -j8 
+QE_HOME=/path/to/QE W_HOME=/path/to/W cmake ..
+make -j8
 ```
 
-Intel-eko konpilatzailearekin lan egiteko ondo dago `export FC=ifort CC=icx CXX=icp` aldagaiak eskuragarri izatea. 
+Intel-eko konpilatzailearekin lan egiteko ondo dago `export FC=ifort CC=icx CXX=icp` aldagaiak eskuragarri izatea.
