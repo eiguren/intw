@@ -1,0 +1,11 @@
+&inputpp
+prefix="cu"
+phonons=.false.
+data_dir="./data_dir"
+dvscf_dir="./dvscf_dir"
+rho_dir="rho_dir"
+qlist_file="qlist.txt"
+nqirr=29
+dynxml=.false.
+/
+

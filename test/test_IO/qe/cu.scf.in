@@ -1,0 +1,27 @@
+Pb 
+ &control
+    calculation='scf',
+    restart_mode='from_scratch',
+    prefix='cu',
+    pseudo_dir = './',
+    outdir='./'
+    verbosity='high',
+    wf_collect=T
+ /
+ &system
+    ibrav=  2, celldm(1) = 7.2, 
+    nat=  1, ntyp= 1, 
+    ecutwfc = 80.0,
+    lspinorb=.false.,
+    noncolin=.false.
+    occupations='tetrahedra', 
+    /
+ &electrons
+    conv_thr =  1.0d-12
+ /
+ATOMIC_SPECIES
+Cu 63.546 Cu.RRKJ3.UPF 
+ATOMIC_POSITIONS {crystal}
+Cu  0.000  0.000  0.000
+K_POINTS {automatic}
+8 8 8  0 0 0

@@ -1,0 +1,11 @@
+*.out
+*.xml
+
+
+cu.save
+
+cu.save.intw/*-KBPP.txt
+cu.save.intw/gvectors.dat
+cu.save.intw/iGlist.dat
+cu.save.intw/kpoints.dat
+cu.save.intw/wfc*.dat
