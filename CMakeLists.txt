@@ -2,13 +2,13 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Add our local modlues to the module path
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 #set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 include(PreventInSourceBuilds)
 #include(PreventInBuildInstalls)
 #if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-#	message(FATAL_ERROR "In-source builds are not allowed.")
+#  message(FATAL_ERROR "In-source builds are not allowed.")
 #endif()
 
 
@@ -16,18 +16,18 @@ include(PreventInSourceBuilds)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(intw
-	VERSION 0.1
-	LANGUAGES Fortran C
-	)
+  VERSION 0.1
+  LANGUAGES Fortran C
+)
 
 include(GNUInstallDirs)
 
-IF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-    MESSAGE(FATAL_ERROR "Fortran compiler does not support F90")
-ENDIF(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
+if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
+    message(FATAL_ERROR "Fortran compiler does not support F90")
+endif(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
-OPTION(USE_MPI "Use the MPI library for parallelization" ON)
-OPTION(USE_OPENMP "Use OpenMP for parallelization" OFF)
+option(USE_MPI "Use the MPI library for parallelization" ON)
+option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 
 #message("CMAKE_Fortran_CREATE_SHARED_LIBRARY: ${CMAKE_Fortran_CREATE_SHARED_LIBRARY}")
 #message("CMAKE_Fortran_CREATE_SHARED_MODULE: ${CMAKE_Fortran_CREATE_SHARED_MODULE}")
@@ -46,16 +46,16 @@ set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>"
 # v adds verbose output.
 # And I don't know how works u, and I'm getting a warning also...
 
-INCLUDE(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
+include(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
 
 # Find MPI if needed
 if(USE_MPI)
-	find_package(MPI REQUIRED)
-	add_definitions(-DMPI)
-	# Instead of ussing target_include_directories (which it is prefered), I am ussing include_directories, because all the targets will depend on MPI,
-	# and include_directories will add the include directories to all new targets.
-	include_directories(${MPI_Fortran_INCLUDE_PATH})
-	add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
+  find_package(MPI REQUIRED)
+  add_definitions(-DMPI)
+  # Instead of ussing target_include_directories (which it is prefered), I am ussing include_directories, because all the targets will depend on MPI,
+  # and include_directories will add the include directories to all new targets.
+  include_directories(${MPI_Fortran_INCLUDE_PATH})
+  add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
 endif()
 
 
@@ -71,14 +71,22 @@ find_package(LAPACK REQUIRED)
 
 
 # Quantum Espresso
-set(QE_HOME $ENV{QE_HOME})
+# NOTE: At the moment only QE v6.7.0 is supported
+if(DEFINED ENV{QE_HOME})
+  set(QE_HOME $ENV{QE_HOME} CACHE PATH "Path to the QE v6.7.0 home directory." FORCE)
+endif()
+include(SetQuantumEspresso)
 
 # Wannier90
-set(W_HOME $ENV{W_HOME})
+if(DEFINED ENV{W_HOME})
+  set(W_HOME $ENV{W_HOME} CACHE PATH "Path to the Wanniet90 home directory." FORCE)
+endif()
+include(SetWannier)
+
 
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
-add_subdirectory(src/QEtoINTW)
+add_subdirectory(src/QEtoINTW/6.7.0)
 
 # Add uninstall target
 if(NOT TARGET uninstall)
