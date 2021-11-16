@@ -215,10 +215,10 @@ contains
     write(*,"(a)") "Reading displacement patterns: "
     write(*,"(a)") datafile
     do iq=1, nqirr
-       read(unit=io_unit,fmt=*)dummy 
+       read(unit=io_unit,fmt=*)dummy
        do imode=1,3*nat
         read(unit=io_unit,fmt=*) u_irr(1:3*nat,imode,iq)
-       end do 
+       end do
     end do !iq
     close(unit=io_unit)
 
@@ -528,7 +528,7 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(trim(mesh_dir)//trim(ph_dir)//trim(dvscf_dir)//trim(dvscf_name)//trim(num))
+       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
        !
        open (io_unit, file = dv_name, iostat = ios, &
             form = 'unformatted', status = 'old', access = 'direct', recl= record_lengh )
