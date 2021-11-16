@@ -44,10 +44,10 @@ module intw_pseudo
 
   !Former USPP
   PUBLIC :: indv, nhtol, nhtolm, nkb,  &
-       vkb, vkqb, dvan,  nhtoj, ijtoh, beta, becsum 
+       vkb, vkqb, dvan,  nhtoj, ijtoh, beta, becsum
   PUBLIC ::  dvan_so
-  
-  !Former US in QE 
+
+  !Former US in QE
   INTEGER :: &
        nqxq,             &! size of interpolation table
        nqx                ! number of interpolation points
@@ -74,7 +74,7 @@ module intw_pseudo
   !
   !Former USPP
   INTEGER, PARAMETER :: &
-       lmaxx  = 3      ! max non local angular momentum (l=0 to lmaxx)   
+       lmaxx  = 3      ! max non local angular momentum (l=0 to lmaxx)
   !
   INTEGER :: nkb        ! total number of beta functions, with struct.fact.
   !
@@ -98,7 +98,7 @@ module intw_pseudo
   !
   REAL(DP), ALLOCATABLE :: &
        beta(:,:,:)           ! beta functions for CP (without struct.factor)
-  
+
 contains
 
   !---------------------------------------------------------------------
@@ -132,11 +132,11 @@ contains
 
     if ((is>0).and.(is<9)) then
      write(tag1,"(i1)")is
-     write(*,*)"here ...", is, tag1 
-     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-UPF.txt"
+     write(*,*)"here ...", is, tag1
+     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
     else if ((is>9).and.(is<19) ) then
      write(tag2,"(i2)")is
-     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-UPF.txt" 
+     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt" 
     else
      print*, "ERROR: The num. of species is bigger than 19 (or <0)"
     end if
@@ -146,7 +146,7 @@ contains
 
     read(unit=io_unit,fmt="(a)")dum
     read(unit=io_unit,fmt=*) UPF(is)%psd
-  
+
     read(unit=io_unit,fmt="(a)")dum
     read(unit=io_unit,fmt=*) UPF(is)%rel
 
@@ -164,7 +164,7 @@ contains
 
     read(unit=io_unit,fmt="(a)")dum
     read(unit=io_unit,fmt=*) UPF(is)%lloc
-    
+
     read(unit=io_unit,fmt="(a)")dum
     read(unit=io_unit,fmt=*) UPF(is)%lmax
 
@@ -222,6 +222,6 @@ contains
 
     END DO !is
     !
-  END subroutine read_all_pseudo  
+  END subroutine read_all_pseudo
 
 end module intw_pseudo
