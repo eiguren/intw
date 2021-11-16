@@ -1,0 +1,10 @@
+*.out
+*.xml
+
+
+fe-o.save
+
+_ph0
+dvscf_dir
+fe-o.a2Fsave
+fe-o.dyn

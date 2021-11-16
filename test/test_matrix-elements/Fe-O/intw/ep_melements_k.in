@@ -1,0 +1,4 @@
+&input_ep_melements
+ mesh_dir="../QE-4.3.2/"
+ prefix="fe-o"
+/

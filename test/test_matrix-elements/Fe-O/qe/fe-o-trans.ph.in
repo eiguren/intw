@@ -1,0 +1,11 @@
+phonons for Fe-O
+ &inputph
+  tr2_ph = 1.0d-12
+  prefix = 'fe-o'
+  fildvscf = 'dvscf'
+  outdir = './'
+  fildyn = 'fe-o.dyn'
+  trans = .true.
+  verbosity = 1
+ /
+0.0 0.0 0.0

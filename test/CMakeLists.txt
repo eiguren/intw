@@ -54,3 +54,9 @@ add_fortran_test_executable(
   test_IO/read_input.f90
   test_IO/read_data.f90
 )
+
+add_test(
+  NAME test_matrix-elements/Fe-O
+  COMMAND matrix-element-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O
+)
