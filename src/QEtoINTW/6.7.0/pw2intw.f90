@@ -45,7 +45,7 @@ PROGRAM pw2intw
   mesh_dir="./" 
 
 
-#if defined(__MPI)
+#if defined(MPI)
   CALL mp_startup ( )
 #endif
 
