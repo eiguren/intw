@@ -112,13 +112,11 @@ contains
     !
     IMPLICIT NONE
     !
-    INTEGER io_unit, ierr
-    !
-    CHARACTER(256) :: file_pseudo
-    !
     !     Local variables
     !
-    INTEGER :: ios, n, j,nr, is, nb,ir,nb1
+    INTEGER :: ios, nr, is, nb, ir, nb1
+    INTEGER :: io_unit, ierr
+    CHARACTER(256) :: file_pseudo
     CHARACTER(256) :: dum
     CHARACTER(1)   :: tag1
     CHARACTER(2)   :: tag2
@@ -144,81 +142,81 @@ contains
     OPEN(UNIT=io_unit,FILE=file_pseudo,STATUS='old',FORM='formatted', IOSTAT=ios)
     write(*,*)"Opening PP of specie num ", is, "ios ", ios
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%psd
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%psd
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%rel
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%rel
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%has_so
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%has_so
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%nlcc
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%nlcc
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%zp
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%zp
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%ecutwfc
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%ecutwfc
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%lloc
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lloc
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%lmax
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lmax
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%nbeta
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%nbeta
 
-    allocate( UPF(is)%kbeta( UPF(is)%nbeta ) )
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%kbeta
-    UPF(is)%kkbeta=MAXVAL( UPF(is)%kbeta(:) )
+      allocate( UPF(is)%kbeta( UPF(is)%nbeta ) )
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%kbeta
+      UPF(is)%kkbeta = MAXVAL( UPF(is)%kbeta(:) )
 
-    allocate( UPF(is)%lll( UPF(is)%nbeta ) )
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%lll
+      allocate( UPF(is)%lll( UPF(is)%nbeta ) )
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lll
 
-    allocate( UPF(is)%jjj( UPF(is)%nbeta ) )
-    read(unit=io_unit,fmt="(a)")dum
-    if (UPF(is)%has_so) then
-      read(unit=io_unit,fmt=*) UPF(is)%jjj
-    else
-      read(unit=io_unit,fmt=*)dum
-    end if
+      allocate( UPF(is)%jjj( UPF(is)%nbeta ) )
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      if (UPF(is)%has_so) then
+        read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%jjj
+      else
+        read(unit=io_unit,fmt=*,iostat=ierr) dum
+      end if
 
-    read(unit=io_unit,fmt="(a)")dum
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
 
-    read(unit=io_unit,fmt=*) UPF(is)%mesh
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%mesh
 
-    read(unit=io_unit,fmt="(a)")dum
-    read(unit=io_unit,fmt=*) UPF(is)%rcloc
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
+      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%rcloc
 
-    allocate(UPF(is)%dion(UPF(is)%nbeta,UPF(is)%nbeta ))
-    read(unit=io_unit,fmt="(a)")dum
+      allocate( UPF(is)%dion( UPF(is)%nbeta,UPF(is)%nbeta ) )
+      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
 
-    do nb=1,UPF(is)%nbeta
-     read(unit=io_unit,fmt=*) (UPF(is)%dion(nb,nb1),nb1=1,UPF(is)%nbeta)
-    end do
+      do nb=1,UPF(is)%nbeta
+        read(unit=io_unit,fmt=*,iostat=ierr) (UPF(is)%dion(nb,nb1),nb1=1,UPF(is)%nbeta)
+      end do
 
-    nr=UPF(is)%mesh
-    nb=UPF(is)%nbeta
-    allocate(UPF(is)%r(nr), UPF(is)%rab(nr), UPF(is)%vloc(nr))
-    allocate(UPF(is)%beta(nr,nb) )
+      nr=UPF(is)%mesh
+      nb=UPF(is)%nbeta
+      allocate( UPF(is)%r(nr), UPF(is)%rab(nr), UPF(is)%vloc(nr) )
+      allocate( UPF(is)%beta(nr,nb) )
 
-    read(unit=io_unit,fmt="(a)")dum
-    do ir=1,nr
-           read(unit=io_unit,fmt=*) &
-      UPF(is)%r(ir), UPF(is)%rab(ir), UPF(is)%vloc(ir),(UPF(is)%beta(ir,nb), nb=1,UPF(is)%nbeta)
-    end do
+      read(unit=io_unit,fmt="(a)",iostat=ierr)dum
+      do ir=1,nr
+        read(unit=io_unit,fmt=*,iostat=ierr) &
+        UPF(is)%r(ir), UPF(is)%rab(ir), UPF(is)%vloc(ir), (UPF(is)%beta(ir,nb), nb=1,UPF(is)%nbeta)
+      end do
 
-    IF (ierr /= 0) then
-       write(unit=*,fmt=*)"ERROR reading PP, ", file_pseudo
-       stop
-    END IF
-    !
-    CLOSE(io_unit)
+      IF (ierr /= 0) then
+         write(unit=*,fmt=*)"ERROR reading PP, ", file_pseudo
+         stop
+      END IF
+      !
+      CLOSE(io_unit)
 
     END DO !is
     !

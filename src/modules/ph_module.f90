@@ -190,10 +190,11 @@ contains
     character(256) :: datafile ! full path of the data-file.xml file
     ! in the .xml file
 
-    integer        :: imode, iq,i,j
     integer        :: nirr
 !
     character(len=4)  :: num
+    integer        :: imode, jmode, iq
+    !
     character(len=8)  :: dummy
 
     complex(kind=dp) :: u1(3*nat,3*nat), u2(3*nat,3*nat)
@@ -203,11 +204,23 @@ contains
     write(*,"(4(a,i4))     ")"PH BZ division is             : ", nq1," x",nq2," x",nq3
     write(*,"(a,i4)"     ) "Input n. of irreducible points: ", nqirr
 
+
+    ! Read irreducible q list
+    allocate(q_irr(3,nqirr))
+
+    io_unit = find_free_unit()
+    open(unit=io_unit, file=trim(trim(mesh_dir)//trim(ph_dir)//trim(qlist)),status="old")
+
+    do iq=1,nqirr
+      read(io_unit,*) dummy, q_irr(1:3,iq)
+    enddo
+
+    close(unit=io_unit)
+
+
     io_unit = find_free_unit()
     datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat")
     open(unit=io_unit, file=datafile,status="old")
-
-    allocate(q_irr(3,nqirr))
 
     !Read displacement patters for each q.
     allocate (u_irr(nmodes,nmodes,nqirr))
@@ -217,27 +230,11 @@ contains
     do iq=1, nqirr
        read(unit=io_unit,fmt=*)dummy
        do imode=1,3*nat
-        read(unit=io_unit,fmt=*) u_irr(1:3*nat,imode,iq)
+        read(unit=io_unit,fmt=*) ( u_irr(jmode,imode,iq), jmode=1,3*nat )
        end do
     end do !iq
-    close(unit=io_unit)
 
-    !    do iq=1,nqirr
-    !     write(888,*)"iq --------",iq
-    !     u1 = matmul (transpose(conjg(u_irr(:,:,iq))),u_irr(:,:,iq) )
-    !
-    !      do i=1,3*nat
-    !        write(888,"(100(x,2f8.4))") ( u_irr(i,j,iq), j=1,3*nat)
-    !      enddo
-    !
-    !       write(888,*)" "
-    !       write(888,*)" "
-    !
-    !      do i=1,3*nat
-    !        write(888,"(100(x,2f8.4))") ( u1(i,j), j=1,3*nat)
-    !      enddo
-    !     enddo
-    !    stop
+    close(unit=io_unit)
 
   end subroutine read_ph_information_xml
 
@@ -487,13 +484,12 @@ contains
 
     !local variables
 
-    integer :: iq,record_lengh,i,j,k,mode,ios,is,js
+    integer :: iq, record_length, mode, ios, is, js
     character(len=20) ::  num
-    integer :: nr(3),io_unit,ir,ipol,imode,jmode
+    integer :: nr(3), io_unit, ir, ipol, imode, jmode
     character(len=256) :: dv_name
-    real(dp) :: GKQ(3)
 
-    !
+
     if (nmodes/=3*nat) then
        write(*,"(a)")"ERROR(read_allq_dvr): nmodes = ", nmodes, " and 3*nat =", 3*nat
        stop
@@ -508,11 +504,7 @@ contains
     dvscf_irr=cmplx_0
     dvscf_cart=cmplx_0
     !
-    if (spinorb_mag) then
-       record_lengh=direct_io_factor*2*nr1*nr2*nr3*4
-    else
-       record_lengh=direct_io_factor*2*nr1*nr2*nr3
-    end if
+    inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:npol**2)
     !
     do iq=1,nqirr
        !
@@ -528,10 +520,10 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
+       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
        !
        open (io_unit, file = dv_name, iostat = ios, &
-            form = 'unformatted', status = 'old', access = 'direct', recl= record_lengh )
+            form = 'unformatted', status = 'old', access = 'direct', recl= record_length )
 !
        write(unit=*,fmt="(2a,x,a,i4)")"Reading irreducible displacement dvscr file ", &
             trim(dv_name),",ios: ",ios
@@ -597,22 +589,6 @@ contains
           enddo !ir
           !
        end if !npol==2
-       !
-       ! If we are reading dV rotated by QE, dV is already in cartesians coord. So if we write it,
-       ! we directly write dvscf_irr
-       !
-!       do ir=1,nr1*nr2*nr3
-!          do imode=1,3*nat
-!             dvscf_cart(ir,iq,imode,1,1)=dvscf_irr(ir,iq,imode,1)
-!          enddo
-!       enddo
-!       !
-!       do ir=1, nr1*nr2*nr3
-!          write(210000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,1,1)
-!          write(220000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,1,2)
-!          write(230000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,2,1)
-!          write(240000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,2,2)
-!       enddo
        !
        close(io_unit)
        !
@@ -703,8 +679,6 @@ contains
     integer :: GKQ_bz(1:3),  GKQ (1:3) , na
 
     dvq_local=cmplx_0
-!    dvq_local(:,:,:,:)=dvscf_cart(:,1,:,:,:) !Peio
-!    return !Peio
     !
     ! We find the associated of qpoint in 1BZ (it usually is itself!)
     !

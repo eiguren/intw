@@ -70,8 +70,7 @@ contains
      !
   enddo ! i_folder
   !
-stop
-  return 
+  return
 
   end subroutine allocate_and_get_all_irreducible_wfc
 !--------------------------------------------------------------------------------------------------------
