@@ -360,7 +360,7 @@ contains
 
   implicit none
 
-  integer         :: ios
+  integer         :: ios, strlen
   logical         :: read_status
 
   read_status = .false. 
@@ -688,6 +688,15 @@ contains
         write(*,*) "     tolerance                  = real"
         write(*,*) "/" 
   end if
+
+  strlen = len_trim(mesh_dir)
+  if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(ph_dir)
+  if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(data_dir)
+  if ( data_dir(strlen:strlen+1) .ne. "/" ) data_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(dvscf_dir)
+  if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
 
   return
 

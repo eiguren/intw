@@ -1,0 +1,9 @@
+proba
+&inputpp
+ prefix = "fe-o",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 1,
+ dynxml = .false.,
+/
+

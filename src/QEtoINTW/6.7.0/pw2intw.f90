@@ -171,7 +171,7 @@ contains
   character(len=1) :: nn
   character(len=4) :: num
 !
-  integer :: io_unit, nirr, ipert, imode0, irr, imode
+  integer :: io_unit, nirr, ipert, imode0, irr, imode, jmode
   integer, dimension(48) :: npert=-1
   complex(kind=dp) :: u_irr(1:3*nat,1:3*nat,nqirr)
   integer, external :: find_free_unit
@@ -218,9 +218,9 @@ contains
   do iq=1, nqirr
     write(unit=io_unit,fmt="(a,i4)")"q", iq
     write(unit=numq,fmt=*)iq
-!   
+!
     do imode=1,3*nat
-      write(unit=io_unit,fmt="(10000f16.10)") u_irr(1:3*nat,imode,iq)
+      write(unit=io_unit,fmt="(10000(a,f16.10,a,f16.10,a))") ( "(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ")",jmode=1,3*nat)
     enddo
 !
   enddo

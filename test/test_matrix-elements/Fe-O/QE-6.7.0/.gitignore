@@ -1,0 +1,13 @@
+*
+!.gitignore
+!Fe.pbe-sp-mt_gipaw.UPF
+!O.pbe-mt_fhi.UPF
+!fe-o.dyn0
+!fe-o.scf.in
+!pw2intw.in
+!q2r.in
+!qlist.txt
+!qq1
+!qq1/fe-o.ph.in
+!reference
+!reference/ep_mat.dat_1

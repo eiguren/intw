@@ -88,6 +88,11 @@ add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
 add_subdirectory(src/QEtoINTW/6.7.0)
 
+
+enable_testing()
+add_subdirectory(test)
+
+
 # Add uninstall target
 if(NOT TARGET uninstall)
   configure_file(
