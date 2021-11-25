@@ -21,19 +21,11 @@ MODULE intw_becmod
   !
   SAVE
   !
-#ifdef __STD_F95
-  TYPE bec_type
-     REAL(DP),   POINTER :: r(:,:)    ! appropriate for gammaonly
-     COMPLEX(DP),POINTER :: k(:,:)    ! appropriate for generic k
-     COMPLEX(DP),POINTER :: nc(:,:,:)   ! appropriate for noncolin
-  END TYPE bec_type
-#else
   TYPE bec_type
      REAL(DP),   ALLOCATABLE :: r(:,:)    ! appropriate for gammaonly
      COMPLEX(DP),ALLOCATABLE :: k(:,:)    ! appropriate for generic k
      COMPLEX(DP),ALLOCATABLE :: nc(:,:,:)   ! appropriate for noncolin
   END TYPE bec_type
-#endif
   !
   TYPE (bec_type) :: becp  ! <beta|psi>
 
@@ -55,12 +47,6 @@ MODULE intw_becmod
      !
   END INTERFACE
 
-  INTERFACE becscal
-     !
-     MODULE PROCEDURE becscal_nck, becscal_gamma
-     !spinor
-  END INTERFACE
-  !
   PUBLIC :: bec_type, becp, allocate_bec_type, deallocate_bec_type, calbec, &
             beccopy, becscal
   !
@@ -249,10 +235,7 @@ CONTAINS
         m = size ( psi, 2)
     ENDIF
     npol= size (betapsi, 2)
-#ifdef DEBUG
-    WRITE (*,*) 'calbec nc'
-    WRITE (*,*)  nkb,  size (betapsi,1) , m , size (betapsi, 3)
-#endif
+
     IF ( nkb /= size (betapsi,1) .or. m > size (betapsi, 3) ) &
       CALL errore ('calbec', 'size mismatch', 3)
     !
@@ -274,11 +257,6 @@ CONTAINS
     TYPE (bec_type) :: bec
     INTEGER, INTENT (in) :: nkb, nbnd
     !
-#ifdef __STD_F95
-    NULLIFY(bec%r)
-    NULLIFY(bec%nc)
-    NULLIFY(bec%k)
-#endif
     IF ( gamma_only ) THEN
        !
        ALLOCATE( bec%r( nkb, nbnd ) )
@@ -307,67 +285,12 @@ CONTAINS
     IMPLICIT NONE
     TYPE (bec_type) :: bec
     !
-#ifdef __STD_F95
-    IF (associated(bec%r))  DEALLOCATE(bec%r)
-    IF (associated(bec%nc)) DEALLOCATE(bec%nc)
-    IF (associated(bec%k))  DEALLOCATE(bec%k)
-#else
     IF (allocated(bec%r))  DEALLOCATE(bec%r)
     IF (allocated(bec%nc)) DEALLOCATE(bec%nc)
     IF (allocated(bec%k))  DEALLOCATE(bec%k)
-#endif
     !
     RETURN
     !
   END SUBROUTINE deallocate_bec_type
-
-  SUBROUTINE beccopy(bec, bec1, nkb, nbnd)
-    IMPLICIT NONE
-    TYPE(bec_type), INTENT(in) :: bec
-    TYPE(bec_type)  :: bec1
-    INTEGER, INTENT(in) :: nkb, nbnd
-
-    IF (gamma_only) THEN
-       CALL dcopy(nkb*nbnd, bec1%r, 1, bec%r, 1)
-    ELSEIF (noncolin) THEN
-       CALL zcopy(nkb*npol*nbnd, bec%nc, 1, bec1%nc,  1)
-    ELSE
-       CALL zcopy(nkb*nbnd, bec%k, 1, bec1%k, 1)
-    ENDIF
-
-    RETURN
-  END SUBROUTINE beccopy
-
-  SUBROUTINE becscal_nck(alpha, bec, nkb, nbnd)
-    IMPLICIT NONE
-    TYPE(bec_type), INTENT(INOUT) :: bec
-    COMPLEX(DP), INTENT(IN) :: alpha
-    INTEGER, INTENT(IN) :: nkb, nbnd
-
-    IF (gamma_only) THEN
-       CALL errore('becscal_nck','called in the wrong case',1)
-    ELSEIF (noncolin) THEN
-       CALL zscal(nkb*npol*nbnd, alpha, bec%nc, 1)
-    ELSE
-       CALL zscal(nkb*nbnd, alpha, bec%k, 1)
-    ENDIF
-
-    RETURN
-  END SUBROUTINE becscal_nck
-
-  SUBROUTINE becscal_gamma(alpha, bec, nkb, nbnd)
-    IMPLICIT NONE
-    TYPE(bec_type), INTENT(INOUT) :: bec
-    REAL(DP), INTENT(IN) :: alpha
-    INTEGER, INTENT(IN) :: nkb, nbnd
-
-    IF (gamma_only) THEN
-       CALL dscal(nkb*nbnd, alpha, bec%r, 1)
-    ELSE
-       CALL errore('becscal_gamma','called in the wrong case',1)
-    ENDIF
-
-    RETURN
-  END SUBROUTINE becscal_gamma
 
 END MODULE intw_becmod
