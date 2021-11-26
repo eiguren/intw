@@ -26,6 +26,7 @@ subroutine DM_Rp2q(nrr_q,irr_q,ndegen_q,qpoint,dyn_r,P_diag,omega)
 ! our canonical representation matrix elements                                             !
 !===========================================================================================
 
+  use kinds, only: dp
   use intw_reading
   use intw_useful_constants
   use intw_W90
@@ -54,7 +55,7 @@ subroutine DM_Rp2q(nrr_q,irr_q,ndegen_q,qpoint,dyn_r,P_diag,omega)
 
   ! 1) Inverse Fourier transform of the Real Dynamical Matrix
   ! to Reciprocal representation
-  !  
+  !
   dyn_q_f(:,:)=cmplx_0
   !
   do imode=1,3*nat

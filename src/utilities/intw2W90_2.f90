@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!       program intw2W90 
+!       program intw2W90
 !       -----------------------------------
 !
 !       This is a "utility" program which is part of the intw project.
@@ -9,7 +9,7 @@
 !       utilizing a minimum set of (QE generated) Bloch functions, using
 !       symmetry.
 !
-!       The code is heavily inspired from pw2wannier90. 
+!       The code is heavily inspired from pw2wannier90.
 !       Mad props to the QE people; their code is a bit above my paygrade,
 !       however, so I've taken some bits and modified them so that a monkey
 !       could understand.
@@ -19,25 +19,22 @@
 
 program intw2W90_2
 
+  use kinds, only: dp
   use intw_useful_constants
   use intw_intw2wannier
-!  use intw_tests
   use intw_symmetries
   use intw_fft
-  use intw_input_parameters 
-
+  use intw_input_parameters
+  use intw_reading
   USE intw_allwfcs
+  use intw_utility, only: get_timing, generate_kmesh
 
 
 !================================================================================
-!       Declare the variables 
+!       Declare the variables
 !================================================================================
 implicit none
 
-integer       ::       ikpt
-integer       ::       i_folder
-integer       ::       i, j, k, ik 
-integer       ::       switch 
 integer       ::       nk_irr , nkmesh
 
 logical       ::       read_status, have_nnkp
@@ -53,7 +50,7 @@ real(dp),allocatable:: kpoints_QE(:,:), kmesh(:,:)
 
 real(dp)            :: time1, time2
 
-real(dp),allocatable :: kpoints_irr  (:,:) 
+real(dp),allocatable :: kpoints_irr  (:,:)
 
 
 !--------------------------------------------------------------------------------
@@ -69,7 +66,7 @@ write(*,20) '|    waiting for input file...                      |'
 
 
 !================================================================================
-!       read the input file 
+!       read the input file
 !       Read in the necessary information from standard input
 !================================================================================
 call read_input(read_status)
@@ -77,12 +74,12 @@ call read_input(read_status)
 method = trim(intw2W_method)
 
 if (read_status ) then
-       stop 
-end if        
+       stop
+end if
 
 !================================================================================
-!       read the parameters from the SCF QE calculation, in  
-!       particular, read in the symmetry matrices!!! 
+!       read the parameters from the SCF QE calculation, in
+!       particular, read in the symmetry matrices!!!
 !================================================================================
 call read_parameters_data_file_xml()
 
@@ -92,7 +89,7 @@ call read_parameters_data_file_xml()
 !================================================================================
 !      set up the gvec array, which will contain the global
 !      G-vectors, as well as the FFT code, which is necessary to
-!      generate g_fft_map, which in turn is necessary in the 
+!      generate g_fft_map, which in turn is necessary in the
 !      wavefunction rotation code!
 !================================================================================
 
@@ -111,9 +108,9 @@ call allocate_fft()
 call generate_nl()
 
 
-if (method == 'CONVOLUTION') then          
+if (method == 'CONVOLUTION') then
         write(*,20) '|       - intw2W_method   = CONVOLUTION             |'
-else if (method == 'FFT') then          
+else if (method == 'FFT') then
         write(*,20) '|       - intw2W_method   = FFT                     |'
 else
         write(*,20) '***********************************************'
@@ -134,7 +131,7 @@ inquire(file=nnkp_file,exist=have_nnkp)
 if(.not. have_nnkp) then
    write(*,20)      '**********************************************************'
    write(*,20)      '* Could not find the file '//trim(nnkp_file)
-   write(*,20)      '* Did you run W90 -pp $seed to get the parameter file?   ' 
+   write(*,20)      '* Did you run W90 -pp $seed to get the parameter file?   '
    write(*,20)      '**********************************************************'
 stop
 end if
@@ -143,7 +140,7 @@ write(*,20) '|           ---------------------------------       |'
 
 
 !================================================================================
-!       read the parameters in the .nnkp file 
+!       read the parameters in the .nnkp file
 !================================================================================
 
 call read_nnkp_file(nnkp_file)
@@ -156,17 +153,17 @@ call output_nnkp_file()
 !================================================================================
 ! read the koints information
 allocate(kpoints_QE(3,nkpoints_QE))
-call read_kpoints_data_file_xml(kpoints_QE) 
+call read_kpoints_data_file_xml(kpoints_QE)
 
 !================================================================================
-! Build the kmesh corresponding to the parameters in the input file 
+! Build the kmesh corresponding to the parameters in the input file
 !================================================================================
 nkmesh = nk1*nk2*nk3
 allocate(kmesh(3,nkmesh))
 call generate_kmesh(kmesh,nk1,nk2,nk3)
 
 !================================================================================
-! check that kmesh and nnkp_kpoints are consistent with one another 
+! check that kmesh and nnkp_kpoints are consistent with one another
 !       This insures that the Wannier data is consistent with intw data.
 !================================================================================
 call intw2W90_check_mesh(nkmesh,kmesh)
@@ -218,7 +215,7 @@ if (nkpoints_QE /= nkmesh .and. nkpoints_QE /= nk_irr) then
         write(*,20) '*                   Program stops.                  *'
         write(*,20) '*****************************************************'
         write(*,20) '* debug information:                                *'
-        write(*,*) '*        nkpoints_QE = ',nkpoints_QE 
+        write(*,*) '*        nkpoints_QE = ',nkpoints_QE
         write(*,*) '*        nkmesh      = ',nkmesh
         write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
 
@@ -237,7 +234,7 @@ end if
 
 
 !================================================================================
-!      allocate the symmetry arrays 
+!      allocate the symmetry arrays
 !      CAREFUL! the subroutine needs to know the global value of "full_mesh",
 !      so it is crucial that this allocation occurs AFTER setting full_mesh
 !================================================================================
@@ -278,13 +275,13 @@ else if(IBZ) then
         write(*,20) '|       - the kpoints present in the QE folders     |'
         write(*,20) '|         are consistent with an IBZ.               |'
         write(*,20) '|           ---------------------------------       |'
-else 
+else
         write(*,20)      '**********************************************************'
-        write(*,20)      '* The kpoints present in the QE folders are not consistent' 
-        write(*,20)      '* with the parameters of the input file!                 ' 
+        write(*,20)      '* The kpoints present in the QE folders are not consistent'
+        write(*,20)      '* with the parameters of the input file!                 '
         write(*,20)      '**********************************************************'
         write(*,20) '* debug information:                                *'
-        write(*,*) '*        nkpoints_QE = ',nkpoints_QE 
+        write(*,*) '*        nkpoints_QE = ',nkpoints_QE
         write(*,*) '*        nkmesh      = ',nkmesh
         write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
         write(*,*) '*        IBZ         = ',IBZ
@@ -295,22 +292,22 @@ end if
 !================================================================================
 !       Check that the requested calculation is possible
 !================================================================================
-if (intw2W_fullzone ) then          
+if (intw2W_fullzone ) then
    write(*,20) '|       - intw2W_fullzone = .true.                  |'
    if ( full_mesh ) then
         write(*,20) '|         all k-points are explicitely calculated   |'
         write(*,20) '|         no symmetry is assumed.                   |'
         write(*,20) '|             (This is mostly for testing)          |'
         write(*,20) '|           ---------------------------------       |'
-   else 
+   else
         write(*,20)      '**********************************************************'
         write(*,20)      '* A full mesh is not present in the QE folders!          '
-        write(*,20)      '* The requested calculation is impossible.               ' 
-        write(*,20)      '*                   program stops.                       ' 
+        write(*,20)      '* The requested calculation is impossible.               '
+        write(*,20)      '*                   program stops.                       '
         write(*,20)      '**********************************************************'
         stop
    end if
-else 
+else
         write(*,20) '|       - intw2W_fullzone = .false.                 |'
         write(*,20) '|         Symmetries will be utilized.              |'
         write(*,20) '|           ---------------------------------       |'
@@ -324,7 +321,7 @@ end if
 call allocate_and_get_all_irreducible_wfc()
 stop
 !================================================================================
-!       Compute the mmn file      
+!       Compute the mmn file
 !================================================================================
 
 if (compute_mmn) then
@@ -336,7 +333,7 @@ if (compute_mmn) then
      call generate_mmn_using_allwfc(intw2W_fullzone,method)
 end if
 !================================================================================
-!       Compute the amn file      
+!       Compute the amn file
 !================================================================================
 if (compute_amn) then
      write(*,20) '|       - computing the file prefix.amn...          |'
@@ -347,7 +344,7 @@ if (compute_amn) then
 end if
 
 !================================================================================
-!       clean up 
+!       clean up
 !================================================================================
 
 call deallocate_symmetry_related_k()
@@ -361,7 +358,7 @@ deallocate(kpoints_QE)
 deallocate (gvec)
 deallocate(kmesh)
 !================================================================================
-!       Finish 
+!       Finish
 !================================================================================
 call get_timing(time2)
 write(*,20) '|                     ALL DONE                      |'
@@ -372,4 +369,4 @@ write(*,20) '====================================================='
 20 format(A)
 30 format(A,F8.2,6X,A)
 
-end program intw2W90_2 
+end program intw2W90_2

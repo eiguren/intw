@@ -5,7 +5,7 @@ subroutine add_q_m_nu_imag(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -15,12 +15,12 @@ subroutine add_q_m_nu_imag(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
   use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5
+  use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
   implicit none
@@ -88,7 +88,7 @@ subroutine add_q_m_nu_imag_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -98,12 +98,12 @@ subroutine add_q_m_nu_imag_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
   use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5
+  use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
   implicit none
@@ -163,7 +163,7 @@ subroutine add_q_m_nu_imag_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -173,12 +173,12 @@ subroutine add_q_m_nu_imag_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
   use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5
+  use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
   implicit none
@@ -238,7 +238,7 @@ subroutine add_q_m_nu_real(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -248,7 +248,7 @@ subroutine add_q_m_nu_real(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
@@ -313,7 +313,7 @@ subroutine add_q_m_nu_real_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -323,7 +323,7 @@ subroutine add_q_m_nu_real_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
@@ -384,7 +384,7 @@ subroutine add_q_m_nu_real_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
 ! Description not related with the subroutine
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -394,7 +394,7 @@ subroutine add_q_m_nu_real_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading

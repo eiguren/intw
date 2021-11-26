@@ -1,15 +1,21 @@
 ! IGG ---
-! This module contains the subroutines to set ASR to force 
+! This module contains the subroutines to set ASR to force
 ! constant matrixes.
 ! They come directly from QE
 ! Notice that frc is REAL
 
 module intw_set_asr
- use intw_input_parameters
-! use intw_setup
- use intw_reading
- use intw_utility
- use kinds,     only : dp
+
+  use intw_utility, only: errore
+  use kinds, only : dp
+
+  implicit none
+  !
+  ! subroutines
+  public :: set_asr, sp_zeu, sp1, sp2, sp3
+  !
+  private
+  !
 
 contains
 
@@ -66,7 +72,7 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
   ! (i.e. the rotation axis is (Ox) if axis='1', (Oy) if axis='2' and (Oz) if axis='3')
   !
 
-  
+
   if((asr.ne.'simple').and.(asr.ne.'crystal').and.(asr.ne.'one-dim') &
                       .and.(asr.ne.'zero-dim')) then
      call errore('set_asr','invalid Acoustic Sum Rule:' // asr, 1)

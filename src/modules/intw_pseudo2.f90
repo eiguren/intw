@@ -1,51 +1,53 @@
 module intw_pseudo
   !
-  use intw_utility, only : find_free_unit
-  use intw_reading
-  use intw_useful_constants
-  use intw_input_parameters
-  use kinds,     only : dp
+  use kinds, only: dp
   !
   IMPLICIT NONE
+  !
   SAVE
-    TYPE INTWPSEUDO
-     CHARACTER(LEN=2) :: psd=' '      ! Element label
-     CHARACTER(LEN=20) :: typ=' '     ! Pseudo type ( NC or US or PAW)
-     CHARACTER(len=6) :: rel=' '      ! relativistic: {no|scalar|full}
-     LOGICAL :: nlcc                  ! Non linear core corrections
-     REAL(DP) :: zp                   ! z valence
-     REAL(DP) :: ecutwfc              ! suggested cut-off for wfc
-     !
-     INTEGER :: lmax                  ! maximum l component in beta
-     INTEGER :: nbeta                 ! number of projectors
-     INTEGER, DIMENSION(:), ALLOCATABLE :: kbeta   ! kbeta(nbeta): number of grid points used for betas
-                                      ! this defines the cutoff radius for each of them.
-     !
-     INTEGER   :: kkbeta
-     INTEGER, DIMENSION(:), ALLOCATABLE :: lll     ! lll(nbeta) l of each projector
-     REAL(DP),DIMENSION(:,:), ALLOCATABLE :: beta   ! beta(mesh,nbeta) projectors
-     !
-     INTEGER :: mesh                  ! number of points in the radial mesh
-     REAL(DP), DIMENSION(:), ALLOCATABLE :: r      ! r(mesh)  radial grid
-     REAL(DP), DIMENSION(:), ALLOCATABLE :: rab    ! rab(mesh) dr(x)/dx (x=linear grid)
-     INTEGER :: lloc                 ! L of channel used to generate local potential
-     REAL(DP) :: rcloc               ! vloc = v_ae for r > rcloc
-     REAL(DP),  DIMENSION(:), ALLOCATABLE :: vloc    ! vloc(mesh) local atomic potential
-     REAL(DP),  DIMENSION(:,:), ALLOCATABLE :: dion  ! dion(nbeta,nbeta) atomic D_{mu,nu}
+  !
+  ! variables
+  public :: INTWPSEUDO, upf
+  public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
+            nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
+            becsum, dvan, nhtoj, dvan_so, beta
+  !
+  ! subroutines
+  public :: read_all_pseudo
+  !
+  private
+  !
+  TYPE INTWPSEUDO
+    CHARACTER(LEN=2) :: psd=' '      ! Element label
+    CHARACTER(LEN=20) :: typ=' '     ! Pseudo type ( NC or US or PAW)
+    CHARACTER(len=6) :: rel=' '      ! relativistic: {no|scalar|full}
+    LOGICAL :: nlcc                  ! Non linear core corrections
+    REAL(DP) :: zp                   ! z valence
+    REAL(DP) :: ecutwfc              ! suggested cut-off for wfc
+    !
+    INTEGER :: lmax                  ! maximum l component in beta
+    INTEGER :: nbeta                 ! number of projectors
+    INTEGER, DIMENSION(:), ALLOCATABLE :: kbeta   ! kbeta(nbeta): number of grid points used for betas
+                                    ! this defines the cutoff radius for each of them.
+    !
+    INTEGER :: kkbeta
+    INTEGER, DIMENSION(:), ALLOCATABLE :: lll     ! lll(nbeta) l of each projector
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: beta   ! beta(mesh,nbeta) projectors
+    !
+    INTEGER :: mesh                  ! number of points in the radial mesh
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: r      ! r(mesh)  radial grid
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: rab    ! rab(mesh) dr(x)/dx (x=linear grid)
+    INTEGER :: lloc                 ! L of channel used to generate local potential
+    REAL(DP) :: rcloc               ! vloc = v_ae for r > rcloc
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: vloc    ! vloc(mesh) local atomic potential
+    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: dion  ! dion(nbeta,nbeta) atomic D_{mu,nu}
 
-     LOGICAL :: has_so             ! if .true. includes spin-orbit
-     REAL(DP),  DIMENSION(:), ALLOCATABLE :: jjj   ! jjj(nbeta) j=l+1/2 or l-1/2 of beta
+    LOGICAL :: has_so             ! if .true. includes spin-orbit
+    REAL(DP), DIMENSION(:), ALLOCATABLE :: jjj   ! jjj(nbeta) j=l+1/2 or l-1/2 of beta
   END TYPE INTWPSEUDO
 
-  TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE ::UPF
+  TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
 
-  public :: upf
-  public :: read_all_pseudo
-
-  !Former USPP
-  PUBLIC :: indv, nhtol, nhtolm, nkb,  &
-       vkb, vkqb, dvan,  nhtoj, ijtoh, beta, becsum
-  PUBLIC ::  dvan_so
 
   !Former US in QE
   INTEGER :: &
@@ -86,7 +88,7 @@ module intw_pseudo
   !
   !
   COMPLEX(DP), ALLOCATABLE, TARGET :: &
-       vkb(:,:),   vkqb(:,:)             ! all beta functions in reciprocal space
+       vkb(:,:), vkqb(:,:)             ! all beta functions in reciprocal space
   REAL(DP), ALLOCATABLE :: &
        becsum(:,:,:)           ! \sum_i f(i) <psi(i)|beta_l><beta_m|psi(i)>
   REAL(DP), ALLOCATABLE :: &
@@ -103,12 +105,10 @@ contains
 
   !---------------------------------------------------------------------
   subroutine read_all_pseudo ()
-  !---------------------------------------------------------------------
     !
-    use intw_useful_constants , ONLY : fpi
-    USE intw_reading
-    use intw_input_parameters
-
+    use intw_utility, only: find_free_unit
+    USE intw_reading, only: ntyp
+    use intw_input_parameters, only: mesh_dir, prefix
     !
     IMPLICIT NONE
     !
@@ -122,25 +122,26 @@ contains
     CHARACTER(2)   :: tag2
 
 
-    ALLOCATE (  UPF(ntyp) )
+    ALLOCATE( UPF(ntyp) )
     !
+    ierr = 0
     do is=1,ntyp
 
-    io_unit=find_free_unit()
+      io_unit = find_free_unit()
 
-    if ((is>0).and.(is<9)) then
-     write(tag1,"(i1)")is
-     write(*,*)"here ...", is, tag1
-     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
-    else if ((is>9).and.(is<19) ) then
-     write(tag2,"(i2)")is
-     file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt" 
-    else
-     print*, "ERROR: The num. of species is bigger than 19 (or <0)"
-    end if
+      if ((is>0).and.(is<9)) then
+        write(tag1,"(i1)")is
+        write(*,*)"here ...", is, tag1
+        file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
+      else if ((is>9).and.(is<19) ) then
+        write(tag2,"(i2)")is
+        file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt"
+      else
+        print*, "ERROR: The num. of species is bigger than 19 (or <0)"
+      end if
 
-    OPEN(UNIT=io_unit,FILE=file_pseudo,STATUS='old',FORM='formatted', IOSTAT=ios)
-    write(*,*)"Opening PP of specie num ", is, "ios ", ios
+      OPEN(UNIT=io_unit,FILE=file_pseudo,STATUS='old',FORM='formatted', IOSTAT=ios)
+      write(*,*)"Opening PP of specie num ", is, "ios ", ios
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%psd

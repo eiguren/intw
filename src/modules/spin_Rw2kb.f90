@@ -16,6 +16,7 @@ subroutine spin_Rw2kb(nrr_k,irr_k,ndegen_k,kpoint,P_diag,spin_Rw,spin_kb)
 ! spin_kb(k,n,3)=Sum_m[P+(m,n)*spin_kw(k,m,3)*P(m,n)]                                   !
 !=======================================================================================!
 
+  use kinds, only: dp
   use intw_reading
   use intw_useful_constants
   use intw_W90
@@ -60,7 +61,7 @@ subroutine spin_Rw2kb(nrr_k,irr_k,ndegen_k,kpoint,P_diag,spin_Rw,spin_kb)
      enddo !ibnd
   enddo !ipol
   !
-  ! 2) We wannier-unrotate the Reciprocal Wannier spin components in order to obtain Reciprocal 
+  ! 2) We wannier-unrotate the Reciprocal Wannier spin components in order to obtain Reciprocal
   ! Bloch spin components at each k point of the fine mesh.
   !
   do ipol=1,3

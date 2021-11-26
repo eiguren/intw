@@ -17,6 +17,8 @@ subroutine spin_kb2Rw(nrr_k,irr_k,kmesh,spin_kb,spin_Rw)
 ! sw_r(R,m,3)=Sum_in_k_1BZ[sw_k(k,m,3)*Exp[-i*k*R]]/nkmesh                          !
 !===================================================================================!
 
+  use kinds, only: dp
+  use intw_input_parameters, only: nk1, nk2, nk3
   use intw_reading
   use intw_useful_constants
   use intw_W90

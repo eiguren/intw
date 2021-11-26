@@ -5,17 +5,31 @@
 module intw_matrix_elements
 !----------------------------------------------------------------------------!
 !
-!       The subroutines in this module compute real matrix elements 
+!       The subroutines in this module compute real matrix elements
 !	which must be Wannier-rotated in order to be interpolated.
 !
 !----------------------------------------------------------------------------!
 
-use intw_useful_constants
-use intw_input_parameters
-use intw_reading
-use intw_utility
-use intw_fft
-use w90_parameters, only: num_bands
+  use kinds, only: dp
+  !
+  ! subroutines
+  public :: get_elec_phon_matrix_element_convolution, &
+            get_plane_wave_matrix_element_convolution, &
+            get_spin_component_convolution, &
+            get_plane_wave_matrix_element_convolution_orig, &
+            get_plane_wave_matrix_element_convolution_alt, &
+            get_plane_wave_matrix_element_convolution_alt_orig, &
+            get_plane_wave_matrix_element_FFT, &
+            get_plane_wave_matrix_element_FFT_orig, &
+            compute_index_interpolation_mesh, &
+            write_matrix_elements, &
+            wfc_G_from_1D_to_3D, &
+            wfc_G_from_1D_to_3D_orig, &
+            get_plane_wave_matrix_element_FFTW_improved, &
+            get_plane_wave_matrix_element_FFTW_improved_orig
+  !
+  private
+  !
 
 contains
 !
@@ -26,7 +40,7 @@ subroutine get_elec_phon_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1,
 !-------------------------------------------------------------------------------
 !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
 !
-!	                < wfc_1 | e^{-i G r} | wfc_2 > 
+!	                < wfc_1 | e^{-i G r} | wfc_2 >
 !
 !	where wfc is the periodic part of the wavefunction:
 !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -41,6 +55,9 @@ subroutine get_elec_phon_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1,
 !     BEFORE using this subroutine....
 !
 !--------------------------------------------------------------------------------
+use intw_useful_constants, only: zero, one, cmplx_0
+use intw_reading, only: nG_max, gvec, nspin, nbands
+use w90_parameters, only: num_bands
 
   implicit none
 
@@ -54,7 +71,7 @@ subroutine get_elec_phon_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1,
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3)
-  integer :: i,j,ibnd,jbnd,is,js,k2,iG_1,iG_2
+  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
   integer :: nG_max_non_zero
   complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
   logical :: found
@@ -84,37 +101,37 @@ subroutine get_elec_phon_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1,
   !
   pw_mat_el_local(:,:,:,:)=cmplx_0
   !
-  !$omp do 
+  !$omp do
   do i=1,nG_max_non_zero
      !
      iG_1=list_iG_1(i)
      !
      G1=gvec(:,iG_1)
      !
-     Gprime=G1+G 
+     Gprime=G1+G
      !
      ! find if Gprime is in the domain of the second wavefunction
      !
      found=.false.
      !
      do j=1,nG_max
-        ! 
+        !
         iG_2=list_iG_2(j)
         !
         if (iG_2==0) exit
         !
         G2=gvec(:,iG_2)
-        !      
-        ! if G2==Gprime, add contribution to product 
+        !
+        ! if G2==Gprime, add contribution to product
         !
         found=(G2(1)==Gprime(1)).and. &
               (G2(2)==Gprime(2)).and. &
-              (G2(3)==Gprime(3)) 
+              (G2(3)==Gprime(3))
         !
         if (found) then
            !
-           do js=1,nspin 
-              do is=1,nspin 
+           do js=1,nspin
+              do is=1,nspin
                  do jbnd=1,num_bands
                     do ibnd=1,num_bands
                        !
@@ -142,7 +159,7 @@ subroutine get_elec_phon_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1,
   ! undefined
   !
   do js=1,nspin
-     do is=1,nspin 
+     do is=1,nspin
         do jbnd=1,num_bands
            do ibnd=1,num_bands
               !
@@ -171,7 +188,7 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
 !-------------------------------------------------------------------------------
 !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
 !
-!	                < wfc_1 | e^{-i G r} | wfc_2 > 
+!	                < wfc_1 | e^{-i G r} | wfc_2 >
 !
 !	where wfc is the periodic part of the wavefunction:
 !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -186,6 +203,9 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
 !     BEFORE using this subroutine....
 !
 !--------------------------------------------------------------------------------
+use intw_useful_constants, only: zero, one, cmplx_0
+use intw_reading, only: nG_max, gvec, nspin, nbands
+use w90_parameters, only: num_bands
 
   implicit none
 
@@ -199,7 +219,7 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3)
-  integer :: i,j,ibnd,jbnd,is,js,k2,iG_1,iG_2
+  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
   integer :: nG_max_non_zero
   complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
   logical :: found
@@ -229,37 +249,37 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
   !
   pw_mat_el_local(:,:,:,:)=cmplx_0
   !
-  !$omp do 
+  !$omp do
   do i=1,nG_max_non_zero
      !
      iG_1=list_iG_1(i)
      !
      G1=gvec(:,iG_1)
      !
-     Gprime=G1+G 
+     Gprime=G1+G
      !
      ! find if Gprime is in the domain of the second wavefunction
      !
      found=.false.
      !
      do j=1,nG_max
-        ! 
+        !
         iG_2=list_iG_2(j)
         !
         if (iG_2==0) exit
         !
         G2=gvec(:,iG_2)
-        !      
-        ! if G2==Gprime, add contribution to product 
+        !
+        ! if G2==Gprime, add contribution to product
         !
         found=(G2(1)==Gprime(1)).and. &
               (G2(2)==Gprime(2)).and. &
-              (G2(3)==Gprime(3)) 
+              (G2(3)==Gprime(3))
         !
         if (found) then
            !
-           do js=1,nspin 
-              do is=1,nspin 
+           do js=1,nspin
+              do is=1,nspin
                  do jbnd=1,num_bands
                     do ibnd=1,num_bands
                        !
@@ -287,7 +307,7 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
   ! undefined
   !
   do js=1,nspin
-     do is=1,nspin 
+     do is=1,nspin
         do jbnd=1,num_bands
            do ibnd=1,num_bands
               !
@@ -306,7 +326,7 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
   !
   return
 
-end subroutine get_plane_wave_matrix_element_convolution 
+end subroutine get_plane_wave_matrix_element_convolution
 !----------------------------------------------------------------------------------------------------------------------
 !**********************************************************************************************************************
 !----------------------------------------------------------------------------------------------------------------------
@@ -316,7 +336,7 @@ subroutine get_spin_component_convolution(list_iG,wfc,spin)
 !-------------------------------------------------------------------------------
 !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
 !
-!	                < wfc | sigma_alpha | wfc> 
+!	                < wfc | sigma_alpha | wfc>
 !
 !	where wfc is the periodic part of the wavefunction:
 !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -329,7 +349,9 @@ subroutine get_spin_component_convolution(list_iG,wfc,spin)
 !
 !--------------------------------------------------------------------------------
 
-  use intw_useful_constants
+  use intw_useful_constants, only: zero, one, cmplx_0, sig_x, sig_y, sig_z
+  use intw_reading, only: nG_max, nspin
+  use w90_parameters, only: num_bands
 
   implicit none
 
@@ -341,8 +363,7 @@ subroutine get_spin_component_convolution(list_iG,wfc,spin)
 
   !local variables
 
-  integer :: i,j,ibnd,jbnd,is,js,iG,ipol
-  logical :: found
+  integer :: ibnd,is,js,iG,ipol
 
   spin(:,:)=cmplx_0
   !
@@ -390,7 +411,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -405,12 +426,15 @@ end subroutine get_spin_component_convolution
   !     BEFORE using this subroutine....
   !
   !--------------------------------------------------------------------------------
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use intw_reading, only: nG_max, gvec, nbands, nspin
+
   implicit none
 
   integer        :: G(3),    G1(3),  G2(3),  Gprime(3)
-  integer        :: i,      j,   nb1,  nb2, ipol, jpol, k2
+  integer        :: i,      j,   nb1,  nb2, ipol, jpol
 
-  integer        :: iG_1,      iG_2 
+  integer        :: iG_1,      iG_2
 
   integer        :: nG_max_non_zero
 
@@ -427,11 +451,11 @@ end subroutine get_spin_component_convolution
 
   nG_max_non_zero = 0
 
-  do i = 1, nG_max 
+  do i = 1, nG_max
      iG_1 = list_iG_1(i)
-     ! list_iG is zero-padded at the end. 
+     ! list_iG is zero-padded at the end.
      ! When this point is reached, the computation is over.
-     if (iG_1 == 0 ) exit     
+     if (iG_1 == 0 ) exit
      nG_max_non_zero = nG_max_non_zero + 1
   end do
 
@@ -446,34 +470,34 @@ end subroutine get_spin_component_convolution
 
   pw_mat_el_local(:,:,:,:) = cmplx_0
 
-  !$omp do 
+  !$omp do
   do i = 1, nG_max_non_zero
      iG_1 = list_iG_1(i)
 
-     !if (iG_1 == 0 ) exit     
-     G1     = gvec(:,iG_1)     
+     !if (iG_1 == 0 ) exit
+     G1     = gvec(:,iG_1)
 
-     Gprime = G1+G 
+     Gprime = G1+G
 
      ! find if Gprime is in the domain of the second wavefunction
      found = .false.
-     do j = 1, nG_max 
+     do j = 1, nG_max
 
         iG_2 = list_iG_2(j)
 
         if (iG_2 == 0 ) exit
 
         G2 = gvec(:,iG_2)
-               
-        ! if G2 == Gprime, add contribution to product 
+
+        ! if G2 == Gprime, add contribution to product
         found = (G2(1) == Gprime(1)) .and.  &
                 (G2(2) == Gprime(2)) .and.  &
-                (G2(3) == Gprime(3)) 
+                (G2(3) == Gprime(3))
 
-        if ( found ) then 
+        if ( found ) then
 
-          do jpol=1,nspin 
-            do ipol=1,nspin 
+          do jpol=1,nspin
+            do ipol=1,nspin
               do nb2 = 1,nbands
                 do nb1 = 1,nbands
                    pw_mat_el_local(nb1,nb2,ipol,jpol)  =                     &
@@ -487,7 +511,7 @@ end subroutine get_spin_component_convolution
           exit  ! If the G vector has been found, get out of the j-loop
         end if
 
-     !end if ! iG_2 /= 0 
+     !end if ! iG_2 /= 0
      end do ! j loop
   end do ! i loop
   !$omp end do
@@ -498,8 +522,8 @@ end subroutine get_spin_component_convolution
   ! parallelize over the loop variables! We must still be in the
   ! "parallel" environment, however, or else pw_mat_el_local becomes
   ! undefined
-  do jpol=1,nspin 
-    do ipol=1,nspin 
+  do jpol=1,nspin
+    do ipol=1,nspin
       do nb2 = 1,nbands
         do nb1 = 1,nbands
 	  ! make sure the update is atomic!
@@ -522,7 +546,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -537,24 +561,36 @@ end subroutine get_spin_component_convolution
   !     BEFORE using this subroutine....
   !
   !--------------------------------------------------------------------------------
+  use intw_input_parameters, only: magnon
+  use intw_useful_constants, only: zero, one, cmplx_0, cmplx_1, cmplx_i
+  use intw_reading, only: nG_max, gvec, npol, nspin
+  use w90_parameters, only: num_bands
+  use intw_fft, only: find_iG
+
   implicit none
+#ifdef _ZCOOMM
+  external :: mkl_zcoomm
+#else
+  external :: mkl_dcoomm
+#endif
+  external :: zgemm
 
 !Peio
 !The variable we use instead of num_bands
   integer :: nbands_loc
 !Peio
 
-  integer        :: G(3),    G1(3),  G2(3),  Gprime(3)
-  integer        :: i,      j,   nb1,  nb2
+  integer        :: G(3),    G1(3),  Gprime(3)
+  integer        :: i,      j
   integer        :: ipol, jpol_, jpol
 
-  integer        :: iG_1,      iG_2,  iG_prime 
+  integer        :: iG_1,      iG_2,  iG_prime
 
   integer        :: list_iG_1(nG_max),           list_iG_2(nG_max)
   integer        :: list_iG_prime(nG_max)
 
   complex(dp)    :: pw_mat_el(num_bands,num_bands,npol,npol), pw_mat_el_aux(num_bands,num_bands)
-!  complex(dp)    :: pw_mat_el(nbands,nbands,npol,npol), pw_mat_el_aux(nbands,nbands)  
+!  complex(dp)    :: pw_mat_el(nbands,nbands,npol,npol), pw_mat_el_aux(nbands,nbands)
 
   complex(dp)    :: wfc_1(nG_max,num_bands,nspin),       wfc_2(nG_max,num_bands,nspin)
 !  complex(dp)    :: wfc_1(nG_max,nbands,nspin),       wfc_2(nG_max,nbands,nspin)
@@ -568,7 +604,7 @@ end subroutine get_spin_component_convolution
 
   logical        :: found_in_second_array(nG_max)
 
-  integer        :: real_size, sparse_size
+  integer        :: real_size
   real(dp)       :: sparse_permutation_array(nG_max)
   integer        :: row_indices(nG_max)
   integer        :: col_indices(nG_max)
@@ -586,11 +622,11 @@ end subroutine get_spin_component_convolution
   do i=1, nG_max
      iG_1 = list_iG_1(i)
 
-     if (iG_1 == 0 ) exit     
+     if (iG_1 == 0 ) exit
      real_size = real_size + 1
 
-     G1     = gvec(:,iG_1)     
-     Gprime = G1+G 
+     G1     = gvec(:,iG_1)
+     Gprime = G1+G
 
      call find_iG(Gprime,iG_prime)
 
@@ -670,7 +706,7 @@ end subroutine get_spin_component_convolution
   end do !ipol
 
 #else
-  ! This stupid separation is necessary because not all mkl 
+  ! This stupid separation is necessary because not all mkl
   ! libraries have access to COMPLEX SPARSE BLAS OPERATIONS
   ! We separate the contributions from different spin.
 
@@ -689,7 +725,7 @@ end subroutine get_spin_component_convolution
          jpol_ = jpol
       end if
 
-   
+
     re_wfc_2  = real( wfc_2(:,:,jpol_))
     im_wfc_2  = aimag(wfc_2(:,:,jpol_))
 
@@ -699,7 +735,7 @@ end subroutine get_spin_component_convolution
 !                     row_indices(1:cnt), col_indices(1:cnt),        &
 !                     cnt,                                           &
 !                     re_wfc_2, nG_max,ZERO,re_M_wfc_2, nG_max)
-    call mkl_dcoomm('n',nG_max, nbands_loc, nG_max, cmplx_1, matdescra,   & 
+    call mkl_dcoomm('n',nG_max, nbands_loc, nG_max, cmplx_1, matdescra,   &
                      sparse_permutation_array(1:cnt),               &
                      row_indices(1:cnt), col_indices(1:cnt),        &
                      cnt,                                           &
@@ -718,7 +754,7 @@ end subroutine get_spin_component_convolution
 !                     row_indices(1:cnt), col_indices(1:cnt),        &
 !                     cnt,                                           &
 !                     im_wfc_2, nG_max,ZERO,im_M_wfc_2, nG_max)
-    call mkl_dcoomm('n',nG_max, nbands_loc, nG_max, cmplx_1, matdescra,   & 
+    call mkl_dcoomm('n',nG_max, nbands_loc, nG_max, cmplx_1, matdescra,   &
                      sparse_permutation_array(1:cnt),               &
                      row_indices(1:cnt), col_indices(1:cnt),        &
                      cnt,                                           &
@@ -751,7 +787,7 @@ end subroutine get_spin_component_convolution
 
  ! Perform the dense matrix product
  ! call gemm(conjg(transpose(wfc_1)), M_wfc_2, pw_mat_el)
-  
+
   end subroutine get_plane_wave_matrix_element_convolution_alt
 
 
@@ -761,7 +797,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -776,19 +812,30 @@ end subroutine get_spin_component_convolution
   !     BEFORE using this subroutine....
   !
   !--------------------------------------------------------------------------------
+  use intw_input_parameters, only: magnon
+  use intw_useful_constants, only: zero, one, cmplx_0, cmplx_1, cmplx_i
+  use intw_reading, only: nG_max, gvec, nbands, npol, nspin
+  use intw_fft, only: find_iG
+
   implicit none
 
-  integer        :: G(3),    G1(3),  G2(3),  Gprime(3)
-  integer        :: i,      j,   nb1,  nb2
+#ifdef _ZCOOMM
+  external :: mkl_zcoomm
+#else
+  external :: mkl_dcoomm
+#endif
+  external :: zgemm
+  integer        :: G(3),    G1(3),   Gprime(3)
+  integer        :: i,      j
   integer        :: ipol, jpol_, jpol
 
-  integer        :: iG_1,      iG_2,  iG_prime 
+  integer        :: iG_1,      iG_2,  iG_prime
 
   integer        :: list_iG_1(nG_max),           list_iG_2(nG_max)
   integer        :: list_iG_prime(nG_max)
 
 
-  complex(dp)    :: pw_mat_el(nbands,nbands,npol,npol), pw_mat_el_aux(nbands,nbands)  
+  complex(dp)    :: pw_mat_el(nbands,nbands,npol,npol), pw_mat_el_aux(nbands,nbands)
 
   complex(dp)    :: wfc_1(nG_max,nbands,nspin),       wfc_2(nG_max,nbands,nspin)
   real   (dp)    :: re_wfc_2(nG_max,nbands), im_wfc_2(nG_max,nbands)
@@ -798,7 +845,7 @@ end subroutine get_spin_component_convolution
 
   logical        :: found_in_second_array(nG_max)
 
-  integer        :: real_size, sparse_size
+  integer        :: real_size
   real(dp)       :: sparse_permutation_array(nG_max)
   integer        :: row_indices(nG_max)
   integer        :: col_indices(nG_max)
@@ -813,11 +860,11 @@ end subroutine get_spin_component_convolution
   do i=1, nG_max
      iG_1 = list_iG_1(i)
 
-     if (iG_1 == 0 ) exit     
+     if (iG_1 == 0 ) exit
      real_size = real_size + 1
 
-     G1     = gvec(:,iG_1)     
-     Gprime = G1+G 
+     G1     = gvec(:,iG_1)
+     Gprime = G1+G
 
      call find_iG(Gprime,iG_prime)
 
@@ -889,7 +936,7 @@ end subroutine get_spin_component_convolution
   end do !ipol
 
 #else
-  ! This stupid separation is necessary because not all mkl 
+  ! This stupid separation is necessary because not all mkl
   ! libraries have access to COMPLEX SPARSE BLAS OPERATIONS
   ! We separate the contributions from different spin.
 
@@ -908,7 +955,7 @@ end subroutine get_spin_component_convolution
          jpol_ = jpol
       end if
 
-   
+
     re_wfc_2  = real( wfc_2(:,:,jpol_))
     im_wfc_2  = aimag(wfc_2(:,:,jpol_))
 
@@ -956,9 +1003,9 @@ end subroutine get_spin_component_convolution
 
  ! Perform the dense matrix product
  ! call gemm(conjg(transpose(wfc_1)), M_wfc_2, pw_mat_el)
-  
+
   end subroutine get_plane_wave_matrix_element_convolution_alt_orig
-  
+
 !---------------------------------------------------------------------------------------------
   subroutine get_plane_wave_matrix_element_FFT (G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 !---------------------------------------------------------------------------------------------
@@ -966,7 +1013,7 @@ end subroutine get_spin_component_convolution
 !------------------------------------------------------------------------
 ! Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
 !
-!                < wfc_1 | e^{-i G r} | wfc_2 > 
+!                < wfc_1 | e^{-i G r} | wfc_2 >
 !
 ! where wfc is the periodic part of the wavefunction:
 !        u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -983,9 +1030,14 @@ end subroutine get_spin_component_convolution
 ! The matrix element is obtained using the FFT routines.
 !-------------------------------------------------------------------------
 
-  use intw_fft
+  use intw_fft, only: wfc_from_g_to_r, nl, find_iG
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use w90_parameters, only: num_bands
 
   implicit none
+
+  external :: cfftnd
 
   !I/O variables
 
@@ -996,13 +1048,13 @@ end subroutine get_spin_component_convolution
 
   !local variables
 
-  integer        :: iG,iG_fft,ir 
+  integer        :: iG,iG_fft,ir
   integer        :: ibnd,jbnd,is,js
   complex(dp)    :: wfc_r1(nr1*nr2*nr3),wfc_r2(nr1*nr2*nr3)
   complex(dp)    :: uu(nr1*nr2*nr3)
 
   pw_mat_el=cmplx_0
-  ! 
+  !
   ! find the index of G in the global list gvec
   !
   call find_iG(G,iG)
@@ -1014,7 +1066,7 @@ end subroutine get_spin_component_convolution
   !loop on spin (diagonal is, js)
   !
   do is=1,nspin
-     do js=1,nspin 
+     do js=1,nspin
         !
         ! loop on bands
         !
@@ -1041,7 +1093,7 @@ end subroutine get_spin_component_convolution
               ! FFT to G in place
               ! call cfftnd(3,nr,1,uu)   ! CONVENTION BY ASIER
               !
-              call cfftnd(3,(/nr1,nr2,nr3/),-1,uu)  ! OPPOSITE CONVENTION 
+              call cfftnd(3,(/nr1,nr2,nr3/),-1,uu)  ! OPPOSITE CONVENTION
                                                     ! this convention reproduces
                                                     ! the results of pw2wannier EXACTLY
               !
@@ -1066,7 +1118,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -1082,13 +1134,18 @@ end subroutine get_spin_component_convolution
   !
   !     The matrix element is obtained using the FFT routines.
   !--------------------------------------------------------------------------------
-  use intw_fft
+  use intw_fft, only: wfc_from_g_to_r, nl, find_iG
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nbands, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+
   implicit none
 
-  integer        :: G(3)    
+  external :: cfftnd
+
+  integer        :: G(3)
   integer        :: iG, iG_fft
 
-  integer        :: ir 
+  integer        :: ir
 
   integer        :: nb1,  nb2, ipol, jpol
 
@@ -1101,7 +1158,7 @@ end subroutine get_spin_component_convolution
   complex(dp)    :: uu(nr1*nr2*nr3)
 
 
-  pw_mat_el = cmplx_0 
+  pw_mat_el = cmplx_0
 
   ! find the index of G in the global list gvec
   call find_iG(G,iG)
@@ -1110,13 +1167,13 @@ end subroutine get_spin_component_convolution
 
  !loop on spin (diagonal ipol, jpol)
   do ipol=1,nspin
-   do jpol=1,nspin 
+   do jpol=1,nspin
   ! loop on bands
    do nb1 = 1,nbands
       ! fourier- transform the 1st wavefunction
     call wfc_from_g_to_r (list_iG_1,wfc_1(:,nb1,ipol), wfc_r1)
 
-    do nb2 = 1,nbands 
+    do nb2 = 1,nbands
       ! fourier- transform the 2nd wavefunction
       call wfc_from_g_to_r (list_iG_2,wfc_2(:,nb2,jpol), wfc_r2)
 
@@ -1124,10 +1181,10 @@ end subroutine get_spin_component_convolution
       do ir=1, nr1*nr2*nr3
         uu(ir)  =  conjg(wfc_r1(ir)) * wfc_r2(ir)
       end do
-      
+
       ! FFT to G in place
       ! call cfftnd(3,nr,1,uu)   ! CONVENTION BY ASIER
-        call cfftnd(3,(/nr1,nr2,nr3/),-1,uu)  ! OPPOSITE CONVENTION 
+        call cfftnd(3,(/nr1,nr2,nr3/),-1,uu)  ! OPPOSITE CONVENTION
                                  ! this convention reproduces
                                  ! the results of pw2wannier EXACTLY
 
@@ -1146,19 +1203,22 @@ end subroutine get_spin_component_convolution
   !----------------------------------------------------------------------------!
   !
   !     This routine will be useful in computing matrix elements of the form:
-  !        < psi{n1 k} | e^{-i (G+q) r} | psi_{n2 k+q} >. 
+  !        < psi{n1 k} | e^{-i (G+q) r} | psi_{n2 k+q} >.
   !
-  !	Assume:     
+  !	Assume:
   !			k    = k1+G1
   !			k+q  = k2+G2
   !
   !			where k1,k2 are in the mesh describing the 1BZ.
   !
   !     This subroutine, given the index of a qpoint, computes G1, G2, k1, k2
-  !     for all k in a mesh appropriate for cubic interpolation. 
+  !     for all k in a mesh appropriate for cubic interpolation.
   !
   !--------------------------------------------------------------------------------
-  
+  use intw_input_parameters, only: nk1, nk2, nk3
+  use intw_useful_constants, only: zero, one
+  use intw_utility, only: switch_indices
+
   implicit none
 
   ! triplet indices
@@ -1167,20 +1227,20 @@ end subroutine get_spin_component_convolution
   integer        :: i_k2, j_k2, k_k2    !       triplet indices for k2
   integer        :: i_kq, j_kq, k_kq    !       triplet indices for k+q
   integer        :: i_q,  j_q,  k_q     !       triplet indices for q
- 
-  ! logical dummy variable, to go from triplet to scalar index and vice versa 
-  integer        :: switch 
+
+  ! logical dummy variable, to go from triplet to scalar index and vice versa
+  integer        :: switch
 
 
 
-  ! scalar indices 
+  ! scalar indices
   integer        :: ikpt1         !       scalar index for k1
   integer        :: ikpt2         !       scalar index for k2
-  integer        :: iqpt          !       scalar index for q 
-  
+  integer        :: iqpt          !       scalar index for q
+
   integer        :: icm           !       i cubic mesh: loop index over the
-                                  !       extended mesh 
- 
+                                  !       extended mesh
+
   integer        :: G1(3)
   integer        :: G2(3)
 
@@ -1194,47 +1254,47 @@ end subroutine get_spin_component_convolution
   switch = -1
   call switch_indices(nk1,nk2,nk3,iqpt,i_q,j_q,k_q,switch)
 
-  ! loop over the mesh points for a cubic interpolation, 
+  ! loop over the mesh points for a cubic interpolation,
   ! including the extra layers.
   ! the third index, k,  loops fastest!
 
   switch = 1
-  ! loop over the extended mesh, indentifying G1,G2, ikpt1 ikpt2 
+  ! loop over the extended mesh, indentifying G1,G2, ikpt1 ikpt2
   icm = 0
 
   do i_k=0,nk1+2
-     
-     G1(1) =   floor(1.0_dp*(i_k-1)/nk1)
-     i_k1  =   i_k-nk1*G1(1) 
-     i_kq  =   i_k+i_q 
-     G2(1) =   floor(1.0_dp*(i_kq-1)/nk1)
-     i_k2  =   i_kq-nk1*G2(1) 
 
- 
+     G1(1) =   floor(1.0_dp*(i_k-1)/nk1)
+     i_k1  =   i_k-nk1*G1(1)
+     i_kq  =   i_k+i_q
+     G2(1) =   floor(1.0_dp*(i_kq-1)/nk1)
+     i_k2  =   i_kq-nk1*G2(1)
+
+
      do j_k=0,nk2+2
         G1(2) =   floor(1.0_dp*(j_k-1)/nk2)
-        j_k1  =   j_k-nk2*G1(2) 
-        j_kq  =   j_k+j_q 
+        j_k1  =   j_k-nk2*G1(2)
+        j_kq  =   j_k+j_q
         G2(2) =   floor(1.0_dp*(j_kq-1)/nk2)
-        j_k2  =   j_kq-nk2*G2(2) 
+        j_k2  =   j_kq-nk2*G2(2)
 
         do k_k=0,nk3+2
            G1(3) =  floor(1.0_dp*(k_k-1)/nk3)
-           k_k1  =  k_k-nk3*G1(3) 
-           k_kq  =  k_k+k_q 
+           k_k1  =  k_k-nk3*G1(3)
+           k_kq  =  k_k+k_q
            G2(3) =  floor(1.0_dp*(k_kq-1)/nk3)
-           k_k2  =  k_kq-nk3*G2(3) 
+           k_k2  =  k_kq-nk3*G2(3)
 
            ! find the indices
            call switch_indices(nk1,nk2,nk3,ikpt1,i_k1,j_k1,k_k1,switch)
            call switch_indices(nk1,nk2,nk3,ikpt2,i_k2,j_k2,k_k2,switch)
-           
+
            icm   = icm + 1 ! increment the mesh index
-               
+
           ! save
           list_ikpt1(icm) = ikpt1
           list_ikpt2(icm) = ikpt2
-                
+
           list_G1(:,icm) = G1
           list_G2(:,icm) = G2
 
@@ -1247,23 +1307,27 @@ end subroutine get_spin_component_convolution
 
   subroutine  write_matrix_elements(filename,matrix_elements,nbands,nb1,nb2)
   !------------------------------------------------------------------
-  !   This  subroutine writes out the matrix elements in a file 
+  !   This  subroutine writes out the matrix elements in a file
   !------------------------------------------------------------------
+  use intw_utility, only: find_free_unit
+  use intw_input_parameters, only: nk1, nk2, nk3
+  use intw_useful_constants, only: zero, one
+
   implicit none
 
 
 
   complex(kind=dp):: matrix_elements(nbands,nbands,0:nk1+2,0:nk2+2,0:nk3+2)
- 
+
   integer         :: io_unit
   integer         :: i, j, k
 
-  integer         :: nbands,  nb1,  nb2 
-  
-  real(kind=dp)   :: x, y, z 
- 
+  integer         :: nbands,  nb1,  nb2
+
+  real(kind=dp)   :: x, y, z
+
   character(*)    :: filename
-  
+
   io_unit = find_free_unit()
   open(unit=io_unit,file=trim(filename),status='unknown')
 
@@ -1291,14 +1355,20 @@ end subroutine get_spin_component_convolution
 
   subroutine wfc_G_from_1D_to_3D (list_iG,wfc_G_1D,wfc_G_3D)
   !--------------------------------------------------------
-  !  This subroutine puts a wavefunction, which is indexed 
-  !  by a scalar iG index, into a 3D array where the G 
+  !  This subroutine puts a wavefunction, which is indexed
+  !  by a scalar iG index, into a 3D array where the G
   !  vector is identified by a triplet index.
   !
   !--------------------------------------------------------
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use intw_utility, only: switch_indices
+  use w90_parameters, only: num_bands
+  use intw_fft, only: nl
+
   implicit none
 
-  ! input 
+  ! input
   integer        :: list_iG (nG_max)
   complex(dp)    :: wfc_G_1D(nG_max,num_bands,nspin)
 !  complex(dp)    :: wfc_G_1D(nG_max,nbands,nspin)
@@ -1308,7 +1378,7 @@ end subroutine get_spin_component_convolution
 !  complex(dp)    :: wfc_G_3D(nr1,nr2,nr3,nbands,nspin)
 
   ! computation variables
-  integer       :: i,  iG 
+  integer       :: i,  iG
 
   integer       :: i_singlet
   integer       :: n1, n2, n3
@@ -1330,7 +1400,7 @@ end subroutine get_spin_component_convolution
 
       ! extract the scalar FFT index of this G vector
       i_singlet = nl(iG)
-      ! compute the triplet index corresponding to iG 
+      ! compute the triplet index corresponding to iG
       call switch_indices(nr1,nr2,nr3,i_singlet,n1,n2,n3,switch)
 
       ! dump 1D wavefunction in 3D array
@@ -1338,19 +1408,24 @@ end subroutine get_spin_component_convolution
        ! careful! the wavefunction is indexed by i, not iG!
        wfc_G_3D(n1,n2,n3,:,:) =  wfc_G_1D(i,:,:)
   enddo
-  end subroutine wfc_G_from_1D_to_3D 
+  end subroutine wfc_G_from_1D_to_3D
 
 
   subroutine wfc_G_from_1D_to_3D_orig (list_iG,wfc_G_1D,wfc_G_3D)
   !--------------------------------------------------------
-  !  This subroutine puts a wavefunction, which is indexed 
-  !  by a scalar iG index, into a 3D array where the G 
+  !  This subroutine puts a wavefunction, which is indexed
+  !  by a scalar iG index, into a 3D array where the G
   !  vector is identified by a triplet index.
   !
   !--------------------------------------------------------
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nbands, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use intw_utility, only: switch_indices
+  use intw_fft, only: nl
+
   implicit none
 
-  ! input 
+  ! input
   integer        :: list_iG (nG_max)
   complex(dp)    :: wfc_G_1D(nG_max,nbands,nspin)
 
@@ -1358,7 +1433,7 @@ end subroutine get_spin_component_convolution
   complex(dp)    :: wfc_G_3D(nr1,nr2,nr3,nbands,nspin)
 
   ! computation variables
-  integer       :: i,  iG 
+  integer       :: i,  iG
 
   integer       :: i_singlet
   integer       :: n1, n2, n3
@@ -1380,7 +1455,7 @@ end subroutine get_spin_component_convolution
 
       ! extract the scalar FFT index of this G vector
       i_singlet = nl(iG)
-      ! compute the triplet index corresponding to iG 
+      ! compute the triplet index corresponding to iG
       call switch_indices(nr1,nr2,nr3,i_singlet,n1,n2,n3,switch)
 
       ! dump 1D wavefunction in 3D array
@@ -1397,7 +1472,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -1413,18 +1488,25 @@ end subroutine get_spin_component_convolution
   !
   !     The matrix element is obtained using the FFT routines.
   !--------------------------------------------------------------------------------
-  use intw_fft
-  use intw_dft_fftw
-  use intw_input_parameters,       only: nG_shell_max
+  use intw_dft_fftw, only: setup_fftw_3D, cleanup_fftw_3D, func_from_g_to_r_3D_FFTW, &
+                           func_from_r_to_g_3D_FFTW
+  use intw_input_parameters, only: nG_shell_max, magnon
+  use intw_reading, only: nr1, nr2, nr3
+  use intw_reading, only: nG_max, npol, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use intw_utility, only: switch_indices
+  use w90_parameters, only: num_bands
+  use intw_fft, only: nl, find_iG
+
   implicit none
 
 !Peio
-!The variable we use instead of num_bands 
+!The variable we use instead of num_bands
   integer        :: nbands_loc
 !Peio
 
   ! input variables
-  integer        :: list_G(3,nG_shell_max)    
+  integer        :: list_G(3,nG_shell_max)
   integer        :: list_iG_1(nG_max),           list_iG_2(nG_max)
   complex(dp)    :: wfc_1(nG_max,num_bands,nspin),  wfc_2(nG_max,num_bands,nspin)
 !  complex(dp)    :: wfc_1(nG_max,nbands,nspin),  wfc_2(nG_max,nbands,nspin)
@@ -1435,7 +1517,6 @@ end subroutine get_spin_component_convolution
 
 
   ! computation variables
-  integer        :: list_iG(nG_shell_max)
   integer        :: G(3)
 
   complex(dp)    :: wfc_G1(nr1,nr2,nr3,num_bands,nspin), wfc_G2(nr1,nr2,nr3,num_bands,nspin)
@@ -1447,7 +1528,7 @@ end subroutine get_spin_component_convolution
   integer        :: n1, n2, n3
   integer        :: switch
 
-  integer        :: ir1, ir2, ir3 
+  integer        :: ir1, ir2, ir3
   integer        :: nb1,  nb2
   integer        :: ipol, jpol, jpol_
 
@@ -1464,7 +1545,7 @@ end subroutine get_spin_component_convolution
   switch = -1 ! singlet to triplet
 
   ! initialize output variable
-  pw_mat_el(:,:,:,:,:) = cmplx_0 
+  pw_mat_el(:,:,:,:,:) = cmplx_0
 
   ! dump the in G space wavefunctions into 3D arrays
   call wfc_G_from_1D_to_3D (list_iG_1,wfc_1,wfc_G1)
@@ -1478,17 +1559,17 @@ end subroutine get_spin_component_convolution
 !     do nb1 = 1,nbands
         call func_from_g_to_r_3D_FFTW(nr1,nr2,nr3,  &
 		           wfc_R1(:,:,:,nb1,ipol),  &
-			   wfc_G1(:,:,:,nb1,ipol)) 
+			   wfc_G1(:,:,:,nb1,ipol))
 
         call func_from_g_to_r_3D_FFTW(nr1,nr2,nr3,  &
 		           wfc_R2(:,:,:,nb1,ipol),  &
-			   wfc_G2(:,:,:,nb1,ipol)) 
+			   wfc_G2(:,:,:,nb1,ipol))
 
      end do
   end do
 
 
- !loop on spin 
+ !loop on spin
   do ipol=1,npol
    do jpol=1,npol
 
@@ -1505,7 +1586,7 @@ end subroutine get_spin_component_convolution
       ! extract the useful component of the wavefunction
       f_r1(:,:,:) = wfc_R1(:,:,:,nb1,ipol)
 
-        do nb2 = 1,nbands_loc 
+        do nb2 = 1,nbands_loc
 !        do nb2 = 1,nbands
           ! extract the useful component of the wavefunction
           f_r2(:,:,:) = wfc_R2(:,:,:,nb2,jpol_)
@@ -1520,7 +1601,7 @@ end subroutine get_spin_component_convolution
                 end do
              end do
           end do
-      
+
           ! back transform to G
           call func_from_r_to_g_3D_FFTW(nr1,nr2,nr3,prod_r,prod_g)
 
@@ -1532,7 +1613,7 @@ end subroutine get_spin_component_convolution
 
              ! extract the scalar FFT index of this G vector
              iG_fft = nl(iG)
-             ! compute the triplet index corresponding to iG 
+             ! compute the triplet index corresponding to iG
              call switch_indices(nr1,nr2,nr3,iG_fft,n1,n2,n3,switch)
 
              ! fish out the matrix element
@@ -1546,7 +1627,7 @@ end subroutine get_spin_component_convolution
 
   call cleanup_fftw_3D()
 
-  end subroutine get_plane_wave_matrix_element_FFTW_improved 
+  end subroutine get_plane_wave_matrix_element_FFTW_improved
 
   subroutine get_plane_wave_matrix_element_FFTW_improved_orig   &
                         (list_G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
@@ -1554,7 +1635,7 @@ end subroutine get_spin_component_convolution
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
   !
-  !	                < wfc_1 | e^{-i G r} | wfc_2 > 
+  !	                < wfc_1 | e^{-i G r} | wfc_2 >
   !
   !	where wfc is the periodic part of the wavefunction:
   !               u(r) =  sum_G' e^{i G' r} wfc(G');
@@ -1570,13 +1651,19 @@ end subroutine get_spin_component_convolution
   !
   !     The matrix element is obtained using the FFT routines.
   !--------------------------------------------------------------------------------
-  use intw_fft
-  use intw_dft_fftw
-  use intw_input_parameters,       only: nG_shell_max
+  use intw_dft_fftw, only: setup_fftw_3D, cleanup_fftw_3D, func_from_g_to_r_3D_FFTW, &
+                           func_from_r_to_g_3D_FFTW
+  use intw_input_parameters, only: nG_shell_max, magnon
+  use intw_reading, only: nr1, nr2, nr3
+  use intw_reading, only: nG_max, nbands, npol, nspin
+  use intw_useful_constants, only: zero, one, cmplx_0
+  use intw_utility, only: switch_indices
+  use intw_fft, only: nl, find_iG
+
   implicit none
 
   ! input variables
-  integer        :: list_G(3,nG_shell_max)    
+  integer        :: list_G(3,nG_shell_max)
   integer        :: list_iG_1(nG_max),           list_iG_2(nG_max)
   complex(dp)    :: wfc_1(nG_max,nbands,nspin),  wfc_2(nG_max,nbands,nspin)
 
@@ -1587,7 +1674,6 @@ end subroutine get_spin_component_convolution
 
 
   ! computation variables
-  integer        :: list_iG(nG_shell_max)
   integer        :: G(3)
 
   complex(dp)    :: wfc_G1(nr1,nr2,nr3,nbands,nspin), wfc_G2(nr1,nr2,nr3,nbands,nspin)
@@ -1597,7 +1683,7 @@ end subroutine get_spin_component_convolution
   integer        :: n1, n2, n3
   integer        :: switch
 
-  integer        :: ir1, ir2, ir3 
+  integer        :: ir1, ir2, ir3
   integer        :: nb1,  nb2
   integer        :: ipol, jpol, jpol_
 
@@ -1613,7 +1699,7 @@ end subroutine get_spin_component_convolution
   switch = -1 ! singlet to triplet
 
   ! initialize output variable
-  pw_mat_el(:,:,:,:,:) = cmplx_0 
+  pw_mat_el(:,:,:,:,:) = cmplx_0
 
   ! dump the in G space wavefunctions into 3D arrays
   call wfc_G_from_1D_to_3D (list_iG_1,wfc_1,wfc_G1)
@@ -1626,17 +1712,17 @@ end subroutine get_spin_component_convolution
      do nb1 = 1,nbands
         call func_from_g_to_r_3D_FFTW(nr1,nr2,nr3,  &
 		           wfc_R1(:,:,:,nb1,ipol),  &
-			   wfc_G1(:,:,:,nb1,ipol)) 
+			   wfc_G1(:,:,:,nb1,ipol))
 
         call func_from_g_to_r_3D_FFTW(nr1,nr2,nr3,  &
 		           wfc_R2(:,:,:,nb1,ipol),  &
-			   wfc_G2(:,:,:,nb1,ipol)) 
+			   wfc_G2(:,:,:,nb1,ipol))
 
      end do
   end do
 
 
- !loop on spin 
+ !loop on spin
   do ipol=1,npol
    do jpol=1,npol
 
@@ -1666,7 +1752,7 @@ end subroutine get_spin_component_convolution
                 end do
              end do
           end do
-      
+
           ! back transform to G
           call func_from_r_to_g_3D_FFTW(nr1,nr2,nr3,prod_r,prod_g)
 
@@ -1678,7 +1764,7 @@ end subroutine get_spin_component_convolution
 
              ! extract the scalar FFT index of this G vector
              iG_fft = nl(iG)
-             ! compute the triplet index corresponding to iG 
+             ! compute the triplet index corresponding to iG
              call switch_indices(nr1,nr2,nr3,iG_fft,n1,n2,n3,switch)
 
              ! fish out the matrix element

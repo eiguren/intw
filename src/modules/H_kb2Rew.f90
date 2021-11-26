@@ -19,6 +19,8 @@ subroutine H_kb2Rew(nrr_k,irr_k,kmesh,ham_rw)
 ! Hw_r(m,n,R)=Sum_in_k_1BZ[Hw_k(m,n,k)*Exp[-i*k*R]]/nkmesh                                   !
 !=============================================================================================
 
+  use kinds, only: dp
+  use intw_input_parameters, only: nk1, nk2, nk3
   use intw_reading
   use intw_useful_constants
   use intw_W90

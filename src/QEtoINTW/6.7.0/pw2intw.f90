@@ -26,7 +26,7 @@ PROGRAM pw2intw
   CHARACTER(LEN=256), EXTERNAL :: trimcheck
   !
   INTEGER :: ios
-  CHARACTER(len=256) :: mesh_dir 
+  CHARACTER(len=256) :: mesh_dir
 
   LOGICAL:: phonons=.false.
   CHARACTER(len=256) :: data_dir=""
@@ -36,13 +36,13 @@ PROGRAM pw2intw
   integer :: nqirr=0
   logical :: dynxml=.false.
   CHARACTER(len=256) :: intwdir
-  INTEGER :: kunittmp
+  INTEGER :: kunittmp, strlen
 
   NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir
 
   starting_wfc="file"
   prefix=" "
-  mesh_dir="./" 
+  mesh_dir="./"
 
 
 #if defined(MPI)
@@ -56,7 +56,18 @@ PROGRAM pw2intw
 
   READ (5, inputpp, iostat=ios)
 
- intwdir=trim(trim(mesh_dir)//trim(prefix)//".save.intw")
+  strlen = len_trim(mesh_dir)
+  if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(data_dir)
+  if ( data_dir(strlen:strlen+1) .ne. "/" ) data_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(dvscf_dir)
+  if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(rho_dir)
+  if ( rho_dir(strlen:strlen+1) .ne. "/" ) rho_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(ph_dir)
+  if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
+
+  intwdir=trim(trim(mesh_dir)//trim(prefix)//".save.intw")
 
   call system("mkdir -p "//intwdir)
 
@@ -71,12 +82,11 @@ PROGRAM pw2intw
 
   call write_crystal_info_and_bands ()
 
-  call write_FFT_information () 
+  call write_FFT_information ()
 
   call write_wfc()
 
-
-  if (phonons) call write_phonon_info() 
+  if (phonons) call write_phonon_info()
 !
 contains
 
@@ -91,10 +101,10 @@ contains
   do is=1,nsp
     io_unit= find_free_unit()
     if (is<9) then
-     write(tag1,"(i1)")is 
+     write(tag1,"(i1)")is
      open(unit=io_unit,file=trim(trim(mesh_dir))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt",status="unknown")
     else if ((is>9).and.(is<19) ) then
-     write(tag2,"(i2)")is 
+     write(tag2,"(i2)")is
      open(unit=io_unit,file=trim(trim(mesh_dir))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt",status="unknown")
     else
      print*, "ERROR: The num. of species is bigger than 19"
@@ -102,7 +112,8 @@ contains
 
     write(unit=io_unit,fmt="(a)")"ATOM LABEL"
     write(unit=io_unit,fmt=*) upf(is)%psd
-  
+
+    !TODO: Hau zuzendu, batzuetan ez du idazten
     write(unit=io_unit,fmt="(a)")"IS RELAT."
     write(unit=io_unit,fmt=*) upf(is)%rel
 
@@ -120,7 +131,7 @@ contains
 
     write(unit=io_unit,fmt="(a)")"L LOC"
     write(unit=io_unit,fmt=*) upf(is)%lloc
- 
+
     write(unit=io_unit,fmt="(a)")"LMAX"
     write(unit=io_unit,fmt=*) upf(is)%lmax
 
@@ -147,24 +158,24 @@ contains
 
     write(unit=io_unit,fmt="(a)")"KB D{ij}"
     do nb=1,upf(is)%nbeta
-     write(unit=io_unit,fmt="(100es18.8)") (upf(is)%dion(nb,nb1),nb1=1,upf(is)%nbeta) 
+     write(unit=io_unit,fmt="(100es18.8)") (upf(is)%dion(nb,nb1),nb1=1,upf(is)%nbeta)
     end do
- 
+
     write(unit=io_unit,fmt="(a)")"    R                 RAB              VLOC"//&
                                  "              BETA1              BETA2             .."
     do ir=1,upf(is)%mesh
       write(unit=io_unit,fmt="(100es18.8)") &
-     upf(is)%r(ir), upf(is)%rab(ir), upf(is)%vloc(ir),(upf(is)%beta(ir,nb), nb=1,upf(is)%nbeta) 
+     upf(is)%r(ir), upf(is)%rab(ir), upf(is)%vloc(ir),(upf(is)%beta(ir,nb), nb=1,upf(is)%nbeta)
     end do
 
-  end do 
-  
+  end do
+
 
   end SUBROUTINE write_pp_intw
 !
   SUBROUTINE write_phonon_info()
   USE xmltools
-         USE ions_base,        ONLY : nat 
+         USE ions_base,        ONLY : nat
   logical :: existitu
   integer :: iq
   character(len=256) :: numq
@@ -187,7 +198,7 @@ contains
        datafile=trim(trim(adjustl(ph_dir))//"/"//"qq"//trim(adjustl(numq))//"/_ph0/"&
           //trim(prefix)//".phsave/"//"patterns.1.xml")
        io_unit = xml_openfile( datafile )
- 
+
        CALL xmlr_opentag( "IRREPS_INFO" )
        CALL xmlr_readtag( "NUMBER_IRR_REP", nirr )
        imode0 = 0
@@ -203,7 +214,7 @@ contains
         imode0 = imode0 + npert(irr)
         CALL xmlr_closetag( )
 
-        END DO !irr       
+        END DO !irr
 !
        CALL xmlr_closetag("IRREPS_INFO")
        CALL xml_closefile ( )
@@ -240,12 +251,12 @@ contains
     else
     call system("cp "//trim(trim(adjustl(ph_dir)))//"/"//"qq"//trim(adjustl(numq))//"/"//trim(prefix)//".dyn "//&
     trim(adjustl(intwdir))//"/"//trim(prefix)//".dyn_q"//trim(adjustl(numq)) )
-    end if 
+    end if
   enddo
 !
   end SUBROUTINE write_phonon_info
 
-  SUBROUTINE write_fft_information () 
+  SUBROUTINE write_fft_information ()
     USE gvect,     ONLY : ngm, g
     USE wvfct,     ONLY : npwx
     USE klist,     ONLY : nks, xk, igk_k, ngk
@@ -290,6 +301,7 @@ contains
     USE noncollin_module, ONLY : noncolin
     USE wvfct, ONLY : nbnd, et
     USE constants, ONLY: rytoev
+    use intw_utility, only: find_free_unit
 
 
     integer :: ik, ibnd, is, npol, ig
@@ -297,6 +309,7 @@ contains
     integer :: io_unit
 
     npol=1
+    io_unit = find_free_unit()
 
     if (noncolin) npol=2
 
@@ -306,9 +319,9 @@ contains
        datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
        open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted")
        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
-       write(unit=io_unit) ngk(ik) 
+       write(unit=io_unit) ngk(ik)
        write(unit=io_unit) igk_k(1:ngk(ik), ik)
-       write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd ) 
+       write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
 
        do ibnd=1, nbnd
           write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
@@ -379,22 +392,22 @@ contains
     write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
     write(unit=io_unit,fmt=*)domag
     write(unit=io_unit,fmt=*)"NAT"
-    write(unit=io_unit,fmt=*)nat 
+    write(unit=io_unit,fmt=*)nat
 
     write(unit=io_unit,fmt=*)"GAMMA ONLY"
-    write(unit=io_unit,fmt=*) gamma_only 
+    write(unit=io_unit,fmt=*) gamma_only
 
     write(unit=io_unit,fmt=*)"EFERMI"
-    write(unit=io_unit,fmt=*) ef  
+    write(unit=io_unit,fmt=*) ef
 
     write(unit=io_unit,fmt=*)"LSDA"
-    write(unit=io_unit,fmt=*) lsda  
+    write(unit=io_unit,fmt=*) lsda
 
     write(unit=io_unit,fmt=*)"NTYP"
     write(unit=io_unit,fmt=*)nsp
     write(unit=io_unit,fmt=*)"ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
     do i=1,nsp
-       write(unit=io_unit,fmt="(a,f16.5,x,a)")atm(i), amass(i), trim(psfile(i)) 
+       write(unit=io_unit,fmt="(a,f16.5,x,a)")atm(i), amass(i), trim(psfile(i))
     enddo
     write(unit=io_unit,fmt=*)"POSITIONS (1:NAT)"
     do i=1,nat
@@ -403,14 +416,14 @@ contains
     write(unit=io_unit,fmt=*)"NSYM"
     write(unit=io_unit,fmt=*)nsym
 
-    do isym=1,nsym 
-       write(unit=io_unit,fmt="(i8)"), isym 
+    do isym=1,nsym
+       write(unit=io_unit,fmt="(i8)"), isym
        do i=1, 3
-          write(unit=io_unit, fmt="(3i8)"), (s(i,j,isym), j=1,3) 
+          write(unit=io_unit, fmt="(3i8)"), (s(i,j,isym), j=1,3)
        enddo
        write(unit=io_unit,fmt="(100f16.10)")  &
             real(ft(1,isym),dp)/dfftp%nr1, real(ft(2,isym),dp)/dfftp%nr2, real(ft(3,isym),dp)/dfftp%nr3
-       write(unit=io_unit,fmt="(48i3)")t_rev (isym)  
+       write(unit=io_unit,fmt="(48i3)")t_rev (isym)
     enddo
 
     write(unit=io_unit,fmt=*)"NKS"
@@ -430,7 +443,7 @@ contains
 
     DO ik=1, nkstot
        write(unit=io_unit,fmt="(100f16.10)")( xk(i,ik), i = 1, 3 )
-       !write(unit=io_unit,fmt="(100f16.10)") ( et(ibnd,ik)*rytoev, ibnd=1,nbnd ) 
+       !write(unit=io_unit,fmt="(100f16.10)") ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
     ENDDO
     close(unit=io_unit)
 

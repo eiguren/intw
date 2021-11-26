@@ -1,5 +1,6 @@
 program ep_melements
 
+  use kinds, only: dp
   use intw_input_parameters
   use intw_reading
   use intw_pseudo
@@ -17,6 +18,8 @@ program ep_melements
   use w90_hamiltonian, only: irvec,nrpts,ndegen,ham_r
   use intw_allwfcs
   use intw_matrix_elements
+  use intw_utility, only: ainv, conmesurate_and_coarser, get_timing, generate_kmesh, &
+                          find_k_1BZ_and_G, switch_indices, find_free_unit
 
   !================================================================================
   !       Declare the variables

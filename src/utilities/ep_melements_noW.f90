@@ -34,6 +34,7 @@ program ep_melements
   use w90_parameters, only: num_bands
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
   use intw_matrix_elements, only: get_elec_phon_matrix_element_convolution
+  use intw_allwfcs, only: get_psi_general_k_all_wfc
 
   !================================================================================
   !       Declare the variables
@@ -102,13 +103,15 @@ program ep_melements
   integer                  :: npw, npwq
 
   integer                  :: i, j, k
-  integer                  :: ig, ibnd, jbnd, jpol
+  integer                  :: ig, ibnd, jbnd, ipol, jpol
   logical                  :: read_status
   character(256)           :: method
   character(len=4)         :: iq_loc
 
   complex(dp),allocatable :: wfc_k_r(:)
   integer :: nG
+
+  complex(dp), external :: zdotc
 
   !
   !================================================================================
@@ -667,9 +670,19 @@ program ep_melements
            !
            do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz.
               !matrize elementuak kalkulatu
-              call get_elec_phon_matrix_element_convolution((/0,0,0/),list_iGkq, &
-                   list_iGkq, wfc_kq, dvpsi(1:nG_max,1:nbands_loc,1:npol,1:npol,imode), &
-                   aep_mat_el(iq,ikpt_k,1:nbands_loc,1:nbands_loc,1:npol,1:npol,imode))
+              !
+              do jpol=1,nspin
+                 do ipol=1,nspin
+                    do jbnd=1,num_bands
+                       do ibnd=1,num_bands
+                          !
+                          aep_mat_el(iq,ikpt_k,ibnd,jbnd,ipol,jpol,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ipol), 1, dvpsi(:,jbnd,ipol,jpol,imode), 1 )
+                          !
+                       enddo !ibnd
+                    enddo !jbnd
+                 enddo !is
+              enddo !js
+              !
            enddo !imode
            !
         enddo !ik

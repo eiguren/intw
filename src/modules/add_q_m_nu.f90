@@ -14,27 +14,25 @@ subroutine add_q_m_nu_term_qe_so(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon
 ! (What we do here)                                                                                         !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)]
 !===========================================================================================================!
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
+  use intw_reading, only: nat, nspin
 
   implicit none
 
   !I/O variables
 
   integer :: wpts
-  real(dp),intent(in) :: w_min,w_max,sigma_w
-  real(dp),intent(in) :: delta_energ
-  real(dp),intent(in) :: omega_phon(3*nat)
-  complex(dp),intent(in) :: g_me(nspin,nspin,3*nat)
-  real(dp),intent(inout) :: eliash_f_so(wpts,nspin,nspin)
+  real(dp), intent(in) :: w_min, w_max, sigma_w
+  real(dp), intent(in) :: delta_energ
+  real(dp), intent(in) :: omega_phon(3*nat)
+  complex(dp), intent(in) :: g_me(nspin,nspin,3*nat)
+  real(dp), intent(inout) :: eliash_f_so(wpts,nspin,nspin)
 
   !local variables
 
-  integer :: imode,ipts,is,js
-  real(dp) :: wqv,delta_omega(wpts),g2
+  integer :: imode, ipts, is, js
+  real(dp) :: wqv, delta_omega(wpts), g2
 
   do imode=1,3*nat-4
      !
@@ -90,27 +88,25 @@ subroutine add_q_m_nu_term_qe(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon,g_
 ! (What we do here)                                                                                         !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)]
 !===========================================================================================================!
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
+  use intw_reading, only: nat, nspin
 
   implicit none
 
   !I/O variables
 
   integer :: wpts
-  real(dp),intent(in) :: w_min,w_max,sigma_w
-  real(dp),intent(in) :: delta_energ
-  real(dp),intent(in) :: omega_phon(3*nat)
-  complex(dp),intent(in) :: g_me(nspin,nspin,3*nat)
-  real(dp),intent(inout) :: eliash_f(wpts)
+  real(dp), intent(in) :: w_min, w_max, sigma_w
+  real(dp), intent(in) :: delta_energ
+  real(dp), intent(in) :: omega_phon(3*nat)
+  complex(dp), intent(in) :: g_me(nspin,nspin,3*nat)
+  real(dp), intent(inout) :: eliash_f(wpts)
 
   !local variables
 
-  integer :: imode,ipts,is,js
-  real(dp) :: wqv,delta_omega(wpts),g2,g
+  integer :: imode, ipts
+  real(dp) :: wqv, delta_omega(wpts), g2, g
 
   do imode=1,3*nat-4
 !  do imode=1,3
@@ -161,7 +157,7 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
 !
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -171,13 +167,11 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,si,sj,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
+  use intw_reading, only: nat, nspin
   use intw_useful_constants, only: eps_5
-  use intw_utility
+  use intw_utility, only: weight_ph
 
   implicit none
 
@@ -249,7 +243,7 @@ subroutine add_q_m_nu_term_full(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omega_p
 !
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -259,31 +253,29 @@ subroutine add_q_m_nu_term_full(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omega_p
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5 
-  use intw_utility
+  use intw_reading, only: nat, nspin
+  use intw_useful_constants, only: eps_5
+  use intw_utility, only: weight_ph
 
   implicit none
 
   !I/O variables
 
-  integer,intent(in) :: wpts,nmode
-  real(dp),intent(in) :: w_min,w_max,sigma_w,sigma_e
-  real(dp),intent(in) :: ekk,ekq
-  real(dp),intent(in) :: omega_phon(3*nat)
-  complex(dp),intent(in) :: g_me(nspin,nspin,3*nat)
-  real(dp),intent(inout) :: eliash_fplus(wpts)
-  real(dp),intent(inout) :: eliash_fminus(wpts)
+  integer, intent(in) :: wpts,nmode
+  real(dp), intent(in) :: w_min, w_max, sigma_w, sigma_e
+  real(dp), intent(in) :: ekk,ekq
+  real(dp), intent(in) :: omega_phon(3*nat)
+  complex(dp), intent(in) :: g_me(nspin,nspin,3*nat)
+  real(dp), intent(inout) :: eliash_fplus(wpts)
+  real(dp), intent(inout) :: eliash_fminus(wpts)
 
   !local variables
 
-  integer :: imode,ipts,is,js
-  real(dp) :: wqv,delta_omega(wpts),g2
-  real(dp) :: delta_eplus(wpts),delta_eminus(wpts)
+  integer :: imode, ipts
+  real(dp) :: wqv, delta_omega(wpts), g2
+  real(dp) :: delta_eplus(wpts), delta_eminus(wpts)
   complex(dp) :: g
 
   do imode=1,nmode
@@ -342,7 +334,7 @@ subroutine add_q_m_nu_term_full_no_spin(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq
 !
 ! Created by Peio G. Goiricelaya 14/03/2016
 !
-!==================================================================================================================! 
+!==================================================================================================================!
 ! For a given state (k,n) we add to its respective eliashberg function the different nu terms                      !
 ! associated to a (q,m) state we have selected before                                                              !
 !                                                                                                                  !
@@ -352,32 +344,29 @@ subroutine add_q_m_nu_term_full_no_spin(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq
 ! (What we do here)                                                                                                !
 ! Sum_nu[|g(q,k,m,n,nu|^2*Delta[w-w(q,nu)]*Delta[E(k,n)-E(k+q,m)+/-w]                                        !
 !==================================================================================================================!
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5
-  use intw_utility
+  use intw_reading, only: nat
+  use intw_useful_constants, only: eps_5, eps_6
+  use intw_utility, only: weight_ph
 
   implicit none
 
   !I/O variables
 
-  integer,intent(in) :: wpts,nmode
-  real(dp),intent(in) :: w_min,w_max,sigma_w,sigma_e
-  real(dp),intent(in) :: ekk,ekq
-  real(dp),intent(in) :: omega_phon(3*nat)
-  complex(dp),intent(in) :: g_me(3*nat)
-  real(dp),intent(inout) :: eliash_fplus(wpts)
-  real(dp),intent(inout) :: eliash_fminus(wpts)
+  integer, intent(in) :: wpts,nmode
+  real(dp), intent(in) :: w_min,w_max,sigma_w,sigma_e
+  real(dp), intent(in) :: ekk,ekq
+  real(dp), intent(in) :: omega_phon(3*nat)
+  complex(dp), intent(in) :: g_me(3*nat)
+  real(dp), intent(inout) :: eliash_fplus(wpts)
+  real(dp) ,intent(inout) :: eliash_fminus(wpts)
 
   !local variables
 
-  integer :: imode,ipts,is,js
-  real(dp) :: wqv,delta_omega(wpts),g2
-  real(dp) :: delta_eplus(wpts),delta_eminus(wpts)
-  complex(dp) :: g
+  integer :: imode, ipts
+  real(dp) :: wqv, delta_omega(wpts), g2
+  real(dp) :: delta_eplus(wpts), delta_eminus(wpts)
 
   !$omp parallel default(none) &
   !$omp shared(nmode,w_min,w_max,wpts,sigma_w,ekk,ekq,sigma_e,eps_5,eps_6,g_me,eliash_fplus,eliash_fminus,omega_phon) &
@@ -428,4 +417,3 @@ subroutine add_q_m_nu_term_full_no_spin(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq
 
 end subroutine add_q_m_nu_term_full_no_spin
 !-------------------------------------------------------------------------------------------------
-

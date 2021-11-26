@@ -5,12 +5,12 @@ MODULE intw_eqv
   ! ... The wavefunctions at point k+q
   !
   SAVE
-!haritz
+  !
   ! variables
   public :: evq, dvpsi, dpsi, drhoscfs, dmuxc, vlocq, eprec
   !
   private
-!haritz
+  !
   !
   COMPLEX (DP), POINTER :: evq(:,:)
   !
@@ -41,7 +41,7 @@ MODULE intw_phus
   !variables
   public :: alphasum, dpqq, int1, int2, int3, int3_paw, int4, int5, &
             int1_nc, int2_so, int3_nc, int4_nc, int5_so, becsum_nc, &
-            becsumort, alphasum_nc, dpqq_so,becp1, alphap
+            becsumort, alphasum_nc, dpqq_so, becp1, alphap
 
   private
 !haritz
@@ -97,4 +97,3 @@ MODULE intw_phus
 END MODULE intw_phus
 !
 !
-

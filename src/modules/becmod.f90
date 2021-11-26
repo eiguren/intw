@@ -17,7 +17,9 @@ MODULE intw_becmod
   USE kinds,            ONLY : DP
   ! ASIER Jul 2021
   USE intw_reading, ONLY : noncolin, npol, gamma_only
-  USE intw_utility, ONLY: errore 
+  USE intw_utility, ONLY: errore
+
+  IMPLICIT NONE
   !
   SAVE
   !
