@@ -47,6 +47,7 @@ MODULE intw_becmod
      !
   END INTERFACE
 
+  !
   PUBLIC :: bec_type, becp, allocate_bec_type, deallocate_bec_type, calbec, &
             beccopy, becscal
   !

@@ -39,13 +39,10 @@ module intw_pseudo
 
   TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE ::UPF
 
-  public :: upf
-  public :: read_all_pseudo
-
-  !Former USPP
-  PUBLIC :: indv, nhtol, nhtolm, nkb,  &
-       vkb, vkqb, dvan,  nhtoj, ijtoh, beta, becsum
-  PUBLIC ::  dvan_so
+  PUBLIC :: UPF
+  PUBLIC :: read_all_pseudo
+  PUBLIC :: indv, nhtol, nhtolm, nkb, vkb, vkqb, dvan,  nhtoj, ijtoh, beta, becsum
+  PUBLIC :: dvan_so
 
   !Former US in QE
   INTEGER :: &
