@@ -12,7 +12,7 @@ subroutine allocate_nlpot1 ()
   use kinds
   use intw_reading, only: nat,ntyp,ityp,ecutwfc,ecutrho,dual,gcutm,tpiba2,bg,ngm,nspin
   use intw_reading, only: noncolin,lspinorb,ng_max
-  USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq,spline_ps
+  USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq
   use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,dvan,vkb,vkqb
   use intw_pseudo, only: nkb,nhtoj,becsum,dvan_so
   use intw_pseudo, only: upf,lmaxkb,nh,nhm,nbetam
@@ -54,7 +54,7 @@ subroutine allocate_nlpot1 ()
   allocate (tab( 2*nqx , nbetam , nsp)) ! ASIER originala nqx, errepasatu 
 
   ! d2y is for the cubic splines
-  if (spline_ps) allocate (tab_d2y( nqx , nbetam , nsp))
+  allocate (tab_d2y( nqx , nbetam , nsp))
 
   if (allocated(vkb)) deallocate (vkb)
   if (allocated(vkqb)) deallocate (vkqb)
@@ -82,7 +82,7 @@ subroutine allocate_nlpot2 (qpoint)
   USE kinds
   USE intw_reading, ONLY: nat,ntyp,ityp,ecutwfc,ecutrho,dual,gcutm,tpiba2,bg
   USE intw_reading, ONLY: ngm,nspin,noncolin,ng_max
-  USE intw_pseudo, ONLY: tab,tab_d2y,dq,nqx,nqxq,spline_ps
+  USE intw_pseudo, ONLY: tab,tab_d2y,dq,nqx,nqxq
   USE intw_pseudo, ONLY: indv,nhtol,nhtolm,ijtoh,dvan, &
                        nkb,nhtoj,becsum,dvan_so
   USE intw_pseudo, ONLY: upf,lmaxkb,nh,nhm,nbetam

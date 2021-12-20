@@ -5,28 +5,17 @@
 !
 module intw_ph
   !
-  use intw_utility
-
-  !use iotk_module
-  !
-  use intw_reading
-  !
-  use intw_useful_constants
-  !
-  use intw_input_parameters
-  !
-  use intw_symmetries
-  !
-  use kinds,     only : dp
-  !
-  !IGG
-!  use intw_setup
-  use intw_set_asr
-  ! End IGG
-
-!haritz
-  use intw_fft
-!haritz
+  use kinds, only : dp
+  use intw_utility, only: find_free_unit, cmplx_trace, cmplx_ainv_2, find_k_1BZ_and_G, &
+                          switch_indices, switch_indices_zyx
+  use intw_reading, only: at, bg, s, ftau, nr1, nr2, nr3, nat, tau, amass, ityp, &
+                          npol, spinorb_mag, tpiba, write_tag
+  use intw_useful_constants, only: i2, sig_x, sig_y, sig_z
+  use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, tpi
+  use intw_input_parameters, only: mesh_dir, prefix, ph_dir, dvscf_name, qlist, fc_mat
+  use intw_input_parameters, only: nq1, nq2, nq3, nqirr
+  use intw_symmetries, only: rtau_index, inverse_indices, rtau, spin_symmetry_matrices
+  use intw_fft, only: mill, gvec_cart
 
 
   !----------------------------------------------------------------------------!
@@ -37,22 +26,23 @@ module intw_ph
 
   !
   implicit none
-
   !
   save
-!haritz
-!  ! variables
-!  public :: nmodes, q_irr, u_irr, fcmat, dvscf_cart, dvscf_irr, amass_ph, frc, nqmesh, &
-!            q_irr_cryst, qmesh, QE_folder_sym_q, sym_G_q, symlink_q, eigqts, dvloc, &
-!            dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
-!
-!  ! subroutines
-!  public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
-!            calculate_local_part_dv, get_dv, rot_dvq, func_by_gr, wsinit, &
-!            deallocate_ph, read_fc_from_XML
-!
-!  private
-!haritz
+  ! variables
+  public :: nmodes, q_irr, u_irr, fcmat, dvscf_cart, dvscf_irr, amass_ph, frc, nqmesh, &
+            q_irr_cryst, qmesh, QE_folder_sym_q, sym_G_q, symlink_q, eigqts, dvloc, &
+            dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
+  !
+  ! subroutines
+  public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
+            calculate_local_part_dv, get_dv, rot_dvq, func_by_gr, wsinit, &
+            deallocate_ph, read_fc_from_XML
+  !
+  ! functions
+  public :: wsweight, rot_k_index
+  !
+  private
+  !
   !
   integer                    :: nmodes               ! 3 x nat
   real(dp),allocatable       :: q_irr(:,:)           !coo. of irr. q points
@@ -88,17 +78,17 @@ contains
   subroutine rot_gep(  s_index, imq, qpoint_irr, nbnd, npol, nat, g_matin, g_matout  )
     implicit none
     !input
-    real   (kind=dp), intent(in ) :: qpoint_irr(3)
-    integer         , intent(in)  :: imq, nbnd, npol, nat
+    real(kind=dp), intent(in) :: qpoint_irr(3)
+    integer      , intent(in) :: imq, nbnd, npol, nat
 
     complex(kind=dp), intent(in)  :: g_matin ( nbnd, nbnd, npol, npol, 3*nat)
     complex(kind=dp), intent(out) :: g_matout( nbnd, nbnd, npol, npol, 3*nat)
     !loca
-    integer :: i,j,k, s_index, s_inv_index, na
-    integer :: rna, rotik, ik
+    integer :: s_index, s_inv_index, na
+    integer :: rna
     complex (dp) :: phase(nat)
-    integer ::   kpol, jpol, lpol, ipol, ibnd, jbnd
-    real(dp) ::  s_cart(3,3),  s_crys(3,3), qpoint_irr_cart (3)
+    integer :: kpol, jpol, lpol, ipol, ibnd, jbnd
+    real(dp) :: s_cart(3,3), s_crys(3,3), qpoint_irr_cart (3)
 
     qpoint_irr_cart = matmul(bg, qpoint_irr)
 
@@ -158,15 +148,17 @@ contains
   end subroutine rot_gep
 
   function rot_k_index(s_index, k_index, nk1, nk2, nk3, kmesh )
+
     implicit none
-    integer,  intent(in) :: s_index, k_index,  nk1, nk2, nk3
-    real(dp), intent(in)             :: kmesh(3,nk1*nk2*nk3)
 
-    integer             :: rot_k_index
+    integer, intent(in) :: s_index, k_index, nk1, nk2, nk3
+    real(dp), intent(in) :: kmesh(3,nk1*nk2*nk3)
+
+    integer :: rot_k_index
 
 
-    real(dp) :: kpoint(3), kpoint_1bz(3), kpoint_rot(3)
-    integer :: GKQ_bz(3), na, i, j, k
+    real(dp) :: kpoint_1bz(3), kpoint_rot(3)
+    integer :: GKQ_bz(3), i, j, k
 
     kpoint_rot = matmul(s(:,:,s_index), kmesh(:,k_index))
 
@@ -185,29 +177,37 @@ contains
     implicit none
 
     integer        ::  io_unit  ! input/output file unit
-    integer        ::  ii      ! a looping variable
 
     character(256) :: datafile ! full path of the data-file.xml file
     ! in the .xml file
 
-    integer        :: imode, iq,i,j
-    integer        :: nirr
-!
-    character(len=4)  :: num
+    integer        :: imode, jmode, iq
+    !
     character(len=8)  :: dummy
 
-    complex(kind=dp) :: u1(3*nat,3*nat), u2(3*nat,3*nat)
 
     nmodes =3 * nat
 
     write(*,"(4(a,i4))     ")"PH BZ division is             : ", nq1," x",nq2," x",nq3
     write(*,"(a,i4)"     ) "Input n. of irreducible points: ", nqirr
 
+
+    ! Read irreducible q list
+    allocate(q_irr(3,nqirr))
+
+    io_unit = find_free_unit()
+    open(unit=io_unit, file=trim(trim(mesh_dir)//trim(ph_dir)//trim(qlist)),status="old")
+
+    do iq=1,nqirr
+      read(io_unit,*) dummy, q_irr(1:3,iq)
+    enddo
+
+    close(unit=io_unit)
+
+
     io_unit = find_free_unit()
     datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat")
     open(unit=io_unit, file=datafile,status="old")
-
-    allocate(q_irr(3,nqirr))
 
     !Read displacement patters for each q.
     allocate (u_irr(nmodes,nmodes,nqirr))
@@ -217,49 +217,35 @@ contains
     do iq=1, nqirr
        read(unit=io_unit,fmt=*)dummy
        do imode=1,3*nat
-        read(unit=io_unit,fmt=*) u_irr(1:3*nat,imode,iq)
+        read(unit=io_unit,fmt=*) ( u_irr(jmode,imode,iq), jmode=1,3*nat )
        end do
     end do !iq
-    close(unit=io_unit)
 
-    !    do iq=1,nqirr
-    !     write(888,*)"iq --------",iq
-    !     u1 = matmul (transpose(conjg(u_irr(:,:,iq))),u_irr(:,:,iq) )
-    !
-    !      do i=1,3*nat
-    !        write(888,"(100(x,2f8.4))") ( u_irr(i,j,iq), j=1,3*nat)
-    !      enddo
-    !
-    !       write(888,*)" "
-    !       write(888,*)" "
-    !
-    !      do i=1,3*nat
-    !        write(888,"(100(x,2f8.4))") ( u1(i,j), j=1,3*nat)
-    !      enddo
-    !     enddo
-    !    stop
+    close(unit=io_unit)
 
   end subroutine read_ph_information_xml
 
-  SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat,    &
-       alat, at, ntyp, amass )
-    USE intw_reading, only : tau, ityp
-    IMPLICIT NONE
-    CHARACTER(LEN=256) flfrc
+  SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat, alat, at, ntyp, amass )
 
-    INTEGER ibrav, nr1,nr2,nr3,nat, ntyp
-    REAL(DP) alat, at(3,3), epsil(3,3)
-    LOGICAL has_zstar
+    use intw_set_asr, only: set_asr
+
+    IMPLICIT NONE
+
+    CHARACTER(LEN=256) :: flfrc
+
+    INTEGER :: ibrav, nr1, nr2, nr3, nat, ntyp
+    REAL(DP) :: alat, at(3,3), epsil(3,3)
+    LOGICAL :: has_zstar
     !  ! local variables
-    INTEGER i, j, na, nb, m1,m2,m3
-    INTEGER ibid, jbid, nabid, nbbid, m1bid,m2bid,m3bid
-    REAL(DP) amass(ntyp), amass_from_file, celldm(6), omega
-    INTEGER nt
-    CHARACTER(LEN=3) atm
-    CHARACTER(LEN=9) symm_type
-    real(dp) :: tau_fc(3, nat), zeu_fc(3,3,nat), batura
+    INTEGER :: i, j, na, nb, m1, m2, m3
+    INTEGER :: ibid, jbid, nabid, nbbid, m1bid,m2bid,m3bid
+    REAL(DP) :: amass(ntyp), amass_from_file, celldm(6)
+    INTEGER :: nt
+    CHARACTER(LEN=3) :: atm
+    CHARACTER(LEN=9) :: symm_type
+    real(dp) :: tau_fc(3, nat), zeu_fc(3,3,nat)
     integer  :: ityp_fc(nat)
-    integer io_unit
+    integer :: io_unit
 
     !  !
     !  !
@@ -377,28 +363,29 @@ contains
 
 
   subroutine mat_inv_four_t ( q_point, nkk1, nkk2, nkk3,  nnmode , frc , out_mat )
+
     USE intw_reading, only : tau, ityp
+    use intw_useful_constants, only: tpi
+
     implicit none
 
+    complex(dp), intent(in) :: frc(nkk1, nkk2, nkk3, 3,3, nat,nat)
+    complex(dp), intent(out) :: out_mat(nnmode, nnmode)
+
     real(dp) :: q_point(3),q(3)
-    integer :: nkk1, nkk2, nkk3 , nnmode
-    integer :: direct_or_inv
-    complex(dp),intent(in) :: frc(nkk1, nkk2, nkk3, 3,3, nat,nat)
-    complex(dp),intent(out) :: out_mat(nnmode, nnmode)
-    integer :: i,j,k, pol,nk, h1, h2
-    real(dp) :: tpi,batura
-    complex(dp),parameter :: II=(0.d0,1.d0)
-    integer   :: it,jt,kt
-    integer   :: na,nb
-    real(dp)   :: r(3), r_ws(3), weight, atw(3,3)
-    real(dp)   ::             rws_aux(0:3,200)
-    real(dp),allocatable   :: rws(:,:)
-    integer   :: n1, n2,n3, m1, m2, m3, nrws
-    real(dp)   :: arg  , total_weight
-    integer, parameter:: nrwsx=200
+    integer :: nkk1, nkk2, nkk3, nnmode
+    integer :: i, j
+    complex(dp), parameter :: II=(0.d0,1.d0)
+    integer :: na,nb
+    real(dp) :: r(3), r_ws(3), weight, atw(3,3)
+    real(dp) :: rws_aux(0:3,200)
+    real(dp), allocatable :: rws(:,:)
+    integer :: n1, n2, n3, m1, m2, m3, nrws
+    real(dp) :: arg, total_weight
+    integer, parameter :: nrwsx=200
 ! IGG : aumev zuzenduta from 27211.6d0  to  27211.396d0
     real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.396d0
-    tpi=2.d0*dacos(-1.d0)
+
     out_mat(:,:)=(0.d0,0.d0)
 
     atw(:,1) = at(:,1)*dble(nkk1)
@@ -477,23 +464,20 @@ contains
   subroutine   read_allq_dvr(nqirr,nmodes)
 !-----------------------------------------------------------------------
 
-    use intw_useful_constants
-
     implicit none
 
     !I/O varibales
 
-    integer, intent (in)::nqirr,nmodes
+    integer, intent (in) :: nqirr, nmodes
 
     !local variables
 
-    integer :: iq,record_lengh,i,j,k,mode,ios,is,js
+    integer :: iq, record_length, mode, ios, is, js
     character(len=20) ::  num
-    integer :: nr(3),io_unit,ir,ipol,imode,jmode
+    integer :: nr(3), io_unit, ir, ipol, imode, jmode
     character(len=256) :: dv_name
-    real(dp) :: GKQ(3)
 
-    !
+
     if (nmodes/=3*nat) then
        write(*,"(a)")"ERROR(read_allq_dvr): nmodes = ", nmodes, " and 3*nat =", 3*nat
        stop
@@ -508,11 +492,7 @@ contains
     dvscf_irr=cmplx_0
     dvscf_cart=cmplx_0
     !
-    if (spinorb_mag) then
-       record_lengh=direct_io_factor*2*nr1*nr2*nr3*4
-    else
-       record_lengh=direct_io_factor*2*nr1*nr2*nr3
-    end if
+    inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:npol**2)
     !
     do iq=1,nqirr
        !
@@ -528,10 +508,10 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
+       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
        !
        open (io_unit, file = dv_name, iostat = ios, &
-            form = 'unformatted', status = 'old', access = 'direct', recl= record_lengh )
+            form = 'unformatted', status = 'old', access = 'direct', recl= record_length )
 !
        write(unit=*,fmt="(2a,x,a,i4)")"Reading irreducible displacement dvscr file ", &
             trim(dv_name),",ios: ",ios
@@ -598,22 +578,6 @@ contains
           !
        end if !npol==2
        !
-       ! If we are reading dV rotated by QE, dV is already in cartesians coord. So if we write it,
-       ! we directly write dvscf_irr
-       !
-!       do ir=1,nr1*nr2*nr3
-!          do imode=1,3*nat
-!             dvscf_cart(ir,iq,imode,1,1)=dvscf_irr(ir,iq,imode,1)
-!          enddo
-!       enddo
-!       !
-!       do ir=1, nr1*nr2*nr3
-!          write(210000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,1,1)
-!          write(220000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,1,2)
-!          write(230000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,2,1)
-!          write(240000+iq,'(100f12.6)') dvscf_cart(ir,iq,:,2,2)
-!       enddo
-       !
        close(io_unit)
        !
     enddo !iq
@@ -631,11 +595,13 @@ contains
 ! We have dV_scf as input and we add to it the derivative of the PP   !
 !======================================================================
 
-    USE intw_reading , ONLY :  nr1, nr2, nr3, ngm, tau
+    USE intw_reading, ONLY : nr1, nr2, nr3, ngm
     USE intw_fft, ONLY : eigts1, eigts2, eigts3, nl
     USE intw_eqv, ONLY : vlocq
 
     implicit none
+
+    external :: cfftnd
 
     !I/O variables
 
@@ -691,20 +657,20 @@ contains
     implicit none
 
     !I/O variables
-    integer,intent(in) :: iq, nmode
-    real(dp),intent(in) :: qpoint(1:3) ! in crystal
-    complex(dp),intent(out) :: dvq_local (nr1*nr2*nr3,nmode,npol,npol)
+    integer, intent(in) :: iq, nmode
+    real(dp), intent(in) :: qpoint(1:3) ! in crystal
+    complex(dp), intent(out) :: dvq_local(nr1*nr2*nr3,nmode,npol,npol)
 
     !local variables
-    complex(dp) :: aux(nr1*nr2*nr3),dvr(nr1*nr2*nr3,nmode,npol,npol),vr(npol,npol),mrx(npol,npol),mry(npol,npol),mrz(npol,npol)
-    integer :: i,j,k, mode
+    complex(dp) :: dvr(nr1*nr2*nr3,nmode,npol,npol)
+    complex(dp) :: vr(npol,npol)
+    complex(dp) :: mrx(npol,npol),mry(npol,npol),mrz(npol,npol)
+    integer :: i, j, k
     real(dp) :: qpoint_1bz(1:3), qpoint_rot(1:3)
     integer :: q_index, q_index_irr, s_index, imq, ir, imode
-    integer :: GKQ_bz(1:3),  GKQ (1:3) , na
+    integer :: GKQ_bz(1:3), GKQ (1:3)
 
     dvq_local=cmplx_0
-!    dvq_local(:,:,:,:)=dvscf_cart(:,1,:,:,:) !Peio
-!    return !Peio
     !
     ! We find the associated of qpoint in 1BZ (it usually is itself!)
     !
@@ -779,19 +745,19 @@ contains
 
     !I/O variables
 
-    real(dp),intent(in) :: q_point_crys(3),q_point_crys_irr(3) ! crystal
-    integer,intent(in) :: nr1,nr2,nr3,nmode,s_index,GKQ(3)
-    complex(dp),intent(in) :: dv_in(nr1*nr2*nr3,nmode,npol,npol)
-    complex(dp),intent(out) :: dv_out(nr1*nr2*nr3,nmode,npol,npol)
+    real(dp), intent(in) :: q_point_crys(3), q_point_crys_irr(3) ! crystal
+    integer, intent(in) :: nr1, nr2, nr3, nmode, s_index ,GKQ(3)
+    complex(dp), intent(in) :: dv_in(nr1*nr2*nr3,nmode,npol,npol)
+    complex(dp), intent(out) :: dv_out(nr1*nr2*nr3,nmode,npol,npol)
 
     !local variables
 
-    integer :: iat,ir,is,js,i,j,k,ri,rj,rk,rri,rrj,rrk
-    integer :: ipol,jpol,lpol,kpol,na,rna,nb,rnb
-    integer :: s_inv_index,r_index,rr_index,imode
-    real(dp) :: s_cart(3,3),s_crys(3,3)
-    real(dp) :: q_point(3),q_point_r(3) ! cart
-    complex(dp) :: dv_aux(nr1*nr2*nr3,nmode,npol,npol),phase(nat)
+    integer :: ir, is, js, i, j, k, ri, rj, rk, rri, rrj, rrk
+    integer :: ipol, jpol, lpol, kpol, na, rna
+    integer :: s_inv_index, r_index, rr_index, imode
+    real(dp) :: s_cart(3,3), s_crys(3,3)
+    real(dp) :: q_point(3), q_point_r(3) ! cart
+    complex(dp) :: dv_aux(nr1*nr2*nr3,nmode,npol,npol), phase(nat)
 
     ! q irr cryst -> cart
     !
@@ -943,7 +909,7 @@ contains
 
     !local variables
 
-    integer :: ir,ipol,jpol,i,j,k,is,js,imode
+    integer :: ir, i, j, k, is, js, imode
     real(dp) :: phase
 
     do ir=1,nr1*nr2*nr3
@@ -974,7 +940,7 @@ contains
     !
     implicit none
     integer :: i, ii, ir, jr, kr, nrws, nrwsx, nx
-    real(dp) :: rt, eps, rws(0:3,nrwsx), atw(3,3)
+    real(dp) :: eps, rws(0:3,nrwsx), atw(3,3)
     parameter (eps=1.0d-6,nx=2)
 
     ii = 1
@@ -1026,161 +992,136 @@ contains
 !IGG
 
 ! ----------------------------------------------------
-       subroutine read_fc_from_XML ()
-! ----------------------------------------------------
-       implicit none
+  subroutine read_fc_from_XML ()
 
-       ! local variables
-       integer num_atom
-       real (dp), allocatable :: mass_atom(:), pos_atom(:), masa(:)
-       integer :: io_unit
-       integer :: i,n,j
-       integer ::  ntyp,meshq(3),fc_ibrav
-       character(256) :: fc_file
-       character(256) :: type_string
-       character(256) :: attr
-       INTEGER :: na, nb, nn, m1, m2, m3
-       REAL(DP) :: aux(3,3)
-!       real(dp) :: batura
-       CHARACTER(LEN=10)  :: asr
-       REAL(DP), ALLOCATABLE ::  zeu(:,:,:), frc_R(:,:,:,:,:,:,:)
+    use intw_set_asr, only: set_asr
 
+    implicit none
 
+    ! local variables
+    integer num_atom
+    real(dp), allocatable :: mass_atom(:), pos_atom(:), masa(:)
+    integer :: io_unit
+    integer :: i, n
+    integer :: ntyp, meshq(3), fc_ibrav
+    character(256) :: fc_file
+    character(256) :: type_string
+    INTEGER :: na, nb, nn, m1, m2, m3
+    REAL(dp) :: aux(3,3)
+    CHARACTER(LEN=10) :: asr
+    REAL(DP), ALLOCATABLE :: zeu(:,:,:), frc_R(:,:,:,:,:,:,:)
 
-       real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.6d0
+    real(dp), parameter :: pmass = 1822.88848426_dp, aumev = 27211.6d0
 
-       fc_file  = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
-       io_unit = find_free_unit()
-       !call iotk_open_read (io_unit,trim(fc_file))
-        print*, 'Reading from fc file:', trim(fc_file)
-        write(*,*)
-        print*, 'checking consistency with the electronic calculation'
-        ! Check consistency with the electronic calculation
-        !call iotk_scan_begin (io_unit,"GEOMETRY_INFO")
-        !  call iotk_scan_dat (io_unit,"BRAVAIS_LATTICE_INDEX",fc_ibrav)
-          !IGG : I am not sure ibrav is read anywhere else (?)
-          !if (fc_ibrav.ne.ibrav) then
-           !print*, 'WARNING!, ibrav mismatch', ibrav,fc_ibrav
-          !end if
-          print*, 'Bravais lattice type (from FC file)', fc_ibrav
-          !call iotk_scan_dat (io_unit,"NUMBER_OF_ATOMS",num_atom)
-          if (num_atom.ne.nat) then
-           print*, 'WARNING!, number of atoms do not match',num_atom,nat
-           print*,'STOPPING'
-           STOP
-          end if
-          !call iotk_scan_dat (io_unit,"NUMBER_OF_TYPES",ntyp)
-          !print*, ntyp
-          allocate(masa(ntyp))
-          do i = 1,ntyp
-           call write_tag("MASS.",i, type_string)
-           !print*, type_string
-            !call iotk_scan_dat (io_unit, type_string, masa(i))
-           !write(*,'(a6, i4, a6 f16.4)')'Type', i,'mass: ', masa(i)
-          end do
-          allocate(mass_atom(nat), pos_atom(nat))
-          do i=1,nat
-            write(*,*) 'Atom: ' ,i
-            call write_tag("ATOM.",i, type_string)
-             !call iotk_scan_empty(io_unit, type_string, attr )
-              !call iotk_scan_attr(attr,"INDEX", n)
-              !call iotk_scan_attr(attr,"TAU", pos_atom(:))
-              mass_atom(i)=masa(n)
-             !write(*,'(2(a7,i3,1x),a10,2f16.4)')  &
-             !    'Atom :',i, '; Type:',n,'; mass : ', mass_atom(i), &
-             !                     mass_atom(i)/(pmass/2)
-             if ((abs(amass(ityp(i))-mass_atom(i)/(pmass/2))).gt.(1.d-01)) then
-              print*, '! ! ! W A R N I N G ! ! ! ! '
-              print*, 'Masses do not match for atom', i
-              write(*,'(a20, 3f16.4)') 'Mass data.xml file', amass(ityp(i))
-              write(*,'(a20, 3(f16.4,2x))') 'Mass fc.xml file', mass_atom(i)/(pmass/2)
-             else
-              print*, 'Masses consistent in data.xml and fc.xml files'
-             end if
-             !write(*,'(2(a7,i3,1x),a10,3f16.4)')  &
-             !    'Atom :',i, '; Type:',n,'position', pos_atom(:)
-             if ( ( abs(tau(1,i) - pos_atom(1)).gt.1d-04) .or. &
-                  ( abs(tau(2,i) - pos_atom(2)).gt.1d-04) .or. &
-                  ( abs(tau(3,i) - pos_atom(3)).gt.1d-04)  )  then
-               print*, '! ! ! W A R N I N G ! ! ! ! '
-               print*, 'Atomic positions do not match for atom', i
-             else
-               print*, 'Atomic positions consistent in data.xml and fc.xml files'
-             end if
-          end do !nat
-          deallocate(masa)
-          deallocate(mass_atom, pos_atom)
-        !call iotk_scan_end (io_unit,"GEOMETRY_INFO")
+    fc_file = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
+    io_unit = find_free_unit()
+    print*, 'Reading from fc file:', trim(fc_file)
+    write(*,*)
+    print*, 'checking consistency with the electronic calculation'
+    ! Check consistency with the electronic calculation
+    !call iotk_scan_begin (io_unit,"GEOMETRY_INFO")
+    !  call iotk_scan_dat (io_unit,"BRAVAIS_LATTICE_INDEX",fc_ibrav)
+    !IGG : I am not sure ibrav is read anywhere else (?)
+    !if (fc_ibrav.ne.ibrav) then
+    !print*, 'WARNING!, ibrav mismatch', ibrav,fc_ibrav
+    !end if
+    print*, 'Bravais lattice type (from FC file)', fc_ibrav
+    if (num_atom.ne.nat) then
+      print*, 'WARNING!, number of atoms do not match', num_atom, nat
+      print*,'STOPPING'
+      STOP
+    end if
 
-        !call iotk_scan_begin (io_unit,"INTERATOMIC_FORCE_CONSTANTS")
-        !call iotk_scan_dat (io_unit,"MESH_NQ1_NQ2_NQ3",meshq)
-         if ( (meshq(1).ne.nq1).or. &
-              (meshq(2).ne.nq2).or. &
-              (meshq(3).ne.nq3) ) then
-          print*, '! ! ! W A R N I N G ! ! ! ! '
-          print*, 'q-mesh not consistent. FCfile:', meshq
-          print*, '             Input file:', nq1,nq2,nq3
-         else
-           print*, 'q-mesh consistent in input and FC file:',  meshq
-         end if
+    allocate(masa(ntyp))
+    do i = 1,ntyp
+      call write_tag("MASS.",i, type_string)
+    end do
 
-        print*, 'Reading FC matrices'
-       !Zuzenean QEko read_ifc subrutinatik
-       !allocate( phid(nq1*nq2*nq3,3,3,nat,nat) )
-       allocate( frc(nq1,nq2,nq3,3,3,nat,nat) )
-        !phid(:,:,:,:,:)=0d0
-        frc(:,:,:,:,:,:,:)=0d0
-       DO na=1,nat
-          DO nb=1,nat
-             nn=0
-             DO m3=1,nq3
-                DO m2=1,nq2
-                   DO m1=1,nq1
-                      nn=nn+1
-                      !CALL iotk_scan_begin( io_unit, "s_s1_m1_m2_m3" //     &
-                      !    TRIM(iotk_index(na)) // TRIM(iotk_index(nb)) //  &
-                      !    TRIM(iotk_index(m1)) // TRIM(iotk_index(m2)) //  &
-                      !    TRIM(iotk_index(m3)) )
-                      !:CALL iotk_scan_dat( io_unit, 'IFC', aux )
-                      !phid(nn,:,:,na,nb) = aux(:,:)
-                      frc(m1,m2,m3,:,:,na,nb) = aux(:,:)
-                      !CALL iotk_scan_end( io_unit, "s_s1_m1_m2_m3" //     &
-                      !     TRIM(iotk_index(na)) // TRIM(iotk_index(nb)) //  &
-                      !     TRIM(iotk_index(m1)) // TRIM(iotk_index(m2)) //  &
-                      !     TRIM(iotk_index(m3)) )
-                   ENDDO
-                ENDDO
-             ENDDO
-             print*,na,nb,nn
+    allocate(mass_atom(nat), pos_atom(nat))
+    do i=1,nat
+      write(*,*) 'Atom: ' ,i
+      call write_tag("ATOM.",i, type_string)
+      mass_atom(i)=masa(n)
+      !write(*,'(2(a7,i3,1x),a10,2f16.4)')  &
+      !    'Atom :',i, '; Type:',n,'; mass : ', mass_atom(i), &
+      !                     mass_atom(i)/(pmass/2)
+      if ((abs(amass(ityp(i))-mass_atom(i)/(pmass/2))).gt.(1.d-01)) then
+        print*, '! ! ! W A R N I N G ! ! ! ! '
+        print*, 'Masses do not match for atom', i
+        write(*,'(a20, 3f16.4)') 'Mass data.xml file', amass(ityp(i))
+        write(*,'(a20, 3(f16.4,2x))') 'Mass fc.xml file', mass_atom(i)/(pmass/2)
+      else
+        print*, 'Masses consistent in data.xml and fc.xml files'
+      end if
+      !write(*,'(2(a7,i3,1x),a10,3f16.4)')  &
+      !    'Atom :',i, '; Type:',n,'position', pos_atom(:)
+      if ( ( abs(tau(1,i) - pos_atom(1)).gt.1d-04) .or. &
+           ( abs(tau(2,i) - pos_atom(2)).gt.1d-04) .or. &
+           ( abs(tau(3,i) - pos_atom(3)).gt.1d-04) ) then
+        print*, '! ! ! W A R N I N G ! ! ! ! '
+        print*, 'Atomic positions do not match for atom', i
+      else
+        print*, 'Atomic positions consistent in data.xml and fc.xml files'
+      end if
+    end do !nat
+    deallocate(masa)
+    deallocate(mass_atom, pos_atom)
+
+    if ( (meshq(1).ne.nq1).or. &
+         (meshq(2).ne.nq2).or. &
+         (meshq(3).ne.nq3) ) then
+      print*, '! ! ! W A R N I N G ! ! ! ! '
+      print*, 'q-mesh not consistent. FCfile:', meshq
+      print*, '             Input file:', nq1,nq2,nq3
+    else
+      print*, 'q-mesh consistent in input and FC file:',  meshq
+    end if
+
+    print*, 'Reading FC matrices'
+    !Zuzenean QEko read_ifc subrutinatik
+    !allocate( phid(nq1*nq2*nq3,3,3,nat,nat) )
+    allocate( frc(nq1,nq2,nq3,3,3,nat,nat) )
+    !phid(:,:,:,:,:)=0d0
+    frc(:,:,:,:,:,:,:)=0d0
+    DO na=1,nat
+      DO nb=1,nat
+        nn=0
+        DO m3=1,nq3
+          DO m2=1,nq2
+            DO m1=1,nq1
+              nn=nn+1
+              frc(m1,m2,m3,:,:,na,nb) = aux(:,:)
+            ENDDO
           ENDDO
-       ENDDO
+        ENDDO
+        print*,na,nb,nn
+      ENDDO
+    ENDDO
 
-        !call iotk_scan_end (io_unit,"INTERATOMIC_FORCE_CONSTANTS")
-       !call iotk_close_read (io_unit)
-       ! =========================================
-       ! Set Acoustic Sum rule -- **  crystal*** --
-       ! ==========================================
-       ! Apply ASR as in QE
-       ! Beware. In this module (ph_module) frc is defined as complex.
-       ! But in subroutine set_asr it is real(dp).
-       ! And then in mat_inv_four_t it is complex again.
+    ! =========================================
+    ! Set Acoustic Sum rule -- **  crystal*** --
+    ! ==========================================
+    ! Apply ASR as in QE
+    ! Beware. In this module (ph_module) frc is defined as complex.
+    ! But in subroutine set_asr it is real(dp).
+    ! And then in mat_inv_four_t it is complex again.
 
-       asr='crystal'
-       ALLOCATE (zeu(3,3,nat))
-       allocate(frc_R(nq1,nq2,nq3,3,3,nat,nat))
-       zeu =0.d0
-       frc_R =real(frc,dp)         ! make it real
-       write(*,*)
-       write(*,*) 'Applying ASR : ' ,asr
+    asr='crystal'
+    ALLOCATE (zeu(3,3,nat))
+    allocate(frc_R(nq1,nq2,nq3,3,3,nat,nat))
+    zeu =0.d0
+    frc_R =real(frc,dp)         ! make it real
+    write(*,*)
+    write(*,*) 'Applying ASR : ' ,asr
 
-       call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,fc_ibrav,tau)
+    call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,fc_ibrav,tau)
 
-       frc=frc_R*cmplx_1           !make it complex again
-       deallocate (zeu)
-       deallocate(frc_R)
+    frc=frc_R*cmplx_1           !make it complex again
+    deallocate (zeu)
+    deallocate(frc_R)
 
-       return
-       end subroutine read_fc_from_XML
+    return
+  end subroutine read_fc_from_XML
 
 !End IGG
 

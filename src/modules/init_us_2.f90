@@ -20,12 +20,13 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
   USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, ngm, tpiba
 !haritz
   USE intw_useful_constants, ONLY : tpi, cmplx_0            !-QE :USE constants,  ONLY : tpi
-  USE intw_pseudo, ONLY: nqx,nqxq, dq, tab, tab_d2y, spline_ps
+  USE intw_pseudo, ONLY: nqx,nqxq, dq, tab, tab_d2y
   USE splinelib
   USE intw_pseudo, ONLY: nkb, vkb, nhtol, nhtolm, indv
   USE intw_pseudo, ONLY : upf, lmaxkb, nhm, nh
   USE intw_fft, ONLY: gvec_cart, eigts1, eigts2, eigts3, mill
 
+  USE mcf_spline
   implicit none
 
   !I/O variables
@@ -85,7 +86,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
      !
   enddo !ig
   !
-  if (spline_ps) then
+  !if (spline_ps) then
      !
      allocate(xdata(nqx))
      !
@@ -94,7 +95,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
         xdata(iq) = (iq - 1) * dq
         !
      enddo !ig
-  endif !spline_ps
+  !endif !spline_ps
   !
   ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
   !
@@ -110,28 +111,30 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
         do ig=1,npw_ 
            !
            if (igk_(ig)==0) exit
+     
+           call splint_mcf (xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), size(xdata), qg(ig), vq(ig)) 
            !
-           if (spline_ps) then
+           !if (spline_ps) then
               !
-              vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
+              !vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
               !
-           else
+           !else
               !             
-              px = qg (ig) / dq - int (qg (ig) / dq)
-              ux = 1.d0 - px
-              vx = 2.d0 - px
-              wx = 3.d0 - px
-              i0 = INT( qg (ig) / dq ) + 1
-              i1 = i0 + 1
-              i2 = i0 + 2
-              i3 = i0 + 3
+           !   px = qg (ig) / dq - int (qg (ig) / dq)
+           !   ux = 1.d0 - px
+           !   vx = 2.d0 - px
+           !   wx = 3.d0 - px
+           !   i0 = INT( qg (ig) / dq ) + 1
+           !   i1 = i0 + 1
+           !   i2 = i0 + 2
+           !   i3 = i0 + 3
               !
-              vq (ig) = tab (i0, nb, nt) * ux * vx * wx / 6.d0 + &
-                        tab (i1, nb, nt) * px * vx * wx / 2.d0 - &
-                        tab (i2, nb, nt) * px * ux * wx / 2.d0 + &
-                        tab (i3, nb, nt) * px * ux * vx / 6.d0
-              !
-           endif !spline_ps
+           !   vq (ig) = tab (i0, nb, nt) * ux * vx * wx / 6.d0 + &
+           !             tab (i1, nb, nt) * px * vx * wx / 2.d0 - &
+           !             tab (i2, nb, nt) * px * ux * wx / 2.d0 + &
+           !             tab (i3, nb, nt) * px * ux * vx / 6.d0
+           !   !
+           !endif !spline_ps
         enddo !ig
         !
         ! add spherical harmonic part  (Y_lm(q)*f_l(q)) 
