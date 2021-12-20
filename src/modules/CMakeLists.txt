@@ -58,6 +58,7 @@ set(SOURCES
   fft_interp.f90
   dvqpsi_us_only_haritz.f90
   splinelib.f90
+  mcf_interpolacion.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

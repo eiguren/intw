@@ -48,6 +48,7 @@ module intw_pseudo
 
   TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
 
+  LOGICAL :: spline_ps=.false.  
 
   !Former US in QE
   INTEGER :: &
