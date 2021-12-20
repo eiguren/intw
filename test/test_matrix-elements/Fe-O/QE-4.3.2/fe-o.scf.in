@@ -3,7 +3,7 @@
     tprnfor = .true.
     tstress = .true.
     prefix = 'fe-o'
-    pseudo_dir = '/home/haritz/Kalkuluak/Pseudos/'
+    pseudo_dir = './'
     outdir = './'
     verbosity = 'high'
     wf_collect = .true.
