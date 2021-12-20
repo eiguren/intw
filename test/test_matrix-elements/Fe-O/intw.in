@@ -1,65 +1,73 @@
 &input
-mesh_dir 	=	'./qe/'
-prefix 		= 	'fe-o'
-nk1		=	1
-nk2		=	1
-nk3		=	1
-magnon          =	.false.
-TR_symmetry     =	.true.
-nk1s		=       31
-nk2s		=       31
-nk3s		=       31
-number_G_shells =       4
-qpt1            =       0.00000
-qpt2            =       0.25000
-qpt3            =       0.00000
-max_ram		=	1.5e9
-chemical_potential =    10.0739
+ mesh_dir 	=	'./'
+ prefix 		= 	'fe-o'
+ nk1		=	1
+ nk2		=	1
+ nk3		=	1
+ magnon          =	.false.
+ TR_symmetry     =	.true.
+ nk1s		=       31
+ nk2s		=       31
+ nk3s		=       31
+ number_G_shells =       4
+ qpt1            =       0.00000
+ qpt2            =       0.25000
+ qpt3            =       0.00000
+ max_ram		=	1.5e9
+ chemical_potential =    10.0739
 /
-&ph
-nq1=1
-nq2=1
-nq3=1
-nqirr=1
-fc_mat="fe-o.fc"
-/
+
 &intw2W
-intw2W_fullzone =       .false.
-intw2W_method   =       'CONVOLUTION'
+ intw2W_fullzone =       .false.
+ intw2W_method   =       'CONVOLUTION'
 /
+
 &response
-interpolation_scheme =  'linear'
-hw_min               =  -64.0
-hw_max               =   64.0
-n_hw                 =   1001
-chi0_file_prefix     =  'chi0'
-broadening_function  =  'gaussian'
-broadening_method    =  'adaptive'
-real_part_chi0       =  'kramers-kronig'
+ interpolation_scheme =  'linear'
+ hw_min               =  -64.0
+ hw_max               =   64.0
+ n_hw                 =   1001
+ chi0_file_prefix     =  'chi0'
+ broadening_function  =  'gaussian'
+ broadening_method    =  'adaptive'
+ real_part_chi0       =  'kramers-kronig'
 /
 
 &bands
-bands_points	     =  501
-crossing_method      =  'none'
-bands_file           =  'cu_band.dat'
+ bands_points	     =  501
+ crossing_method      =  'none'
+ bands_file           =  'cu_band.dat'
 /
+
+&fsh_input
+/
+
+&ph
+ nq1=1
+ nq2=1
+ nq3=1
+ nqirr=1
+ fc_mat = "fe-o.fc"
+ calc_epmat = .true.
+/
+
 &product_basis
-optimal_basis_size         =  27
-super_factor_1             =  4
-super_factor_2             =  4
-super_factor_3             =  4
-qpt_basis_1                =  0.000000
-qpt_basis_2                =  0.250000
-qpt_basis_3                =  0.000000
-qpt_dir_1                  =  0.000000
-qpt_dir_2                  =  0.250000
-qpt_dir_3                  =  0.000000
-product_basis_filename     = 'B_functions.nc'
-overlaps_filename          = 'overlaps.nc'
-wannier_functions_filename = './Wannier_functions/Wannier_functions.nc'
-tolerance                  = 1.0e-8
-basis_order		   = 'diagonal'
-plane_wave_combination     = 'all'
+ optimal_basis_size         =  27
+ super_factor_1             =  4
+ super_factor_2             =  4
+ super_factor_3             =  4
+ qpt_basis_1                =  0.000000
+ qpt_basis_2                =  0.250000
+ qpt_basis_3                =  0.000000
+ qpt_dir_1                  =  0.000000
+ qpt_dir_2                  =  0.250000
+ qpt_dir_3                  =  0.000000
+ product_basis_filename     = 'B_functions.nc'
+ overlaps_filename          = 'overlaps.nc'
+ wannier_functions_filename = './Wannier_functions/Wannier_functions.nc'
+ tolerance                  = 1.0e-8
+ basis_order		   = 'diagonal'
+ plane_wave_combination     = 'all'
 /
 
 Kpoint_Path

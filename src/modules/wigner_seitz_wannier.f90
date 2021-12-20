@@ -1,7 +1,7 @@
 
-   
 
-MODULE WS 
+
+MODULE WS
 
 PUBLIC :: WignerSeitz, gett3, det3x3d, vecsize
 
@@ -36,17 +36,17 @@ CONTAINS
       nverplane(MAX_POLY)              , & !number of vertices in plane/polygon
       icc(3)
       LOGICAL ::  activ(MAX_PL_VER,MAX_POLY)  , &  !flag for iverplane(,)
-      newvertex, lnew, lplane, equal12, equal13, equal23, equalvert 
+      newvertex, lnew, lplane, equal12, equal13, equal23, equalvert
       INTEGER i, j, k, ic, jc, kc, icc1, lc, lc1, ideb, ii, jj, kk, &
-      iverIC, iverJC, iverKC, l, nind, nplane, nver, nvpl, nvpl2, npoi, iver 
+      iverIC, iverJC, iverKC, l, nind, nplane, nver, nvpl, nvpl2, npoi, iver
       REAL*8 :: det, detx, dety, detz, di, dj, dk, dist1, dist2, &
       px, py, pz, vsize
-      
+
 
 
 !     NPOI.........number of point
 !     NVER.........number of vertices
-!     NIND.........number of different indices and planes that polihedra 
+!     NIND.........number of different indices and planes that polihedra
 !                  is made of
 !     NVPL.........number of vertex in polygon/plane
 
@@ -82,14 +82,14 @@ CONTAINS
       point(1,NPOI)=di*vec(1,1) + dj*vec(2,1) + dk*vec(3,1)
       point(2,NPOI)=di*vec(1,2) + dj*vec(2,2) + dk*vec(3,2)
       point(3,NPOI)=di*vec(1,3) + dj*vec(2,3) + dk*vec(3,3)
-      point(4,NPOI)=0.5d0 * & 
+      point(4,NPOI)=0.5d0 * &
       ( point(1,NPOI)*point(1,NPOI) + point(2,NPOI)*point(2,NPOI) + point(3,NPOI)*point(3,NPOI))
       endif
       enddo
       enddo
       enddo
 
-!     find vertices as intersections of three planes; 
+!     find vertices as intersections of three planes;
 !     planes are made at the middle of origin and points
       NVER=0
       do i=1,NPOI-2
@@ -99,12 +99,12 @@ CONTAINS
                       point(1,i), point(1,j), point(1,k),     &
                       point(2,i), point(2,j), point(2,k),     &
                       point(3,i), point(3,j), point(3,k))
-      if(abs(det).gt.MAXERR)then   
+      if(abs(det).gt.MAXERR)then
       detx=det3x3d(                             &
                          point(4,i), point(4,j), point(4,k),  &
                          point(2,i), point(2,j), point(2,k),  &
                          point(3,i), point(3,j), point(3,k))
-  
+
       dety=det3x3d(                             &
                          point(1,i), point(1,j), point(1,k),  &
                          point(4,i), point(4,j), point(4,k),  &
@@ -119,7 +119,7 @@ CONTAINS
       py=dety/det
       pz=detz/det
 
-!     if vertex is closer to origin than to any other point, 
+!     if vertex is closer to origin than to any other point,
 !     than we have new vertex
       l=0
       newvertex=.true.
@@ -132,7 +132,7 @@ CONTAINS
                             (pz-point(3,l))*(pz-point(3,l)))
       if(dist1.gt.(dist2 + MAXERR)) newvertex=.false.
       enddo
-      
+
       if(newvertex) then
       NVER=NVER+1
       vertex(1,NVER) = px
@@ -153,7 +153,7 @@ CONTAINS
       do i=1,NVER
       !WRITE(*,*) (vertex(j,i),j=1,3),'; --> ',                &
       !          (vindex(j,i),j=1,3)
-      
+
       !write(111,"(100f12.6)")vertex(1:3,i)
       enddo
       !WRITE(*,*) ' '
@@ -168,7 +168,7 @@ CONTAINS
       do ii=1,3
       lnew=.true.
       j=1
-      do while(lnew .and. j.le.NIND)                  
+      do while(lnew .and. j.le.NIND)
       if(indexlist(j).eq.vindex(ii,i)) lnew=.false.
       j=j+1
       enddo
@@ -176,7 +176,7 @@ CONTAINS
       NIND=NIND+1
       indexlist(NIND)=vindex(ii,i)
       endif
-      enddo         
+      enddo
       enddo
 
 !     --- --- DEBUG_BEGIN --- ---
@@ -191,7 +191,7 @@ CONTAINS
 !     so we have NIND different planes; if vertex has index M, that means
 !     that it is a member of Mth plane; make plane data structure
 !
-!     some vertices that belong to one plane may be identical or colinear, 
+!     some vertices that belong to one plane may be identical or colinear,
 !     get rid of that vertices
       NPLANE=0
       do i=1,NIND
@@ -199,14 +199,14 @@ CONTAINS
       lplane=.true.
       do j=1,NVER
       do jj=1,3
-      if(vindex(jj,j).eq.indexlist(i)) then 
+      if(vindex(jj,j).eq.indexlist(i)) then
 !     vertex 'j' belongs to plane 'i'
       NVPL=NVPL+1
       iverplane(NVPL,i)=j
       activ(NVPL,i)=.true.
       nverplane(i)=NVPL
       endif
-      enddo            
+      enddo
       enddo
 !     if NVPL<3 -> this is not a plane; disregard
       if(NVPL.lt.3) lplane=.false.
@@ -216,12 +216,12 @@ CONTAINS
       do ic=1,NVPL-2
       if(activ(ic,i)) then
 
-      do jc=ic+1,NVPL-1   
+      do jc=ic+1,NVPL-1
       if(activ(jc,i))then
 
       do kc=jc+1,NVPL
       if(activ(kc,i))then
-      
+
       iverIC=iverplane(ic,i)
       iverJC=iverplane(jc,i)
       iverKC=iverplane(kc,i)
@@ -240,9 +240,9 @@ CONTAINS
              abs(vertex(1,iverJC)-vertex(1,iverKC)).lt.MAXERR2 .and. &
              abs(vertex(2,iverJC)-vertex(2,iverKC)).lt.MAXERR2 .and. &
              abs(vertex(3,iverJC)-vertex(3,iverKC)).lt.MAXERR2
-      
+
       equalvert=.true.
-      if(equal12.and.equal13)then 
+      if(equal12.and.equal13)then
 !     all three points are identical
 !     disregard with lower indices: ic < jc < kc
       activ(ic,i)=.false.
@@ -261,11 +261,11 @@ CONTAINS
 !                              PRINT *,'i=',i,';  equalvert=',equalvert
 !     --- --- DEBUG_BEGIN --- ---
 
-      
+
       if(.not.equalvert)then
       do lc=1,3
-      vect1(lc) = vertex(lc,iverJC)- vertex(lc,iverIC) 
-      vect2(lc) = vertex(lc,iverKC)- vertex(lc,iverIC) 
+      vect1(lc) = vertex(lc,iverJC)- vertex(lc,iverIC)
+      vect2(lc) = vertex(lc,iverKC)- vertex(lc,iverIC)
       enddo
 
       CALL VecProduct(vect1,vect2,vnml)
@@ -316,7 +316,7 @@ CONTAINS
       enddo         !jc
       endif
       enddo               !ic
-      
+
       if(lplane)then
       NVPL2=0
       do ic=1,NVPL
@@ -333,15 +333,15 @@ CONTAINS
       endif
 
       endif
-     
+
       open (unit=123,file="polyhedra.dat", status="unknown")
- 
+
       if(lplane .and. NVPL2.gt.2) then
       NPLANE=NPLANE+1
 !     --- --- DEBUG_BEGIN --- ---
       !WRITE(*,*)'PLANE N.:',i,'; NVPL2=',NVPL2,'; NVPL',NVPL,  &
       !             ';  INDEX LIST/VERTEX LIST'
-      write(123,*) nplane, NVPL2 
+      write(123,*) nplane, NVPL2
       do ideb=1,NVPL2
        write(123,"(3(x,f18.15))")  (vertex(j,iverplane2(ideb,nplane)),j=1,3)
       enddo
@@ -364,13 +364,13 @@ CONTAINS
 !     equation of line: x = x1 + t(x2-x1)
 !     function return a t3 for third point
 !     ====================================
-      FUNCTION GETT3(ver1,ver2,ver3)      
+      FUNCTION GETT3(ver1,ver2,ver3)
       IMPLICIT none
       REAL*8 ver1(3), ver2(3), ver3(3)  !three vertices
       REAL*8 dx, dy, dz, sum,GETT3
-      
-      dx = ver2(1)-ver1(1) 
-      dy = ver2(2)-ver1(2) 
+
+      dx = ver2(1)-ver1(1)
+      dy = ver2(2)-ver1(2)
       dz = ver2(3)-ver1(3)
       sum = dx+dy+dz
       if(abs(sum).lt.MAXERR) then
@@ -392,7 +392,7 @@ CONTAINS
 
       FUNCTION DET3X3D(x11,x12,x13,x21,x22,x23,x31,x32,x33)
       REAL*8 :: x11,x12,x13,x21,x22,x23,x31,x32,x33, DET3X3D
-      
+
       DET3X3D=x11*x22*x33 + x12*x23*x31 + x13*x21*x32- &
              x31*x22*x13 - x32*x23*x11 - x33*x21*x12
       RETURN
@@ -400,7 +400,7 @@ CONTAINS
 
       SUBROUTINE VecProduct(vec1,vec2,resvec)
       REAL*8 :: vec1(3),vec2(3),resvec(3)
-      
+
       resvec(1) = vec1(2)*vec2(3) - vec2(2)*vec1(3)
       resvec(2) = vec1(3)*vec2(1) - vec2(3)*vec1(1)
       resvec(3) = vec1(1)*vec2(2) - vec2(1)*vec1(2)
@@ -410,7 +410,7 @@ CONTAINS
 !     ============================
       FUNCTION VecSize(vec)
       REAL*8 :: vec(3), VecSize
-      
+
       VecSize = dsqrt(vec(1)*vec(1) + vec(2)*vec(2) + vec(3)*vec(3))
       RETURN
       END FUNCTION VecSize

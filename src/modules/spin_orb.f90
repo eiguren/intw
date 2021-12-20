@@ -4,11 +4,16 @@ MODULE intw_spin_orb
   USE intw_pseudo, ONLY : lmaxx
 
   SAVE
-
+  !
+  ! variables
+  public :: starting_spin_angle, domag, rot_ylm, fcoef
+  !
+  private
+  !
   LOGICAL :: &
 !      lspinorb,  &       ! if .TRUE. this is a spin-orbit calculation
-      starting_spin_angle, & ! if .TRUE. the initial wavefunctions are 
-                             ! spin-angle functions. 
+      starting_spin_angle, & ! if .TRUE. the initial wavefunctions are
+                             ! spin-angle functions.
       domag              ! if .TRUE. magnetization is computed
 
 
@@ -17,4 +22,3 @@ MODULE intw_spin_orb
   COMPLEX (DP), ALLOCATABLE :: fcoef(:,:,:,:,:) ! function needed to
                          ! account for spinors.
 END MODULE intw_spin_orb
-

@@ -19,6 +19,7 @@ subroutine H_Rew2kb(nrr_k,irr_k,ndegen_k,kpoint,ham_rw,P_diag,eig)
 ! H_k(m,n)=eig(n)*d(m-n)                                                                   !
 !===========================================================================================
 
+  use kinds, only: dp
   use intw_reading
   use intw_useful_constants
   use intw_W90
@@ -64,7 +65,7 @@ subroutine H_Rew2kb(nrr_k,irr_k,ndegen_k,kpoint,ham_rw,P_diag,eig)
      enddo !jbnd
   enddo !ibnd
   !
-  ! 2) We diagonalize the Reciprocal Wannier Bloch Hamiltonians in order to obtain eigenstates 
+  ! 2) We diagonalize the Reciprocal Wannier Bloch Hamiltonians in order to obtain eigenstates
   ! and eigenvalues at each k point of the electron fine mesh (Reciprocal Bloch KS representation)
   ! We also keep the diagonalizing matrix in order to unrotate afterwards the matrix elements,
   ! that is Wannier unrotation of the Reciprocal Wannier matrix elements to Reciprocal Bloch

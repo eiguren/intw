@@ -17,36 +17,32 @@ module intw_reading
   !            write_parameters_data_file_xml
   !----------------------------------------------------------------------------!
   !
-  use intw_input_parameters
-  use intw_utility
-  use kinds,     only : dp
-  use intw_useful_constants
-  use w90_parameters, only: num_bands,num_exclude_bands,exclude_bands
+  use kinds, only: dp
   !
   implicit none
   !
   save
   !
-  !haritz
+  !
   ! variables
-  public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE,&
-       s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels,&
-       at, bg, alat, volume0, nat, ntyp, ityp, tau, amass,&
-       nr1, nr2, nr3, ngm, gvec, QE_igk, QE_ngk, noncolin, spinorb_mag, ecutwfc,&
-       ecutrho, tpiba, tpiba2, dual, gcutm, gamma_only, e_fermi,lsda 
-
+  public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, &
+            s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels, &
+            at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
+            ngm, gvec, QE_ngk, QE_igk, noncolin, spinorb_mag, ecutwfc, ecutrho, &
+            tpiba, tpiba2, dual, gcutm, gamma_only, e_fermi, lsda
+  !
   ! subroutines
   public :: read_parameters_data_file_xml, &
-       read_kpoints_data_file_xml, &
-       get_ngm, &
-       get_ngmax, &
-       get_gvec, &
-       get_K_folder_data, &
-       write_tag, &
-       deallocate_reading_variables
-
+            read_kpoints_data_file_xml, &
+            get_ngm, &
+            get_ngmax, &
+            get_gvec, &
+            get_K_folder_data, &
+            write_tag, &
+            deallocate_reading_variables
+  !
   private
-  !haritz
+  !
 
   !----------------------------------------------------------------------------!
   ! Variables strongly inspired by QE variables
@@ -56,9 +52,9 @@ module intw_reading
   !       The order of the atoms in the cell will thus be taken directly
   !     as the order in the .xml file.
   !----------------------------------------------------------------------------!
-!!!!!!!!!!!!!!!!!!!
-  ! Bands variables
-!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!
+    ! Bands variables
+  !!!!!!!!!!!!!!!!!!!
 
   integer :: nG_max
   ! the maximum number of G vectors for any  k point
@@ -83,11 +79,11 @@ module intw_reading
   integer :: nkpoints_QE
   ! the number of kpoints in the QE folders
 
-!!!!!!!!!!!!!!!!!!!!!!
-  ! Symmetry variables
-!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!
+    ! Symmetry variables
+  !!!!!!!!!!!!!!!!!!!!!!
 
-  integer,allocatable :: s(:,:,:)
+  integer, allocatable :: s(:,:,:)
   ! symmetry matrices, in crystal coordinates,
   ! CAREFUL!!! since the symmetry matrices are expressed
   ! in the crystal coordinates, they may not *look* like
@@ -113,25 +109,25 @@ module intw_reading
   integer :: nsym
   ! number of crystal symmetries
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! system / configuration variables
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! system / configuration variables
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   character(len=80), allocatable :: atom_pfile(:)
-  !     atom_pfile( j )  = name of pseudopotential file for
-  !                      the j-th atomic type (or species)
+  ! atom_pfile( j )  = name of pseudopotential file for
+  ! the j-th atomic type (or species)
 
-  character(len=3), allocatable  :: atom_labels(:)
-  !     atom_label( j )  = name of the j-th atomic type (or species)
+  character(len=3), allocatable :: atom_labels(:)
+  ! atom_label( j )  = name of the j-th atomic type (or species)
 
   real(dp) :: at(3,3)
-  !    The a1 a2 and a3 lattice vectors
+  ! The a1 a2 and a3 lattice vectors
 
   real(dp) :: bg(3,3)
-  !   The reciprocal lattice vectors
+  ! The reciprocal lattice vectors
 
   real(dp) :: alat
-  !   The lattice parameter
+  ! The lattice parameter
 
   real(dp) :: volume0
 
@@ -141,14 +137,14 @@ module intw_reading
   integer :: ntyp
   ! the number types of atoms in the cell
 
-  integer,  allocatable :: ityp(:)
-  !     ityp( i ) = type of the i-th atom
+  integer, allocatable :: ityp(:)
+  ! ityp( i ) = type of the i-th atom
 
   real(dp), allocatable :: tau(:,:)
-  !  tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
+  ! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
 
   real(dp), allocatable :: amass(:)
-  !  amass(1:nat)  = atomic masses
+  ! amass(1:nat)  = atomic masses
 
   integer :: nr1, nr2, nr3
   ! The FFT  grid
@@ -160,23 +156,23 @@ module intw_reading
   ! The global g vectors (to which indices refer).
 
   integer, allocatable :: QE_ngk(:)
-  ! nG for all ks 
+  ! nG for all ks
 
   integer, allocatable :: QE_igk(:,:)
   ! iG_list for all ks
 
   logical :: noncolin
-  !if a noncolinear calculation noncolin=T
+  ! if a noncolinear calculation noncolin=T
 
   logical :: spinorb_mag
-  !if spinorb_mag=T It is a situation with TR broken and spinor calculation.
-  !if spinorb_mag=F TR sym. is present!
+  ! if spinorb_mag=T It is a situation with TR broken and spinor calculation.
+  ! if spinorb_mag=F TR sym. is present!
 
   real(dp) :: ecutwfc
-  !cutoff energy for wfc  (Hartree)
+  ! cutoff energy for wfc  (Hartree)
 
   real(dp) :: ecutrho
-  !cutoff energy for wfc (Hartree)
+  ! cutoff energy for wfc (Hartree)
 
   real(kind=dp):: tpiba != twopi/alat
   real(kind=dp) :: tpiba2 != tpiba**2
@@ -187,7 +183,7 @@ module intw_reading
   logical :: gamma_only
   real(dp) :: e_fermi
 
-  logical:: lsda
+  logical :: lsda
 
 contains
 
@@ -198,49 +194,48 @@ contains
     ! using the iotk library. See document QE/iotk/doc/manual.txt
     ! for details regarding the iotk subroutines.
     !------------------------------------------------------------------
+    use intw_input_parameters, only: mesh_dir, prefix, TR_symmetry
+    use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: twopi
+
     implicit none
 
-    integer        :: io_unit  ! input/output file unit
-    integer        ::  ii      ! a looping variable
+    integer :: io_unit ! input/output file unit
+    integer :: ii ! a looping variable
 
-    character(256) :: datafile ! full path of the data-file.xml file
-    character(256) :: tag      ! dummy string for variable names in .xml file
-    character(256) :: attr     ! dummy string for the read attributes
-    ! in the .xml file
+    character(256) :: datafile ! full path of the data-file.xml file in the .xml file
     ! note: mesh_dir and prefix are defined in the input_parameter module.
 
 
-    integer        ::  max_nsym ! maximum possible value of nsym. Relevant
+    integer :: max_nsym ! maximum possible value of nsym. Relevant
     ! variable for the magnetic case.
 
-    integer      ::  i_sym
+    integer :: i_sym
 
-    integer, dimension (48) :: trev
+    integer, dimension(48) :: trev
 
-    logical      ::  datafile_exists ! for checking if files
-    ! in .save QE folder exist
+    logical :: datafile_exists ! for checking if files in .save QE folder exist
 
-    integer, dimension (3,3,48) :: ss
+    integer, dimension(3,3,48) :: ss
     real(kind=dp), dimension(4,48) :: fftau
-    character (len=256) :: dummy
+    character(len=256) :: dummy
 
-    integer :: i,j 
+    integer :: i, j
     ! First, read the value of the parameter ngm
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
 
-    inquire(file=datafile,    exist=datafile_exists)
+    inquire(file=datafile, exist=datafile_exists)
 
     if (.not.datafile_exists) then
-       write(*,20) '*****************************************************'
-       write(*,20) '*   ERROR                                           *'
-       write(*,20) '*   The file gvectors.dat cannot be found,          *'
-       write(*,20) '*   check if the folder .save.intw                  *'
-       write(*,20) '*   exists or if the prefix in intw input file      *'
-       write(*,20) '*   has been correctly chosen.                      *'
-       write(*,20) '*   STOPPING                                        *'
-       write(*,20) '*****************************************************'
-
-       stop
+      write(*,20) '*****************************************************'
+      write(*,20) '*   ERROR                                           *'
+      write(*,20) '*   The file gvectors.dat cannot be found,          *'
+      write(*,20) '*   check if the folder .save.intw                  *'
+      write(*,20) '*   exists or if the prefix in intw input file      *'
+      write(*,20) '*   has been correctly chosen.                      *'
+      write(*,20) '*   STOPPING                                        *'
+      write(*,20) '*****************************************************'
+      stop
     end if
 
     io_unit = find_free_unit()
@@ -249,26 +244,25 @@ contains
     close(unit=io_unit)
 
     !read the data related to the crystal structure
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"crystal.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"crystal.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="formatted")
     !ALAT
     read(unit=io_unit,fmt=*)dummy
-    read(unit=io_unit,fmt=*)alat 
+    read(unit=io_unit,fmt=*)alat
     !AT
     read(unit=io_unit,fmt=*)dummy
     do i=1,3
-       read(unit=io_unit,fmt=*)(at (i,j),j=1,3)
+      read(unit=io_unit,fmt=*)(at (i,j),j=1,3)
     enddo
-    volume0 = alat**3*abs(                      &
-         at(1,1)*(at(2,2)*at(3,3)-at(2,3)*at(3,2)) + &
-         at(1,2)*(at(2,3)*at(3,1)-at(2,1)*at(3,3)) + &
-         at(1,3)*(at(2,1)*at(3,2)-at(2,2)*at(3,1)))
+    volume0 = alat**3*abs( at(1,1)*(at(2,2)*at(3,3)-at(2,3)*at(3,2)) + &
+                           at(1,2)*(at(2,3)*at(3,1)-at(2,1)*at(3,3)) + &
+                           at(1,3)*(at(2,1)*at(3,2)-at(2,2)*at(3,1)) )
 
     !BG
     read(unit=io_unit,fmt=*)dummy
     do i=1,3
-       read(unit=io_unit,fmt=*)(bg (i,j),j=1,3)
+      read(unit=io_unit,fmt=*)(bg (i,j),j=1,3)
     enddo
     !FFT grid nr1 nr2 nr3
     read(unit=io_unit,fmt=*)dummy
@@ -297,7 +291,7 @@ contains
     if (noncolin) then
        nspin = 2
     else
-       nspin = 1
+      nspin = 1
     end if
 
     !NAT
@@ -328,14 +322,13 @@ contains
     !ATOM LABELS and PP files
     read(unit=io_unit,fmt=*)dummy
     do i=1,ntyp
-       read(unit=io_unit,fmt=*)atom_labels(i), amass(i),  atom_pfile(i)
-       !print*,"atom_labels(i), amass(i),  atom_pfile(i)", atom_labels(i), amass(i),  atom_pfile(i)
+      read(unit=io_unit,fmt=*)atom_labels(i), amass(i), atom_pfile(i)
     end do
 
     !POSITIONS
     read(unit=io_unit,fmt=*)dummy
     do i=1,nat
-       read(unit=io_unit,fmt=*)dummy,ityp(i), tau(:,i)
+      read(unit=io_unit,fmt=*)dummy,ityp(i), tau(:,i)
     end do
 
     !NSYM
@@ -346,73 +339,73 @@ contains
     allocate(can_use_TR(nsym))
     !
     do ii=1,nsym
-       read(unit=io_unit,fmt=*) i_sym
-       do i=1, 3
-          read(unit=io_unit, fmt=*), (s(i,j,ii), j=1,3)
-       enddo
-       read(unit=io_unit, fmt=*), ( ftau(j,ii) , j=1,3) 
-       read(unit=io_unit, fmt=*)  trev(ii)
+      read(unit=io_unit,fmt=*) i_sym
+      do i=1, 3
+        read(unit=io_unit, fmt=*), (s(i,j,ii), j=1,3)
+      enddo
+      read(unit=io_unit, fmt=*), ( ftau(j,ii), j=1,3)
+      read(unit=io_unit, fmt=*)  trev(ii)
     end do !ii
 
     if (nspin == 1 .or. nspin ==2.and. TR_symmetry) then
-       ! This is the easy case. Simply read in the symmetries
+      ! This is the easy case. Simply read in the symmetries
 
-       do ii=1,nsym
-          if (nspin == 1) then
-             can_use_TR(ii) = TR_symmetry
-          else if (nspin ==2) then
+      do ii=1,nsym
+        if (nspin == 1) then
+          can_use_TR(ii) = TR_symmetry
+        else if (nspin ==2) then
 
-             if ( trev(ii) == 1) then
-                can_use_TR(ii) = .true.
-             else
-                can_use_TR(ii) = .false.
-                if (.not. spinorb_mag) can_use_TR(ii) = .true.
-             end if
-          end if !nspin 1 or 2
-       end do
-    else if (nspin == 2 .and. .not. TR_symmetry) then
-       ! This case is slightly more complicated. QE by default seems to
-       ! assume time reversal symmetry is sometimes ok even in the presence
-       ! of a B field. This is only true if B is colinear! I don't think it is
-       ! true in the non-colinear case. Thus, rotations combined with TR must
-       ! be suppressed!
-
-       max_nsym=nsym
-
-       nsym = 0
-
-       do ii=1,max_nsym
-          if ( trev(ii) == 0) nsym = nsym + 1
-       end do
-
-       ! next, populate the symmetry array
-       allocate(s(3,3,nsym))
-       allocate(ftau(3,nsym))
-       allocate(can_use_TR(nsym))
-
-       can_use_TR(:)  = .false.
-
-       ss    (:,:,1:nsym) = s(:,:,1:nsym)
-
-       fftau(1:3,1:nsym)   =ftau(1:3,1:nsym)
-       s=0
-       ftau=0.0_dp
-
-       i_sym = 0
-
-       do ii=1,max_nsym
-          if ( trev(ii) == 0) then
-             i_sym = i_sym + 1
-             s(:,:,i_sym)  =ss(:,:,ii)
-             ftau(:,i_sym) =fftau(:,ii)
+          if ( trev(ii) == 1) then
+            can_use_TR(ii) = .true.
+          else
+            can_use_TR(ii) = .false.
+            if (.not. spinorb_mag) can_use_TR(ii) = .true.
           end if
+        end if !nspin 1 or 2
+      end do
+    else if (nspin == 2 .and. .not. TR_symmetry) then
+      ! This case is slightly more complicated. QE by default seems to
+      ! assume time reversal symmetry is sometimes ok even in the presence
+      ! of a B field. This is only true if B is colinear! I don't think it is
+      ! true in the non-colinear case. Thus, rotations combined with TR must
+      ! be suppressed!
 
-       end do
+      max_nsym = nsym
+
+      nsym = 0
+
+      do ii=1,max_nsym
+        if ( trev(ii) == 0) nsym = nsym + 1
+      end do
+
+      ! next, populate the symmetry array
+      allocate(s(3,3,nsym))
+      allocate(ftau(3,nsym))
+      allocate(can_use_TR(nsym))
+
+      can_use_TR(:) = .false.
+
+      ss(:,:,1:nsym) = s(:,:,1:nsym)
+
+      fftau(1:3,1:nsym) = ftau(1:3,1:nsym)
+      s = 0
+      ftau = 0.0_dp
+
+      i_sym = 0
+
+      do ii=1,max_nsym
+        if ( trev(ii) == 0) then
+          i_sym = i_sym + 1
+          s(:,:,i_sym) = ss(:,:,ii)
+          ftau(:,i_sym) = fftau(:,ii)
+        end if
+
+      end do
 
     end if !nspin
 
-    !-KONTUZ  
-    npol=nspin 
+    !-KONTUZ
+    npol=nspin
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nkpoints_QE
 
@@ -424,9 +417,9 @@ contains
     read(unit=io_unit,fmt=*)nbands
 
 
-    close(unit=io_unit)   
+    close(unit=io_unit)
 20  format(A)
-    return   ! 
+    return
 
   end subroutine read_parameters_data_file_xml
 
@@ -440,7 +433,7 @@ contains
     !               kpoint(3,nk)    : the kpoints
     !
     !       NOTE: The tasks performed by this subroutine are NOT performed by
-    !             the previous subroutine,  "read_parameters_data_file_xml"
+    !             the previous subroutine, "read_parameters_data_file_xml"
     !             because, for some obscure reason, FORTRAN does not allow an
     !             allocatable array to be allocated in a subroutine.
     !          (I no longer think this is true... but it doesn't matter).
@@ -449,55 +442,62 @@ contains
     !       to the more convenient crystal units by using the basis vectors
     !       a1 a2 a3, where ai * bj = 2pi delta_{ij}
     !------------------------------------------------------------------------
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+
     implicit none
 
-    integer        :: io_unit
+    integer :: io_unit
     character(256) :: datafile
 
-    real(dp)       :: k(3), kpoints_cryst(3,nkpoints_QE)
+    real(dp) :: k(3), kpoints_cryst(3,nkpoints_QE)
 
-    integer :: i,j
+    integer :: i, j
 
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"kpoints.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"kpoints.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="formatted")
 
     do i=1,nkpoints_QE
-       read(unit=io_unit,fmt=*)k(1:3)
-       do j=1,3
-          kpoints_cryst(j,i) = sum(at(:,j)*k(:)) ! lehen at/alat eginda zegoen ... 
-       enddo
+      read(unit=io_unit,fmt=*)k(1:3)
+      do j=1,3
+        kpoints_cryst(j,i) = sum(at(:,j)*k(:)) ! lehen at/alat eginda zegoen ...
+      enddo
     end do
 
     close(unit=io_unit)
+
   end subroutine read_kpoints_data_file_xml
-  !
-  !--------------------------------------------------
-  !Read ngm variable.
-  !---------------------------------------------------
+
   subroutine get_ngm ()
+
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+
     implicit none
+
     integer :: io_unit
 
     !output:
     ! 'ngm', the real max num. of g vectors in the global list.
     !local :
-    character(256) :: gvec_file, datafile
-    character(256) :: attr
+    character(256) :: datafile
 
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)ngm
     close(unit=io_unit)
 
-
   end subroutine get_ngm
 
-  !Read ngm variable.
-  !---------------------------------------------------
   subroutine get_ngmax ()
+
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+
     implicit none
+
     integer :: io_unit
 
     !output:
@@ -505,7 +505,7 @@ contains
     !local :
     character(256) :: datafile
 
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)nG_max
@@ -514,52 +514,51 @@ contains
   end subroutine get_ngmax
 
 
-  !--------------------------------------------------
-  !Read global gvec point data size= ngm
-  !---------------------------------------------------
   subroutine get_gvec ()
 
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+
     implicit none
+
     integer :: io_unit
     !input
     ! output
     ! gvec  : is the real max num. of g vectors in the global list.
 
     !local
-    character(256) :: gvec_file, datafile
-    character(256) :: attr
+    character(256) :: datafile
     integer :: ig, ik
 
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)ngm
     !allocate(gvec(1:2,ngm))
 
     do ig=1,ngm
-       read(unit=io_unit)gvec(1:3,ig)
+      read(unit=io_unit)gvec(1:3,ig)
     end do
 
     close(unit=io_unit)
 
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)nG_max
 
     allocate(QE_igk(nG_max,nkpoints_QE))
     allocate(QE_ngk(nkpoints_QE))
-    QE_igk=0
+    QE_igk = 0
     do ik=1,nkpoints_QE
-       read(unit=io_unit)QE_ngk(ik)
-       read(unit=io_unit)QE_igk(1:QE_ngk(ik),ik)
+      read(unit=io_unit)QE_ngk(ik)
+      read(unit=io_unit)QE_igk(1:QE_ngk(ik),ik)
     end do
 
     close(unit=io_unit)
 
   end subroutine get_gvec
-  !
-  !--------------------------------------------------------------------------
+
   subroutine get_K_folder_data(ik,list_iG,wfc,QE_eig)
     !-------------------------------------------------------------------------
 
@@ -586,6 +585,10 @@ contains
     ! Thus, it makes GOOD SENSE to put the G index first, as this is
     ! the index that will be used to perform inner products.
     !------------------------------------------------------------------------
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: cmplx_0
+    use w90_parameters, only: num_exclude_bands, exclude_bands
 
     implicit none
 
@@ -598,59 +601,56 @@ contains
 
     !logical variables
 
-    character(256) :: Kdir, wfc_file, datafile
-    character(256) :: tag
+    character(256) :: wfc_file, datafile
     logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude,nG
-    real(dp),parameter :: ha_to_ev=27.211383860484784
+    real(dp), parameter :: ha_to_ev = 27.211383860484784
     complex(dp) :: wfc_all(nG_max,nbands,nspin)
     real(dp) :: QE_eig_all(nbands)
-    integer :: ns, iG, ikk
 
-    band_excluded(:)=.false.
+    band_excluded(:) = .false.
     !
     do i=1,num_exclude_bands
        !
-       nexclude=exclude_bands(i)
-       band_excluded(nexclude)=.true.
+       nexclude = exclude_bands(i)
+       band_excluded(nexclude) = .true.
        !
     enddo
     !
     ! initialize the arrays to zero (zero will be broadcasted)
     !
-    list_iG(:)=0
-    wfc_all(:,:,:)=cmplx_0
-    wfc    (:,:,:)=cmplx_0
-
+    list_iG(:) = 0
+    wfc_all(:,:,:) = cmplx_0
+    wfc    (:,:,:) = cmplx_0
     !
     write(wfc_file,100) ik
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG ! 
+    read(unit=io_unit)nG !
 
     read(unit=io_unit)list_iG(1:nG)
     read(unit=io_unit)QE_eig_all(1:nbands)
 
     do ibnd=1,nbands
-       read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
+      read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
     enddo
 
-    n_yes=0
+    n_yes = 0
     !
     do ibnd=1,nbands
-       !
-       if (band_excluded(ibnd)) then
-          !
-       else
-          !
-          n_yes=n_yes+1
-          wfc(:,n_yes,:)=wfc_all(:,ibnd,:)
-          QE_eig(n_yes) =QE_eig_all(ibnd)
-          !
-       endif
-       !
+      !
+      if (band_excluded(ibnd)) then
+        !
+      else
+        !
+        n_yes=n_yes+1
+        wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
+        QE_eig(n_yes) = QE_eig_all(ibnd)
+        !
+      endif
+      !
     enddo
     close(io_unit)
 
@@ -658,9 +658,7 @@ contains
     return
 
   end subroutine get_K_folder_data
-  !-----------------------------------------------
-  !***********************************************
-  !-----------------------------------------------
+
   subroutine write_tag(string,i,tag)
     !-----------------------------------------------
     ! This subroutine creates a character string of
@@ -670,24 +668,24 @@ contains
     !-----------------------------------------------
     implicit none
 
-    integer         ::     i
-    character(*)    ::     string
-    character(256)  ::     integer_part,    tag
+    integer :: i
+    character(*) :: string
+    character(256) :: integer_part, tag
 
 
     if (i < 10) then
-       write(integer_part,100) i
+      write(integer_part,100) i
     elseif (i < 100 ) then
-       write(integer_part,200) i
+      write(integer_part,200) i
     elseif (i < 1000 ) then
-       write(integer_part,300) i
+      write(integer_part,300) i
     elseif (i < 10000 ) then
-       write(integer_part,400) i
+      write(integer_part,400) i
     elseif (i < 100000 ) then
-       write(integer_part,500) i
+      write(integer_part,500) i
     end if
 
-    tag     =       trim(string)//trim(integer_part)
+    tag = trim(string)//trim(integer_part)
 
 100 format(I1)
 200 format(I2)
@@ -712,9 +710,7 @@ contains
 
   end subroutine deallocate_reading_variables
 
-  !----------------------------------------------------------------------------!
-  !
-  !
+
 end module intw_reading
 !
 !

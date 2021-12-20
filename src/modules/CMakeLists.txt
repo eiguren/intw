@@ -36,7 +36,7 @@ set(SOURCES
   phcom.f90
   ph_module.f90
   phq_init.f90
-  reading_new.f90
+  reading.f90
   rotaxis.f90
   selfeliash_calculate.f90
   selfen_add_terms.f90

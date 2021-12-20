@@ -6,50 +6,44 @@
 module intw_intw2wannier
 !
 !----------------------------------------------------------------------------!
-!       This module contains subroutines which will perform the same tasks 
-!       as the Quantum Espresso utility program "pw2wannier", but utilizing 
-!       symmetries.       
-!       
-!       In particular, this module will produce the file $seed.mmn 
-!       using only the wavefunctions in the IBZ, rotating them appropriately. 
+!       This module contains subroutines which will perform the same tasks
+!       as the Quantum Espresso utility program "pw2wannier", but utilizing
+!       symmetries.
+!
+!       In particular, this module will produce the file $seed.mmn
+!       using only the wavefunctions in the IBZ, rotating them appropriately.
 !----------------------------------------------------------------------------!
-!haritz
-use kinds, only: dp
-!haritz
-  use intw_useful_constants
-  use intw_utility
-  use intw_symmetries
-  use intw_matrix_elements
-  use intw_fft
-  use w90_parameters, only: num_bands,num_exclude_bands,exclude_bands
+  use kinds, only: dp
+  use intw_reading, only: nbands, nG_max, ngm, nspin
+  use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
+  use intw_symmetries, only: get_psi_k
 
   implicit none
-!haritz
-!  ! variables
-!  public :: nnkp_exclude_bands, nnkp_real_lattice, nnkp_recip_lattice, &
-!            nnkp_num_kpoints, nnkp_nnkpts, nnkp_n_proj, nnkp_kpoints, &
-!            nnkp_Wcenters, nnkp_proj_x, nnkp_proj_z, nnkp_proj_zona, &
-!            nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, nnkp_list_ikpt_nn, &
-!            nnkp_list_G, nnkp_excluded_bands
-!
-!  ! subroutines
-!  public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
-!            intw2W90_check_mesh, generate_header, generate_mmn, &
-!            generate_mmn_using_allwfc, generate_amn_using_allwfc, &
-!            generate_amn, generate_guiding_function, &
-!            get_guiding_function_overlap_FFT, &
-!            get_guiding_function_overlap_convolution, get_radial_part, &
-!            get_angular_part, ylm_wannier
-!  ! functions
-!  public :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
-!
-!  private
-!haritz
+  !
+  ! variables
+  public :: nnkp_exclude_bands, nnkp_real_lattice, nnkp_recip_lattice, &
+            nnkp_num_kpoints, nnkp_nnkpts, nnkp_n_proj, nnkp_kpoints, &
+            nnkp_Wcenters, nnkp_proj_x, nnkp_proj_z, nnkp_proj_zona, &
+            nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, nnkp_list_ikpt_nn, &
+            nnkp_list_G, nnkp_excluded_bands
+  !
+  ! subroutines
+  public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
+            intw2W90_check_mesh, generate_header, generate_mmn, &
+            generate_mmn_using_allwfc, generate_amn_using_allwfc, &
+            generate_amn, generate_guiding_function, &
+            get_guiding_function_overlap_FFT, &
+            get_guiding_function_overlap_convolution, get_radial_part, &
+            get_angular_part, ylm_wannier
+  !
+  private
   !
   save
-  ! declare some global variables; the prefix "nnkp" will indicate 
+  ! declare some global variables; the prefix "nnkp" will indicate
   ! variables read from the $prefix.nnkp file, which must be checked with
-  ! the data read from the input file for consistency. 
+  ! the data read from the input file for consistency.
+
+  external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
 
   integer     :: nnkp_exclude_bands     !how many bands are excluded?
 
@@ -65,23 +59,23 @@ use kinds, only: dp
 
   integer     :: nnkp_num_kpoints       !the number of k-points in the 1BZ
 
-  integer     :: nnkp_nnkpts            !the number near neighbor k-points  
+  integer     :: nnkp_nnkpts            !the number near neighbor k-points
 
   integer     :: nnkp_n_proj            !the number of Wannier functions used.
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
-  real(dp),allocatable :: nnkp_Wcenters(:,:)  ! the Wannier centers, for trial projection 
+  real(dp),allocatable :: nnkp_Wcenters(:,:)  ! the Wannier centers, for trial projection
   real(dp),allocatable :: nnkp_proj_x(:,:)    ! x projection, for trial
   real(dp),allocatable :: nnkp_proj_z(:,:)    ! z projection, for trial
-  real(dp),allocatable :: nnkp_proj_zona(:)   ! Z on a: gauge broadness of the hydrogenoid trial wfc. 
+  real(dp),allocatable :: nnkp_proj_zona(:)   ! Z on a: gauge broadness of the hydrogenoid trial wfc.
 
   ! The hydrogenoid quantum numbers, psi_{nlm}
-  integer,allocatable  :: nnkp_proj_n(:)     ! the radial-pojection, for trial 
-  integer,allocatable  :: nnkp_proj_l(:)     ! the l-pojection, for trial 
-  integer,allocatable  :: nnkp_proj_m(:)     ! the m-pojection, for trial 
+  integer,allocatable  :: nnkp_proj_n(:)     ! the radial-pojection, for trial
+  integer,allocatable  :: nnkp_proj_l(:)     ! the l-pojection, for trial
+  integer,allocatable  :: nnkp_proj_m(:)     ! the m-pojection, for trial
 
-  integer,allocatable  :: nnkp_list_ikpt_nn(:,:) ! the neighbors of ikpt1 
-  integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another 
+  integer,allocatable  :: nnkp_list_ikpt_nn(:,:) ! the neighbors of ikpt1
+  integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another
 
   logical,allocatable  :: nnkp_excluded_bands(:) ! what bands are excluded
 
@@ -113,9 +107,9 @@ contains
 !----------------------------------------------
 !
 !----------------------------------------------------------------------!
-! This subroutine reads a file all the way to the line 
-!            begin $keyword 
-! This is useful when extracting parameters from the ascii file $seed.nnkp. 
+! This subroutine reads a file all the way to the line
+!            begin $keyword
+! This is useful when extracting parameters from the ascii file $seed.nnkp.
 ! The subroutine is heavily inspired by the subroutine
 !     QE/PP/pw2pwannier.f90{scan_file_to}
 !-----------------------------------------------------------------------!
@@ -123,19 +117,19 @@ contains
   implicit none
 
   character(len=*)   :: keyword
-  character(len=256) :: word1, word2 
+  character(len=256) :: word1, word2
   logical            :: found, test
   integer            :: ios,   nnkp_unit
 
   found=.false.
   !
   do
-     ! 
+     !
      read(nnkp_unit,*,iostat=ios) word1, word2
      !
      test=(trim(word1).eq.'begin').and.(trim(word2).eq.keyword)
      !
-     if (test) exit 
+     if (test) exit
      !
      if (ios.ne.0) then
         !
@@ -157,24 +151,26 @@ contains
 !
 !----------------------------------------------------------------------------!
 ! This subroutine reads the .nnkp input file produced by W90.
-! It assumes the file has been checked for existence and is already 
+! It assumes the file has been checked for existence and is already
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading,      only: alat
+  use intw_reading, only: alat
+  use intw_utility, only: find_free_unit
+  use w90_parameters, only: num_exclude_bands, exclude_bands
 
   implicit none
 
-  integer :: nnkp_unit 
-  integer :: i,j, nn, dummy
+  integer :: nnkp_unit
+  integer :: i, j, nn, dummy
   character(*) :: nnkp_file
 
   ! read in the various quantities stored in the .nnkp parameters file.
 
   nnkp_unit=find_free_unit()
-  ! 
+  !
   !===============================
-  ! open the file, which exists! 
+  ! open the file, which exists!
   !===============================
   !
   open(unit=nnkp_unit,file=nnkp_file,status='old')
@@ -227,7 +223,7 @@ contains
   enddo
   !
   !==========================
-  ! projection information 
+  ! projection information
   !==========================
   !
   call scan_file_to (nnkp_unit,'projections')
@@ -256,7 +252,7 @@ contains
   enddo
   !
   !==========================================
-  ! connection information (near neighbors) 
+  ! connection information (near neighbors)
   !==========================================
   !
   call scan_file_to (nnkp_unit,'nnkpts')
@@ -275,7 +271,7 @@ contains
   enddo
   !
   !=================
-  ! band exclusion 
+  ! band exclusion
   !=================
   !
   call scan_file_to (nnkp_unit,'exclude_bands ')
@@ -285,11 +281,11 @@ contains
   num_exclude_bands=nnkp_exclude_bands
   !
   allocate(exclude_bands(num_exclude_bands))
-  allocate(nnkp_excluded_bands(nbands)) 
+  allocate(nnkp_excluded_bands(nbands))
   !
   nnkp_excluded_bands(:)=.false.
   !
-  do j=1,nnkp_exclude_bands 
+  do j=1,nnkp_exclude_bands
      !
      read(nnkp_unit,*) nn
      nnkp_excluded_bands(nn)=.true.
@@ -298,10 +294,10 @@ contains
   enddo
   !
   !=============
-  ! close file 
+  ! close file
   !=============
   !
-  close(unit=nnkp_unit) 
+  close(unit=nnkp_unit)
   !
   return
 
@@ -314,13 +310,14 @@ contains
 !
 !----------------------------------------------------------------------------!
 ! This subroutine simply outputs what was read from the nnkp file, for
-! testing. 
+! testing.
 !----------------------------------------------------------------------------!
+  use intw_utility, only: find_free_unit
 
   implicit none
 
   integer  :: io_unit
-  integer  :: i,j, nn
+  integer  :: i, j, nn
 
   io_unit = find_free_unit()
 
@@ -357,7 +354,7 @@ contains
   write(io_unit,'(a,I6)') '--------'
   do j=1,nnkp_num_kpoints
         write(io_unit,'(3F8.4)') (nnkp_kpoints(i,j),i=1,3)
-  end do  
+  end do
 
 
   write(io_unit,'(a,I6)') 'nnkp_n_proj= ',nnkp_n_proj
@@ -367,7 +364,7 @@ contains
   write(io_unit,*) '  n          center           l   m   n          proj_z                  proj_x            Z/a'
   write(io_unit,*) '---------------------------------------------------------------------------------------------------'
   do j=1,nnkp_n_proj
-  
+
      write(io_unit,100) j,(nnkp_Wcenters(i,j),i=1,3),   &
                            nnkp_proj_l(j),              &
                            nnkp_proj_m(j),              &
@@ -383,7 +380,7 @@ contains
   write(io_unit,*) '----------------------'
   write(io_unit,*) 'ikpt1     ikpt2       G'
   write(io_unit,*) '----------------------------'
-  
+
   do j=1,nnkp_num_kpoints
      do nn = 1,nnkp_nnkpts
 
@@ -405,10 +402,8 @@ contains
 !
 !--------------------------------------------------------------------!
 ! This subroutine checks that the irreducible kpoints and the mesh
-! read from the nnkp file are related. 
+! read from the nnkp file are related.
 !--------------------------------------------------------------------!
-
-  use intw_reading,    only: s, nsym
 
   implicit none
 
@@ -419,9 +414,9 @@ contains
 
   !local variables
 
-  integer   :: ikpt 
-  real(dp)  :: kpt(3),norm 
-  
+  integer   :: ikpt
+  real(dp)  :: kpt(3),norm
+
   if (nkmesh.ne.nnkp_num_kpoints) then
      !
      write(*,*)   '**********************************************************'
@@ -434,7 +429,7 @@ contains
      write(*,*)   '  nnkp_num_kpoints                                                    '
      write(*,*)   '         ',nnkp_num_kpoints
      write(*,*)   '**********************************************************'
-     !  
+     !
      stop
      !
   endif
@@ -475,7 +470,7 @@ contains
   character(256) :: header
   character(8)   :: cdate
   character(10)  :: ctime
-  character(*)   :: method 
+  character(*)   :: method
 
   call date_and_time(DATE=cdate,TIME=ctime)
   !
@@ -495,28 +490,32 @@ contains
 !----------------------------------------------------------------------------!
 ! This subroutine computes the plane wave matrix elements  needed by Wannier90
 ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
-! the needed matrix elements. 
+! the needed matrix elements.
 !
 !----------------------------------------------------------------------------!
+  use intw_utility, only: find_free_unit
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
+  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+  use w90_parameters, only: num_bands
 
   implicit none
 
   !I/O variables
 
   logical,intent(in) :: intw2W_fullzone
-  character(*),intent(in) ::  method
+  character(*),intent(in) :: method
 
   !local variables
-  
-  integer :: io_unit_mmn,io_unit_eig
+
+  integer :: io_unit_mmn, io_unit_eig
   integer :: nkmesh
   integer :: nn
-  character(256) :: filename 
-  integer :: ikpt_1,ikpt_2,ikpt_irr
-  integer :: ibnd,jbnd,nonex_nb
+  character(256) :: filename
+  integer :: ikpt_1, ikpt_2
+  integer :: ibnd, jbnd
   integer :: G(3)
-  integer :: list_iG_1(nG_max),list_iG_2(nG_max)
-  complex(dp) :: wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
+  integer :: list_iG_1(nG_max), list_iG_2(nG_max)
+  complex(dp) :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
   real(dp) :: QE_eig(num_bands)
   complex(dp) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
   character(256) :: header
@@ -534,7 +533,7 @@ contains
   open(unit=io_unit_eig,file=filename,status='unknown')
   !
   !--------------------------------
-  ! Define a few useful variables 
+  ! Define a few useful variables
   !--------------------------------
   !
   nkmesh=nk1*nk2*nk3
@@ -544,7 +543,7 @@ contains
      call generate_header(trim(method)//trim('-fullzone'),header)
      !
   else
-     ! 
+     !
      call generate_header(trim(method)//trim('-IBZ'),header)
      !
   endif !intw2W_fullzone
@@ -556,7 +555,7 @@ contains
   !
   do ikpt_1=1,nkmesh
      !
-     ! fetch the data 
+     ! fetch the data
      !
      call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
      !
@@ -567,7 +566,7 @@ contains
         write(io_unit_eig,'(2I7,F18.12)') ibnd,ikpt_1,QE_eig(ibnd)
         !
      enddo !ibnd
-     ! 
+     !
      ! loop on neighbors
      !
      do nn=1,nnkp_nnkpts
@@ -575,7 +574,7 @@ contains
         G=nnkp_list_G(:,nn,ikpt_1)
         ikpt_2=nnkp_list_ikpt_nn(nn,ikpt_1)
         !
-        write(io_unit_mmn,'(5I7)') ikpt_1,ikpt_2,G 
+        write(io_unit_mmn,'(5I7)') ikpt_1,ikpt_2,G
         !
         ! fetch data
         !
@@ -634,48 +633,49 @@ contains
 !------------------------------------------------------------------
 !******************************************************************
 !------------------------------------------------------------------
-  subroutine generate_mmn_using_allwfc (intw2W_fullzone,method) 
+  subroutine generate_mmn_using_allwfc (intw2W_fullzone,method)
   !----------------------------------------------------------------------------!
   ! This subroutine computes the plane wave matrix elements  needed by Wannier90
   ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
-  ! the needed matrix elements. 
+  ! the needed matrix elements.
   !
   !----------------------------------------------------------------------------!
-  USE intw_allwfcs
+  USE intw_allwfcs, only: get_psi_general_k_all_wfc
+  use intw_utility, only: find_free_unit
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
+  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+  use w90_parameters, only: num_bands
+
   implicit none
 
   logical        :: intw2W_fullzone
-  character(*)   ::  method
+  character(*)   :: method
 
 
-  integer        ::  io_unit_mmn,  io_unit_eig
-  integer        ::  nkmesh
+  integer        :: io_unit_mmn, io_unit_eig
+  integer        :: nkmesh
 
-  integer        ::  nn
+  integer        :: nn
 
-  character(256) ::  filename 
+  character(256) :: filename
 
-  integer        ::  ikpt_1, ikpt_2,  ikpt_irr
-  integer        ::  nb1,  nb2, nb
-  integer        ::  nonex_nb
-  integer        ::  G(3), G_plus(3)
+  integer        :: ikpt_1, ikpt_2
+  integer        :: nb1, nb2, nb
+  integer        :: G(3), G_plus(3)
 
-  integer        :: list_iG_1(nG_max),  list_iG_2(nG_max)
+  integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
   complex(dp)    :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
-!  complex(dp)    :: wfc_1(nG_max,nbands,nspin), wfc_2(nG_max,nbands,nspin)
   real(dp)       :: QE_eig(num_bands)
-!  real(dp)       :: QE_eig(nbands)
 
   complex(dp)    :: pw_mat_el(num_bands,num_bands,nspin,nspin)
-!  complex(dp)    :: pw_mat_el(nbands,nbands,nspin,nspin)
- 
+
   character(256) :: header
 
 !Peio
 !The variable we use instead of num_bands
   integer        :: nbands_loc
 !Peio
-  
+
   nbands_loc=num_bands
   !-----------------------------------
   ! Open all the needed files
@@ -689,14 +689,14 @@ contains
   open(unit=io_unit_eig,file=filename,status='unknown')
 
   !-----------------------------------
-  ! define a few useful variables 
+  ! define a few useful variables
   !-----------------------------------
   nkmesh = nk1*nk2*nk3
 
-  
+
   if (intw2W_fullzone) then
           call generate_header(trim(method)//trim('-fullzone'),header)
-  else 
+  else
           call generate_header(trim(method)//trim('-IBZ'),header)
   end if
 
@@ -706,8 +706,8 @@ contains
 
   !loop on all points
   do ikpt_1 = 1, nkmesh
-  
-    ! fetch the data 
+
+    ! fetch the data
 !    call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
 !    call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1), nspin,list_iG_1, wfc_1, QE_eig, G_plus)
     call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig, G_plus)
@@ -716,15 +716,15 @@ contains
     do nb =1, nbands_loc
 !    do nb =1, nbands
         write(io_unit_eig,'(2I7,F18.12)') nb, ikpt_1, QE_eig(nb)
-    end do 
+    end do
 
     ! loop on neighbors
     do nn = 1, nnkp_nnkpts
       G      = nnkp_list_G(:,nn,ikpt_1)
       ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
-     
 
-      write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G 
+
+      write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
       !call get_psi_k(ikpt_2,.not.intw2W_fullzone,list_iG_2,wfc_2,QE_eig)
@@ -740,7 +740,7 @@ contains
                         (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
       else
           write(*,*) 'ERROR in generate_mmn'
-          stop 
+          stop
       end if
 
       if (nspin==2) then
@@ -756,13 +756,13 @@ contains
 !         do nb1 = 1,nbands
            do nb2 = 1,nbands_loc
 !           do nb2 = 1,nbands
-              write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1) 
+              write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1)
            end do
          end do
       endif
 
     end do
-    
+
   end do
 
   close(io_unit_mmn)
@@ -770,46 +770,42 @@ contains
 
   end subroutine generate_mmn_using_allwfc
 
-  subroutine generate_amn_using_allwfc (intw2W_fullzone,method) 
+  subroutine generate_amn_using_allwfc (intw2W_fullzone,method)
   !----------------------------------------------------------------------------!
-  ! This subroutine computes the overlap with trial functions, thus producing 
-  ! the amn file needed by Wannier90. 
+  ! This subroutine computes the overlap with trial functions, thus producing
+  ! the amn file needed by Wannier90.
   !----------------------------------------------------------------------------!
-   USE intw_allwfcs
+   USE intw_allwfcs, only: get_psi_general_k_all_wfc
+   use intw_utility, only: find_free_unit
+   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+   use w90_parameters, only: num_bands
 
   implicit none
-  logical        ::  intw2W_fullzone
-  character(256) ::  method
 
-  integer        ::  io_unit_amn
-  integer        ::  nkmesh
+  logical        :: intw2W_fullzone
+  character(256) :: method
 
-  integer        ::  nn
+  integer        :: io_unit_amn
+  integer        :: nkmesh
 
 
-  character(256) ::  filename 
+  character(256) :: filename
 
-  integer        ::  ikpt
-  integer        ::  nb,  n_proj
-  integer        ::  nonex_nb
-  integer        ::  iG
-  real(dp)       ::  norm
+  integer        :: ikpt
+  integer        :: nb, n_proj
 
   integer        :: list_iG(nG_max)
 
   complex(dp)    :: wfc(nG_max,num_bands,nspin)
-!  complex(dp)    :: wfc(nG_max,nbands,nspin)
 
   complex(dp)    :: guiding_function(ngm)
 
   real(dp)       :: QE_eig(num_bands)
-!  real(dp)       :: QE_eig(nbands)
 
   complex(dp)    :: amn(num_bands)
-!  complex(dp)    :: amn(nbands)
 
   character(256) :: header
- 
+
   integer :: G_plus(3)
 
 !Peio
@@ -832,35 +828,35 @@ contains
 
 
   !loop on all k-points
-  do ikpt = 1, nnkp_num_kpoints 
+  do ikpt = 1, nnkp_num_kpoints
 
-    ! fetch the data 
+    ! fetch the data
     !call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
 !     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , nspin,list_iG, wfc, QE_eig, G_plus)
     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig, G_plus)
 
-    !loop on all bands and all trial functions 
+    !loop on all bands and all trial functions
     do n_proj = 1,nnkp_n_proj
 
     ! Generate the fourier transform of the trial function (called guiding
-    ! function, just like in pw2wannier). In order 
+    ! function, just like in pw2wannier). In order
     ! to insure that it is normalized, the coefficients must be computed
     ! on the whole gvec mesh, not just the G vectors where the wavefunction
     ! does not vanish. It will be assumed that gvec is large enough to
-    ! insure proper normalization. 
+    ! insure proper normalization.
 
 
       call generate_guiding_function(ikpt,n_proj,guiding_function)
 
-      if (trim(method) == 'CONVOLUTION') then 
+      if (trim(method) == 'CONVOLUTION') then
               call get_guiding_function_overlap_convolution(list_iG,wfc,   &
                                                         guiding_function,amn)
-      else if (trim(method) == 'FFT') then 
+      else if (trim(method) == 'FFT') then
               call get_guiding_function_overlap_FFT(list_iG,wfc,   &
                                                         guiding_function,amn)
       else
           write(*,*) 'ERROR in generate_amn'
-          stop 
+          stop
       end if
 
       !Write result to file $prefix.amn.
@@ -870,7 +866,7 @@ contains
         write(io_unit_amn,'(3I7,2F18.12)') nb, n_proj, ikpt, amn(nb)
       end do !nb
 
-    end do ! n_proj 
+    end do ! n_proj
 
 
   end do !ikpt
@@ -884,11 +880,14 @@ contains
 !--------------------------------------------------
   subroutine generate_amn(intw2W_fullzone,method)
 !--------------------------------------------------
-! 
+!
 !----------------------------------------------------------------------------!
-! This subroutine computes the overlap with trial functions, thus producing 
-! the amn file needed by Wannier90. 
+! This subroutine computes the overlap with trial functions, thus producing
+! the amn file needed by Wannier90.
 !----------------------------------------------------------------------------!
+  use intw_utility, only: find_free_unit
+  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+  use w90_parameters, only: num_bands
 
   implicit none
 
@@ -899,9 +898,8 @@ contains
 
   !local variables
 
-  integer :: io_unit_amn,nkmesh,nn,ikpt,ibnd,n_proj
-  integer :: nonex_nb,iG,norm
-  character(256) :: filename 
+  integer :: io_unit_amn, nkmesh, ikpt, ibnd, n_proj
+  character(256) :: filename
   integer :: list_iG(nG_max)
   real(dp) :: QE_eig(num_bands)
   complex(dp) :: wfc(nG_max,num_bands,nspin)
@@ -922,22 +920,22 @@ contains
   !
   !loop on all k-points
   !
-  do ikpt=1,nnkp_num_kpoints 
+  do ikpt=1,nnkp_num_kpoints
      !
-     ! fetch the data 
+     ! fetch the data
      !
      call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
      !
-     !loop on all bands and all trial functions 
+     !loop on all bands and all trial functions
      !
      do n_proj=1,nnkp_n_proj
         !
         ! Generate the fourier transform of the trial function (called guiding
-        ! function, just like in pw2wannier). In order 
+        ! function, just like in pw2wannier). In order
         ! to insure that it is normalized, the coefficients must be computed
         ! on the whole gvec mesh, not just the G vectors where the wavefunction
         ! does not vanish. It will be assumed that gvec is large enough to
-        ! insure proper normalization. 
+        ! insure proper normalization.
         !
         call generate_guiding_function(ikpt,n_proj,guiding_function)
         !
@@ -953,7 +951,7 @@ contains
         else
            !
            write(*,*) 'ERROR in generate_amn'
-           stop 
+           stop
            !
         endif
         !
@@ -965,7 +963,7 @@ contains
            !
         enddo !ibnd
         !
-     enddo !n_proj 
+     enddo !n_proj
      !
   enddo !ikpt
   !
@@ -981,7 +979,7 @@ contains
 !----------------------------------------------------------------------
 !
 !---------------------------------------------------------------------------
-! This subroutine computes the normalized guiding function in reciprocal 
+! This subroutine computes the normalized guiding function in reciprocal
 ! space, over the global list of G vectors gvec.
 !
 ! This subroutine is heavily inspired by a similar routine in pw2wannier.
@@ -993,18 +991,18 @@ contains
 
   !I/O variables
 
-  integer,intent(in) :: ikpt,n_proj
+  integer,intent(in) :: ikpt, n_proj
   complex(dp),intent(out) :: guiding_function(ngm)
 
   !local variables
 
-  integer :: i,mu,nu,iG
-  integer :: proj_nr,proj_l,proj_m 
-  real(dp) :: zona,zaxis(3),xaxis(3),ylm(ngm)
-  real(dp) :: k_cryst(3),tau_cryst(3),tau_cart(3)
+  integer :: i, mu, iG
+  integer :: proj_nr, proj_l, proj_m
+  real(dp) :: zona, zaxis(3), xaxis(3), ylm(ngm)
+  real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
   real(dp) :: k_plus_G_cart(3,ngm)
   real(dp) :: norm2, x, y
-  complex(dp) :: four_pi_i_l 
+  complex(dp) :: four_pi_i_l
 
   ! get all the relevant vectors in reciprocal space
   ! express the vectors in bohrs^-1 cartesian coordinates
@@ -1025,8 +1023,8 @@ contains
   !
   k_plus_G_cart=k_plus_G_cart*tpi/alat ! bohr^-1
   !
-  ! TEST  
-  !  write(111,'(a,3F8.4)') 'k_crsyt = ',k_cryst 
+  ! TEST
+  !  write(111,'(a,3F8.4)') 'k_crsyt = ',k_cryst
   !  do iG = 1, ngm
   !          write(111,'(a,3I4,a,3F8.4)') 'G = ',gvec(:,iG),' {k+G}_cart =',k_plus_G_cart(:,iG)
   !  end do
@@ -1039,7 +1037,7 @@ contains
   ! get the part from the radial integration
   !
   proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
-  zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter 
+  zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
   !
   call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
   !
@@ -1058,7 +1056,7 @@ contains
      enddo !i
   enddo !mu
   !
-  ! TEST  
+  ! TEST
   !  write(111,'(a,3F8.4)') 'Wcenter = ',nnkp_Wcenters(:,n_proj)
   !  write(111,'(a,3F8.4)') 'tau_cart = ',tau_cart(:)
   !
@@ -1066,7 +1064,7 @@ contains
   !
   four_pi_i_l=fpi*(-cmplx_i)**proj_l
   !
-  do iG=1,ngm 
+  do iG=1,ngm
      guiding_function(iG)=guiding_function(iG)*four_pi_i_l*exp(-cmplx_i* &
                                         (k_plus_G_cart(1,iG)*tau_cart(1) &
                                        + k_plus_G_cart(2,iG)*tau_cart(2) &
@@ -1081,7 +1079,7 @@ contains
   !
   call get_angular_part(proj_l,proj_m,xaxis,zaxis,k_plus_G_cart,ylm)
   !
-  do iG=1,ngm 
+  do iG=1,ngm
      !
      guiding_function(iG)=guiding_function(iG)*ylm(iG)
      !
@@ -1120,26 +1118,27 @@ contains
 !  The computation is done over all bands using FFT.
 !------------------------------------------------------------------------
 
-  use intw_reading, only: gvec, ngm, nG_max, nbands, nr1, nr2, nr3
+  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
-                      wfc_from_g_to_r  
+                      wfc_from_g_to_r
+  use w90_parameters, only: num_bands
 
   implicit none
- 
+
   !I/O variables
 
   integer,intent(in) :: list_iG(nG_max)
   complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
   complex(dp),intent(in) :: guiding_function(ngm)
   complex(dp),intent(out) :: amn(num_bands)
-  
+
   !local variables
 
-  integer :: i, ibnd, ir, is, iG0, iG0_fft, G0(3)
+  integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
   complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
   complex(dp) :: fg(ngm)
 
-  amn=cmplx_0 
+  amn=cmplx_0
   !
   G0=0
   !
@@ -1167,7 +1166,7 @@ contains
      !
      call func_from_r_to_g (1,ngm,fr,fg)
      !
-     amn(ibnd)=fg(iG0_fft) 
+     amn(ibnd)=fg(iG0_fft)
      !
   enddo !ibnd
   !
@@ -1194,14 +1193,15 @@ contains
 !
 !--------------------------------------------------------------------------
 
-  use intw_reading,   only: gvec, ngm, nG_max, nbands
+  use intw_reading, only: ngm, nG_max
+  use w90_parameters, only: num_bands
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin) 
+  complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
   complex(dp),intent(in) :: guiding_function(ngm)
   complex(dp),intent(out) :: amn(num_bands)
 
@@ -1220,7 +1220,7 @@ contains
      !
      iG=list_iG(i)
      !
-     ! list_iG is zero-padded at the end. 
+     ! list_iG is zero-padded at the end.
      ! When this point is reached, the computation is over.
      !
      if (iG==0) exit
@@ -1238,7 +1238,7 @@ contains
   amn_local = cmplx_0
   !
   ! First, build the pw_mat_el_local arrays, on each thread.
-  !$omp do 
+  !$omp do
   !
   do i=1,nG_max_non_zero
      !
@@ -1270,7 +1270,7 @@ contains
   !$omp end parallel
   !
   return
-  
+
   end subroutine get_guiding_function_overlap_convolution
 !--------------------------------------------------------------------------
 !**************************************************************************
@@ -1291,8 +1291,8 @@ contains
 !     which refer to the global list gvec(3,ngm).
 !
 !--------------------------------------------------------------------------------
- 
-  use intw_reading,   only: gvec, ngm
+
+  use intw_reading, only: ngm
 
   implicit none
 
@@ -1301,9 +1301,9 @@ contains
   integer,intent(in) :: proj_nr
   real(dp),intent(in) :: zona, k_plus_G_cart(3,ngm)
   complex(dp),intent(inout) :: guiding_function(ngm)
- 
+
   !local variables
- 
+
   integer :: iG
   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
   real(dp) :: p(ngm)
@@ -1325,7 +1325,7 @@ contains
      !
   enddo !iG
   !
-  ! the radial functions 
+  ! the radial functions
   ! Their functional forms are obtained from analytical integrals
   ! done using MATHEMATICA (this is not a guarantee, however! always
   ! check for bugs...).
@@ -1341,7 +1341,7 @@ contains
      ! There, the numerical integration of r R_{nl}(r) j_l(kr) is done,
      ! BUT IT IS THE INTEGRAL OF r^2 R_{nl}(r) j_l(kr) WHICH IS NEEDED.
      ! Below is the analytical expression for this WRONG integral;
-     ! it yields better agreement between Amn computed by this code and 
+     ! it yields better agreement between Amn computed by this code and
      ! pw2wannier.
      ! guiding_function=2.0_dp*z2*sqrt_z/(p**2+z2)
      !
@@ -1381,8 +1381,8 @@ contains
   subroutine get_angular_part(proj_l,proj_m,xaxis,zaxis,k_plus_G_cart,ylm)
 !
 !--------------------------------------------------------------------------
-! This subroutine computes appropriate spherical harmonic corresponding 
-! to  
+! This subroutine computes appropriate spherical harmonic corresponding
+! to
 !
 !                   amn(band) =  < wfc(band) |  guiding_function > .
 !
@@ -1392,7 +1392,7 @@ contains
 ! which refer to the global list gvec(3,ngm).
 !--------------------------------------------------------------------------
 
-  use intw_reading,   only: gvec, ngm
+  use intw_reading, only: ngm
 
   implicit none
 
@@ -1404,9 +1404,9 @@ contains
   real(dp),intent(inout) :: ylm(ngm)
 
   !local variables
- 
+
   integer :: iG
-  real(dp) :: yaxis(3),q(3,ngm),norm_y 
+  real(dp) :: yaxis(3),q(3,ngm),norm_y
 
 
   ! produce the yaxis using z cross x. THEY REALLY SHOULD BE ORTHOGONAL.
@@ -1417,9 +1417,9 @@ contains
   !
   norm_y=sqrt(yaxis(1)**2+yaxis(2)**2+yaxis(3)**2)
   !
-  yaxis=yaxis/norm_y 
+  yaxis=yaxis/norm_y
   !
-  ! project k_plus_G_cart onto these axes. 
+  ! project k_plus_G_cart onto these axes.
   !
   do iG=1,ngm
      !
@@ -1453,14 +1453,14 @@ contains
 !     to suit my needs.
 !     The original comments follow.
 !--------------------------------------------------------------------------
-! this routine returns in ylm(r) the values at the nr points r(1:3,1:nr) 
-! of the spherical harmonic identified  by indices (l,mr) 
+! this routine returns in ylm(r) the values at the nr points r(1:3,1:nr)
+! of the spherical harmonic identified  by indices (l,mr)
 ! in table 3.1 of the wannierf90 specification.
-! 
-! No reference to the particular ylm ordering internal to quantum-espresso
-! is assumed. 
 !
-! If ordering in wannier90 code is changed or extended this should be the 
+! No reference to the particular ylm ordering internal to quantum-espresso
+! is assumed.
+!
+! If ordering in wannier90 code is changed or extended this should be the
 ! only place to be modified accordingly
 !--------------------------------------------------------------------------
 
@@ -1533,7 +1533,7 @@ contains
          !
       endif
       !
-      ! if the norm of r is very small, just arbitrarily pick 
+      ! if the norm of r is very small, just arbitrarily pick
       ! the angle to be theta = 0 , phi = 0
       !
       if (rr < eps_8) then
@@ -1551,7 +1551,7 @@ contains
       !
       if (l==1) then   ! p orbitals
          !
-         if (mr==1) ylm(ir)=pz_func(cost,phi) 
+         if (mr==1) ylm(ir)=pz_func(cost,phi)
          if (mr==2) ylm(ir)=px(cost,phi)
          if (mr==3) ylm(ir)=py(cost,phi)
          !
@@ -1581,16 +1581,16 @@ contains
       !
       if (l==-1) then  !  sp hybrids
          !
-         if (mr==1) ylm(ir)=bs2 * ( s(cost,phi) + px(cost,phi) ) 
-         if (mr==2) ylm(ir)=bs2 * ( s(cost,phi) - px(cost,phi) ) 
+         if (mr==1) ylm(ir)=bs2 * ( s(cost,phi) + px(cost,phi) )
+         if (mr==2) ylm(ir)=bs2 * ( s(cost,phi) - px(cost,phi) )
          !
       endif
       !
-      if (l==-2) then  !  sp2 hybrids 
+      if (l==-2) then  !  sp2 hybrids
          !
          if (mr==1) ylm(ir)= bs3*s(cost,phi)-bs6*px(cost,phi)+bs2*py(cost,phi)
          if (mr==2) ylm(ir)= bs3*s(cost,phi)-bs6*px(cost,phi)-bs2*py(cost,phi)
-         if (mr==3) ylm(ir)= bs3*s(cost,phi) +2.d0*bs6*px(cost,phi) 
+         if (mr==3) ylm(ir)= bs3*s(cost,phi) +2.d0*bs6*px(cost,phi)
          !
       endif
       !
@@ -1607,7 +1607,7 @@ contains
          !
          if (mr==1) ylm(ir) = bs3*s(cost,phi)-bs6*px(cost,phi)+bs2*py(cost,phi)
          if (mr==2) ylm(ir) = bs3*s(cost,phi)-bs6*px(cost,phi)-bs2*py(cost,phi)
-         if (mr==3) ylm(ir) = bs3*s(cost,phi) +2.d0*bs6*px(cost,phi) 
+         if (mr==3) ylm(ir) = bs3*s(cost,phi) +2.d0*bs6*px(cost,phi)
          if (mr==4) ylm(ir) = bs2*pz_func(cost,phi)+bs2*dz2(cost,phi)
          if (mr==5) ylm(ir) =-bs2*pz_func(cost,phi)+bs2*dz2(cost,phi)
          !
@@ -1635,30 +1635,24 @@ contains
 end module intw_intw2wannier
 !
 !
-!----------------------------------------------------------------------------!            
+!----------------------------------------------------------------------------!
 
 
 !======== l = 0 =====================================================================
 function s(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) :: s, cost, phi
-       
+
    s = 1.d0/ sqrt(fpi)
    return
 end function s
 
 !======== l = 1 =====================================================================
 function pz_func(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::pz_func, cost,phi
    pz_func =  sqrt(3.d0/fpi) * cost
@@ -1666,11 +1660,8 @@ function pz_func(cost,phi)
 end function pz_func
 
 function px(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::px, cost, phi, sint
 
@@ -1680,11 +1671,8 @@ function px(cost,phi)
 end function px
 
 function py(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::py, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1693,11 +1681,8 @@ function py(cost,phi)
 end function py
 !======== l = 2 =====================================================================
 function dz2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::dz2, cost, phi
    dz2 =  sqrt(1.25d0/fpi) * (3.d0* cost*cost-1.d0)
@@ -1705,11 +1690,8 @@ function dz2(cost,phi)
 end function dz2
 
 function dxz(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::dxz, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1718,11 +1700,8 @@ function dxz(cost,phi)
 end function dxz
 
 function dyz(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::dyz, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1731,11 +1710,8 @@ function dyz(cost,phi)
 end function dyz
 
 function dx2my2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::dx2my2, cost, phi, sint
    sint   = sqrt(abs(1.d0 - cost*cost))
@@ -1744,11 +1720,8 @@ function dx2my2(cost,phi)
 end function dx2my2
 
 function dxy(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::dxy, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1757,11 +1730,8 @@ function dxy(cost,phi)
 end function dxy
 !======== l = 3 =====================================================================
 function fz3(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fz3, cost, phi
    fz3 =  0.25d0*sqrt(7.d0/pi) * ( 5.d0 * cost * cost - 3.d0 ) * cost
@@ -1769,11 +1739,8 @@ function fz3(cost,phi)
 end function fz3
 
 function fxz2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fxz2, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1782,11 +1749,8 @@ function fxz2(cost,phi)
 end function fxz2
 
 function fyz2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fyz2, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1795,11 +1759,8 @@ function fyz2(cost,phi)
 end function fyz2
 
 function fzx2my2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fzx2my2, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1808,11 +1769,8 @@ function fzx2my2(cost,phi)
 end function fzx2my2
 
 function fxyz(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fxyz, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1821,11 +1779,8 @@ function fxyz(cost,phi)
 end function fxyz
 
 function fxx2m3y2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fxx2m3y2, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))
@@ -1834,11 +1789,8 @@ function fxx2m3y2(cost,phi)
 end function fxx2m3y2
 
 function fy3x2my2(cost,phi)
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
-!haritz
    implicit none
    real(dp) ::fy3x2my2, cost, phi, sint
    sint = sqrt(abs(1.d0 - cost*cost))

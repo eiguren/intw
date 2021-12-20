@@ -2,12 +2,12 @@ module intw_fft_interp
   !
   !
   use kinds, only: dp
-  use intw_useful_constants, only: pi
   !
   implicit none
   !
-  !
+  ! subroutines
   public :: fft_interp_3d_real
+  !
   private
 
 contains
@@ -22,6 +22,8 @@ contains
     use intw_reading, only: bg, tpiba2
     !
     implicit none
+
+    external :: cfftnd
     !
     ! input variables
     integer, intent(in)  :: nr1, nr2, nr3,&
@@ -43,8 +45,7 @@ contains
     integer  :: n1, n2, n3
     ! integer  :: ng
     integer :: ind(nr1,nr2,nr3), inds(nr1s,nr2s,nr3s)     ! indice de (i,j,k) 3D --> it 1D
-    integer :: ngm, ngms, cnt
-    real(kind=dp) :: x, y, z
+    integer :: ngm, cnt
     !
 
     ! QE Gamma point ngm: 30227

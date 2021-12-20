@@ -3,31 +3,28 @@ subroutine add_m_nu_lambda_text_no_spin(sigma_e,ekk,ekq,omega_phon,g_me,lambda_k
 !-----------------------------------------------------------------------------------------------------------------------------------
 !
 ! Created by Peio G. Goiricelaya 15/09/2017
-  
+
   use kinds, only: dp
-  use intw_input_parameters
-  use intw_reading
-  use w90_parameters, only: num_wann
-  use intw_useful_constants, only: eps_5, pi
-  use intw_utility
+  use intw_reading, only: nat
+  use intw_useful_constants, only: pi, eps_5, eps_6
+  use intw_utility, only: weight_ph
 
   implicit none
 
   !I/O variables
 
-  integer,intent(in) :: nmode
-  real(dp),intent(in) :: sigma_e
-  real(dp),intent(in) :: ekk,ekq
-  real(dp),intent(in) :: omega_phon(3*nat)
-  complex(dp),intent(in) :: g_me(3*nat)
-  real(dp),intent(inout) :: lambda_kq
+  integer, intent(in) :: nmode
+  real(dp), intent(in) :: sigma_e
+  real(dp), intent(in) :: ekk,ekq
+  real(dp), intent(in) :: omega_phon(3*nat)
+  complex(dp), intent(in) :: g_me(3*nat)
+  real(dp), intent(inout) :: lambda_kq
 
   !local variables
 
-  integer :: imode,ipts,is,js
-  real(dp) :: wqv,g2
-  real(dp) :: delta_eplus,delta_eminus
-  complex(dp) :: g
+  integer :: imode
+  real(dp) :: wqv, g2
+  real(dp) :: delta_eplus, delta_eminus
 
   !$omp parallel default(none) &
   !$omp shared(nmode,ekk,ekq,sigma_e,eps_5,eps_6,g_me,lambda_kq,omega_phon,pi) &

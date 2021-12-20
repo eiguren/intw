@@ -8,7 +8,7 @@ module intw_pseudo
   !
   ! variables
   public :: INTWPSEUDO, upf
-  public :: nqxq, nqx, dq, qrad, tab,  tab_d2y, npsx, nh, nhm, &
+  public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
             becsum, dvan, nhtoj, dvan_so, beta
   !
@@ -44,10 +44,10 @@ module intw_pseudo
 
     LOGICAL :: has_so             ! if .true. includes spin-orbit
     REAL(DP), DIMENSION(:), ALLOCATABLE :: jjj   ! jjj(nbeta) j=l+1/2 or l-1/2 of beta
-
   END TYPE INTWPSEUDO
 
   TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
+
 
   !Former US in QE
   INTEGER :: &
@@ -104,7 +104,6 @@ contains
 
   !---------------------------------------------------------------------
   subroutine read_all_pseudo ()
-    !---------------------------------------------------------------------
     !
     use intw_utility, only: find_free_unit
     USE intw_reading, only: ntyp
