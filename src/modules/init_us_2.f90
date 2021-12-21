@@ -14,19 +14,16 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
   !   structure factor, for all atoms, in reciprocal space
   !
   USE kinds, ONLY: dp                                       !-QE :USE kinds,      ONLY : DP
-!haritz
-!  USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, ngm     !-QE :USE ions_base,  ONLY : nat, ntyp => nsp, ityp, tau
-!  USE intw_pseudo, ONLY: tpiba                              !-QE :USE cell_base,  ONLY : tpiba
   USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, ngm, tpiba
-!haritz
-  USE intw_useful_constants, ONLY : tpi, cmplx_0            !-QE :USE constants,  ONLY : tpi
+  USE intw_useful_constants, ONLY : tpi, cmplx_0, cmplx_i            !-QE :USE constants,  ONLY : tpi
   USE intw_pseudo, ONLY: nqx,nqxq, dq, tab, tab_d2y
   USE splinelib
   USE intw_pseudo, ONLY: nkb, vkb, nhtol, nhtolm, indv
   USE intw_pseudo, ONLY : upf, lmaxkb, nhm, nh
-  USE intw_fft, ONLY: gvec_cart, eigts1, eigts2, eigts3, mill
+  USE intw_fft, ONLY: gvec_cart
 
   USE mcf_spline
+
   implicit none
 
   !I/O variables
@@ -98,8 +95,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
   !
   jkb=0
   vq=0.d0
-
- 
+  ! 
   do nt=1,ntyp
      !
      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
@@ -143,6 +139,8 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
         !
         if (ityp(na).eq.nt) then
            !
+           ! q_ is cart. coordinates
+           !
            arg = (q_(1) * tau (1, na) + &
                   q_(2) * tau (2, na) + &
                   q_(3) * tau (3, na) ) * tpi
@@ -153,9 +151,9 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
               !
               if (igk_(ig)==0) exit
               !
-              sk (ig) = eigts1 (mill(1,igk_(ig)), na) * &
-                        eigts2 (mill(2,igk_(ig)), na) * &
-                        eigts3 (mill(3,igk_(ig)), na)
+              sk (ig) = exp ( -tpi*cmplx_i* (  gvec_cart(1,igk_(ig))*tau(1,na) &
+                                             + gvec_cart(2,igk_(ig))*tau(2,na) &
+                                             + gvec_cart(3,igk_(ig))*tau(3,na) ) )
               !
            enddo !ig
            !
