@@ -693,8 +693,8 @@ program ep_melements
            !
            vkb=cmplx_0
            vkqb=cmplx_0
-           call init_us_2(npw ,nG_max,list_iGk ,kpoint       ,vkb)
-           call init_us_2(npwq,nG_max,list_iGkq,kpoint+qpoint,vkqb)
+           call init_KB_projectors(npw ,nG_max,list_iGk ,kpoint       ,vkb)
+           call init_KB_projectors(npwq,nG_max,list_iGkq,kpoint+qpoint,vkqb)
            !
            !-psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
            ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)

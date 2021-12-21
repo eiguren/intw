@@ -7,7 +7,7 @@
 !
 !
 !----------------------------------------------------------------------
-subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
+subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   !----------------------------------------------------------------------
   !
   !   Calculates beta functions (Kleinman-Bylander projectors), with
@@ -184,5 +184,5 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
   !
   return
 
-end subroutine init_us_2
+end subroutine init_KB_projectors 
 
