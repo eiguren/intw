@@ -46,7 +46,7 @@ subroutine init_us_1
   USE mcf_spline
 
   !  ASIER
-  USE intw_utility, ONLY: intgr_spline_gaussq!simpson
+  USE intw_utility, ONLY: intgr_spline_gaussq, simpson
   !
   implicit none
   !
@@ -229,46 +229,55 @@ subroutine init_us_1
   !
   !     fill the interpolation table tab
   !
+  !         vqint = intgr_spline_gaussq( upf(nt)%r, aux ) 
   pref = fpi / sqrt (volume0)
-  !call divide (nqx, startq, lastq)
   tab (:,:,:) = 0.d0
-  !------------------------------------------------------------------
-  !ASIER 17/12/2021
   do nt = 1, ntyp
      do nb = 1, upf(nt)%nbeta
         l = upf(nt)%lll (nb)
-        do iq = 1,nqx
+        !ASIER 29/07/2021
+        do iq = 1,nqx!startq, lastq
            qi = (iq - 1) * dq
-           call sph_bes (upf(nt)%kkbeta, upf(nt)%r, qi, l, besr)
+           !ASIER 29/07/2021
+            call sph_bes (upf(nt)%kkbeta, upf(nt)%r, qi, l, besr)
+           !call sph_bes (upf(nt)%kkbeta, rgrid(nt)%r, qi, l, besr)
            do ir = 1, upf(nt)%kkbeta
+              !ASIER 29/07/2021
               aux (ir) = upf(nt)%beta (ir, nb) * besr (ir) * upf(nt)%r(ir)
+              !aux (ir) = upf(nt)%beta (ir, nb) * besr (ir) * rgrid(nt)%r(ir)
            enddo
-           vqint = intgr_spline_gaussq( upf(nt)%r, aux )
+           !ASIER 29/07/2021
+           !call simpson (upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
+           !call simpson (upf(nt)%kkbeta, aux, rgrid(nt)%rab, vqint)
+
+           !Integrating by spline + gauss 2. order 
+           vqint  =  intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux ) 
+
            tab (iq, nb, nt) = vqint * pref
+
         enddo
      enddo
   enddo
 
-  !  if (spline_ps) then
-  allocate( xdata(nqx) )
-  do iq = 1, nqx
-     xdata(iq) = (iq - 1) * dq
-  enddo
+#ifdef __PARA
+  call mp_sum(  tab, intra_pool_comm )
+#endif
 
-  
-  do nt = 1, ntyp
-     do nb = 1, upf(nt)%nbeta
-        !ASIER
-        !d1 = (tab(2,nb,nt) - tab(1,nb,nt)) / dq
-        !call spline(xdata, tab(:,nb,nt), 0.d0, d1, tab_d2y(:,nb,nt))
-        call spline_mcf(xdata,tab(:,nb,nt),size(xdata), tab_d2y(:,nb,nt))
-        write(*,"(2i4,6f12.6,a,6f12.6)"), nt,nb, tab_d2y(1:6,nb,nt), " || ",tab(:,nb,nt)
+  ! initialize spline interpolation
+     allocate( xdata(nqx) )
+     do iq = 1, nqx
+        xdata(iq) = (iq - 1) * dq
      enddo
-  enddo
+     do nt = 1, ntyp
+        do nb = 1, upf(nt)%nbeta 
+           d1 = (tab(2,nb,nt) - tab(1,nb,nt)) / dq
+           !call spline(xdata, tab(:,nb,nt), 0.d0, d1, tab_d2y(:,nb,nt))
+            call spline_mcf(xdata,tab(:,nb,nt), nqx, tab_d2y(:,nb,nt)) 
+        enddo
+     enddo
+     deallocate(xdata)
 
-stop
-  deallocate(xdata)
-  ! endif
+  if (allocated(xdata)) deallocate(xdata)
 
   deallocate (qtot)
   deallocate (besr)

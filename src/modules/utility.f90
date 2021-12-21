@@ -51,6 +51,8 @@ real(kind=dp):: batura
 real(kind=dp) :: x1, x2, y1, y2
 real(kind=dp),parameter :: onesqrt3=0.57735026919_dp
 integer :: i
+
+
 call SPLINE_MCF (xdata, ydata,  size(xdata), ys2) 
 
 batura=0.0_dp

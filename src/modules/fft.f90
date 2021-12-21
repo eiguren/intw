@@ -190,7 +190,6 @@ contains
 
       !n1 = nint (sum(g (:, ng) * at (:, 1))) + 1
       !mill (1,ng) = n1 - 1
-      write(999,*) ng, gvec(:,ng)
 
       n1 = modulo(gvec(1,ng), nr1)+1 !modulo(gvec(1,ng), nr1)+1
       ig1 (ng) = n1 - 1

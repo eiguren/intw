@@ -86,22 +86,20 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
      !
   enddo !ig
   !
-  !if (spline_ps) then
+  allocate(xdata(nqx))
      !
-     allocate(xdata(nqx))
-     !
-     do iq = 1, nqx
+  do iq = 1, nqx
         !
-        xdata(iq) = (iq - 1) * dq
+     xdata(iq) = (iq - 1) * dq
         !
-     enddo !ig
-  !endif !spline_ps
+  enddo !ig
   !
   ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
   !
   jkb=0
   vq=0.d0
-  !
+
+ 
   do nt=1,ntyp
      !
      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
@@ -111,30 +109,8 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
         do ig=1,npw_ 
            !
            if (igk_(ig)==0) exit
-     
-           call splint_mcf (xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), size(xdata), qg(ig), vq(ig)) 
            !
-           !if (spline_ps) then
-              !
-              !vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
-              !
-           !else
-              !             
-           !   px = qg (ig) / dq - int (qg (ig) / dq)
-           !   ux = 1.d0 - px
-           !   vx = 2.d0 - px
-           !   wx = 3.d0 - px
-           !   i0 = INT( qg (ig) / dq ) + 1
-           !   i1 = i0 + 1
-           !   i2 = i0 + 2
-           !   i3 = i0 + 3
-              !
-           !   vq (ig) = tab (i0, nb, nt) * ux * vx * wx / 6.d0 + &
-           !             tab (i1, nb, nt) * px * vx * wx / 2.d0 - &
-           !             tab (i2, nb, nt) * px * ux * wx / 2.d0 + &
-           !             tab (i3, nb, nt) * px * ux * vx / 6.d0
-           !   !
-           !endif !spline_ps
+           call splint_mcf (xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
         enddo !ig
         !
         ! add spherical harmonic part  (Y_lm(q)*f_l(q)) 
@@ -200,6 +176,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
      enddo !n bet
   enddo !ntyp
   !
+  deallocate (xdata)
   deallocate (gk)
   deallocate (ylm)
   deallocate (vq)
