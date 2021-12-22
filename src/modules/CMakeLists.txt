@@ -3,6 +3,7 @@
 
 
 set(SOURCES
+  multiply_psi_by_KB.f90
   add_m_nu_lambda_text.f90
   add_q_m_nu.f90
   allocate_nlpot.f90

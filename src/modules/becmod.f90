@@ -73,14 +73,17 @@ CONTAINS
     ENDIF
 
     IF (gamma_only) THEN
+      print*,"TEST BETA GAMMA"
       CALL calbec_gamma ( npw, beta, psi, betapsi%r, local_nbnd )
       !
     ELSEIF ( noncolin) THEN
        !
+       print*,"TEST BETA NC"
        CALL  calbec_nc ( npw, beta, psi, betapsi%nc, local_nbnd )
        !
     ELSE
        !
+       print*,"TEST BETA _K"
        CALL  calbec_k ( npw, beta, psi, betapsi%k, local_nbnd )
        !
     ENDIF

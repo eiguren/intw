@@ -15,12 +15,10 @@ subroutine dvqpsi_us_only (xk,xq,nat,nG_max,nbands,npol,igk,igkq,wfc_k,dvpsi)
   use intw_reading, only: tpiba
   use intw_fft, only: gvec_cart
   use intw_useful_constants, only: cmplx_0,cmplx_i
-  use intw_reading, only:  ityp, ntyp 
-  use intw_reading, only:  noncolin
-  use intw_pseudo, only:  nkb, vkb, vkqb 
-  use intw_pseudo, only: nhtol, nhtoj, nhtolm, ijtoh, dvan, indv,&
-                              dvan_so 
+  use intw_reading, only:  ityp, ntyp, noncolin 
+  use intw_pseudo, only: nkb, vkb, vkqb, nhtol, nhtoj, nhtolm, ijtoh, dvan, indv, dvan_so
   use intw_pseudo, only: nh, nhm
+!
   use intw_phus, only: alphap, becp1
   use intw_becmod, only: calbec
 
