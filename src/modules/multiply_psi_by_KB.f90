@@ -58,8 +58,6 @@ SUBROUTINe multiply_psi_by_KB( k_point, q_point, npol, nbands,ng_max, list_iGk, 
                        projec_d2(na,ih,ipol,spol) +   (   tpiba * cmplx_i )* conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol)* & 
                             ( k_(ipol)  + gvec_cart(ipol,iGk) ) 
                              
-
-
                     enddo !ig
 
                  enddo !ih
