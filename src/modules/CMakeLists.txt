@@ -9,11 +9,9 @@ set(SOURCES
   allocate_nlpot.f90
   allocate_phq.f90
   all_wfcs.f90
-  becmod.f90
   cfftnd.f90
   DM_q2Rp.f90
   DM_Rp2q.f90
-  dvqpsi_us_only.f90
   fft.f90
   force_linearity_G.f90
   gaussian.f90
@@ -34,7 +32,6 @@ set(SOURCES
   intw_pseudo2.f90
   lambda_calculate.f90
   matrix_elements.f90
-  phcom.f90
   ph_module.f90
   phq_init.f90
   reading.f90

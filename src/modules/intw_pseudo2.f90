@@ -7,7 +7,7 @@ module intw_pseudo
   SAVE
   !
   ! variables
-  public :: INTWPSEUDO, upf
+  public :: INTWPSEUDO, upf, vlocq
   public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
             becsum, dvan, nhtoj, dvan_so, beta
@@ -47,6 +47,8 @@ module intw_pseudo
   END TYPE INTWPSEUDO
 
   TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
+
+  REAL (DP), ALLOCATABLE :: vlocq(:,:)
 
   LOGICAL :: spline_ps=.true.  
 

@@ -649,9 +649,10 @@ program ep_melements
            !
            !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren).
            !
-           vkb=cmplx_0
+           vkb =cmplx_0
            vkqb=cmplx_0
-           call init_KB_projectors(npw ,nG_max,list_iGk ,kpoint       ,vkb)
+           !
+           call init_KB_projectors(npw ,nG_max,list_iGk ,kpoint       ,vkb )
            call init_KB_projectors(npwq,nG_max,list_iGkq,kpoint+qpoint,vkqb)
            !
            !-psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
@@ -663,10 +664,6 @@ program ep_melements
            !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
            !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
            !                                  (lokala) + (ez lokala)
-           !call dvqpsi_us_only (matmul(bg, kpoint), matmul(bg, qpoint), nat, nG_max, nbands_loc, &
-           !                                                 npol, list_iGk, list_iGkq, wfc_k, dvpsi)
-
-
            call multiply_psi_by_KB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
            !
            !-QE-ren subroutina goikoaren berdina egiteko.

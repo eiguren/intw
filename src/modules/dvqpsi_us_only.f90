@@ -19,8 +19,6 @@ subroutine dvqpsi_us_only (xk,xq,nat,nG_max,nbands,npol,igk,igkq,wfc_k,dvpsi)
   use intw_pseudo, only: nkb, vkb, vkqb, nhtol, nhtoj, nhtolm, ijtoh, dvan, indv, dvan_so
   use intw_pseudo, only: nh, nhm
 !
-  use intw_phus, only: alphap, becp1
-  use intw_becmod, only: calbec
 
   implicit none
 

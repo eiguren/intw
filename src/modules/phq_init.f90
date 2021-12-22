@@ -16,7 +16,7 @@ SUBROUTINE phq_init( xq)
   USE kinds, ONLY : dp
   USE intw_reading, ONLY : nat, tau, ntyp, tpiba2, ngm, volume0 
   USE intw_useful_constants,      ONLY: tpi 
-  USE intw_eqv, ONLY :  vlocq
+  USE intw_pseudo, ONLY :  vlocq
   USE intw_pseudo,       ONLY : upf
   USE intw_fft, ONLY : gvec_cart
 
