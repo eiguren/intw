@@ -54,7 +54,6 @@ set(SOURCES
   wigner_seitz_wannier.f90
   ylmr2.f90
   fft_interp.f90
-  dvqpsi_us_only_haritz.f90
   splinelib.f90
   mcf_interpolacion.f90
 )
