@@ -1,5 +1,4 @@
 
-! Copyright (C) 2001-2007 Quantum ESPRESSO group
 ! This file is distributed under the terms of the
 ! GNU General Public License. See the file `License'
 ! in the root directory of the present distribution,
@@ -7,24 +6,8 @@
 !
 !
 !----------------------------------------------------------------------
-subroutine init_us_1
+subroutine init_pp
   !----------------------------------------------------------------------
-  !
-  !   This routine performs the following tasks:
-  !   a) For each non vanderbilt pseudopotential it computes the D and
-  !      the betar in the same form of the Vanderbilt pseudopotential.
-  !   b) It computes the indices indv which establish the correspondence
-  !      nh <-> beta in the atom
-  !   c) It computes the indices nhtol which establish the correspondence
-  !      nh <-> angular momentum of the beta function
-  !   d) It computes the indices nhtolm which establish the correspondence
-  !      nh <-> combined (l,m) index for the beta function.
-  !   e) It computes the coefficients c_{LM}^{nm} which relates the
-  !      spherical harmonics in the Q expansion
-  !   f) It computes the radial fourier transform of the Q function on
-  !      all the g vectors
-  !   g) It computes the q terms which define the S matrix.
-  !   h) It fills the interpolation table for the beta functions
   !
   USE kinds,        ONLY : DP
   USE intw_pseudo,   ONLY : lmaxx
@@ -285,7 +268,7 @@ subroutine init_us_1
   deallocate (aux)
 
   return
-end subroutine init_us_1
+end subroutine init_pp
 
 !
 ! Copyright (C) 2004 PWSCF group

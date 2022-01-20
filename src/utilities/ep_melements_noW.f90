@@ -560,7 +560,7 @@ program ep_melements
   !
   call allocate_phq
   !
-  call init_us_1
+  call init_pp
   
   ep_mat_el = cmplx_0
   !

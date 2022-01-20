@@ -22,7 +22,7 @@ set(SOURCES
   H_kb2Rew.f90
   H_Rew2kb.f90
   imselfen2reselfen_t0.f90
-  init_us_1.f90
+  init_pp.f90
   init_KB_projectors.f90
   dft_fftw.f90
   kinds.f90
