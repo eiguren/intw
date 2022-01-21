@@ -231,7 +231,6 @@ subroutine init_pp
            enddo
            !ASIER 29/07/2021
            !call simpson (upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
-           !call simpson (upf(nt)%kkbeta, aux, rgrid(nt)%rab, vqint)
 
            !Integrating by spline + gauss 2. order 
            vqint  =  intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux ) 
