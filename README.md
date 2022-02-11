@@ -13,7 +13,7 @@ make -j8
 
 Intel-eko konpilatzailearekin lan egiteko ondo dago `export FC=ifort CC=icx CXX=icp` aldagaiak eskuragarri izatea.
 
-QE- version
+## QE- version
 
 Orain arte qe-6.7 eta 6-4 bertsioekin lan egin dugu, bertsio jakin bat jasotzeko:
 
