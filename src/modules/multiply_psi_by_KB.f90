@@ -52,10 +52,10 @@ SUBROUTINe multiply_psi_by_KB( k_point, q_point, npol, nbands,ng_max, list_iGk, 
                        iGk= list_iGk(iG)
                        if (iGk==0) exit
                        projec_d1(na,ih,ipol,spol) =   &
-                       projec_d1(na,ih,ipol,spol) -   (   tpiba * cmplx_i) * conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol)
+                       projec_d1(na,ih,ipol,spol) -   ( tpiba * cmplx_i) * conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol)
 
                        projec_d2(na,ih,ipol,spol) =   &
-                       projec_d2(na,ih,ipol,spol) +   (   tpiba * cmplx_i )* conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol)* & 
+                       projec_d2(na,ih,ipol,spol) +   ( tpiba * cmplx_i )* conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol)* & 
                             ( k_(ipol)  + gvec_cart(ipol,iGk) ) 
                              
                     enddo !ig

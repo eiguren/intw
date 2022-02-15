@@ -137,12 +137,7 @@ subroutine init_pp
      !
      !    Here we initialize the D of the solid
      !
-     !Peio
-     !We need to explicitely tell the program make the next whether SOC is present
-     !To be consistent with what we have defined in allocate_nlpot.f90
-     !     if (upf(nt)%has_so) then
      if (upf(nt)%has_so.and.lspinorb) then
-        !Peiotab_d2y(:,nb,nt)
         !
         !  first calculate the fcoef coefficients
         !
@@ -240,10 +235,6 @@ subroutine init_pp
         enddo
      enddo
   enddo
-
-#ifdef __PARA
-  call mp_sum(  tab, intra_pool_comm )
-#endif
 
   ! initialize spline interpolation
      allocate( xdata(nqx) )
