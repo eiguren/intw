@@ -21,10 +21,10 @@ subroutine init_pp
   USE intw_pseudo,           ONLY : nqxq, dq, nqx, tab, tab_d2y, qrad
   USE splinelib
   USE intw_pseudo,         ONLY : nhtol, nhtoj, nhtolm, ijtoh, dvan, indv,&
-       dvan_so
+       dvan_so, DKB
   USE intw_pseudo,   ONLY : upf, nbetam, nh, nhm, lmaxkb
 
-  USE intw_fft,        ONLY : gvec_cart, gg 
+  USE intw_fft,        ONLY : gvec_cart, gg
   USE intw_spin_orb,     ONLY : rot_ylm, fcoef
   USE mcf_spline
 
@@ -62,16 +62,16 @@ subroutine init_pp
   !    Initialization of the variables
   !
   ndm = MAXVAL ( upf(:)%kkbeta )
-  allocate (aux ( ndm))    
-  allocate (aux1( ndm))    
-  allocate (besr( ndm))    
-  allocate (qtot( ndm , nbetam*(nbetam+1)/2 ))    
+  allocate (aux ( ndm))
+  allocate (aux1( ndm))
+  allocate (besr( ndm))
+  allocate (qtot( ndm , nbetam*(nbetam+1)/2 ))
   !
   ! the following prevents an out-of-bound error: upf(nt)%nqlc=2*lmax+1
   ! but in some versions of the PP files lmax is not set to the maximum
   ! l of the beta functions but includes the l of the local potential
   !
-  prefr = fpi / volume0 
+  prefr = fpi / volume0
   if (lspinorb) then
      !
      !  In the spin-orbit case we need the unitary matrix u which rotates the
@@ -207,7 +207,7 @@ subroutine init_pp
   !
   !     fill the interpolation table tab
   !
-  !         vqint = intgr_spline_gaussq( upf(nt)%r, aux ) 
+  !         vqint = intgr_spline_gaussq( upf(nt)%r, aux )
   pref = fpi / sqrt (volume0)
   tab (:,:,:) = 0.d0
   do nt = 1, ntyp
@@ -227,8 +227,8 @@ subroutine init_pp
            !ASIER 29/07/2021
            !call simpson (upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
 
-           !Integrating by spline + gauss 2. order 
-           vqint  =  intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux ) 
+           !Integrating by spline + gauss 2. order
+           vqint  =  intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
 
            tab (iq, nb, nt) = vqint * pref
 
@@ -242,10 +242,10 @@ subroutine init_pp
         xdata(iq) = (iq - 1) * dq
      enddo
      do nt = 1, ntyp
-        do nb = 1, upf(nt)%nbeta 
+        do nb = 1, upf(nt)%nbeta
            d1 = (tab(2,nb,nt) - tab(1,nb,nt)) / dq
            !call spline(xdata, tab(:,nb,nt), 0.d0, d1, tab_d2y(:,nb,nt))
-            call spline_mcf(xdata,tab(:,nb,nt), nqx, tab_d2y(:,nb,nt)) 
+            call spline_mcf(xdata,tab(:,nb,nt), nqx, tab_d2y(:,nb,nt))
         enddo
      enddo
      deallocate(xdata)
@@ -269,8 +269,8 @@ end subroutine init_pp
 !
 function sph_ind(l,j,m,spin)
   ! This function calculates the m index of the spherical harmonic
-  ! in a spinor with orbital angular momentum l, total angular 
-  ! momentum j, projection along z of the total angular momentum m+-1/2. 
+  ! in a spinor with orbital angular momentum l, total angular
+  ! momentum j, projection along z of the total angular momentum m+-1/2.
   ! Spin selects the up (spin=1) or down (spin=2) coefficient.
   !
   use kinds
@@ -308,7 +308,7 @@ end function sph_ind
 
 function spinor(l,j,m,spin)
   ! This function calculates the numerical coefficient of a spinor
-  ! with orbital angular momentum l, total angular momentum j, 
+  ! with orbital angular momentum l, total angular momentum j,
   ! projection along z of the total angular momentum m+-1/2. Spin selects
   ! the up (spin=1) or down (spin=2) coefficient.
 
@@ -317,7 +317,7 @@ function spinor(l,j,m,spin)
 
   implicit none
 
-  real(DP) :: spinor    
+  real(DP) :: spinor
   integer :: l, &            ! orbital angular momentum
        m, &            ! projection of the total angular momentum+-1/2
        spin            ! 1 or 2 select the component

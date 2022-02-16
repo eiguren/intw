@@ -10,11 +10,11 @@ subroutine allocate_nlpot1 ()
   !
   !
   use kinds
-  use intw_reading, only: nat,ntyp,ityp,ecutwfc,ecutrho,dual,gcutm,tpiba2,bg,ngm,nspin
+  use intw_reading, only: nat,ntyp,ityp,ecfutwfc,ecutrho,dual,gcutm,tpiba2,bg,ngm,nspin
   use intw_reading, only: noncolin,lspinorb,ng_max
   USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq
-  use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,dvan,vkb,vkqb
-  use intw_pseudo, only: nkb,nhtoj,becsum,dvan_so
+  use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,vkb,vkqb
+  use intw_pseudo, only: nkb,nhtoj,becsum,dvan,dvan_so,DKB
   use intw_pseudo, only: upf,lmaxkb,nh,nhm,nbetam
   use intw_spin_orb, only: fcoef
 
@@ -22,7 +22,7 @@ subroutine allocate_nlpot1 ()
 
   !local variables
 
-  integer :: nwfcm,nsp,npwx 
+  integer :: nwfcm,nsp,npwx
   real(dp),parameter :: cell_factor=1.0_dp
   real(dp) :: qnorm
 
@@ -32,26 +32,28 @@ subroutine allocate_nlpot1 ()
   !
   call pre_init()
   !
-  allocate (indv( nhm, nsp))    
-  allocate (nhtol(nhm, nsp))    
-  allocate (nhtolm(nhm, nsp))    
-  allocate (nhtoj(nhm, nsp))    
+  allocate (indv( nhm, nsp))
+  allocate (nhtol(nhm, nsp))
+  allocate (nhtolm(nhm, nsp))
+  allocate (nhtoj(nhm, nsp))
   allocate (ijtoh(nhm, nhm, nsp))
   if (lspinorb) then
     allocate (dvan_so(nhm,nhm,nspin*nspin,nsp)) ! dvan_so needs 4 components, 1 for all spin couple possible
+    allocate (DKB(nhm,nhm,nspin,nspin,nsp))
     allocate (fcoef(nhm,nhm,2,2,nsp))
   else
     allocate (dvan( nhm, nhm, nsp))
+    allocate (DKB(nhm,nhm,1,1,nsp))
   endif
   !
-  allocate (becsum( nhm * (nhm + 1)/2, nat, nspin))    
+  allocate (becsum( nhm * (nhm + 1)/2, nat, nspin))
   !
   ! Calculate dimensions for array tab (including a possible factor
   ! coming from cell contraction during variable cell relaxation/MD)
   !
   nqx = INT( (sqrt (2*ecutwfc) / dq + 4) * cell_factor ) ! x2 zeren Ry -> Hartree egin behar
 
-  allocate (tab( 2*nqx , nbetam , nsp)) ! ASIER originala nqx, errepasatu 
+  allocate (tab( 2*nqx , nbetam , nsp)) ! ASIER originala nqx, errepasatu
 
   ! d2y is for the cubic splines
   allocate (tab_d2y( nqx , nbetam , nsp))
@@ -59,9 +61,9 @@ subroutine allocate_nlpot1 ()
   if (allocated(vkb)) deallocate (vkb)
   if (allocated(vkqb)) deallocate (vkqb)
 
-  if (nkb > 0) then 
+  if (nkb > 0) then
       allocate (vkb ( nG_max,  nkb))
-      allocate (vkqb( nG_max,  nkb))  
+      allocate (vkqb( nG_max,  nkb))
   end if
   !
   return
@@ -91,13 +93,13 @@ subroutine allocate_nlpot2 (qpoint)
 
   implicit none
 
-  !I/O variables 
+  !I/O variables
 
   real(dp),intent(in) :: qpoint(3)
 
   !local variables
-  
-  integer :: nwfcm,nsp,npwx 
+
+  integer :: nwfcm,nsp,npwx
   real(dp), parameter :: cell_factor=1.0_dp
   real(dp) :: xq(3),qnorm
 
@@ -105,7 +107,7 @@ subroutine allocate_nlpot2 (qpoint)
   !
   npwx=ng_max
   !
-  xq = matmul(bg, qpoint) 
+  xq = matmul(bg, qpoint)
   !
   qnorm =sqrt(xq(1)**2+xq(2)**2+xq(3)**2)
   !
@@ -125,7 +127,7 @@ SUBROUTINE pre_init()
   !
   USE intw_reading,     ONLY : nat, ntyp, ityp
   USE intw_pseudo,  ONLY : upf, lmaxkb, nh, nhm, nbetam
-  USE intw_pseudo,        ONLY : nkb 
+  USE intw_pseudo,        ONLY : nkb
   IMPLICIT NONE
   INTEGER :: na, nt, nb, nsp
   !
@@ -159,5 +161,5 @@ SUBROUTINE pre_init()
      nt = ityp(na)
      nkb = nkb + nh (nt)
   enddo
- 
+
 END SUBROUTINE pre_init
