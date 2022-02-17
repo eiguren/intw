@@ -556,12 +556,12 @@ program ep_melements
      enddo !ibnd
   enddo !ik
   !
-  call allocate_nlpot1
+  call allocate_nlpot
   !
   call allocate_phq
   !
   call init_pp
-  
+
   ep_mat_el = cmplx_0
   !
 !-------------------------------------------------------------------------------------------------------------
@@ -591,9 +591,7 @@ program ep_melements
         !
         call diagonalize_cmat (3*nat, dyn_q,w2)
         !
-        !-q puntuaren menpeko aldagai bat allocatu (hau kenduko dugu laster).
-        !
-        call allocate_nlpot2 (qpoint)
+        call set_nqxq (qpoint)
         !
         !-potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
         !

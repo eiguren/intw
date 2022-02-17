@@ -21,7 +21,7 @@ subroutine init_pp
   USE intw_pseudo,           ONLY : nqxq, dq, nqx, tab, tab_d2y, qrad
   USE splinelib
   USE intw_pseudo,         ONLY : nhtol, nhtoj, nhtolm, ijtoh, dvan, indv,&
-       dvan_so, DKB
+       dvan_so
   USE intw_pseudo,   ONLY : upf, nbetam, nh, nhm, lmaxkb
 
   USE intw_fft,        ONLY : gvec_cart, gg

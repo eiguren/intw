@@ -10,7 +10,7 @@ module intw_pseudo
   public :: INTWPSEUDO, upf, vlocq
   public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
-            dvan, dvan_so, nhtoj, beta
+            becsum, nhtoj, dvan_so, dvan, DKB, beta
   !
   ! subroutines
   public :: read_all_pseudo
@@ -98,8 +98,8 @@ module intw_pseudo
        nhtoj(:,:)              ! correspondence n <-> total angular momentum
   !
   COMPLEX(DP), ALLOCATABLE :: & ! variables for spin-orbit/noncolinear case:
-       dvan_so(:,:,:,:),      & ! D_{nm}
-       DKB(:,:,:,:)             !
+       dvan_so(:,:,:,:),      &! D_{nm}
+       DKB(:,:,:,:,:)            !
   !
   REAL(DP), ALLOCATABLE :: &
        beta(:,:,:)           ! beta functions for CP (without struct.factor)
