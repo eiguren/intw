@@ -3,7 +3,6 @@ PROGRAM pw2intw
   !-----------------------------------------------------------------------
   !
   USE Kinds
-  USE io_global,  ONLY : stdout, ionode, ionode_id
   USE mp_global,  ONLY : mp_startup
   USE mp_pools,   ONLY : npool
   USE mp,         ONLY : mp_bcast
@@ -71,10 +70,10 @@ PROGRAM pw2intw
 
   call system("mkdir -p "//intwdir)
 
-  WRITE(stdout,*)
-  WRITE(stdout,*) ' Reading nscf_save data'
+  WRITE(*,*)
+  WRITE(*,*) ' Reading nscf_save data'
   CALL read_file()
-  WRITE(stdout,*)
+  WRITE(*,*)
 
   call write_pp_intw()
 

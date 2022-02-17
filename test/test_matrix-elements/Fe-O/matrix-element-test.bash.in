@@ -7,9 +7,9 @@ NUM_BANDS=15
 NAT=2
 NON_DEGENERATED_BANDS=( 1 2 5 6 9 14 )
 
+
 MIN_MAT_EL=0.01
 MAX_DIFF_PERCENTAGE=5.00
-
 
 # Run all necessary QE calculations
 make calculation
