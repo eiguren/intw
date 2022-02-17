@@ -597,7 +597,7 @@ contains
 
     USE intw_reading, ONLY : nr1, nr2, nr3, ngm
     USE intw_fft, ONLY : eigts1, eigts2, eigts3, nl
-    USE intw_eqv, ONLY : vlocq
+    USE intw_pseudo, ONLY : vlocq
 
     implicit none
 

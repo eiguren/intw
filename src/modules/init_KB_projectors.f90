@@ -7,24 +7,22 @@
 !
 !
 !----------------------------------------------------------------------
-subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
+subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   !----------------------------------------------------------------------
   !
   !   Calculates beta functions (Kleinman-Bylander projectors), with
   !   structure factor, for all atoms, in reciprocal space
   !
   USE kinds, ONLY: dp                                       !-QE :USE kinds,      ONLY : DP
-!haritz
-!  USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, ngm     !-QE :USE ions_base,  ONLY : nat, ntyp => nsp, ityp, tau
-!  USE intw_pseudo, ONLY: tpiba                              !-QE :USE cell_base,  ONLY : tpiba
   USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, ngm, tpiba
-!haritz
-  USE intw_useful_constants, ONLY : tpi, cmplx_0            !-QE :USE constants,  ONLY : tpi
-  USE intw_pseudo, ONLY: nqx,nqxq, dq, tab, tab_d2y, spline_ps
+  USE intw_useful_constants, ONLY : tpi, cmplx_0, cmplx_i            !-QE :USE constants,  ONLY : tpi
+  USE intw_pseudo, ONLY: nqx,nqxq, dq, tab, tab_d2y
   USE splinelib
   USE intw_pseudo, ONLY: nkb, vkb, nhtol, nhtolm, indv
   USE intw_pseudo, ONLY : upf, lmaxkb, nhm, nh
-  USE intw_fft, ONLY: gvec_cart, eigts1, eigts2, eigts3, mill
+  USE intw_fft, ONLY: gvec_cart
+
+  USE mcf_spline
 
   implicit none
 
@@ -85,22 +83,19 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
      !
   enddo !ig
   !
-  if (spline_ps) then
+  allocate(xdata(nqx))
      !
-     allocate(xdata(nqx))
-     !
-     do iq = 1, nqx
+  do iq = 1, nqx
         !
-        xdata(iq) = (iq - 1) * dq
+     xdata(iq) = (iq - 1) * dq
         !
-     enddo !ig
-  endif !spline_ps
+  enddo !ig
   !
   ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
   !
   jkb=0
   vq=0.d0
-  !
+  ! 
   do nt=1,ntyp
      !
      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
@@ -111,27 +106,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
            !
            if (igk_(ig)==0) exit
            !
-           if (spline_ps) then
-              !
-              vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
-              !
-           else
-              !             
-              px = qg (ig) / dq - int (qg (ig) / dq)
-              ux = 1.d0 - px
-              vx = 2.d0 - px
-              wx = 3.d0 - px
-              i0 = INT( qg (ig) / dq ) + 1
-              i1 = i0 + 1
-              i2 = i0 + 2
-              i3 = i0 + 3
-              !
-              vq (ig) = tab (i0, nb, nt) * ux * vx * wx / 6.d0 + &
-                        tab (i1, nb, nt) * px * vx * wx / 2.d0 - &
-                        tab (i2, nb, nt) * px * ux * wx / 2.d0 + &
-                        tab (i3, nb, nt) * px * ux * vx / 6.d0
-              !
-           endif !spline_ps
+           call splint_mcf (xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
         enddo !ig
         !
         ! add spherical harmonic part  (Y_lm(q)*f_l(q)) 
@@ -164,6 +139,8 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
         !
         if (ityp(na).eq.nt) then
            !
+           ! q_ is cart. coordinates
+           !
            arg = (q_(1) * tau (1, na) + &
                   q_(2) * tau (2, na) + &
                   q_(3) * tau (3, na) ) * tpi
@@ -174,9 +151,9 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
               !
               if (igk_(ig)==0) exit
               !
-              sk (ig) = eigts1 (mill(1,igk_(ig)), na) * &
-                        eigts2 (mill(2,igk_(ig)), na) * &
-                        eigts3 (mill(3,igk_(ig)), na)
+              sk (ig) = exp ( -tpi*cmplx_i* (  gvec_cart(1,igk_(ig))*tau(1,na) &
+                                             + gvec_cart(2,igk_(ig))*tau(2,na) &
+                                             + gvec_cart(3,igk_(ig))*tau(3,na) ) )
               !
            enddo !ig
            !
@@ -197,6 +174,7 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
      enddo !n bet
   enddo !ntyp
   !
+  deallocate (xdata)
   deallocate (gk)
   deallocate (ylm)
   deallocate (vq)
@@ -206,5 +184,5 @@ subroutine init_us_2 (npw_, npwx_, igk_, qpoint_, vkb_)
   !
   return
 
-end subroutine init_us_2
+end subroutine init_KB_projectors 
 

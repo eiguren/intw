@@ -7,10 +7,10 @@ module intw_pseudo
   SAVE
   !
   ! variables
-  public :: INTWPSEUDO, upf
+  public :: INTWPSEUDO, upf, vlocq
   public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
-            becsum, dvan, nhtoj, dvan_so, beta
+            becsum, nhtoj, dvan_so, dvan, DKB, beta
   !
   ! subroutines
   public :: read_all_pseudo
@@ -48,6 +48,9 @@ module intw_pseudo
 
   TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
 
+  REAL (DP), ALLOCATABLE :: vlocq(:,:)
+
+  LOGICAL :: spline_ps=.true.
 
   !Former US in QE
   INTEGER :: &
@@ -59,7 +62,6 @@ module intw_pseudo
        qrad(:,:,:,:),         &! radial FT of Q functions
        tab(:,:,:)           ! interpolation table for PPs
 
-  LOGICAL :: spline_ps = .false.
   REAL(DP), ALLOCATABLE :: &
        tab_d2y(:,:,:)            ! for cubic splines
   !Former USPP_PARAM in QE (INTW)
@@ -96,7 +98,8 @@ module intw_pseudo
        nhtoj(:,:)              ! correspondence n <-> total angular momentum
   !
   COMPLEX(DP), ALLOCATABLE :: & ! variables for spin-orbit/noncolinear case:
-       dvan_so(:,:,:,:)         ! D_{nm}
+       dvan_so(:,:,:,:),      &! D_{nm}
+       DKB(:,:,:,:,:)            !
   !
   REAL(DP), ALLOCATABLE :: &
        beta(:,:,:)           ! beta functions for CP (without struct.factor)

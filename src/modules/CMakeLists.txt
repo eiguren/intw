@@ -3,16 +3,15 @@
 
 
 set(SOURCES
+  multiply_psi_by_KB.f90
   add_m_nu_lambda_text.f90
   add_q_m_nu.f90
   allocate_nlpot.f90
   allocate_phq.f90
   all_wfcs.f90
-  becmod.f90
   cfftnd.f90
   DM_q2Rp.f90
   DM_Rp2q.f90
-  dvqpsi_us_only.f90
   fft.f90
   force_linearity_G.f90
   gaussian.f90
@@ -23,8 +22,8 @@ set(SOURCES
   H_kb2Rew.f90
   H_Rew2kb.f90
   imselfen2reselfen_t0.f90
-  init_us_1.f90
-  init_us_2.f90
+  init_pp.f90
+  init_KB_projectors.f90
   dft_fftw.f90
   kinds.f90
   haritz.f90
@@ -33,7 +32,6 @@ set(SOURCES
   intw_pseudo2.f90
   lambda_calculate.f90
   matrix_elements.f90
-  phcom.f90
   ph_module.f90
   phq_init.f90
   reading.f90
@@ -56,8 +54,8 @@ set(SOURCES
   wigner_seitz_wannier.f90
   ylmr2.f90
   fft_interp.f90
-  dvqpsi_us_only_haritz.f90
   splinelib.f90
+  mcf_interpolacion.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

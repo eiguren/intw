@@ -3,15 +3,21 @@
 !
 !----------------------------------------------------------------------------!
 module intw_utility
-  !----------------------------------------------------------------------------!
-  !
-  !       This module contains useful functions which implement
-  !       common tasks. It will be VERY useful to call these functions
-  !       instead of reimplementing them every time they are needed,
-  !       especially to insure CONSISTENCY.
-  !
-  !----------------------------------------------------------------------------!
-  use kinds, only: dp
+!----------------------------------------------------------------------------!
+!
+!       This module contains useful functions which implement
+!       common tasks. It will be VERY useful to call these functions
+!       instead of reimplementing them every time they are needed,
+!       especially to insure CONSISTENCY.
+!
+!----------------------------------------------------------------------------!
+!haritz
+use kinds, only: dp
+!haritz
+use intw_useful_constants
+use mcf_spline
+
+
 
   implicit none
   !
@@ -22,14 +28,46 @@ module intw_utility
             HPSORT_real, find_r_in_WS_cell, errore, simpson
   !
   ! functions
-  public :: ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
+  public :: intgr_spline_gaussq, ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser
   !
   private
   !
 
-
 contains
+
+function intgr_spline_gaussq(xdata,ydata) result(batura)
+! This is original from MBGROUP
+! This function integrates exactly (numerical)
+! the cubic spline interpolation of a given data in 1D
+! this is so because 2nd order gauss cuadrature
+! is exact of pol. of order 3.
+
+real(kind=dp),intent(in) :: xdata(:),ydata(:)
+real(kind=dp), dimension(size(xdata)) :: ys2
+!out
+real(kind=dp):: batura
+!local
+real(kind=dp) :: x1, x2, y1, y2
+real(kind=dp),parameter :: onesqrt3=0.57735026919_dp
+integer :: i
+
+
+call SPLINE_MCF (xdata, ydata,  size(xdata), ys2) 
+
+batura=0.0_dp
+do i=1,size(xdata)-1
+ 
+ x1=(xdata(i+1)+xdata(i))/2.0_dp - (xdata(i+1)-xdata(i))/2.0_dp/onesqrt3
+ x2=(xdata(i+1)+xdata(i))/2.0_dp + (xdata(i+1)-xdata(i))/2.0_dp/onesqrt3
+  
+ call splint_MCF (xdata, ydata, ys2, size(xdata), x1, y1)
+ call splint_MCF (xdata, ydata, ys2, size(xdata), x2, y2)
+
+ batura=batura + (y2 + y1) * (xdata(i+1)-xdata(i))/2.0_dp
+enddo
+end function intgr_spline_gaussq
+
 
   subroutine get_timing(time)
     !----------------------------------------------------------------------------!
@@ -1126,8 +1164,4 @@ contains
 
   end function qe_erfc
 
-
 end module intw_utility
-!
-!
-!----------------------------------------------------------------------------!
