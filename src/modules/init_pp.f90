@@ -20,8 +20,7 @@ subroutine init_pp
 
   USE intw_pseudo,           ONLY : nqxq, dq, nqx, tab, tab_d2y, qrad
   USE splinelib
-  USE intw_pseudo,         ONLY : nhtol, nhtoj, nhtolm, ijtoh, dvan, indv,&
-       dvan_so
+  USE intw_pseudo,         ONLY : nhtol, nhtoj, nhtolm, ijtoh, indv, DKB
   USE intw_pseudo,   ONLY : upf, nbetam, nh, nhm, lmaxkb
 
   USE intw_fft,        ONLY : gvec_cart, gg
@@ -72,6 +71,9 @@ subroutine init_pp
   ! l of the beta functions but includes the l of the local potential
   !
   prefr = fpi / volume0
+
+  DKB=(0.0_dp,0.0_dp)
+
   if (lspinorb) then
      !
      !  In the spin-orbit case we need the unitary matrix u which rotates the
@@ -90,9 +92,6 @@ subroutine init_pp
         rot_ylm(n,n1+1)=CMPLX(0.d0, 1.0_dp/sqrt2,kind=DP)
      enddo
      fcoef=(0.d0,0.d0)
-     dvan_so = (0.d0,0.d0)
-  else
-     dvan = 0.d0
   endif
   !
   !   For each pseudopotential we initialize the indices nhtol, nhtolm,
@@ -178,7 +177,7 @@ subroutine init_pp
               do is1=1,2
                  do is2=1,2
                     ijs=ijs+1
-                    dvan_so(ih,jh,ijs,nt) = upf(nt)%dion(vi,vj) * &
+                    DKB (ih, ih,is1,is2,nt ) =  upf(nt)%dion(vi,vj) * &
                          fcoef(ih,jh,is1,is2,nt)
                     if (vi.ne.vj) fcoef(ih,jh,is1,is2,nt)=(0.d0,0.d0)
                  enddo
@@ -193,10 +192,11 @@ subroutine init_pp
                  ir = indv (ih, nt)
                  is = indv (jh, nt)
                  if (lspinorb) then
-                    dvan_so (ih, jh, 1, nt) = upf(nt)%dion (ir, is)
-                    dvan_so (ih, jh, 4, nt) = upf(nt)%dion (ir, is)
+                    DKB (ih, ih,1,1,nt ) = upf(nt)%dion (ir, is)
+                    DKB (ih, ih,2,2,nt ) = upf(nt)%dion (ir, is)
+
                  else
-                    dvan (ih, jh, nt) = upf(nt)%dion (ir, is)
+                    DKB (ih, ih,1,1,nt )= upf(nt)%dion (ir, is)
                  endif
               endif
            enddo
