@@ -10,7 +10,7 @@ module intw_pseudo
   public :: INTWPSEUDO, upf, vlocq
   public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
-            becsum, nhtoj, DKB, beta
+             nhtoj, DKB, beta
   !
   ! subroutines
   public :: read_all_pseudo
@@ -91,8 +91,6 @@ module intw_pseudo
   !
   COMPLEX(DP), ALLOCATABLE, TARGET :: &
        vkb(:,:), vkqb(:,:)             ! all beta functions in reciprocal space
-  REAL(DP), ALLOCATABLE :: &
-       becsum(:,:,:)           ! \sum_i f(i) <psi(i)|beta_l><beta_m|psi(i)>
   REAL(DP), ALLOCATABLE :: &
        nhtoj(:,:)              ! correspondence n <-> total angular momentum
   !

@@ -14,7 +14,7 @@ subroutine allocate_nlpot ()
   use intw_reading, only: noncolin,lspinorb,ng_max
   USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq
   use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,vkb,vkqb
-  use intw_pseudo, only: nkb,nhtoj,becsum,DKB
+  use intw_pseudo, only: nkb,nhtoj,DKB
   use intw_pseudo, only: upf,lmaxkb,nh,nhm,nbetam
   use intw_spin_orb, only: fcoef
 
@@ -28,7 +28,6 @@ subroutine allocate_nlpot ()
 
   real(dp) :: qnorm
 
-  !--------------
   lmaxkb = - 1
   DO nt = 1, ntyp
      !
@@ -53,7 +52,6 @@ subroutine allocate_nlpot ()
      nt = ityp(na)
      nkb = nkb + nh (nt)
   enddo
-  !------------
 
   allocate (indv( nhm, ntyp))
   allocate (nhtol(nhm, ntyp))
@@ -67,7 +65,6 @@ subroutine allocate_nlpot ()
     allocate (DKB(nhm,nhm,1,1,ntyp))
   endif
   !
-  allocate (becsum( nhm * (nhm + 1)/2, nat, nspin))
   !
   ! Calculate dimensions for array tab (including a possible factor
   ! coming from cell contraction during variable cell relaxation/MD)
@@ -102,7 +99,7 @@ subroutine set_nqxq (qpoint)
   USE intw_reading, ONLY: ngm,nspin,noncolin,ng_max
   USE intw_pseudo, ONLY: tab,tab_d2y,dq,nqx,nqxq
   USE intw_pseudo, ONLY: indv,nhtol,nhtolm,ijtoh, &
-                       nkb,nhtoj,becsum
+                       nkb,nhtoj
   USE intw_pseudo, ONLY: upf,lmaxkb,nh,nhm,nbetam
   USE intw_spin_orb, ONLY: fcoef
   !USE intw_pseudo

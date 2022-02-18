@@ -1,12 +1,31 @@
 !
-! Copyright (C) 2001-2007 Quantum ESPRESSO group
-! This file is distributed under the terms of the
-! GNU General Public License. See the file `License'
-! in the root directory of the present distribution,
-! or http://www.gnu.org/copyleft/gpl.txt .
-!
+subroutine intw_complex_ylmr2 (lmax, ng, g, gg, ylm)
+  !-----------------------------------------------------------------------
+  !     INTW project 
+  !     Complex spherical harmonics ylm(G) up to l=lmax
+  !     lmax2 = (lmax+1)^2 is the total number of spherical harmonics
+  !-----------------------------------------------------------------------
+
+  use kinds, only: dp
+  use intw_useful_constants, only: pi,tpi,fpi
+  use intw_utility, only: errore
+
+  integer, intent(in) :: lmax, ng
+  real(DP), intent(in) :: g (3, ng), gg (ng)
+  complex(DP), intent(out) :: ylm (:,:) ! dimensions must be, (ng, (lmax+1)**2 )
+  real(DP), parameter :: eps = 1.0d-9
+
+
+  integer :: lmax2
+
+  lmax2 =(lmax+1)**2
+  
+  ylm=(0.0_dp,0.0_dp)
+
+end subroutine intw_complex_ylmr2
+
 !-----------------------------------------------------------------------
-subroutine intw_ylmr2 (lmax2, ng, g, gg, ylm)
+subroutine intw_real_ylmr2 (lmax2, ng, g, gg, ylm)
   !-----------------------------------------------------------------------
   !
   !     Real spherical harmonics ylm(G) up to l=lmax
@@ -149,5 +168,5 @@ subroutine intw_ylmr2 (lmax2, ng, g, gg, ylm)
   deallocate(cost, sent, phi, Q)
   !
   return
-end subroutine intw_ylmr2
+end subroutine intw_real_ylmr2
 
