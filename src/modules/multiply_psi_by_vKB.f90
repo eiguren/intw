@@ -14,21 +14,19 @@ SUBROUTINe multiply_psi_by_vKB( k_point, npol, nbands, ng_max, list_iGk, psi, dv
   implicit none
 
   integer, intent(in)               :: npol, nG_max, list_iGk(nG_max), nbands
-  real(dp), intent(in)              :: k_point(3), q_point(3)
+  real(dp), intent(in)              :: k_point(3)
   complex(dp), intent(inout)        :: psi(nG_max, nbands,npol), dvnl_psi(nG_max,nbands, npol)
 
   complex(dp)                       :: projec_d(nhm,3,npol)
   integer                           :: spol1, spol2 , ipol, jpol, na, ih, ig
-  real(dp)                          :: k_(3), q_(3)
-  integer :: nt, mode, ikb, iGk, ibnd, iGkq
+  real(dp)                          :: k_(3)
+  integer :: nt, mode, ikb, iGk, ibnd
 
   k_(:)=matmul(bg, k_point)
-  q_(:)=matmul(bg, q_point)
 
   do ibnd=1,nbands
 
-     projec_d1(:,:,:,:) = cmplx_0
-     projec_d2(:,:,:,:) = cmplx_0
+     projec_d(:,:,:,:) = cmplx_0
 
      do ipol = 1, 3  !cart coord.
         ikb=0
