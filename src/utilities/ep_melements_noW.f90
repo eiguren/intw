@@ -662,7 +662,7 @@ program ep_melements
            !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
            !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
            !                                  (lokala) + (ez lokala)
-           call multiply_psi_by_KB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
+           call multiply_psi_by_dvKB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
            !
            !-QE-ren subroutina goikoaren berdina egiteko.
            !

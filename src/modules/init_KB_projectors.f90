@@ -71,7 +71,7 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
      !
   enddo
   !
-  call intw_ylmr2 ((lmaxkb+1)**2, npw_, gk, qg, ylm)
+  call intw_real_ylmr2 ((lmaxkb+1)**2, npw_, gk, qg, ylm)
   !
   ! set now qg=|q+G| in atomic units
   !
