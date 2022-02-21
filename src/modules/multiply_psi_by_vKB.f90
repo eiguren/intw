@@ -17,82 +17,68 @@ SUBROUTINe multiply_psi_by_vKB( k_point, npol, nbands, ng_max, list_iGk, psi, dv
   real(dp), intent(in)              :: k_point(3)
   complex(dp), intent(inout)        :: psi(nG_max, nbands,npol), dvnl_psi(nG_max,nbands, npol)
 
-  complex(dp)                       :: projec_d(nhm,3,npol)
-  integer                           :: spol1, spol2 , ipol, jpol, na, ih, ig
+  complex(dp)                       :: projec_d(nat,nhm,npol)
+  integer                           :: spol1, spol2 , na, ih, ig
   real(dp)                          :: k_(3)
-  integer :: nt, mode, ikb, iGk, ibnd
+  integer :: nt, ikb, iGk, ibnd
 
   k_(:)=matmul(bg, k_point)
 
   do ibnd=1,nbands
 
-     projec_d(:,:,:,:) = cmplx_0
+     projec_d(:,:,:) = cmplx_0
 
-     do ipol = 1, 3  !cart coord.
-        ikb=0
-        do nt=1,ntyp
-           do na = 1, nat !
-              if (ityp(na) == nt) then
+     ikb=0
+     do na = 1, nat !
+        do ih=1,nh(ityp(na))
+           ikb=ikb+1
 
-                 do ih=1,nh(ityp(na))
-                    ikb=ikb+1
+           do ig=1,nG_max
+              iGk= list_iGk(iG)
+              if (iGk==0) exit
 
-                    do ig=1,nG_max
-                       iGk= list_iGk(iG)
-                       if (iGk==0) exit
+              do spol1 = 1,npol !spin
 
-                       do spol1 = 1,npol !spin
+                 ! DKB(nhm,nhm,nspin,nspin,ntyp)
+                 projec_d(na,ih,spol1) = projec_d(na,ih,spol1) +   conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1)
 
-                          ! DKB(nhm,nhm,nspin,nspin,ntyp)
-                          projec_d(ih,ipol,spol1) = projec_d(ih,ipol,spol1) +   conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1)
+              enddo !spol
 
-                       enddo !spol
+           enddo !ig
 
-                    enddo !ig
+        enddo !ih
+     enddo !na
 
-                 enddo !ih
+     ikb=0
+     do na = 1, nat !
+        do ih=1,nh(ityp(na))
+           ikb=ikb+1
+           do ig=1,nG_max
+              iGk= list_iGk(iG)
+              if (iGk==0) exit
+
+              if (upf(nt)%has_so.and.lspinorb) then
+
+                 do spol1 = 1,npol !spin
+                    do spol2 = 1,npol !spin
+                       dvnl_psi(iG, ibnd,spol1) = dvnl_psi(iG,ibnd,spol1)&
+                            + DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d(na,ih,spol2) * vkb(iG,ikb)
+                    end do !spol2
+                 end do !spol1
+
+              else ! no SO
+
+                 do spol1 = 1,npol !spin
+
+                    dvnl_psi(iG, ibnd,spol1) = dvnl_psi(iG,ibnd,spol1)&
+                         + DKB (ih, ih,spol1,spol1,ityp(na) )* projec_d(na,ih,spol1) * vkb(iG,ikb)
+
+                 end do
               end if
-           enddo !na
-        enddo ! nt
-     enddo !ipol
 
-     do ipol = 1, 3  !cart coord.
-        ikb=0
-        do nt=1,ntyp
-           do na = 1, nat !
-              if (ityp(na) == nt) then
-
-                 do ih=1,nh(ityp(na))
-                    ikb=ikb+1
-                    do ig=1,nG_max
-                       iGk= list_iGk(iG)
-                       if (iGk==0) exit
-
-                       if (upf(nt)%has_so.and.lspinorb) then
-
-                          do spol1 = 1,npol !spin
-                             do spol2 = 1,npol !spin
-                                dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                     + DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d(ih,ipol,spol2) * vkb(iG,ikb)
-                             end do !spol2
-                          end do !spol1
-
-                       else ! no SO
-
-                          do spol1 = 1,npol !spin
-
-                             dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                  + DKB (ih, ih,spol1,spol1,ityp(na) )* projec_d(na,ih,ipol,spol1) * vkb(iG,ikb)
-
-                          end do
-                       end if
-
-                    enddo !ig
-                 enddo!ih
-              end if
-           enddo! na
-        enddo !nt
-     enddo !i pol
+           enddo !ig
+        enddo!ih
+     enddo! na
 
   enddo !ibnd
 
