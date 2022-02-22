@@ -35,7 +35,7 @@ PROGRAM pw2intw
   integer :: nqirr=0
   logical :: dynxml=.false.
   CHARACTER(len=256) :: intwdir
-  INTEGER :: kunittmp, strlen
+  INTEGER :: kunittmp, strlen, file_exists
 
   NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir
 
@@ -81,6 +81,8 @@ PROGRAM pw2intw
 
   call write_crystal_info_and_bands ()
 
+  call scf_v_and_rho()
+
   call write_FFT_information ()
 
   call write_wfc()
@@ -88,6 +90,8 @@ PROGRAM pw2intw
   if (phonons) call write_phonon_info()
 !
 contains
+
+
 
   SUBROUTINE write_pp_intw()
   USE xmltools
@@ -171,6 +175,49 @@ contains
 
 
   end SUBROUTINE write_pp_intw
+
+
+  SUBROUTINE scf_v_and_rho()
+  !ASIER: 22/02/2022
+  !Here we asume that:
+  ! nspin=1 (no magnetism at all)   
+  ! nspin=2 (collinear)
+  ! nspin=4 (non-collinear)
+  ! It is clear that we must fix this, because
+  ! in many places we asume that npol=2 is non-collinear.
+
+  USE lsda_mod,   ONLY : nspin
+  USE scf, ONLY : rho,v
+  implicit none
+  integer ::io_unit, ispin
+  integer, external :: find_free_unit
+
+  character(len=256) :: datafile
+  integer :: record_length
+
+  io_unit=find_free_unit()
+  datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"scf_vr.dat")
+  inquire(iolength=record_length) v%of_r(:,1)
+  open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted",access='direct',recl=record_length)
+   
+  do ispin=1, nspin
+   write (unit=io_unit,rec=ispin) v%of_r(:,ispin)
+  end do
+  close(unit=io_unit)
+
+  io_unit=find_free_unit()
+  datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"scf_rhor.dat")
+  inquire(iolength=record_length) rho%of_r(:,1)
+  open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted",access='direct',recl=record_length)
+   
+  do ispin=1, nspin
+   write (unit=io_unit,rec=ispin) rho%of_r(:,ispin)
+  end do
+  close(unit=io_unit)
+
+  END SUBROUTINE scf_v_and_rho
+
+
 !
   SUBROUTINE write_phonon_info()
   USE xmltools
@@ -185,7 +232,7 @@ contains
   integer, dimension(48) :: npert=-1
   complex(kind=dp) :: u_irr(1:3*nat,1:3*nat,nqirr)
   integer, external :: find_free_unit
-  character(len=256) :: datafile, type_string
+  character(len=256) :: datafile, type_string, dv_file, rho_file
 !
   inquire(FILE=trim(qlist_file), EXIST=existitu)
 
@@ -238,8 +285,16 @@ contains
 !
   do iq=1, nqirr
     write(unit=numq,fmt=*)iq
-    call system("cp "//trim(trim(adjustl(ph_dir)))//"/"//"qq"//trim(adjustl(numq))//"/_ph0/"//trim(prefix)//".dvscf1   "//&
+    dv_file=trim(trim(adjustl(ph_dir)))//"/"//"qq"//trim(adjustl(numq))//"/_ph0/"//trim(prefix)//".dvscf1"
+    call system("cp "//dv_file//"   "//&
     trim(adjustl(intwdir))//"/"//trim(prefix)//".dvscf_q"//trim(adjustl(numq)) )
+
+    rho_file=trim(trim(adjustl(ph_dir)))//"/"//"qq"//trim(adjustl(numq))//"/_ph0/"//trim(prefix)//".rho1"
+    INQUIRE(FILE=rho_file, EXIST=existitu)
+    if (existitu) then
+      call system("cp "//rho_file//"   "//&
+        trim(adjustl(intwdir))//"/"//trim(prefix)//".rho_q"//trim(adjustl(numq)) )
+    end if  
   enddo
 !
   do iq=1, nqirr
@@ -259,7 +314,6 @@ contains
     USE gvect,     ONLY : ngm, g
     USE wvfct,     ONLY : npwx
     USE klist,     ONLY : nks, xk, igk_k, ngk
-
 
     IMPLICIT NONE
     INTEGER, EXTERNAL :: find_free_unit
