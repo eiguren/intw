@@ -311,31 +311,31 @@ module intw_input_parameters
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, compute_mmn, &
                       compute_amn
 
-  NAMELIST / response / interpolation_scheme,                &
-                        hw_min, hw_max, n_hw, delta_width,   &
-                        chi0_file_prefix, broadening_method, &
-                        broadening_function, real_part_chi0, &
-                        adaptive_width_coeff, el_test,       &
-                        output_format, el_number_G_shells,   &
-                        matrix_elements_method
+!  NAMELIST / response / interpolation_scheme,                &
+!                        hw_min, hw_max, n_hw, delta_width,   &
+!                        chi0_file_prefix, broadening_method, &
+!                        broadening_function, real_part_chi0, &
+!                        adaptive_width_coeff, el_test,       &
+!                        output_format, el_number_G_shells,   &
+!                        matrix_elements_method
 
-  NAMELIST / fsh_input / nfsh, fsh_symmetry, fsh_sparse, newton_iter1, &
-                         newton_iter2, emin, emax, num_modes
+!  NAMELIST / fsh_input / nfsh, fsh_symmetry, fsh_sparse, newton_iter1, &
+!                         newton_iter2, emin, emax, num_modes
 
   NAMELIST / ph / nq1, nq2, nq3, nqirr, elph, fc_mat, ph_dir, data_dir,   &
                   data_name, dvscf_dir, dvscf_name, ph_bands_file, qlist, &
                   ep_mat_file, calc_epmat
 
-  NAMELIST / bands /  bands_points, crossing_method, bands_file, &
-                      spin_projection
+!  NAMELIST / bands /  bands_points, crossing_method, bands_file, &
+!                      spin_projection
 
-  NAMELIST / product_basis / super_factor_1, super_factor_2, super_factor_3,  &
-                             qpt_basis_1, qpt_basis_2, qpt_basis_3,           &
-                             qpt_dir_1, qpt_dir_2, qpt_dir_3,                 &
-                             product_basis_filename, overlaps_filename,       &
-                             mz_r_filename, Delta_r_filename, fxc_r_filename, &
-                             wannier_functions_filename, optimal_basis_size,  &
-                             basis_order, plane_wave_combination, tolerance
+!  NAMELIST / product_basis / super_factor_1, super_factor_2, super_factor_3,  &
+!                             qpt_basis_1, qpt_basis_2, qpt_basis_3,           &
+!                             qpt_dir_1, qpt_dir_2, qpt_dir_3,                 &
+!                             product_basis_filename, overlaps_filename,       &
+!                             mz_r_filename, Delta_r_filename, fxc_r_filename, &
+!                             wannier_functions_filename, optimal_basis_size,  &
+!                             basis_order, plane_wave_combination, tolerance
 
 
   ! ----------------------------------------------------------------------
@@ -374,23 +374,21 @@ contains
     read( 5, intw2W, iostat = ios)
     write(*,22) '|       &intw2W            ',ios,'                       |'
 
-    read( 5, response, iostat = ios)
-    write(*,22) '|       &response          ',ios,'                       |'
+!    read( 5, response, iostat = ios)
+!    write(*,22) '|       &response          ',ios,'                       |'
 
-    read( 5, bands, iostat = ios)
-    write(*,22) '|       &bands             ',ios,'                       |'
+!    read( 5, bands, iostat = ios)
+!    write(*,22) '|       &bands             ',ios,'                       |'
 
-    read( 5, fsh_input, iostat = ios)
-  !haritz
+!    read( 5, fsh_input, iostat = ios)
   !  write(*,22) '|       &fsh                ',ios,'                       |'
-    write(*,22) '|       &fsh_input         ',ios,'                       |'
-  !haritz
+!    write(*,22) '|       &fsh_input         ',ios,'                       |'
 
     read( 5, ph, iostat = ios)
     write(*,22) '|       &ph                ',ios,'                       |'
 
-    read( 5, product_basis, iostat = ios)
-    write(*,22) '|       &product_basis     ',ios,'                       |'
+!    read( 5, product_basis, iostat = ios)
+!    write(*,22) '|       &product_basis     ',ios,'                       |'
     write(*,20) '====================================================='
 
 
@@ -511,12 +509,12 @@ contains
       write(*,*) 'UNKNOWN matrix_element_method'
     end if
 
-    if ( real_part_chi0 /= 'kramers-kronig' .and. &
-         real_part_chi0 /= 'direct' .and. &
-         real_part_chi0 /= 'none' ) then
-      read_status = .true.
-      write(*,*) 'UNKNOWN real_part_chi0'
-    end if
+!    if ( real_part_chi0 /= 'kramers-kronig' .and. &
+!         real_part_chi0 /= 'direct' .and. &
+!         real_part_chi0 /= 'none' ) then
+!      read_status = .true.
+!      write(*,*) 'UNKNOWN real_part_chi0'
+!    end if
 
     !---------------------------------------------------------------------------
     ! If use_KK = true,  compute the imaginary part
@@ -525,89 +523,88 @@ contains
     ! If skip_KK = true,  do not perform the kramers-kronig integral
     ! If use_KK = false,  perform the kramers-kronig integral
     !---------------------------------------------------------------------------
-    if (real_part_chi0 == 'direct') then
-      use_KK = .false.
-      skip_KK = .true.
+!    if (real_part_chi0 == 'direct') then
+!      use_KK = .false.
+!      skip_KK = .true.
 
-    else if (real_part_chi0 == 'kramers-kronig' ) then
-      use_KK = .true.
-      skip_KK = .false.
+!    else if (real_part_chi0 == 'kramers-kronig' ) then
+!      use_KK = .true.
+!      skip_KK = .false.
 
-    else if (real_part_chi0 == 'none' ) then
-       use_KK = .true.
-       skip_KK = .true.
-    end if
+!    else if (real_part_chi0 == 'none' ) then
+!       use_KK = .true.
+!       skip_KK = .true.
+!    end if
 
-    if (.not. skip_KK) then
-       if ( modulo(n_hw,2) /= 1) then
-          write(*,*) '*****************************************'
-          write(*,*) '* ERROR:                                *'
-          write(*,*) '* In order to use the Kramers-Kronig    *'
-          write(*,*) '* relations, n_hw must be equal to      *'
-          write(*,*) '* an odd number (ie n_hw = 2 N + 1 ).   *'
-          write(*,*) '*****************************************'
-          read_status = .true.
-       end if
-       if ( abs(hw_max+hw_min) > eps_10 .and. abs(hw_min) > eps_10) then
-          write(*,*) '*****************************************'
-          write(*,*) '* ERROR:                                *'
-          write(*,*) '* In order to use the Kramers-Kronig    *'
-          write(*,*) '* relations, set                        *'
-          write(*,*) '*     hw_min = 0 (program assumes       *'
-          write(*,*) '*                 antisymmetry about    *'
-          write(*,*) '*                 hw=0)                 *'
-          write(*,*) '*             OR                        *'
-          write(*,*) '*     hw_min = -hw_max                  *'
-          write(*,*) '*****************************************'
-          read_status = .true.
-       end if
-    end if
-
-    if ( modulo(super_factor_1,2) /= 0 .or. &
-         modulo(super_factor_2,2) /= 0 .or. &
-         modulo(super_factor_3,2) /= 0 ) then
-      write(*,*) '*****************************************'
-      write(*,*) '* ERROR:                                *'
-      write(*,*) '* The supercell factors used to build   *'
-      write(*,*) '* the Wannier functions should be even. *'
-      write(*,*) '*****************************************'
-      read_status = .true.
-    end if
-
-
-    if ( trim(basis_order) /= 'wings' .and. trim(basis_order) /= 'diagonal' ) then
-      write(*,*) '*****************************************'
-      write(*,*) '* ERROR:                                *'
-      write(*,*) '* The basis order can only be "wings"   *'
-      write(*,*) '* or "diagonal". Review input!          *'
-      write(*,*) '*****************************************'
-      read_status = .true.
-    end if
-
-    if (optimal_basis_size < 3 .and. magnon) then
-      write(*,*) '*****************************************'
-      write(*,*) '* ERROR:                                *'
-      write(*,*) '* The optimal basis size should be at   *'
-      write(*,*) '* least 3 to accomodate the acoustic    *'
-      write(*,*) '* condition.                            *'
-      write(*,*) '*****************************************'
-      read_status = .true.
-    end if
-
-
-    if ( trim(plane_wave_combination) /= 'mz_times_symmetric' .and. &
-         trim(plane_wave_combination) /= 'symmetric' .and. &
-         trim(plane_wave_combination) /= 'all' ) then
-      write(*,*) '*****************************************'
-      write(*,*) '* ERROR:                                *'
-      write(*,*) '* The keyword "plane_wave_combination"  *'
-      write(*,*) '* can only be "symmetric" ,  "all"      *'
-      write(*,*) '* or "mz_times_symmetric".              *'
-      write(*,*) '*    Review your input.                 *'
-      write(*,*) '*****************************************'
-      read_status = .true.
-    end if
-
+!    if (.not. skip_KK) then
+!       if ( modulo(n_hw,2) /= 1) then
+!          write(*,*) '*****************************************'
+!          write(*,*) '* ERROR:                                *'
+!          write(*,*) '* In order to use the Kramers-Kronig    *'
+!          write(*,*) '* relations, n_hw must be equal to      *'
+!          write(*,*) '* an odd number (ie n_hw = 2 N + 1 ).   *'
+!          write(*,*) '*****************************************'
+!          read_status = .true.
+!       end if
+!       if ( abs(hw_max+hw_min) > eps_10 .and. abs(hw_min) > eps_10) then
+!          write(*,*) '*****************************************'
+!          write(*,*) '* ERROR:                                *'
+!          write(*,*) '* In order to use the Kramers-Kronig    *'
+!          write(*,*) '* relations, set                        *'
+!          write(*,*) '*     hw_min = 0 (program assumes       *'
+!          write(*,*) '*                 antisymmetry about    *'
+!          write(*,*) '*                 hw=0)                 *'
+!          write(*,*) '*             OR                        *'
+!          write(*,*) '*     hw_min = -hw_max                  *'
+!          write(*,*) '*****************************************'
+!          read_status = .true.
+!       end if
+!    end if
+!
+!    if ( modulo(super_factor_1,2) /= 0 .or. &
+!         modulo(super_factor_2,2) /= 0 .or. &
+!         modulo(super_factor_3,2) /= 0 ) then
+!      write(*,*) '*****************************************'
+!      write(*,*) '* ERROR:                                *'
+!      write(*,*) '* The supercell factors used to build   *'
+!      write(*,*) '* the Wannier functions should be even. *'
+!      write(*,*) '*****************************************'
+!      read_status = .true.
+!    end if
+!
+!
+!    if ( trim(basis_order) /= 'wings' .and. trim(basis_order) /= 'diagonal' ) then
+!      write(*,*) '*****************************************'
+!      write(*,*) '* ERROR:                                *'
+!      write(*,*) '* The basis order can only be "wings"   *'
+!      write(*,*) '* or "diagonal". Review input!          *'
+!      write(*,*) '*****************************************'
+!      read_status = .true.
+!    end if
+!
+!    if (optimal_basis_size < 3 .and. magnon) then
+!      write(*,*) '*****************************************'
+!      write(*,*) '* ERROR:                                *'
+!      write(*,*) '* The optimal basis size should be at   *'
+!      write(*,*) '* least 3 to accomodate the acoustic    *'
+!      write(*,*) '* condition.                            *'
+!      write(*,*) '*****************************************'
+!      read_status = .true.
+!    end if
+!
+!
+!    if ( trim(plane_wave_combination) /= 'mz_times_symmetric' .and. &
+!         trim(plane_wave_combination) /= 'symmetric' .and. &
+!         trim(plane_wave_combination) /= 'all' ) then
+!      write(*,*) '*****************************************'
+!      write(*,*) '* ERROR:                                *'
+!      write(*,*) '* The keyword "plane_wave_combination"  *'
+!      write(*,*) '* can only be "symmetric" ,  "all"      *'
+!      write(*,*) '* or "mz_times_symmetric".              *'
+!      write(*,*) '*    Review your input.                 *'
+!      write(*,*) '*****************************************'
+!      read_status = .true.
+!    end if
 
     if ( read_status ) then
       write(*,*) "PROBLEM!: the input should be of the form:"

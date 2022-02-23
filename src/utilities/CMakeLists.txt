@@ -2,6 +2,7 @@
 
 
 set(PROGS
+  nscf
   ep_melements_noW
   read_pp_test
   intw2W90_2

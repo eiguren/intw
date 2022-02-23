@@ -57,6 +57,7 @@ contains
 
 
     do i_folder=1,nkpoints_QE
+      print*, "TEST", i_folder
       !
       call get_K_folder_data(i_folder,list_iG,wfc_g,QE_eig)
       !
@@ -75,6 +76,7 @@ contains
       enddo !iG
       !
     enddo ! i_folder
+    print*, " FIN TEST", i_folder
     !
     return
 
