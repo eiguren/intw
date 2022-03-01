@@ -319,7 +319,7 @@ end if
 !================================================================================
 
 call allocate_and_get_all_irreducible_wfc()
-stop
+
 !================================================================================
 !       Compute the mmn file
 !================================================================================
@@ -330,7 +330,9 @@ if (compute_mmn) then
      write(*,20) '| (this is labor intensive and may  take some time) |'
      write(*,20) '|           ---------------------------------       |'
 
-     call generate_mmn_using_allwfc(intw2W_fullzone,method)
+      call generate_mmn_using_allwfc(intw2W_fullzone,method)
+     ! call generate_mmn (intw2W_fullzone,method)
+
 end if
 !================================================================================
 !       Compute the amn file

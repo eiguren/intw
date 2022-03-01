@@ -3,11 +3,11 @@ program nscf
   use kinds, only: dp
   use intw_input_parameters, only: intw2W_method, read_input
   use intw_reading, only: nspin, noncolin, gvec, ngm, nsym, &
-                          spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
-                          ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
-                          get_ngm, get_gvec,nbands,&
-                          read_parameters_data_file_xml, nkpoints_QE,&
-                          read_kpoints_data_file_xml, get_K_folder_data
+       spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
+       ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
+       get_ngm, get_gvec,nbands,&
+       read_parameters_data_file_xml, nkpoints_QE,&
+       read_kpoints_data_file_xml, get_K_folder_data_with_nG
   use intw_pseudo, only: vkb, read_all_pseudo
   use intw_utility, only: get_timing, find_free_unit, switch_indices
 
@@ -24,7 +24,7 @@ program nscf
   !================================================================================
   implicit none
 
-  integer, allocatable     :: list_igk (:,:)
+  integer, allocatable     :: list_igk (:,:), ngk(:)
 
   complex(dp), allocatable :: wfc_k (:,:,:,:) ! nG_max is defined in reading
   real(dp), allocatable    :: QE_eig_k(:,:)
@@ -127,6 +127,7 @@ program nscf
   write(*,20) '|           ---------------------------------       |'
   !
   allocate (list_igk(nG_max,nkpoints_QE))
+  allocate (ngk(nkpoints_QE)) 
   !
   allocate (wfc_k(nG_max,nbands,nspin,nkpoints_QE))
   !
@@ -143,15 +144,14 @@ program nscf
   call read_kpoints_data_file_xml(kpoints_QE)
   write(*,20) '|      k point list (crystal)                       |'
   do ik=1, nkpoints_QE
-   write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,i),'           |'
-   call get_K_folder_data(ik,list_iGk(:,ik),wfc_k(:,:,:,ik),QE_eig_k(:,ik))
-   write(*,20) '|      Energies are:                                |'
-   !write(*,"(5f10.2)")QE_eig_k
-   write(*,*)maxval(list_iGk(:,ik))
+     write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,i),'           |'
+     call get_K_folder_data_with_nG(ik,list_iGk(:,ik),wfc_k(:,:,:,ik),QE_eig_k(:,ik),ngk(ik))
+     write(*,20) '|      Energies are:                                |'
+     !write(*,"(5f10.2)")QE_eig_k
+     write(*,*)maxval(list_iGk(:,ik)), "ngk", ngk(ik)
   end do
 
   write(*,*)maxval(list_iGk(:,:))
-
 
   !call allocate_and_get_all_irreducible_wfc() 
   !
@@ -169,6 +169,77 @@ program nscf
 30 format(A,F8.2,6X,A)
 
 contains
+    !--------------------------------------------------------------------------------------------------
+  subroutine convolution_of_two_functions (list_iG_1,ngk1,list_iG_2,ngk2,wfc_1,wfc_2, product_wfc)
+    !--------------------------------------------------------------------------------------------------
+    !
+    !-------------------------------------------------------------------------------
+    !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
+    !              the convolution of them as:
+    !
+    !	          pw_mat_el_ij (G)    \sum_GP  wfc_1_i(G-GP) * wfc_2_j(GP) 
+    !
+    !     The G-vectors are referenced by their indices in list_iG1, list_iG2,
+    !     which refer to the global list gvec(3,ngm), which should be defined
+    !     BEFORE using this subroutine....ç
+    !    
+    !
+    !--------------------------------------------------------------------------------
+    use intw_useful_constants, only: zero, one, cmplx_0
+    use intw_reading, only: nG_max, gvec, nspin, nbands, ngm
+
+    implicit none
+
+    !I/O variables in (F fortran style). For example, 
+    !Input list_iG_1(:), instead of list_iG_1(nG_max).
+
+    integer,intent(in)      :: list_iG_1(:),ngk1,list_iG_2(:),ngk2
+    complex(dp),intent(in)  :: wfc_1(:,:,:), wfc_2(:,:,:) !wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
+
+    ! In output, we have nbndxnbnd functions in (G), but G in the full ngm list
+
+    complex(dp),intent(out) :: product_wfc (:,:,:,:,:) !(num_bands,num_bands,nspin,nspin,ngm)
+
+    !local variables
+    integer :: nbnd_l
+    integer :: nG_max_l
+    integer :: npol_l
+
+    integer :: G2pG1(3)
+    integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2, iG
+    integer :: nG_max_non_zero
+    !complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
+    logical :: found
+
+    nG_max_l  = size(wfc_1,1) !
+    nbnd_l    = size(wfc_1,2)
+    npol_l    = size(wfc_1,3)
+
+    product_wfc =  (0.d0,0.0d0)
+
+    do iG_1=1,nGk1    !This is G-Gp
+       do iG_2=1,nGk2 !This is Gp
+
+          G2pG1 = gvec(:,list_iG_1(iG_1)) + gvec(:,list_iG_2(iG_2)) ! This is G
+          call find_iG(G2pG1,iG) !  This is the index for G
+
+          do ibnd=1, nbnd_l
+             do jbnd=1, nbnd_l
+                do ipol=1,npol_l
+                   do jpol=1,npol_l
+
+                      product_wfc (ibnd,jbnd,ipol,jpol,iG) = product_wfc (ibnd,jbnd,ipol,jpol,iG) + &
+                           conjg(wfc_2 (iG_2,jbnd,jpol)) * wfc_1 (iG_1,ibnd,ipol)
+
+                   end do !jpol
+                end do !ipol
+             end do !jbnd
+          end do !ibnd
+
+       end do !iG_2
+    end do !iG_1
+
+  end subroutine convolution_of_two_functions
 
   subroutine diagonalize_cmat (n,a,w)
 
@@ -198,4 +269,4 @@ contains
   end subroutine diagonalize_cmat
 
 
-end program nscf 
+end program nscf

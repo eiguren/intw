@@ -18,56 +18,62 @@ module intw_allwfcs
   private
 
   complex(dp), allocatable :: wfc_k_irr_all(:,:,:,:)
-  integer, allocatable :: list_iG_all(:,:)
+  integer, allocatable :: list_iG_all(:,:), ngk_all(:)
   real(dp), allocatable :: QE_eig_irr_all(:,:)
 
 contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data, nspin
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands
     use intw_useful_constants, only: cmplx_0
-    use w90_parameters, only: num_bands
 
     implicit none
 
     integer, allocatable :: list_iG(:)
     real(dp), allocatable :: QE_eig(:)
     complex(dp), allocatable :: wfc_g(:,:,:)
-    integer :: i_folder, ipol, iG, ibnd
+    integer :: i_folder, ipol, iG, ibnd,  ngk
 
 
     ! allocate what is useful
     !
 
+    if (allocated(list_iG)) deallocate (list_iG)
     allocate   (list_iG(nG_max))
-    allocate   (QE_eig(num_bands))
-    allocate   (wfc_g(nG_max,num_bands,nspin))
+    !
+    if (allocated(QE_eig)) deallocate (QE_eig)
+    allocate   (QE_eig(nbands))
+    !
+    if (allocated(wfc_g)) deallocate (wfc_g)
+    allocate   (wfc_g(nG_max,nbands,nspin))
     !
     if (allocated(wfc_k_irr_all)) deallocate (wfc_k_irr_all)
-    allocate (wfc_k_irr_all(nkpoints_QE,nG_max,num_bands,nspin))
+    allocate (wfc_k_irr_all(nkpoints_QE,nG_max,nbands,nspin))
     !
     if (allocated(QE_eig_irr_all)) deallocate (QE_eig_irr_all)
-    allocate (QE_eig_irr_all(nkpoints_QE,num_bands))
+    allocate (QE_eig_irr_all(nkpoints_QE,nbands))
     !
     if (allocated(list_iG_all)) deallocate(list_iG_all)
     allocate (list_iG_all(nkpoints_QE,nG_max))
+
+    if (allocated(ngk_all)) deallocate(ngk_all)
+    allocate (ngk_all(nkpoints_QE))
     !
     wfc_k_irr_all=cmplx_0
 
 
     do i_folder=1,nkpoints_QE
-      print*, "TEST", i_folder
       !
-      call get_K_folder_data(i_folder,list_iG,wfc_g,QE_eig)
+      call get_K_folder_data_with_nG(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
       !
-      QE_eig_irr_all(i_folder,1:num_bands)=QE_eig(1:num_bands)
+      QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
       !
       list_iG_all(i_folder,1:nG_max)=list_iG(1:nG_max)
       !
       do iG=1,nG_max
         do ipol=1,nspin
-          do ibnd=1,num_bands
+          do ibnd=1,nbands
             !
             wfc_k_irr_all(i_folder,iG,ibnd,ipol)=wfc_g(iG,ibnd,ipol)
             !
@@ -76,7 +82,6 @@ contains
       enddo !iG
       !
     enddo ! i_folder
-    print*, " FIN TEST", i_folder
     !
     return
 

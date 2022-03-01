@@ -1,4 +1,4 @@
-!----------------------------------------------------------------------------!
+!llwfc----------------------------------------------------------------------------!
 !	intw project.
 !
 !----------------------------------------------------------------------------!
@@ -557,6 +557,7 @@ contains
      !
      ! fetch the data
      !
+     print*, "reading .k", ikpt_1
      call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
      !
      ! print out the eigenvalues
@@ -671,10 +672,7 @@ contains
 
   character(256) :: header
 
-!Peio
-!The variable we use instead of num_bands
   integer        :: nbands_loc
-!Peio
 
   nbands_loc=num_bands
   !-----------------------------------
@@ -693,7 +691,6 @@ contains
   !-----------------------------------
   nkmesh = nk1*nk2*nk3
 
-
   if (intw2W_fullzone) then
           call generate_header(trim(method)//trim('-fullzone'),header)
   else
@@ -703,18 +700,15 @@ contains
   write(io_unit_mmn,*) trim(header)
   write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
 
-
   !loop on all points
   do ikpt_1 = 1, nkmesh
-
+    print*, "Kiaoxo ikpt_1", ikpt_1, nbands_loc
     ! fetch the data
-!    call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
-!    call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1), nspin,list_iG_1, wfc_1, QE_eig, G_plus)
     call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig, G_plus)
+    print*, "Kiaoxo ikpt_1", ikpt_1, nbands_loc, size(QE_eig)
 
     ! print out the eigenvalues
     do nb =1, nbands_loc
-!    do nb =1, nbands
         write(io_unit_eig,'(2I7,F18.12)') nb, ikpt_1, QE_eig(nb)
     end do
 
@@ -723,12 +717,9 @@ contains
       G      = nnkp_list_G(:,nn,ikpt_1)
       ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
 
-
       write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
-      !call get_psi_k(ikpt_2,.not.intw2W_fullzone,list_iG_2,wfc_2,QE_eig)
-!       call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  , nspin,list_iG_2, wfc_2, QE_eig, G_plus)
       call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig, G_plus)
 
       ! Compute the matrix elements
