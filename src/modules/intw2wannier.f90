@@ -333,6 +333,8 @@ contains
   write(io_unit,*) '====================================================='
 
 
+   write(io_unit,*) 'num_bands'
+
   write(io_unit,*) 'nnkp_real_lattice'
   write(io_unit,*) '-----------------'
   do j=1,3

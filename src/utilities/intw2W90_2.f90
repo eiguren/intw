@@ -147,7 +147,7 @@ call read_nnkp_file(nnkp_file)
 
 ! just as a test; can be removed later
 call output_nnkp_file()
-
+stop
 !================================================================================
 !       read in the kpoints from the QE folders
 !================================================================================
@@ -332,7 +332,7 @@ if (compute_mmn) then
 
       call generate_mmn_using_allwfc(intw2W_fullzone,method)
      ! call generate_mmn (intw2W_fullzone,method)
-
+stop
 end if
 !================================================================================
 !       Compute the amn file
