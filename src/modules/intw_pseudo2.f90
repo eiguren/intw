@@ -130,7 +130,7 @@ contains
 
       if ((is>0).and.(is<9)) then
         write(tag1,"(i1)")is
-        write(*,*)"here ...", is, tag1
+        write(*,20)"|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
         file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
       else if ((is>9).and.(is<19) ) then
         write(tag2,"(i2)")is
@@ -140,10 +140,10 @@ contains
       end if
 
       OPEN(UNIT=io_unit,FILE=file_pseudo,STATUS='old',FORM='formatted', IOSTAT=ios)
-      write(*,*)"Opening PP of specie num ", is, "ios ", ios
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%psd
+      write(*,20)"|                 .. for the specie "//trim(UPF(is)%psd)//"              |"
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%rel
@@ -220,6 +220,10 @@ contains
 
     END DO !is
     !
+
+20 format(A)
+30 format(A,F8.2,6X,A)
+
   END subroutine read_all_pseudo
 
 end module intw_pseudo

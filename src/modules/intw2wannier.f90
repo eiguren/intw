@@ -1,4 +1,4 @@
-!----------------------------------------------------------------------------!
+!llwfc----------------------------------------------------------------------------!
 !	intw project.
 !
 !----------------------------------------------------------------------------!
@@ -640,11 +640,13 @@ contains
   ! the needed matrix elements.
   !
   !----------------------------------------------------------------------------!
-  USE intw_allwfcs, only: get_psi_general_k_all_wfc
+  USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
   use intw_utility, only: find_free_unit
   use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use w90_parameters, only: num_bands
+  use intw_symmetries, only:  QE_folder_sym
 
   implicit none
 
@@ -663,6 +665,8 @@ contains
   integer        :: nb1, nb2, nb
   integer        :: G(3), G_plus(3)
 
+  integer        :: ngk1, ngk2
+
   integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
   complex(dp)    :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
   real(dp)       :: QE_eig(num_bands)
@@ -671,10 +675,7 @@ contains
 
   character(256) :: header
 
-!Peio
-!The variable we use instead of num_bands
   integer        :: nbands_loc
-!Peio
 
   nbands_loc=num_bands
   !-----------------------------------
@@ -693,7 +694,6 @@ contains
   !-----------------------------------
   nkmesh = nk1*nk2*nk3
 
-
   if (intw2W_fullzone) then
           call generate_header(trim(method)//trim('-fullzone'),header)
   else
@@ -703,18 +703,15 @@ contains
   write(io_unit_mmn,*) trim(header)
   write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
 
-
   !loop on all points
   do ikpt_1 = 1, nkmesh
-
     ! fetch the data
-!    call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
-!    call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1), nspin,list_iG_1, wfc_1, QE_eig, G_plus)
     call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig, G_plus)
+
+    ngk1= ngk_all(QE_folder_sym(ikpt_1))
 
     ! print out the eigenvalues
     do nb =1, nbands_loc
-!    do nb =1, nbands
         write(io_unit_eig,'(2I7,F18.12)') nb, ikpt_1, QE_eig(nb)
     end do
 
@@ -723,18 +720,19 @@ contains
       G      = nnkp_list_G(:,nn,ikpt_1)
       ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
 
-
       write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
-      !call get_psi_k(ikpt_2,.not.intw2W_fullzone,list_iG_2,wfc_2,QE_eig)
-!       call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  , nspin,list_iG_2, wfc_2, QE_eig, G_plus)
       call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig, G_plus)
 
+      ngk2= ngk_all(QE_folder_sym(ikpt_2))
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
-          call get_plane_wave_matrix_element_convolution      &
-                        (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
+          call get_plane_wave_matrix_element_convolution_map      &
+                        (G*0,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+          !call get_plane_wave_matrix_element_convolution      &
+          !              (G*0,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
+
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
                         (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
