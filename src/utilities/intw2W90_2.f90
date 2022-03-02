@@ -28,7 +28,7 @@ program intw2W90_2
   use intw_reading
   USE intw_allwfcs
   use intw_utility, only: get_timing, generate_kmesh
-
+  USE w90_parameters, only: num_bands
 
 !================================================================================
 !       Declare the variables
@@ -143,11 +143,14 @@ write(*,20) '|           ---------------------------------       |'
 !       read the parameters in the .nnkp file
 !================================================================================
 
-call read_nnkp_file(nnkp_file)
+  call read_nnkp_file(nnkp_file)
+  !
+  num_bands=nbands-nnkp_exclude_bands
+  !
+  ! just as a test; can be removed later
+  !
+  call output_nnkp_file()
 
-! just as a test; can be removed later
-call output_nnkp_file()
-stop
 !================================================================================
 !       read in the kpoints from the QE folders
 !================================================================================
@@ -320,6 +323,7 @@ end if
 
 call allocate_and_get_all_irreducible_wfc()
 
+
 !================================================================================
 !       Compute the mmn file
 !================================================================================
@@ -331,8 +335,6 @@ if (compute_mmn) then
      write(*,20) '|           ---------------------------------       |'
 
       call generate_mmn_using_allwfc(intw2W_fullzone,method)
-     ! call generate_mmn (intw2W_fullzone,method)
-stop
 end if
 !================================================================================
 !       Compute the amn file

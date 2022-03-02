@@ -557,7 +557,6 @@ contains
      !
      ! fetch the data
      !
-     print*, "reading .k", ikpt_1
      call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
      !
      ! print out the eigenvalues
@@ -641,11 +640,13 @@ contains
   ! the needed matrix elements.
   !
   !----------------------------------------------------------------------------!
-  USE intw_allwfcs, only: get_psi_general_k_all_wfc
+  USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
   use intw_utility, only: find_free_unit
   use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use w90_parameters, only: num_bands
+  use intw_symmetries, only:  QE_folder_sym
 
   implicit none
 
@@ -663,6 +664,8 @@ contains
   integer        :: ikpt_1, ikpt_2
   integer        :: nb1, nb2, nb
   integer        :: G(3), G_plus(3)
+
+  integer        :: ngk1, ngk2
 
   integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
   complex(dp)    :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
@@ -702,10 +705,10 @@ contains
 
   !loop on all points
   do ikpt_1 = 1, nkmesh
-    print*, "Kiaoxo ikpt_1", ikpt_1, nbands_loc
     ! fetch the data
     call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig, G_plus)
-    print*, "Kiaoxo ikpt_1", ikpt_1, nbands_loc, size(QE_eig)
+
+    ngk1= ngk_all(QE_folder_sym(ikpt_1))
 
     ! print out the eigenvalues
     do nb =1, nbands_loc
@@ -722,10 +725,14 @@ contains
       ! fetch data
       call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig, G_plus)
 
+      ngk2= ngk_all(QE_folder_sym(ikpt_2))
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
-          call get_plane_wave_matrix_element_convolution      &
-                        (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
+          call get_plane_wave_matrix_element_convolution_map      &
+                        (G*0,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+          !call get_plane_wave_matrix_element_convolution      &
+          !              (G*0,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
+
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
                         (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)

@@ -15,6 +15,7 @@ module intw_matrix_elements
   ! subroutines
   public :: get_elec_phon_matrix_element_convolution, &
             get_plane_wave_matrix_element_convolution, &
+            get_plane_wave_matrix_element_convolution_map, &
             get_spin_component_convolution, &
             get_plane_wave_matrix_element_convolution_orig, &
             get_plane_wave_matrix_element_convolution_alt, &
@@ -30,6 +31,116 @@ module intw_matrix_elements
   !
 
 contains
+!**************************************************************************************************
+!--------------------------------------------------------------------------------------------------
+subroutine get_plane_wave_matrix_element_convolution_map(G,list_iG_1,ngk1,list_iG_2,ngk2,wfc_1,wfc_2,pw_mat_el)
+!--------------------------------------------------------------------------------------------------
+!      
+!	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
+!
+!	                < wfc_1 | e^{-i G r} | wfc_2 >
+!
+!	where wfc is the periodic part of the wavefunction:
+!               u(r) =  sum_G' e^{i G' r} wfc(G');
+!
+!	which leads to
+!         < wfc_1 | e^{-i G r} | wfc_2 >  = sum_G1 wfc_1(G1)^* wfc_2(G1+G) .
+!
+!     The computation is done over all bands.
+!
+!     The G-vectors are referenced by their indices in list_iG1, list_iG2,
+!     which refer to the global list gvec(3,ngm), which should be defined
+!     BEFORE using this subroutine....
+!
+!--------------------------------------------------------------------------------
+use intw_useful_constants, only: zero, one, cmplx_0
+use intw_reading, only: nG_max, gvec, nspin, nbands, ngm
+use w90_parameters, only: num_bands
+USE intw_reading, ONLY : gvec
+use intw_fft, only : find_iG
+  implicit none
+
+  !I/O variables
+
+  integer,intent(in) :: G(3), ngk1, ngk2
+  integer,intent(in) :: list_iG_1(nG_max),list_iG_2(nG_max)
+  complex(dp),intent(in) :: wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
+  complex(dp),intent(out) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
+
+  !local variables
+
+  integer :: G1(3),G2(3),Gprime(3), jd (1)
+  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2 
+  integer :: nG_max_non_zero
+  complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
+  logical :: found
+
+  pw_mat_el=cmplx_0
+
+  !$omp parallel default(none)                             &
+  !$omp shared(list_iG_1,list_iG_2,ngk1,ngk2) &
+  !$omp shared(num_bands,nspin,wfc_1,wfc_2, pw_mat_el,nG_max)  &
+  !$omp shared(cmplx_0)         			   &
+  !$omp private(i,jd,ibnd,jbnd,is,js)    &
+  !$omp private( pw_mat_el_local)
+  !
+  ! First, build the pw_mat_el_local arrays, on each thread.
+  !
+  pw_mat_el_local(:,:,:,:)=cmplx_0
+
+  !
+  !$omp do
+
+  do i=1,nGk1
+     !
+     jd=findloc( list_iG_2, list_iG_1(i) )
+
+     if (jd(1)==0) cycle
+     !
+           do js=1,nspin
+              do is=1,nspin
+                 do jbnd=1,num_bands
+                    do ibnd=1,num_bands
+                       !
+                       pw_mat_el_local(ibnd,jbnd,is,js)=pw_mat_el_local(ibnd,jbnd,is,js)+ &
+                                                   conjg(wfc_1(i,ibnd,is))*wfc_2(jd(1),jbnd,js)
+                       !
+                    enddo !ibnd
+                 enddo !jbnd
+              enddo !is
+           enddo !js
+           !
+  enddo ! i loop
+  !$omp end do
+  !
+  !$omp barrier
+  ! Next, dump pw_mat_el_local into pw_mat_el;
+  ! each thread should dump all its components here, so don't
+  ! parallelize over the loop variables! We must still be in the
+  ! "parallel" environment, however, or else pw_mat_el_local becomes
+  ! undefined
+  !
+  do js=1,nspin
+     do is=1,nspin
+        do jbnd=1,num_bands
+           do ibnd=1,num_bands
+              !
+              ! make sure the update is atomic!
+              !$omp atomic
+              !
+              pw_mat_el(ibnd,jbnd,is,js)=pw_mat_el(ibnd,jbnd,is,js)+ &
+                                      pw_mat_el_local(ibnd,jbnd,is,js)
+              !
+           enddo !ibnd
+        enddo !jbnd
+     enddo !is
+  enddo !js
+  !
+  !$omp end parallel
+  !
+  return
+
+end subroutine get_plane_wave_matrix_element_convolution_map
 !
 !--------------------------------------------------------------------------------------------------
 !**************************************************************************************************

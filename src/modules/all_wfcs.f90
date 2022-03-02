@@ -10,7 +10,7 @@ module intw_allwfcs
 
   !
   ! variables
-  public :: wfc_k_irr_all, list_iG_all, QE_eig_irr_all
+  public :: wfc_k_irr_all, list_iG_all, QE_eig_irr_all,ngk_all
   !
   ! subroutines
   public :: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
@@ -86,7 +86,6 @@ contains
     return
 
   end subroutine allocate_and_get_all_irreducible_wfc
-
 
   subroutine get_psi_general_k_all_wfc(add_G,kpoint,list_iG,wfc_k,QE_eig,G_plus) !, ngk, igk, gk )
 
