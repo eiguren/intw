@@ -1,0 +1,13 @@
+phonons for Cu
+ &inputph
+  tr2_ph = 1.0d-12
+  prefix = 'cu'
+  fildvscf = 'dvscf'
+  outdir = './'
+  fildyn = 'cu.dyn'
+  trans = .true.
+  ldisp = .true.
+  nq1 = 1, nq2 = 1, nq3 = 1
+  electron_phonon = 'epa'
+  verbosity = 'high'
+ /
