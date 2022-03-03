@@ -93,7 +93,9 @@ use intw_fft, only : find_iG
 
   do i=1,nGk1
      !
-     jd=findloc( list_iG_2, list_iG_1(i) )
+     call find_iG( gvec(:,list_iG_1(i)) + G , iG_2  )
+
+     jd=findloc( list_iG_2, iG_2 )
 
      if (jd(1)==0) cycle
      !

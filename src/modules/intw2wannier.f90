@@ -729,13 +729,13 @@ contains
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
-                        (G*0,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+                        (G,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
           !call get_plane_wave_matrix_element_convolution      &
-          !              (G*0,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
+          !             (G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
-                        (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
+                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
       else
           write(*,*) 'ERROR in generate_mmn'
           stop
