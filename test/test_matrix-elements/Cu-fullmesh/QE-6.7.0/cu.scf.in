@@ -25,7 +25,7 @@
     conv_thr=1.0d-12
  /
 ATOMIC_SPECIES
-Cu 63.546 Cu.RRKJ3.UPF 
+Cu 63.546 Cu.pbe-tm.UPF
 ATOMIC_POSITIONS {crystal}
 Cu  0.000  0.000  0.000
 K_POINTS {tpiba}

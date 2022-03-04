@@ -18,7 +18,7 @@
 /
 
 &intw2W
- intw2W_fullzone =       .true.
+ intw2W_fullzone =       .false.
  intw2W_method   =       'CONVOLUTION'
 /
 

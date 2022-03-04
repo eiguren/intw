@@ -6,7 +6,6 @@ phonons for Cu
   outdir = './'
   fildyn = 'cu.dyn'
   trans = .true.
-  electron_phonon = 'epa'
   verbosity = 'high'
  /
 0.0  0.0  0.0
