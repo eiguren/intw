@@ -67,11 +67,11 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/Makefile.i
 
 
 add_test(
-  NAME test_matrix-elements/Cu
+  NAME test_matrix-elements/Cu-fullmesh
   COMMAND run-test.bash
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh
 )
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu/matrix-element-test.bash.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu/QE-6.7.0/matrix-element-test.bash" @ONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu/QE-6.7.0/Makefile.in"
-	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu/QE-6.7.0/Makefile" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/matrix-element-test.bash.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/Makefile.in"
+	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/Makefile" @ONLY)
