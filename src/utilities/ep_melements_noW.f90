@@ -33,7 +33,6 @@ program ep_melements
   use w90_io, only: io_error,io_file_unit,io_time,io_stopwatch
   use w90_parameters, only: num_bands
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
-  use intw_matrix_elements, only: get_elec_phon_matrix_element_convolution
   use intw_allwfcs, only: get_psi_general_k_all_wfc
 
   !================================================================================

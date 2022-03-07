@@ -37,7 +37,7 @@ module intw_reading
             get_ngm, &
             get_ngmax, &
             get_gvec, &
-            get_K_folder_data, &
+            get_K_folder_data, get_K_folder_data_with_nG,&
             write_tag, &
             deallocate_reading_variables
   !
@@ -598,13 +598,118 @@ contains
     integer,intent(out) :: list_iG(nG_max)
     real(dp),intent(out) :: QE_eig(nbands)
     complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    
+     integer :: nG
 
     !logical variables
 
     character(256) :: wfc_file, datafile
     logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
-    integer :: nexclude,nG
+    integer :: nexclude
+    real(dp), parameter :: ha_to_ev = 27.211383860484784
+    complex(dp) :: wfc_all(nG_max,nbands,nspin)
+    real(dp) :: QE_eig_all(nbands)
+
+    
+
+    band_excluded(:) = .false.
+    !
+    do i=1,num_exclude_bands
+       !
+       nexclude = exclude_bands(i)
+       band_excluded(nexclude) = .true.
+       !
+    enddo
+    !
+    ! initialize the arrays to zero (zero will be broadcasted)
+    !
+    list_iG(:) = 0
+    wfc_all(:,:,:) = cmplx_0
+    wfc    (:,:,:) = cmplx_0
+    !
+    write(wfc_file,100) ik
+    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+    io_unit = find_free_unit()
+    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
+    read(unit=io_unit)nG !
+
+    read(unit=io_unit)list_iG(1:nG)
+    read(unit=io_unit)QE_eig_all(1:nbands)
+
+    do ibnd=1,nbands
+      read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
+    enddo
+
+    n_yes = 0
+    !
+    do ibnd=1,nbands
+      !
+      if (band_excluded(ibnd)) then
+        !
+      else
+        !
+        n_yes=n_yes+1
+        wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
+        QE_eig(n_yes) = QE_eig_all(ibnd)
+        !
+      endif
+      !
+    enddo
+    close(io_unit)
+
+100 format('wfc'I5.5'.dat')!
+    return
+
+  end subroutine get_K_folder_data
+
+  subroutine get_K_folder_data_with_nG(ik,list_iG,wfc,QE_eig,nG)
+    !-------------------------------------------------------------------------
+
+    !------------------------------------------------------------------------
+    ! For the kpoint labeled by ik, this subroutine reads in all the
+    ! wavefunctions for bands 1,.., nbands and stores them in the array
+    ! wfc(nG_max_k,nbands). It reads the G vectors index array list_iG,
+    ! which refers to the global list of G vectors gvecs, from the folder ./K%ik
+    ! using the iotk library. It also reads the QE eigenvalues.
+    !
+    ! Do not be confused! G means "reciprocal lattice vector".
+    !                     K means "point in the 1BZ"
+    !
+    ! NOTE: In fortran, "the first index varies fastest". I take this to mean
+    ! that arrays are stored column-wise, namely, for a matrix
+    !
+    ! M = [ m_{11}   m_{12}   m_{13}]
+    ! [ m_{21}   m_{22}   m_{23}]
+    ! [ m_{31}   m_{32}   m_{33}]
+    !
+    ! m_{21} is closer in memory to m_{11} than m_{12}, and in fact
+    ! M is stored as
+    ! M ~ [ m_{11} m_{21} m_{31} m_{12} m_{22} m_{32} m_{13} m_{23} m_{33}]
+    ! Thus, it makes GOOD SENSE to put the G index first, as this is
+    ! the index that will be used to perform inner products.
+    !------------------------------------------------------------------------
+    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: cmplx_0
+    use w90_parameters, only: num_exclude_bands, exclude_bands
+
+    implicit none
+
+    !I/O variables
+
+    integer,intent(in) :: ik
+    integer,intent(out) :: list_iG(nG_max)
+    real(dp),intent(out) :: QE_eig(nbands)
+    complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    integer, intent(out) :: nG
+
+    !logical variables
+
+    character(256) :: wfc_file, datafile
+    logical :: band_excluded(nbands)
+    integer :: io_unit,is,i,n_yes,ibnd
+    integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
     complex(dp) :: wfc_all(nG_max,nbands,nspin)
     real(dp) :: QE_eig_all(nbands)
@@ -657,7 +762,8 @@ contains
 100 format('wfc'I5.5'.dat')!
     return
 
-  end subroutine get_K_folder_data
+  end subroutine get_K_folder_data_with_nG
+
 
   subroutine write_tag(string,i,tag)
     !-----------------------------------------------
