@@ -497,6 +497,7 @@ contains
   use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use w90_parameters, only: num_bands
+  use intw_symmetries, only:get_psi_general_k
 
   implicit none
 
@@ -556,8 +557,8 @@ contains
   do ikpt_1=1,nkmesh
      !
      ! fetch the data
-     !
-     call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
+        !call get_psi_general_k(nnkp_kpoints(:,ikpt_1),.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
+        call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
      !
      ! print out the eigenvalues
      !
@@ -647,6 +648,7 @@ contains
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use w90_parameters, only: num_bands
   use intw_symmetries, only:  QE_folder_sym
+  
 
   implicit none
 
@@ -712,7 +714,7 @@ contains
 
     ! print out the eigenvalues
     do nb =1, nbands_loc
-        write(io_unit_eig,'(2I7,F18.12)') nb, ikpt_1, QE_eig(nb)
+       write(io_unit_eig,'(2I5,F18.12)') nb, ikpt_1, QE_eig(nb)
     end do
 
     ! loop on neighbors
@@ -729,13 +731,13 @@ contains
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
-                        (G*0,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+                        (G,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
           !call get_plane_wave_matrix_element_convolution      &
-          !              (G*0,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
+          !              (G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
-                        (G*0,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
+                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
       else
           write(*,*) 'ERROR in generate_mmn'
           stop

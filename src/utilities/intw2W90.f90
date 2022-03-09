@@ -384,6 +384,7 @@ program intw2W90
      write(*,20) '|           ---------------------------------       |'
      !
      call generate_mmn(intw2W_fullzone,method)
+
      !
   endif
 

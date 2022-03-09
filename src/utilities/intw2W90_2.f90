@@ -344,7 +344,7 @@ if (compute_amn) then
      write(*,20) '| (this is labor intensive and may  take some time) |'
      write(*,20) '|           ---------------------------------       |'
 
-     call generate_amn(intw2W_fullzone,method)
+     call generate_amn_using_allwfc(intw2W_fullzone,method)
 end if
 
 !================================================================================
