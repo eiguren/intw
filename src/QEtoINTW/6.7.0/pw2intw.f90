@@ -118,7 +118,7 @@ contains
 
     !TODO: Hau zuzendu, batzuetan ez du idazten
     write(unit=io_unit,fmt="(a)")"IS RELAT."
-    write(unit=io_unit,fmt=*) upf(is)%rel
+    write(unit=io_unit,fmt=*) upf(is)%has_so
 
     write(unit=io_unit,fmt="(a)")"HAS SO COUPLING"
     write(unit=io_unit,fmt=*) upf(is)%has_so
@@ -145,11 +145,11 @@ contains
     write(unit=io_unit,fmt=*) upf(is)%kbeta
 
     write(unit=io_unit,fmt="(a)")"L FOR EACH BETA"
-    write(unit=io_unit,fmt=*) upf(is)%lll
+    write(unit=io_unit,fmt="(100i4)") upf(is)%lll
 
     write(unit=io_unit,fmt="(a)")"J FOR EACH BETA (IF SO COUPLING)"
     if (upf(is)%has_so) then
-      write(unit=io_unit,fmt=*) upf(is)%jjj
+      write(unit=io_unit,fmt="(100f6.2)") upf(is)%jjj
     else
       write(unit=io_unit,fmt=*)"NOTHING"
     end if
