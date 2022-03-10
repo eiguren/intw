@@ -6,7 +6,6 @@ set(PROGS
   ep_melements_noW
   read_pp_test
   intw2W90
-  intw2W90_2
 )
 
 list(REMOVE_DUPLICATES PROGS)

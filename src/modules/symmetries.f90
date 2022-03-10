@@ -2168,6 +2168,7 @@ use intw_reading, only: nsym, s, can_use_TR
     integer :: nbands_loc
 !Peio
 
+print*, "hello asier symmetries0"
 
     nbands_loc=num_bands
 
@@ -2190,18 +2191,18 @@ use intw_reading, only: nsym, s, can_use_TR
 
     if (.not. use_IBZ ) then
        ! do not use the IBZ; just fetch the wavefunction from the QE folders
-
+print*, "hello asier symmetries1"
        i_folder = QE_folder_nosym(ikpt)
        G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
        ftau_sym = ZERO
        sym      = s       (:,:,identity_matrix_index)
-
+print*, "hello asier symmetries2"
        call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
-
+print*, "hello asier symmetries3", QE_eig
 
        call rotate_wfc_test (wfc_k_irr,list_iG_irr,wfc_k, list_iG,         &
             identity_matrix_index, sym, ftau_sym, G_sym)
-
+print*, "hello asier symmetries4"
     else
 
        ! Use the IBZ and symmetry!
@@ -2237,6 +2238,8 @@ use intw_reading, only: nsym, s, can_use_TR
     list_iG_irr=list_iG
 
     call wfc_by_expigr (kpoint, nbands_loc, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
+print*, "hello asier symmetries5"
+
 !    call wfc_by_expigr (kpoint, nbands, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
     !(list_iG_irr, list_iG, G_plus)
 

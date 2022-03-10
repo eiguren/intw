@@ -93,9 +93,9 @@ use intw_fft, only : find_iG
 
   do i=1,nGk1
      !
-     call find_iG( gvec(:,list_iG_1(i)) + G , iG_2  )
 
-     jd=findloc( list_iG_2, iG_2 )
+     call find_iG(gvec(:,list_iG_1(i))+G,iG_1 )
+     jd   =findloc( list_iG_2, iG_1) 
 
      if (jd(1)==0) cycle
      !
@@ -113,6 +113,7 @@ use intw_fft, only : find_iG
            enddo !js
            !
   enddo ! i loop
+
   !$omp end do
   !
   !$omp barrier
