@@ -176,7 +176,8 @@ contains
       ft=(/nr1*ftau_sym(1),nr2*ftau_sym(2),nr3*ftau_sym(3)/)
 
       call rotate_wfc_test (wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym, &
-                                                      sym,ft,(/0,0,0/))       
+                                                      sym,ft,(/0,0,0/)) 
+
       !
       ! If time-reversal is present, the wavefunction currently stored
       ! in wfc_k is actually for (-k). Complex conjugation must now

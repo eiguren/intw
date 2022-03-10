@@ -322,9 +322,7 @@ end if
 !       Compute all wfc and keep them in RAM memory
 !================================================================================
 
-
 call allocate_and_get_all_irreducible_wfc()
-
 
 !================================================================================
 !       Compute the mmn file
