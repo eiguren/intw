@@ -201,7 +201,7 @@ contains
 ! (This extra layer of complication is QE's fault, not mine)
 !------------------------------------------------------------------
 
-  use intw_useful_constants, only: ZERO, eps_8
+  use intw_useful_constants, only: ZERO, eps_8, eps_5
   use intw_reading, only: nsym, s, at, bg
 
   implicit none
@@ -270,7 +270,10 @@ contains
         !
         norm=sqrt(norm)
         !
-        if (norm<eps_8*100 ) then
+        ! IGG -- Sim hexagonalean bestela ez du topatzen
+        ! if (norm<eps_8*100 ) then
+        if (norm<eps_5 ) then
+        !End IGG
            !
            inverse_indices(isym)=jsym
            found=.true.

@@ -62,15 +62,17 @@ contains
     !
     wfc_k_irr_all=cmplx_0
 
+    list_iG_all=0
+
     do i_folder=1,nkpoints_QE
       !
       call get_K_folder_data_with_nG(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
       !
       QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
       !
-      list_iG_all(i_folder,1:nG_max)=list_iG(1:nG_max)
+      list_iG_all(i_folder,1:ngk_all(i_folder)  )=list_iG(1:ngk_all(i_folder))
       !
-      do iG=1,nG_max
+      do iG=1,ngk_all(i_folder)
         do ipol=1,nspin
           do ibnd=1,nbands
             !
