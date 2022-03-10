@@ -713,8 +713,9 @@ contains
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
-    complex(dp) :: wfc_all(nG_max,nbands,nspin)
+    complex(dp) :: wfc_all(nG_max*nspin,nbands)
     real(dp) :: QE_eig_all(nbands)
+    integer :: iG
 
     band_excluded(:) = .false.
     !
@@ -728,7 +729,7 @@ contains
     ! initialize the arrays to zero (zero will be broadcasted)
     !
     list_iG(:) = 0
-    wfc_all(:,:,:) = cmplx_0
+    wfc_all(:,:  ) = cmplx_0
     wfc    (:,:,:) = cmplx_0
     !
     write(wfc_file,100) ik
@@ -736,26 +737,27 @@ contains
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)nG !
-
     read(unit=io_unit)list_iG(1:nG)
     read(unit=io_unit)QE_eig_all(1:nbands)
 
     do ibnd=1,nbands
-      read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
+            read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd),is=1,nspin)
     enddo
+
     n_yes = 0
     !
     do ibnd=1,nbands
       !
-      if (band_excluded(ibnd)) then
-        !
-      else
+      if (band_excluded(ibnd)) cycle 
         !
         n_yes=n_yes+1
-        wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
+        do is=1,nspin
+         do iG=1,nG
+         wfc(iG,n_yes,is) = wfc_all((is-1)*nG+iG,ibnd)
+         end do !iG
+        end do!is
         QE_eig(n_yes) = QE_eig_all(ibnd)
         !
-      endif
       !
     enddo
     close(io_unit)

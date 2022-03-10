@@ -324,8 +324,8 @@ contains
 ! Some elementary testing is also implemented.
 !
 !------------------------------------------------------------------
-use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z
-use intw_reading, only: s
+use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
+use intw_reading, only: s 
 
     implicit none
 
@@ -338,7 +338,7 @@ use intw_reading, only: s
     integer :: isym
     integer :: sym(3,3) !symmetry matrix in crystal coordinates
     complex(dp) :: S_u(2,2) !the 2x2 spin rotation matrix
-    real(dp) :: axis(3), angle !axis and angle of a given rotation matrix
+    real(dp) :: axis(3), angle, norm !axis and angle of a given rotation matrix
 
     I2   (1,1)= cmplx_1 ;    I2(1,2)= cmplx_0 ;    I2(2,1)= cmplx_0  ;    I2(2,2)= cmplx_1
     sig_x(1,1)= cmplx_0 ; sig_x(1,2)= cmplx_1 ; sig_x(2,1)= cmplx_1  ; sig_x(2,2)= cmplx_0
@@ -353,18 +353,31 @@ use intw_reading, only: s
        !
        sym=s(:,:,isym)
        !
+       !ASIER rotaxis MUST be replaced by another procedure
+       !diagonalizin the sym_cart matriz 
        call rotaxis_crystal(sym,axis,angle)
        !
        ! debugging test
        ! angle = -angle
        !
+       !
+       norm=sqrt(sum(abs(axis)**2))
+       if (norm<eps_5) then 
+       axis=(/0.0d0,0.d0,1.d0/)
+       else
+       axis=axis/norm
+       end if
+       !
        S_u(:,:)=dcos(angle/2.d0)*I2(:,:)-cmplx_i*dsin(angle/2.d0)*(axis(1)*sig_x(:,:) &
                                                                  + axis(2)*sig_y(:,:) &
-                                                                 + axis(3)*sig_z(:,:) )
+                                                                 + axis(3)*sig_z(:,:)) 
        !
        spin_symmetry_matrices(:,:,isym)=S_u(:,:)
+
        !
     enddo !isym
+
+
     !
     return
 
@@ -1830,7 +1843,6 @@ use intw_reading, only: nsym, s, can_use_TR
     integer :: ibnd, is, js
     integer :: nG  ! counter on the number of G vectors in the array
     complex(dp) :: phases(nG_max)
-    complex(dp) :: S_u(2,2)
 
     phases(:)=cmplx_0
     wfc_k(:,:,:)=cmplx_0
@@ -1852,8 +1864,8 @@ use intw_reading, only: nsym, s, can_use_TR
        !
        RGk = matmul(sym,Gk)
        !
-       !ASIER: Gk, NOT RGk!!!
-       ! - sign is well checked below. Do not change it.
+       !ASIER: Gk and NOT RGk!!!
+       ! - sign is well checked below. 
        phases(nG)=exp(- cmplx_I*tpi*sum(dble(Gk) * ftau))
 
        G_k(:)=RGk(:)+G_sym(:)
@@ -1880,12 +1892,14 @@ use intw_reading, only: nsym, s, can_use_TR
        enddo !ibnd
        !
     enddo !i
+
     !
     if (nspin==2) then
        !
-!       S_u(:,:)=spin_symmetry_matrices(:,:,inverse_indices(i_sym))
-       S_u(:,:)=cmplx_ainv_2(spin_symmetry_matrices(:,:,inverse_indices(i_sym)))
-!       S_u(:,:)=spin_symmetry_matrices(:,:,i_sym)
+       !print*, "spin matrix--------------------", i_sym
+       !do is=1,nspin
+       !  write(*,"(100f6.2)") (spin_symmetry_matrices(is,js,i_sym), js=1,nspin)
+       !end do
        !
        wfc_k_aux = wfc_k
        wfc_k     = cmplx_0
@@ -1895,7 +1909,7 @@ use intw_reading, only: nsym, s, can_use_TR
              do is=1,nspin
                 do js=1,nspin
                    !
-                   wfc_k(i,ibnd,is)=wfc_k(i,ibnd,is)+S_u(is,js)*wfc_k_aux(i,ibnd,js)
+                   wfc_k(i,ibnd,is)=wfc_k(i,ibnd,is)+ spin_symmetry_matrices(is,js,i_sym) * wfc_k_aux(i,ibnd,js)
                    !
                 enddo !js
              enddo !is
