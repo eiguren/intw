@@ -37,8 +37,8 @@ module intw_symmetries
             set_symmetry_relations, find_the_irreducible_k_set_and_equiv2, &
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, irr_kp_grid_to_full, calculate_star_r, &
-            calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc, rotate_wfc_test, &
-            get_psi_general_k, get_psi_k, intw_check_mesh, get_G_shells, apply_TR_to_wfc, &
+            calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
+            get_psi_general_k, intw_check_mesh, get_G_shells, apply_TR_to_wfc, &
             find_size_of_irreducible_k_set, find_the_irreducible_k_set_irr, &
             sort_G_vectors_in_symmetry_shells, output_sorted_G_vectors_in_symmetry_shells, &
             multable
@@ -816,7 +816,10 @@ use intw_reading, only: nsym, s, can_use_TR
              kpoint_is_found_sym(ikpt) = .true.
              QE_folder_sym(ikpt)       = i_folder
              sym_G(:,ikpt)             = G
-             symlink(ikpt,1)           = inverse_indices(isym)
+             !ASIER 09/03/20222
+             !we are taking the inverse of the inverse twice all over the code. 
+             !symlink(ikpt,1)           = inverse_index(isym)
+             symlink(ikpt,1)           = isym
              symlink(ikpt,2)           = 0
              !
           endif
@@ -844,7 +847,9 @@ use intw_reading, only: nsym, s, can_use_TR
                 kpoint_is_found_sym(ikpt) = .true.
                 QE_folder_sym(ikpt)       = i_folder
                 sym_G(:,ikpt)             = -G
-                symlink(ikpt,1)           = inverse_indices(isym)
+!ASIER, same as above
+                symlink(ikpt,1)           = isym
+                !symlink(ikpt,1)           = inverse_indices(isym)
                 symlink(ikpt,2)           = 1
                 !
                 ! CAREFUL! It is now -G which enters the sym_G array
@@ -1745,205 +1750,11 @@ use intw_reading, only: nsym, s, can_use_TR
     enddo
 
   end subroutine rot_atoms
-!--------------------------------------------------------------------
-  subroutine rotate_wfc(wfc_k_irr,list_iG_k_irr,wfc_k,list_iG_k, &
-                               i_sym,sym_inverse_l,ftau_l,G_sym_l)
-    !--------------------------------------------------------------------
-    !
-    !-----------------------------------------------------------------------------
-    ! This subroutine takes in the periodic part of a wavefunction psi_{nk} and
-    ! returns the periodic part of psi_{n Rk}, where Rk is the rotated k-vector.
-    !
-    ! The wavefunctions have the form
-    !			psi_{nk}(r) = e^{ikr}/sqrt{V} u_{nk}(r)
-    !			u_{nk}(r)   = \sum_G e^{iGr} u_{nk}(G).
-    !
-    !
-    !  a crystal rotation-like symmetry can be expressed as
-    !		S = { R | f }
-    !	where R is a rotation and f a fractional translation.
-    !
-    ! Note that symmetry is implemented in a very confusing way in Quantum Espresso.
-
-    ! On the one hand, section A.4 of the Quantum Espresso reference paper,
-    ! 		"Quantum Espresso: a modular and open-source software project for
-    !  			quantum simulations of materials",
-    !     suggests the convention:
-    !           r' =  { R | f } r = R * ( r + f )  !! NOTE: this is NOT the usual textbook definition!
-    !
-    ! HOWEVER: poking around in the code suggests that the convention actually
-    !	     used in the code is
-    !           r' =  { R | f } r = R * r - f
-    !
-    !	(This only matters in non-symmorphic systems)
-    ! In what follows, the second convention will be used.
-    !
-    ! assumptions:
-    !			-  i_sym is the index of the symmetry operation
-    !			-  sym_inverse_l is a point group operation:
-    !                        it is the INVERSE of the actual operation; this is the
-    !                        appropriate operator to act on k, in crystal coordinates
-    !			-  k_irr is a k-point in the IBZ
-    !			-  sym_inverse_l * k_irr  = k + G_sym, with k in the 1BZ
-    !
-    !	applying the point group operation yields
-    !
-    !           u_{nk}(sym_l*G+G_sym) =  e^{i R*G*tau} u_{nk_irr}(G)
-    !
-    !
-    !----------------------------------------------------------------------------------
-    use intw_fft, only: find_iG
-    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-    use intw_utility, only: HPSORT, cmplx_ainv_2
-    use intw_reading, only: gvec, nG_max, nspin
-    use w90_parameters, only: num_bands
-
-  implicit none
-
-  !I/O variables
-
-  integer,intent(in) :: i_sym ! index of the symmetry operation
-  integer,intent(in) :: G_sym_l(3) ! G vector such that  R*k + G_sym_l = sym_l * k_irr
-  integer,intent(in) :: sym_inverse_l (3,3) ! inverse point group operation the one acting on k (cryst.coord.)
-  integer,intent(in) :: list_iG_k_irr(nG_max) ! G vector indices for k_irr
-  real(dp),intent(in) :: ftau_l(3) ! fractional translation associated with point group operation
-  complex(dp),intent(inout) :: wfc_k_irr(nG_max,num_bands,nspin) !wfc at point k_irr in the IBZ
-  integer,intent(out) :: list_iG_k(nG_max) ! G vector indices for k, sorted
-  complex(dp),intent(out) :: wfc_k(nG_max,num_bands,nspin) ! rotated wfc at point k in the 1BZ
-
-  !local variables
-
-  integer :: p_i,i,alpha,ibnd,is,js
-  integer :: iG_k_irr,iG_k
-  integer :: G_k_irr(3) ! a vector for k in the IBZ
-  integer :: RG_k_irr(3) ! ( symmetry operation )* G_k
-  integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
-  integer :: permutations(nG_max) ! index permutation which orders list_G_k
-  integer :: nG ! counter on the number of G vectors in the array
-  complex(dp) :: phases(nG_max)
-  complex(dp) :: S_u(2,2)
-
-  ! Initialize different variables
-  !
-  phases(:)=cmplx_0
-  wfc_k(:,:,:)=cmplx_0
-  !
-  list_iG_k(:)=0
-  nG=0
-  permutations=0
-  !
-  ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
-  !
-  do i=1,nG_max
-     !
-     iG_k_irr=list_iG_k_irr(i)
-     !
-     ! if this ig takes part, forwar, if 0 doesn't take part, we exit
-     !
-     if (iG_k_irr==0) exit
-     !
-     nG=nG+1
-     G_k_irr=gvec(:,iG_k_irr)
-     !
-     do alpha=1,3
-        !
-        ! REMEMBER the CONVENTION: k_rot(i) = sum_j s(i,j) k(j)
-        !
-        RG_k_irr(alpha)=sym_inverse_l(alpha,1)*G_k_irr(1) &
-                      + sym_inverse_l(alpha,2)*G_k_irr(2) &
-                      + sym_inverse_l(alpha,3)*G_k_irr(3)
-        !
-     enddo
-     !
-     phases(nG)=exp(cmplx_I*tpi*(dble(RG_k_irr(1))*ftau_l(1) &
-                               + dble(RG_k_irr(2))*ftau_l(2) &
-                               + dble(RG_k_irr(3))*ftau_l(3)))
-     !
-     G_k(:)=RG_k_irr(:)+G_sym_l(:)
-     !
-     call find_iG(G_k,iG_k)
-     !
-     list_iG_k(nG)=iG_k
-     !
-  enddo
-  !
-  ! There is no guarantee that the indices in list_iG_k will be sorted in ascending
-  ! order! This is not an absolute necessity, but it would be nice and consistent for
-  ! the indices to be sorted.
-  ! Sort the indices using a canned heap sort subroutine.
-  !
-  call HPSORT(nG,list_iG_k,permutations)
-  !
-  ! To understand how this works, consider an example:
-  !
-  !            i      f(i)        iG(i)   permutation(i)
-  !            ---------------------------------------
-  !            1      0.1         4            2
-  !            2      0.2         1            4
-  !            3      0.3         3            3
-  !            4      0.4         2            1
-  !
-  !            j   sort(iG)(j)    sort(f)(j)
-  !            ------------------------------------
-  !            1      1               0.2
-  !            2      2               0.4
-  !            3      3               0.3
-  !            4      4               0.1
-  !
-  !             ===> sort(f) (j)  =   f( permutation(j) )
-  !
-  !
-  ! finally, populate the rotated wave function
-  !
-  do i=1,nG
-     !
-     p_i = permutations(i)
-     !
-     ! compute the wfc element
-     !
-     do ibnd=1,num_bands
-        do is=1,nspin
-           !
-           wfc_k(i,ibnd,is)=phases(p_i)*wfc_k_irr(p_i,ibnd,is)
-           !
-        enddo !is
-     enddo !ibnd
-     !
-  enddo !i
-  !
-  if (nspin==2) then
-     !
-!ZALANTZA: i_sym ala inverse_indices(i_sym)
-     !
-!     S_u(:,:)=spin_symmetry_matrices(:,:,inverse_indices(i_sym))
-!     S_u(:,:)=spin_symmetry_matrices(:,:,i_sym)
-      S_u(:,:)=cmplx_ainv_2(spin_symmetry_matrices(:,:,inverse_indices(i_sym)))
-     !
-     wfc_k_irr = wfc_k
-     wfc_k     = cmplx_0
-     !
-     do i=1,nG
-        do ibnd=1,num_bands
-           do is=1,nspin
-              do js=1,nspin
-                 !
-                 wfc_k(i,ibnd,is)=wfc_k(i,ibnd,is)+S_u(is,js)*wfc_k_irr(i,ibnd,js)
-                 !
-              enddo !js
-           enddo !is
-        enddo !ibnd
-     end do !i
-     !
-  endif ! nspin==2
-  !
-  return
-
-  end subroutine rotate_wfc
 !-----------------------------------------------------------------------------
 !*****************************************************************************
 !-----------------------------------------------------------------------------
-  subroutine rotate_wfc_test(wfc_k_irr,list_iG_k_irr,wfc_k,list_iG_k, &
-                                    i_sym,sym_inverse_l,ftau_l,G_sym_l)
+  subroutine rotate_wfc_test(wfc_k_irr,list_iG,wfc_k,list_iG_k, &
+                                    i_sym,sym,ftau,G_sym)
 !-----------------------------------------------------------------------------
 !
 !--------------------------------------------------------------------------------------------------------
@@ -1976,11 +1787,11 @@ use intw_reading, only: nsym, s, can_use_TR
 !
 ! assumptions:
 !			-  i_sym is the index of the symmetry operation
-!			-  sym_inverse_l is a point group operation:
+!			-  sym is a point group operation:
 !                        it is the INVERSE of the actual operation; this is the
 !                        appropriate operator to act on k, in crystal coordinates
 !			-  k_irr is a k-point in the IBZ
-!			-  sym_inverse_l * k_irr  = k + G_sym, with k in the 1BZ
+!			-  sym * k_irr  = k + G_sym, with k in the 1BZ
 !
 !	applying the point group operation yields
 !
@@ -1997,10 +1808,10 @@ use intw_reading, only: nsym, s, can_use_TR
     !I/O variables
 
     integer,intent(in) :: i_sym ! index of the symmetry operation
-    integer,intent(in) :: G_sym_l(3) ! G vector such that  R*k + G_sym_l = sym_l * k_irr
-    integer,intent(in) :: sym_inverse_l (3,3) ! inverse point group operation the one acting on k (cryst.coord.)
-    integer,intent(in) :: list_iG_k_irr(nG_max) ! G vector indices for k_irr
-    real(dp),intent(in) :: ftau_l(3) ! fractional translation associated with point group operation
+    integer,intent(in) :: G_sym(3) ! G vector such that  R*k + G_sym = sym_l * k_irr
+    integer,intent(in) :: sym (3,3) ! inverse point group operation the one acting on k (cryst.coord.)
+    integer,intent(in) :: list_iG(nG_max) ! G vector indices for k_irr
+    real(dp),intent(in) :: ftau(3) ! fractional translation associated with point group operation
     complex(dp),intent(inout) :: wfc_k_irr(nG_max,num_bands,nspin) !wfc at point k_irr in the IBZ
     integer,intent(out) :: list_iG_k(nG_max) ! G vector indices for k, sorted
     complex(dp),intent(out) :: wfc_k(nG_max,num_bands,nspin) ! rotated wfc at point k in the 1BZ
@@ -2008,9 +1819,9 @@ use intw_reading, only: nsym, s, can_use_TR
     !local variables
 
     complex(dp) :: wfc_k_aux(nG_max,num_bands,nspin)
-    integer :: p_i, i, alpha, iG_k_irr, iG_k
-    integer :: G_k_irr(3) ! a vector for k in the IBZ
-    integer :: RG_k_irr(3) ! ( symmetry operation )* G_k
+    integer :: p_i, i, alpha, iGk, iG_k
+    integer :: Gk(3) ! a vector for k in the IBZ
+    integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
     integer :: ibnd, is, js
@@ -2025,33 +1836,24 @@ use intw_reading, only: nsym, s, can_use_TR
     nG=0
     permutations(:)=0
     !
-    ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
+    ! loop on all Gk, the coefficients of the wavefunction at the IBZ k point
     !
     do i=1,nG_max
        !
-       iG_k_irr=list_iG_k_irr(i)
+       iGk=list_iG(i)
        !
-       if (iG_k_irr==0) exit  ! the index array is zero-padded at the end.
-       nG=nG+1 ! only increment if iG_k_irr /= 0!
+       if (iGk==0) exit  ! the index array is zero-padded at the end.
+       nG=nG+1 ! only increment if iGk /= 0!
        !
-       G_k_irr=gvec(:,iG_k_irr)
+       Gk=gvec(:,iGk)
        !
-       do alpha=1,3
-          !
-          ! REMEMBER the CONVENTION: k_rot(i) = sum_j s(i,j) k(j)
-          !
-          RG_k_irr(alpha)=sym_inverse_l(alpha,1)*G_k_irr(1) &
-                        + sym_inverse_l(alpha,2)*G_k_irr(2) &
-                        + sym_inverse_l(alpha,3)*G_k_irr(3)
-          !
-       enddo
+       RGk = matmul(sym,Gk)
        !
-       phases(nG)=exp(cmplx_I*tpi*(dble(RG_k_irr(1))*ftau_l(1) &
-                                 + dble(RG_k_irr(2))*ftau_l(2) &
-                                 + dble(RG_k_irr(3))*ftau_l(3)))
-       !
-       G_k(:)=RG_k_irr(:)+G_sym_l(:)
-       !
+       !ASIER: Gk, NOT RGk!!!
+       ! - sign is well checked below. Do not change it.
+       phases(nG)=exp(- cmplx_I*tpi*sum(dble(Gk) * ftau))
+
+       G_k(:)=RGk(:)+G_sym(:)
        call find_iG(G_k,iG_k)
        !
        list_iG_k(nG) = iG_k
@@ -2069,7 +1871,7 @@ use intw_reading, only: nsym, s, can_use_TR
        do ibnd=1,num_bands
           do is=1,nspin
              !
-             wfc_k(i,ibnd,is)=phases(p_i)*wfc_k_irr(p_i,ibnd,is)
+             wfc_k(i,ibnd,is)=wfc_k_irr(p_i,ibnd,is) *phases(p_i)
              !
           enddo !is
        enddo !ibnd
@@ -2188,18 +1990,14 @@ print*, "hello asier symmetries0"
 
     if (.not. use_IBZ ) then
        ! do not use the IBZ; just fetch the wavefunction from the QE folders
-print*, "hello asier symmetries1"
        i_folder = QE_folder_nosym(ikpt)
        G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
        ftau_sym = ZERO
        sym      = s       (:,:,identity_matrix_index)
-print*, "hello asier symmetries2"
        call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
-print*, "hello asier symmetries3", QE_eig
 
        call rotate_wfc_test (wfc_k_irr,list_iG_irr,wfc_k, list_iG,         &
             identity_matrix_index, sym, ftau_sym, G_sym)
-print*, "hello asier symmetries4"
     else
 
        ! Use the IBZ and symmetry!
@@ -2235,120 +2033,11 @@ print*, "hello asier symmetries4"
     list_iG_irr=list_iG
 
     call wfc_by_expigr (kpoint, nbands_loc, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-print*, "hello asier symmetries5"
 
 !    call wfc_by_expigr (kpoint, nbands, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
     !(list_iG_irr, list_iG, G_plus)
 
   end subroutine get_psi_general_k
-!-----------------------------------------------------------
-  subroutine get_psi_k (ikpt,use_IBZ,list_iG,wfc_k,QE_eig)
-!-----------------------------------------------------------
-!
-!----------------------------------------------------------------------------!
-! This subroutine is a driver which performs all the necessary operations
-! to obtain the periodic part of the wavefunction at the specified k point.
-!
-! It will extract the appropriate information from the QE folder, and
-! rotate the wfc if necessary.
-!
-! If use_IBZ is set to TRUE, the subroutine will obtain the wavefunction
-! by rotation. If it is False, the subroutine will try to fetch
-! the wavefunction from the QE directory; if this is not possible,
-! it will throw an error.
-!----------------------------------------------------------------------------!
-use intw_reading, only: get_K_folder_data
-use intw_reading, only: s, ftau, nG_max, nspin
-use intw_useful_constants, only: ZERO
-use w90_parameters, only: num_bands
-
-  implicit none
-
-  !I/O variables
-
-  logical,intent(in) :: use_IBZ
-  integer,intent(in) :: ikpt
-  integer,intent(out) :: list_iG(nG_max)
-  real(dp),intent(out) :: QE_eig(num_bands)
-  complex(dp),intent(out) :: wfc_k(nG_max,num_bands,nspin)
-
-  !local variables
-
-  integer :: i_folder,i_sym,TR
-  integer :: G_sym(3),sym(3,3),list_iG_irr(nG_max)
-  complex(dp) :: wfc_k_irr(nG_max,num_bands,nspin)
-  real(dp) :: ftau_sym(3)
-
-  if (.not.use_IBZ.and..not.full_mesh) then
-     !
-     ! the parameters are not consistent
-     !
-     write(*,*) '*****************************************************'
-     write(*,*) '*                 subroutine get_psi_k              *'
-     write(*,*) '*               --------------------------          *'
-     write(*,*) '*      A wavefunction obtained without rotation     *'
-     write(*,*) '*      was requested, but the QE folders do not     *'
-     write(*,*) '*      contain a full mesh! Review code...          *'
-     write(*,*) '*        Program continues at your own risks!       *'
-     write(*,*) '*****************************************************'
-     !
-     !stop
-     !
-  endif
-  !
-  if (.not.use_IBZ) then
-     !
-     ! do not use the IBZ; just fetch the wavefunction from the QE folders
-     !
-     i_folder=QE_folder_nosym(ikpt)
-     G_sym=nosym_G(:,ikpt)
-     ftau_sym=ZERO
-     sym=s(:,:,identity_matrix_index)
-     !
-     call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
-     !
-     call rotate_wfc (wfc_k_irr,list_iG_irr,wfc_k,list_iG, &
-                   identity_matrix_index,sym,ftau_sym,G_sym)
-     !
-  else
-     !
-     ! Use the IBZ and symmetry!
-     !
-     ! identify the right folder
-     !
-     i_folder = QE_folder_sym(ikpt)
-     !
-     call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
-     !
-     ! The symmetry which takes k_irr to k
-     !
-     i_sym=symlink(ikpt,1)
-     TR=symlink(ikpt,2)
-     G_sym=sym_G(:,ikpt)
-     ftau_sym=ftau(:,i_sym)
-     sym=s(:,:,inverse_indices(i_sym))
-     !
-     ! call rotate_wfc(wfc_k_irr,list_iG_irr,wfc_k,list_iG, &
-     !             inverse_indices(i_sym),sym,ftau_sym,G_sym)
-
-     call rotate_wfc(wfc_k_irr,list_iG_irr,wfc_k,list_iG, &
-                                  i_sym,sym,ftau_sym,G_sym)
-     !
-     ! If time-reversal is present, the wavefunction currently stored
-     ! in wfc_k is actually for (-k). Complex conjugation must now
-     ! be applied to recover wfc_k.
-     !
-     if (TR==1) then
-        !
-        call apply_TR_to_wfc(wfc_k,list_iG)
-        !
-     endif !TR
-     !
-  endif !IBZ
-  !
-  return
-
-  end subroutine get_psi_k
 !---------------------------------------------------------------------------
 !***************************************************************************
 !---------------------------------------------------------------------------

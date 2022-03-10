@@ -16,7 +16,6 @@ module intw_intw2wannier
   use kinds, only: dp
   use intw_reading, only: nbands, nG_max, ngm, nspin
   use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
-  use intw_symmetries, only: get_psi_k
 
   implicit none
   !
@@ -29,9 +28,9 @@ module intw_intw2wannier
   !
   ! subroutines
   public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
-            intw2W90_check_mesh, generate_header, generate_mmn, &
+            intw2W90_check_mesh, generate_header,  &
             generate_mmn_using_allwfc, generate_amn_using_allwfc, &
-            generate_amn, generate_guiding_function, &
+            generate_guiding_function, &
             get_guiding_function_overlap_FFT, &
             get_guiding_function_overlap_convolution, get_radial_part, &
             get_angular_part, ylm_wannier
@@ -482,155 +481,6 @@ contains
 
   end subroutine generate_header
 !----------------------------------------------------
-!****************************************************
-!----------------------------------------------------
-  subroutine generate_mmn(intw2W_fullzone,method)
-!----------------------------------------------------
-!
-!----------------------------------------------------------------------------!
-! This subroutine computes the plane wave matrix elements  needed by Wannier90
-! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
-! the needed matrix elements.
-!
-!----------------------------------------------------------------------------!
-  use intw_utility, only: find_free_unit
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
-  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use w90_parameters, only: num_bands
-  use intw_symmetries, only:get_psi_general_k
-
-  implicit none
-
-  !I/O variables
-
-  logical,intent(in) :: intw2W_fullzone
-  character(*),intent(in) :: method
-
-  !local variables
-
-  integer :: io_unit_mmn, io_unit_eig
-  integer :: nkmesh
-  integer :: nn
-  character(256) :: filename
-  integer :: ikpt_1, ikpt_2
-  integer :: ibnd, jbnd
-  integer :: G(3)
-  integer :: list_iG_1(nG_max), list_iG_2(nG_max)
-  complex(dp) :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
-  real(dp) :: QE_eig(num_bands)
-  complex(dp) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
-  character(256) :: header
-
-  !----------------------------
-  ! Open all the needed files
-  !----------------------------
-  !
-  io_unit_mmn = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.mmn')
-  open(unit=io_unit_mmn,file=filename,status='unknown')
-  !
-  io_unit_eig = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
-  open(unit=io_unit_eig,file=filename,status='unknown')
-  !
-  !--------------------------------
-  ! Define a few useful variables
-  !--------------------------------
-  !
-  nkmesh=nk1*nk2*nk3
-  !
-  if (intw2W_fullzone) then
-     !
-     call generate_header(trim(method)//trim('-fullzone'),header)
-     !
-  else
-     !
-     call generate_header(trim(method)//trim('-IBZ'),header)
-     !
-  endif !intw2W_fullzone
-  !
-  write(io_unit_mmn,*) trim(header)
-  write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
-  !
-  !loop on all points
-  !
-  do ikpt_1=1,nkmesh
-     !
-     ! fetch the data
-        !call get_psi_general_k(nnkp_kpoints(:,ikpt_1),.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
-        call get_psi_k(ikpt_1,.not.intw2W_fullzone,list_iG_1,wfc_1,QE_eig)
-     !
-     ! print out the eigenvalues
-     !
-     do ibnd=1,num_bands
-        !
-        write(io_unit_eig,'(2I7,F18.12)') ibnd,ikpt_1,QE_eig(ibnd)
-        !
-     enddo !ibnd
-     !
-     ! loop on neighbors
-     !
-     do nn=1,nnkp_nnkpts
-        !
-        G=nnkp_list_G(:,nn,ikpt_1)
-        ikpt_2=nnkp_list_ikpt_nn(nn,ikpt_1)
-        !
-        write(io_unit_mmn,'(5I7)') ikpt_1,ikpt_2,G
-        !
-        ! fetch data
-        !
-        call get_psi_k(ikpt_2,.not.intw2W_fullzone,list_iG_2,wfc_2,QE_eig)
-        !
-        ! Compute the matrix elements
-        !
-        if (trim(method)=='CONVOLUTION') then
-           !
-           call get_plane_wave_matrix_element_convolution      &
-                        (G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
-           !
-        elseif (trim(method)=='FFT') then
-           !
-           call get_plane_wave_matrix_element_FFT              &
-                         (G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
-           !
-        else
-           !
-           write(*,*) 'ERROR in generate_mmn'
-           stop
-           !
-        endif !method
-        !
-        if (nspin==2) then
-           !
-           do ibnd=1,num_bands
-              do jbnd=1,num_bands
-                 !
-                 write(io_unit_mmn,'(2F18.12)') pw_mat_el(jbnd,ibnd,1,1)+pw_mat_el(jbnd,ibnd,2,2)
-                 !
-              enddo !jbnd
-           enddo !ibnd
-           !
-        elseif (nspin==1) then
-           !
-           do ibnd=1,num_bands
-              do jbnd=1,num_bands
-                 !
-                 write(io_unit_mmn,'(2F18.12)') pw_mat_el(jbnd,ibnd,1,1)
-                 !
-              enddo !jbnd
-           enddo !ibnd
-           !
-        endif !nspin
-        !
-     enddo !nn
-  enddo !ikpt_1
-  !
-  close(io_unit_mmn)
-  close(io_unit_eig)
-  !
-  return
-
-  end subroutine generate_mmn
 !------------------------------------------------------------------
 !******************************************************************
 !------------------------------------------------------------------
@@ -876,103 +726,6 @@ contains
 
   end subroutine generate_amn_using_allwfc
 !--------------------------------------------------
-!**************************************************
-!--------------------------------------------------
-  subroutine generate_amn(intw2W_fullzone,method)
-!--------------------------------------------------
-!
-!----------------------------------------------------------------------------!
-! This subroutine computes the overlap with trial functions, thus producing
-! the amn file needed by Wannier90.
-!----------------------------------------------------------------------------!
-  use intw_utility, only: find_free_unit
-  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use w90_parameters, only: num_bands
-
-  implicit none
-
-  !I/O variables
-
-  logical,intent(in) :: intw2W_fullzone
-  character(256),intent(in) :: method
-
-  !local variables
-
-  integer :: io_unit_amn, nkmesh, ikpt, ibnd, n_proj
-  character(256) :: filename
-  integer :: list_iG(nG_max)
-  real(dp) :: QE_eig(num_bands)
-  complex(dp) :: wfc(nG_max,num_bands,nspin)
-  complex(dp) :: amn(num_bands)
-  complex(dp) :: guiding_function(ngm)
-  character(256) :: header
-
-  nkmesh = nk1*nk2*nk3
-  !
-  io_unit_amn = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.amn')
-  open(unit=io_unit_amn,file=filename,status='unknown')
-  !
-  call generate_header(method,header)
-  write(io_unit_amn,*) trim(header)
-  !
-  write(io_unit_amn,'(3I12)') nbands-nnkp_exclude_bands,nnkp_num_kpoints,nnkp_n_proj
-  !
-  !loop on all k-points
-  !
-  do ikpt=1,nnkp_num_kpoints
-     !
-     ! fetch the data
-     !
-     call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
-     !
-     !loop on all bands and all trial functions
-     !
-     do n_proj=1,nnkp_n_proj
-        !
-        ! Generate the fourier transform of the trial function (called guiding
-        ! function, just like in pw2wannier). In order
-        ! to insure that it is normalized, the coefficients must be computed
-        ! on the whole gvec mesh, not just the G vectors where the wavefunction
-        ! does not vanish. It will be assumed that gvec is large enough to
-        ! insure proper normalization.
-        !
-        call generate_guiding_function(ikpt,n_proj,guiding_function)
-        !
-        if (trim(method) == 'CONVOLUTION') then
-           !
-           call get_guiding_function_overlap_convolution(list_iG,wfc, &
-                                                  guiding_function,amn)
-           !
-        elseif (trim(method) == 'FFT') then
-           !
-           call get_guiding_function_overlap_FFT(list_iG,wfc,guiding_function,amn)
-           !
-        else
-           !
-           write(*,*) 'ERROR in generate_amn'
-           stop
-           !
-        endif
-        !
-        !Write result to file $prefix.amn.
-        !
-        do ibnd=1,num_bands
-           !
-           write(io_unit_amn,'(3I7,2F18.12)') ibnd, n_proj, ikpt, amn(ibnd)
-           !
-        enddo !ibnd
-        !
-     enddo !n_proj
-     !
-  enddo !ikpt
-  !
-  close(io_unit_amn)
-  !
-  return
-
-  end subroutine generate_amn
-!----------------------------------------------------------------------
 !**********************************************************************
 !----------------------------------------------------------------------
   subroutine generate_guiding_function(ikpt,n_proj,guiding_function)

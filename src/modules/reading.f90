@@ -25,7 +25,7 @@ module intw_reading
   !
   !
   ! variables
-  public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, &
+  public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, kpoints_QE, &
             s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels, &
             at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
             ngm, gvec, QE_ngk, QE_igk, noncolin, spinorb_mag, ecutwfc, ecutrho, &
@@ -77,6 +77,8 @@ module intw_reading
   ! in which case nspin = 2 and npol = 1.
 
   integer :: nkpoints_QE
+  !ASIER 
+  real(kind=dp), allocatable :: kpoints_QE(:,:)
   ! the number of kpoints in the QE folders
 
   !!!!!!!!!!!!!!!!!!!!!!
@@ -741,7 +743,6 @@ contains
     do ibnd=1,nbands
       read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
     enddo
-
     n_yes = 0
     !
     do ibnd=1,nbands

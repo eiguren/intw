@@ -28,7 +28,7 @@ program intw2W90_2
   use intw_reading
   USE intw_allwfcs
   use intw_utility, only: get_timing, generate_kmesh
-  USE w90_parameters, only: num_bands
+  USE w90_parameters, only: num_bands, num_wann
 
 !================================================================================
 !       Declare the variables
@@ -46,7 +46,7 @@ character(256)::       nnkp_file, method
 
 
 
-real(dp),allocatable:: kpoints_QE(:,:), kmesh(:,:)
+real(dp),allocatable::  kmesh(:,:)
 
 real(dp)            :: time1, time2
 
@@ -150,7 +150,6 @@ write(*,20) '|           ---------------------------------       |'
   ! just as a test; can be removed later
   !
   call output_nnkp_file()
-
 !================================================================================
 !       read in the kpoints from the QE folders
 !================================================================================
@@ -170,6 +169,8 @@ call generate_kmesh(kmesh,nk1,nk2,nk3)
 !       This insures that the Wannier data is consistent with intw data.
 !================================================================================
 call intw2W90_check_mesh(nkmesh,kmesh)
+
+
 
 write(*,20) '|       - The mesh in the Wannier90 input.win file  |'
 write(*,20) '|         and the intw mesh are equal.              |'
@@ -320,6 +321,7 @@ end if
 !================================================================================
 !       Compute all wfc and keep them in RAM memory
 !================================================================================
+
 
 call allocate_and_get_all_irreducible_wfc()
 
