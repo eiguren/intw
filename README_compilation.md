@@ -38,6 +38,6 @@ After this, we are ready to compile INTW. To do that, go to the INTW directory, 
 ``
 mkdir build
 cd build
-FC=mpiifort CC=mpiifort QE_HOME=/path/to/QE W_HOME=/path/to/W cmake ..
+FC=mpiifort CC=mpiicc QE_HOME=/path/to/QE W_HOME=/path/to/W cmake ..
 make -j 8
 ``
