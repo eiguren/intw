@@ -177,7 +177,7 @@ subroutine init_pp
               do is1=1,2
                  do is2=1,2
                     ijs=ijs+1
-                    DKB (ih, ih,is1,is2,nt ) =  upf(nt)%dion(vi,vj) * &
+                    DKB (ih, jh,is1,is2,nt ) =  upf(nt)%dion(vi,vj) * &
                          fcoef(ih,jh,is1,is2,nt)
                     if (vi.ne.vj) fcoef(ih,jh,is1,is2,nt)=(0.d0,0.d0)
                  enddo
