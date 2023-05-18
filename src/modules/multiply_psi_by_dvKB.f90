@@ -14,9 +14,9 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
   integer, intent(in)               :: npol, nG_max, list_iGk(nG_max), list_iGkq(nG_max), nbands
   real(dp), intent(in)              :: k_point(3), q_point(3)
 
-  complex(dp), intent(inout)        :: psi(nG_max, nbands,npol), dvnl_psi(nG_max,nbands, npol,3*nat)
+  complex(dp), intent(inout)        :: psi(nG_max, nbands,npol), dvnl_psi(nG_max,nbands, npol, npol, 3*nat)
 
-  complex(dp)                       :: projec_d1(nat,nhm,3,npol), projec_d2(nat,nhm,3,npol)
+  complex(dp)                       :: projec_d1(nkb,3,npol), projec_d2(nkb,3,npol)
   integer                           :: spol1, spol2 , ipol, jpol, na, ih, ig
   real(dp)                          :: k_(3), q_(3)
   integer :: nt, mode, ikb, iGk, ibnd, iGkq
@@ -26,8 +26,8 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
 
   do ibnd=1,nbands
 
-     projec_d1(:,:,:,:) = cmplx_0
-     projec_d2(:,:,:,:) = cmplx_0
+     projec_d1 = cmplx_0
+     projec_d2 = cmplx_0
 
 
      ! Asier: KB potentziala hurrengo eran emanik dago: sum_l |b(l)> <b(l)|
@@ -52,12 +52,12 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
                        do spol1 = 1,npol !spin
 
                           ! DKB(nhm,nhm,nspin,nspin,ntyp)
-                          projec_d1(na,ih,ipol,spol1) =   &
-                               projec_d1(na,ih,ipol,spol1) -   ( tpiba * cmplx_i) * conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1)
+                          projec_d1(ikb,ipol,spol1) = projec_d1(ikb,ipol,spol1) + &
+                            conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1)
 
-                          projec_d2(na,ih,ipol,spol1) =   &
-                               projec_d2(na,ih,ipol,spol1) +   ( tpiba * cmplx_i )* conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1)* &
-                               ( k_(ipol)  + gvec_cart(ipol,iGk) )
+                          projec_d2(ikb,ipol,spol1) =  projec_d2(ikb,ipol,spol1) + &
+                            conjg(vkb(iG,ikb)) * psi(iG, ibnd, spol1) * &
+                            tpiba * cmplx_i * ( k_(ipol) + gvec_cart(ipol,iGk) )
 
                        enddo !spol
 
@@ -79,18 +79,18 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
                  do ih=1,nh(ityp(na))
                     ikb=ikb+1
                     do ig=1,nG_max
-                       iGk= list_iGkq(iG)
-                       if (iGk==0) exit
+                       iGkq= list_iGkq(iG)
+                       if (iGkq==0) exit
 
                        if (upf(nt)%has_so.and.lspinorb) then
 
                           do spol1 = 1,npol !spin
                              do spol2 = 1,npol !spin
-                                dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                     + DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d2(na,ih,ipol,spol2) * vkqb(iG,ikb)
-                                dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                     + DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d1(na,ih,ipol,spol2) * vkqb(iG,ikb)* &
-                                     (k_(ipol) +  q_(ipol) + gvec_cart(ipol,iGk) )
+                                dvnl_psi(iG, ibnd,spol1,spol2,mode) = dvnl_psi(iG,ibnd,spol1,spol2,mode) + &
+                                     DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d2(ikb,ipol,spol2) * vkqb(iG,ikb)
+                                dvnl_psi(iG, ibnd,spol1,spol2,mode) = dvnl_psi(iG,ibnd,spol1,spol2,mode) - &
+                                     DKB (ih, ih,spol1,spol2,ityp(na) ) * projec_d1(ikb,ipol,spol2) * vkqb(iG,ikb) * &
+                                     ( tpiba * cmplx_i )*(k_(ipol) +  q_(ipol) + gvec_cart(ipol,iGkq) )
                              end do !spol2
                           end do !spol1
 
@@ -98,11 +98,11 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
 
                           do spol1 = 1,npol !spin
 
-                             dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                  + DKB (ih, ih,spol1,spol1,ityp(na) )* projec_d2(na,ih,ipol,spol1) * vkqb(iG,ikb)
-                             dvnl_psi(iG, ibnd,spol1,mode) = dvnl_psi(iG,ibnd,spol1,mode)&
-                                  + DKB (ih, ih,spol1,spol1,ityp(na)) * projec_d1(na,ih,ipol,spol1) * vkqb(iG,ikb)* &
-                                  (k_(ipol) +  q_(ipol) + gvec_cart(ipol,iGk) )
+                             dvnl_psi(iG, ibnd,spol1,spol1,mode) = dvnl_psi(iG,ibnd,spol1,spol1,mode) + &
+                                  DKB (ih, ih,spol1,spol1,ityp(na) )* projec_d2(ikb,ipol,spol1) * vkqb(iG,ikb)
+                             dvnl_psi(iG, ibnd,spol1,spol1,mode) = dvnl_psi(iG,ibnd,spol1,spol1,mode) - &
+                                  DKB (ih, ih,spol1,spol1,ityp(na)) * projec_d1(ikb,ipol,spol1) * vkqb(iG,ikb)* &
+                                  ( tpiba * cmplx_i )*(k_(ipol) +  q_(ipol) + gvec_cart(ipol,iGkq) )
 
                           end do
                        end if
