@@ -651,13 +651,13 @@ contains
   end subroutine calculate_local_part_dv
 !*******************************************************************
 !-------------------------------------------------------------------
-  subroutine get_dv(iq,qpoint,nmode,dvq_local)
+  subroutine get_dv(iq,qpoint,nmode,npol,dvq_local)
 !-------------------------------------------------------------------
 
     implicit none
 
     !I/O variables
-    integer, intent(in) :: iq, nmode
+    integer, intent(in) :: iq, nmode, npol
     real(dp), intent(in) :: qpoint(1:3) ! in crystal
     complex(dp), intent(out) :: dvq_local(nr1*nr2*nr3,nmode,npol,npol)
 
@@ -669,6 +669,7 @@ contains
     real(dp) :: qpoint_1bz(1:3), qpoint_rot(1:3)
     integer :: q_index, q_index_irr, s_index, imq, ir, imode
     integer :: GKQ_bz(1:3), GKQ (1:3)
+
 
     dvq_local=cmplx_0
     !

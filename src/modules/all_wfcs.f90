@@ -93,11 +93,12 @@ contains
     use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: sym_G, full_mesh, inverse_indices, symlink, &
-                               QE_folder_sym, apply_TR_to_wfc, rotate_wfc_test
+                               QE_folder_sym, apply_TR_to_wfc, rotate_wfc_test, &
+                               identity_matrix_index, nosym_G
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_fft, only: wfc_by_expigr
     use w90_parameters, only: num_bands
-    use intw_useful_constants, only : eps_5
+    use intw_useful_constants, only : eps_5, ZERO
 
     implicit none
 
@@ -127,15 +128,22 @@ contains
       !
       ! Use the full BZ, no symmetry!
       !
-      wfc_k(:,:,:)=wfc_k_irr_all(ikpt,:,:,:)
-      list_iG(:)=list_iG_all(ikpt,:)
-      QE_eig(:)=QE_eig_irr_all(ikpt,:)
+      ! wfc_k(:,:,:)=wfc_k_irr_all(ikpt,:,:,:)
+      ! list_iG(:)=list_iG_all(ikpt,:)
+      ! QE_eig(:)=QE_eig_irr_all(ikpt,:)
+
+      G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
+      ftau_sym = ZERO
+      sym      = s(:,:,identity_matrix_index)
+
+      call rotate_wfc_test(wfc_k_irr_all(ikpt,:,:,:),list_iG_all(ikpt,:),wfc_k, list_iG, &
+                           identity_matrix_index, sym, ftau_sym, G_sym)
       !
     else
       !
       ! Use the IBZ and symmetry!
       !
-      ! This is the irreducible point 
+      ! This is the irreducible point
       ! connected to aimed kpoint
       i_folder=QE_folder_sym(ikpt)
 
@@ -157,13 +165,13 @@ contains
       ktest=kpoints_QE(:,i_folder)
 
       if (TR==1) then
-       ! If TR needed 
+       ! If TR needed
        ! G_sym  = aimed_kpoint -TR[S*QE_kpoint] = aimed_kpoint + S*QE_kpoint, such that
-       ! aimed_kpoint = -S*QE_kpoint + G_ sym    
+       ! aimed_kpoint = -S*QE_kpoint + G_ sym
        G_sym = nint(kpoint +( matmul(sym ,kpoints_QE(:,i_folder))))
        else
        ! G_sym  = aimed_kpoint -   S*QE_kpoint, such that
-       ! aimed_kpoint =  S*QE_kpoint + G_ sym 
+       ! aimed_kpoint =  S*QE_kpoint + G_ sym
        G_sym = nint(kpoint -( matmul(sym ,kpoints_QE(:,i_folder))))
       end if
       !
@@ -176,7 +184,7 @@ contains
       ft=(/nr1*ftau_sym(1),nr2*ftau_sym(2),nr3*ftau_sym(3)/)
 
       call rotate_wfc_test (wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym, &
-                                                      sym,ft,(/0,0,0/)) 
+                                                      sym,ft,(/0,0,0/))
 
       !
       ! If time-reversal is present, the wavefunction currently stored
@@ -192,7 +200,7 @@ contains
       !
       list_iG_irr=list_iG
       !
-      if ( sum(abs(ktest + dble(G_sym) -kpoint))>eps_5) then 
+      if ( sum(abs(ktest + dble(G_sym) -kpoint))>eps_5) then
           write(*,*)"ERROR in get_psi_general_k_all_wfc:"
           write(*,"(a,100f12.6)")"Aimed kpoint is     :", kpoint
           write(*,"(a,100f12.6)")"Symmetry induced is :", ktest + G_sym
