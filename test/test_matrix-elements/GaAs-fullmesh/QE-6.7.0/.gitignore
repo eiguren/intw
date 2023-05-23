@@ -1,0 +1,15 @@
+*
+!.gitignore
+!As.upf
+!compare_matrix_elements.py
+!gaas.dyn0
+!gaas.scf.in
+!Ga.upf
+!Makefile.in
+!pw2intw.in
+!q2r.in
+!qlist.txt
+!qq1
+!gaas.ph.in
+!reference
+!ref_ep_mat.dat_1

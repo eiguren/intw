@@ -1,0 +1,10 @@
+proba
+&inputpp
+ mesh_dir="./"
+ prefix = "gaas",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 1,
+ dynxml = .false.,
+/
+
