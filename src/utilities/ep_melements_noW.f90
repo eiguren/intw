@@ -687,6 +687,16 @@ program ep_melements
         write(unit=ep_unit, rec = 1, iostat = ierr) aep_mat_el(iq,:,:,:,:,:,:)
         !
         close(unit=ep_unit)
+#ifdef DEBUG
+        ! write the matrix elements to a formatted file to compare with QE matrix elements
+        write(123400+iq,"(i4)") nkmesh
+        do ik=1,nkmesh
+          kpoint = kmesh(:,ik)
+          write(123400+iq,"(i4,3f10.6)") ik, kpoint
+        enddo
+        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, aep_mat_el(iq,ik,ibnd,jbnd,1,1,imode), ibnd=1,num_bands), jbnd=1,num_bands), ik=1,nkmesh), imode=1,3*nat)
+#endif
+
         !
      enddo !iq
 
