@@ -17,15 +17,7 @@ cp ../intw.in ./
 
 
 # Compare calculation
-python3 compare_matrix_elements_1.py
-if [ $? -ne 0 ]; then
-  exit 1
-fi
-python3 compare_matrix_elements_2.py
-if [ $? -ne 0 ]; then
-  exit 1
-fi
-python3 compare_matrix_elements_3.py
+python3 compare_matrix_elements.py
 if [ $? -ne 0 ]; then
   exit 1
 fi
