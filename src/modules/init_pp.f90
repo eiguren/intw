@@ -192,11 +192,11 @@ subroutine init_pp
                  ir = indv (ih, nt)
                  is = indv (jh, nt)
                  if (lspinorb) then
-                    DKB (ih, ih,1,1,nt ) = upf(nt)%dion (ir, is)
-                    DKB (ih, ih,2,2,nt ) = upf(nt)%dion (ir, is)
+                    DKB (ih, jh,1,1,nt ) = upf(nt)%dion (ir, is)
+                    DKB (ih, jh,2,2,nt ) = upf(nt)%dion (ir, is)
 
                  else
-                    DKB (ih, ih,1,1,nt )= upf(nt)%dion (ir, is)
+                    DKB (ih, jh,1,1,nt )= upf(nt)%dion (ir, is)
                  endif
               endif
            enddo

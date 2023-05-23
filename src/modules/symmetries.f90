@@ -2474,10 +2474,7 @@ contains
     integer :: G(3)
     integer :: isym
     integer :: ikpt, ikpts ! singlet index, singlet index obtained by symmetry
-    !haritz
-    ! integer :: found(nk1*nk2*nk3)
     logical :: found(nk1*nk2*nk3)
-    !haritz
 
     nkpt = nk1*nk2*nk3
     found = .false.

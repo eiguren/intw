@@ -1,0 +1,16 @@
+*
+!.gitignore
+!compare_matrix_elements_1.py
+!compare_matrix_elements_2.py
+!compare_matrix_elements_3.py
+!Makefile.in
+!pw2intw.in
+!q2r.in
+!qlist.txt
+!qq1
+!si.ph.in
+!reference
+!ref_ep_mat.dat_1
+!si.dyn0
+!si.scf.in
+!Si.upf

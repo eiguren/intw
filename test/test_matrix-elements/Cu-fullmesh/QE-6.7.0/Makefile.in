@@ -2,6 +2,7 @@
 QE_HOME=@QE_HOME@
 QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
+#MPI_CMD=@MPI_CMD@
 
 all: pw2intw_files
 
@@ -11,12 +12,12 @@ calculation: all
 .PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
 
 run_pw:
-	$(QE_HOME)/build/bin/pw.x < cu.scf.in | tee cu.scf.out
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < cu.scf.in | tee cu.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph:
 	cp -r cu.save qq1/
-	( cd qq1 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH

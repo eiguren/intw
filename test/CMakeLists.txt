@@ -2,6 +2,11 @@
 
 include(IntwTesting)
 
+if(USE_MPI_ON_TESTS)
+  set(MPI_CMD "mpiexec -np 4")
+else()
+  set(MPI_CMD "")
+endif()
 
 add_library(test_modules STATIC module/test_module.f90)
 target_link_libraries(test_modules PUBLIC intw_modules)
@@ -62,7 +67,7 @@ add_test(
 )
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/matrix-element-test.bash.in"
 	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/QE-6.7.0/matrix-element-test.bash" @ONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/Makefile.in"
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/QE-6.7.0/Makefile.in"
 "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/QE-6.7.0/Makefile" @ONLY)
 
 
@@ -75,3 +80,14 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/mat
 	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/Makefile.in"
 	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_matrix-elements/Si-fullmesh
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/Makefile" @ONLY)

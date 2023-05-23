@@ -424,25 +424,25 @@ program ep_melements
   !================================================================================
   !
   num_bands = nbands
-  nbands_loc=num_bands
+  nbands_loc = num_bands
   !
-  allocate (list_igk(nG_max))
-  allocate (list_igkq(nG_max))
-  allocate (list_igk_aux(nG_max))
-  allocate (list_igk_orig(nG_max))
+  allocate(list_igk(nG_max))
+  allocate(list_igkq(nG_max))
+  allocate(list_igk_aux(nG_max))
+  allocate(list_igk_orig(nG_max))
   !
-  allocate (wfc_k(nG_max,num_bands,nspin))
-  allocate (wfc_kq(nG_max,num_bands,nspin))
-  allocate (wfc_k_aux(nG_max,num_bands,nspin))
-  allocate (wfc_k_orig(nG_max,num_bands,nspin))
+  allocate(wfc_k(nG_max,num_bands,nspin))
+  allocate(wfc_kq(nG_max,num_bands,nspin))
+  allocate(wfc_k_aux(nG_max,num_bands,nspin))
+  allocate(wfc_k_orig(nG_max,num_bands,nspin))
   !
-  allocate (wfc_k_r(nr1*nr2*nr3))
+  allocate(wfc_k_r(nr1*nr2*nr3))
   !
-  allocate (QE_eig_k(num_bands))
-  allocate (QE_eig_kq(num_bands))
+  allocate(QE_eig_k(num_bands))
+  allocate(QE_eig_kq(num_bands))
   !
-  allocate (fr(nr1*nr2*nr3,num_bands,nspin))
-  allocate (fg(nG_max,num_bands,nspin))
+  allocate(fr(nr1*nr2*nr3,num_bands,nspin))
+  allocate(fg(nG_max,num_bands,nspin))
   !
   !================================================================================
   !       Read all the information about phonons and pseudopotentials
@@ -454,7 +454,7 @@ program ep_melements
   !       Read the force constant matrix from the QE directory
   !================================================================================
   !
-  fc_file_name=trim(trim(mesh_dir)//trim(ph_dir)//trim(fc_mat))
+  fc_file_name = trim(trim(mesh_dir)//trim(ph_dir)//trim(fc_mat))
   !
 !  if (.not.lspinorb) then
 !     call readfc(fc_file_name,nq1_,nq2_,nq3_,nat,alat,at_frc,ntyp,amass)
@@ -468,7 +468,7 @@ program ep_melements
   ! Build the phonon qmesh corresponding to the parameters in the input file
   !================================================================================
   !
-  nqmesh=nq1*nq2*nq3
+  nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
   !
   !hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz.
@@ -481,7 +481,7 @@ program ep_melements
   allocate(ep_mat_el(nk1*nk2*nk3,num_bands,num_bands,nspin,nspin,3*nat))
   allocate(aep_mat_el(nqmesh,nk1*nk2*nk3,num_bands,num_bands,nspin,nspin,3*nat))
   !
-  aep_mat_el(:,:,:,:,:,:,:)=cmplx_0
+  aep_mat_el(:,:,:,:,:,:,:) = cmplx_0
   !
   !================================================================================
   ! Below, the table of rotations for each atom and symmetry.
@@ -492,7 +492,7 @@ program ep_melements
   allocate(tau_cryst(3,nat))
   allocate(rtau_cryst(3,nsym,nat))
   !
-  nr=(/nr1,nr2,nr3/)
+  nr = (/nr1,nr2,nr3/)
   !
   call rot_atoms(nat,nsym,tau)
   !
@@ -500,7 +500,7 @@ program ep_melements
   ! Allocate dynamical matrix and phonon energy array
   !================================================================================
   !
-  allocate(dyn_q(3*nat,3*nat),w2(3*nat))
+  allocate(dyn_q(3*nat,3*nat), w2(3*nat))
   !
   !================================================================================
   ! Symmetry realtions between irreducible q directory file number and the full mesh.
@@ -513,7 +513,7 @@ program ep_melements
   allocate(qstar(3,48))
   !
   do iq=1,nqirr
-     q_irr_cryst(:,iq)=matmul(ainv(bg),q_irr(:,iq))
+     q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
   enddo
   !
   !================================================================================
@@ -545,12 +545,12 @@ program ep_melements
   allocate(unit_sym_sgk(nkmesh,nsym,num_bands,num_bands))
   allocate(umat(num_bands,num_bands))
   !
-  unit_sym_sgk=cmplx_0
+  unit_sym_sgk = cmplx_0
   !
   do ik=1,nkmesh
      do ibnd=1,num_bands
         !
-        unit_sym_sgk(ik,1:nsym,ibnd,ibnd)=cmplx_1
+        unit_sym_sgk(ik,1:nsym,ibnd,ibnd) = cmplx_1
         !
      enddo !ibnd
   enddo !ik
@@ -580,7 +580,7 @@ program ep_melements
         form='unformatted',status='unknown',access='direct',recl=record_lengh)
         !
         qpoint(:)=qmesh(:,iq)
-        write(*,"(a,i4,100f12.6)")"qpoint",iq, qpoint
+        write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
         !
         !-matrize dinamikoa kalkulatu q puntu jakin batentzat.
         !
@@ -588,13 +588,13 @@ program ep_melements
         !
         !diagonalizatu goian kalkulatutako matrize dinamikoa: polarizazio bektore eta energiak lortu ditugu ia.
         !
-        call diagonalize_cmat (3*nat, dyn_q,w2)
+        call diagonalize_cmat(3*nat, dyn_q, w2)
         !
-        call set_nqxq (qpoint)
+        call set_nqxq(qpoint)
         !
         !-potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
         !
-        dvq_local=cmplx_0
+        dvq_local = cmplx_0
         call get_dv(iq,qpoint,3*nat,npol,dvq_local)
         !
         !-alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
@@ -606,16 +606,16 @@ program ep_melements
         !
         do ik=1,nkmesh
            !
-           write(*,'(a,i4,a,3(f15.8))') "ik= ", ik,' k= ',matmul(bg,kmesh(:,ik))
            kpoint=kmesh(:,ik)
-           !
            kpoint_cart=matmul(bg,kpoint)
            kqpoint_cart=matmul(bg,kpoint+qpoint)
            !
+           write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
+           !
            !-uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta. (k+q)
            !
-           call get_psi_general_k_all_wfc(.true.,kpoint       ,list_iGk ,wfc_k ,QE_eig_k ,G_plusk)
-           call get_psi_general_k_all_wfc(.true.,kpoint+qpoint,list_iGkq,wfc_kq,QE_eig_kq,G_pluskq)
+           call get_psi_general_k_all_wfc(.false.,kpoint       ,list_iGk ,wfc_k ,QE_eig_k ,G_plusk)
+           call get_psi_general_k_all_wfc(.false.,kpoint+qpoint,list_iGkq,wfc_kq,QE_eig_kq,G_pluskq)
            !
            !-k eta k+q puntuen indizeak topatu. ikpt_1 ik-aldagaiaren berdina izan
            ! behar da, baina hurrengo eran segurtasuna irabazten dugu.
@@ -655,7 +655,7 @@ program ep_melements
            !-psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
            ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
            !
-           call dvqpsi_local (3*nat, nG_max, nbands_loc, npol, list_iGk, list_iGkq, wfc_k, dvq_local, &
+           call dvqpsi_local(3*nat, nG_max, nbands_loc, npol, list_iGk, list_iGkq, wfc_k, dvq_local, &
                                                     dvpsi(1:nG_max,1:nbands_loc,1:npol,1:npol,1:3*nat))
            !
            !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
@@ -684,7 +684,7 @@ program ep_melements
            !
         enddo !ik
         !
-        write(unit=ep_unit,  rec = 1, iostat = ierr)  aep_mat_el      (iq,:,:,:,:,:,:)
+        write(unit=ep_unit, rec = 1, iostat = ierr) aep_mat_el(iq,:,:,:,:,:,:)
         !
         close(unit=ep_unit)
         !

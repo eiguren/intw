@@ -1,0 +1,32 @@
+&control
+  verbosity = 'high'
+  calculation = 'scf'
+  wf_collect = .true.
+  restart_mode = 'from_scratch'
+  prefix = 'si'
+  pseudo_dir = './'
+  outdir = './'
+  tprnfor = .false.
+  tstress = .false.
+/
+&system
+  nosym=.true.
+  noinv=.true.
+  ibrav = 2
+  celldm(1) = 10.2048933684
+  ntyp = 1
+  nat = 2
+  ecutwfc = 40.
+  occupations = 'smearing',
+  degauss = 0.001
+/
+&electrons
+   conv_thr = 1.0d-12
+/
+ATOMIC_SPECIES
+Si 28.0855  Si.upf
+ATOMIC_POSITIONS crystal
+Si -0.125 -0.125 -0.125
+Si  0.125  0.125  0.125
+K_POINTS automatic
+ 4 4 4 0 0 0
