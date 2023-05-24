@@ -85,14 +85,14 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Cu-fullmesh/QE-
 
 
 add_test(
-  NAME test_matrix-elements/Si-fullmesh
+  NAME test_matrix-elements/Si-fullmesh-off-diagonal
   COMMAND run-test.bash
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh-off-diagonal
 )
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/matrix-element-test.bash.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/Makefile.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh/QE-6.7.0/Makefile" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh-off-diagonal/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh-off-diagonal/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh-off-diagonal/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-fullmesh-off-diagonal/QE-6.7.0/Makefile" @ONLY)
 
 
 add_test(
