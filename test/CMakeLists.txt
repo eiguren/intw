@@ -60,11 +60,13 @@ add_fortran_test_executable(
   test_IO/read_data.f90
 )
 
+
 add_test(
   NAME test_matrix-elements/Fe-O
-  COMMAND run-test.bash
+  COMMAND bash -c "if [ \"\${INTW_RUN_LONG_TESTS:-}\" -ne 0 ]; then ./run-test.bash; else exit 127; fi"
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O
 )
+set_tests_properties(test_matrix-elements/Fe-O PROPERTIES SKIP_RETURN_CODE 127)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/matrix-element-test.bash.in"
 	"${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/QE-6.7.0/matrix-element-test.bash" @ONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Fe-O/QE-6.7.0/Makefile.in"
