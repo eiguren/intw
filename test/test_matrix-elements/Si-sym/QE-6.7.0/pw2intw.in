@@ -1,0 +1,10 @@
+proba
+&inputpp
+ mesh_dir="./"
+ prefix = "si",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 1,
+ dynxml = .false.,
+/
+
