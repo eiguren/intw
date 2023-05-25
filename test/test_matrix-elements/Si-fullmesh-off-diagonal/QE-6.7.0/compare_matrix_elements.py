@@ -5,9 +5,9 @@ import numpy as np
 import sys
 
 # Find some variables
-NAT = 1
+NAT = 2
 NMODE = 3*NAT
-NBANDS = 10
+NBANDS = 8
 NKPTS = 4*4*4
 
 MIN_MAT_EL = 0.01
@@ -17,13 +17,14 @@ MAX_DIFF_PERCENTAGE = 5.00
 non_deg = []
 for ik in range(NKPTS):
     non_deg_k = []
-    eig_file = "cu.save.intw/wfc%05i.dat" % (ik+1)
+    eig_file = "si.save.intw/wfc%05i.dat" % (ik+1)
     with FortranFile(eig_file, "r") as eig_file:
         eig_file.read_ints(np.int32)
         eig_file.read_ints(np.int32)
-        eig = np.around(eig_file.read_reals(float), decimals=5)
+        eig = np.around(eig_file.read_reals(float), decimals=4)
         for ib in range(NBANDS):
-            if eig[ib] in eig[np.arange(len(eig))!=ib]:
+            #if any(abs(eig[np.arange(len(eig))!=ib]-eig[ib]) < 0.01):
+            if eig[ib] in eig[np.arange(len(eig))!=ib] or ib+1 == NBANDS:
                 pass
             else:
                 non_deg_k.append(ib+1)

@@ -86,8 +86,8 @@ gaas.save.intw/irrq_patterns.dat: $(Q2R_FILES)
 
 
 clean:
-	rm -rf si.scf.out si.xml si.wfc* si.save
-	rm -rf qq1/si.dyn qq1/si.ph.out qq1/si.wfc* qq1/_ph0 qq1/si.save
-	rm -rf q2r.out si.fc si.dyn1
-	rm -rf pw2intw.out si.save.intw
+	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save
+	rm -rf qq1/gaas.dyn qq1/gaas.ph.out qq1/gaas.wfc* qq1/_ph0 qq1/gaas.save
+	rm -rf q2r.out gaas.fc gaas.dyn1
+	rm -rf pw2intw.out gaas.save.intw
 	rm -rf intw.out ep_mat.dat_1

@@ -21,9 +21,9 @@ for ik in range(NKPTS):
     with FortranFile(eig_file, "r") as eig_file:
         eig_file.read_ints(np.int32)
         eig_file.read_ints(np.int32)
-        eig = np.around(eig_file.read_reals(float), decimals=5)
+        eig = np.around(eig_file.read_reals(float), decimals=4)
         for ib in range(NBANDS):
-            if eig[ib] in eig[np.arange(len(eig))!=ib]:
+            if eig[ib] in eig[np.arange(len(eig))!=ib] or ib+1 == NBANDS:
                 pass
             else:
                 non_deg_k.append(ib+1)

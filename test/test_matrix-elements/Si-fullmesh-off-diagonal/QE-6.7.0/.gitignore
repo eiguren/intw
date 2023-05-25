@@ -1,8 +1,6 @@
 *
 !.gitignore
-!compare_matrix_elements_1.py
-!compare_matrix_elements_2.py
-!compare_matrix_elements_3.py
+!compare_matrix_elements.py
 !Makefile.in
 !pw2intw.in
 !q2r.in
