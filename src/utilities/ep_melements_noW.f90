@@ -5,7 +5,7 @@ program ep_melements
                                    nq1, nq2, nq3, nqirr, mesh_dir, ph_dir, fc_mat, &
                                    calc_epmat, ep_mat_file, TR_symmetry, &
                                    read_input
-  use intw_reading, only: nkpoints_QE, nspin, noncolin, gvec, ngm, nsym, &
+  use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, gvec, ngm, nsym, &
                           spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
                           ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
                           read_parameters_data_file_xml, get_ngm, get_gvec, &
@@ -43,7 +43,7 @@ program ep_melements
   !k point related variables
   logical                  :: k_points_consistent
   integer                  :: nk_irr , ik, nkmesh
-  real(dp),allocatable     :: kmesh(:,:), kpoints_QE(:,:)
+  real(dp),allocatable     :: kmesh(:,:)
   integer                  :: ikpt_k, ikpt_kq
   real(dp),allocatable     :: kpoints_irr  (:,:)
   real(dp)                 :: kpoint(3), kpoint_cart(3), kqpoint_in_1bz(3), kqpoint_cart(3)
@@ -69,6 +69,7 @@ program ep_melements
 
   !q point related variables
   integer                  :: iq, nq1_, nq2_, nq3_
+  logical                  :: full_mesh_q, IBZ_q
 
   !ep interaction related variables
   integer                  :: ep_unit
@@ -249,47 +250,9 @@ program ep_melements
   allocate(kpoints_irr(3,nk1*nk2*nk3))
   call find_the_irreducible_k_set (nk1,nk2,nk3,kmesh,kpoints_irr,nk_irr)
   !
-  if (nkpoints_QE/=nkmesh .and. nkpoints_QE/=nk_irr) then
-     !
-     ! the points in the folder are not consistent with the
-     ! input file. Stop the program!
-     !
-     write(*,20) '*****************************************************'
-     write(*,20) '*      The number of kpoints present in the QE      *'
-     write(*,20) '*      folders are not consistent with a full       *'
-     write(*,20) '*      Brillouin Zone or an irreducible Brillouin   *'
-     write(*,20) '*      zone! Review your input...                   *'
-     write(*,20) '*                   Program stops.                  *'
-     write(*,20) '*****************************************************'
-     write(*,20) '* debug information:                                *'
-     write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-     write(*,*) '*        nkmesh      = ',nkmesh
-     write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
-     !
-     stop
-     !
-  elseif (nkpoints_QE==nk_irr) then
-     !
-     ! The points in the QE folders *could* be a valid choice for the IBZ;
-     ! this must be checked!
-     !
-     full_mesh = .false.
-     IBZ       = .true.
-     !
-  elseif (nkpoints_QE==nkmesh) then
-     !
-     ! The points in the QE folders *could* be consistent with a full mesh;
-     ! this must be checked!
-     !
-     full_mesh = .true.
-     IBZ       = .false.
-     !
-  endif
   !
   !================================================================================
   !      allocate the symmetry arrays
-  !      CAREFUL! the subroutine needs to know the global value of "full_mesh",
-  !      so it is crucial that this allocation occurs AFTER setting full_mesh
   !================================================================================
   !
   call allocate_symmetry_related_k(nk1,nk2,nk3,nsym)
@@ -319,7 +282,33 @@ program ep_melements
 !Peio
   !
   call set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, &
-                         k_points_consistent,QE_folder_sym,sym_G,symlink)
+                         k_points_consistent,QE_folder_sym,sym_G,symlink, full_mesh, IBZ)
+  !
+  !================================================================================
+  !       Tell the user what is in the QE folders
+  !================================================================================
+  !
+  if (full_mesh .and. IBZ) then
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with a full 1BZ and a      |'
+    write(*,20) '|         IBZ has also been found.                  |'
+    write(*,20) '|           ---------------------------------       |'
+  else if(IBZ) then
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with an IBZ.               |'
+    write(*,20) '|           ---------------------------------       |'
+  else
+    write(*,20) '**********************************************************'
+    write(*,20) '* The kpoints present in the QE folders are not consistent'
+    write(*,20) '* with the parameters of the input file!                 '
+    write(*,20) '**********************************************************'
+    write(*,20) '* debug information:                                *'
+    write(*,*) '*        nkpoints_QE = ',nkpoints_QE
+    write(*,*) '*        nkmesh      = ',nkmesh
+    write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
+    write(*,*) '*        IBZ         = ',IBZ
+    stop
+  end if
   !
   !================================================================================
   !      Calculate the multiplication talble for symmetry operations
@@ -332,32 +321,32 @@ program ep_melements
   !================================================================================
   !
   if (full_mesh .and. IBZ) then
-     !
-     write(*,20) '|       - the kpoints present in the QE folders     |'
-     write(*,20) '|         are consistent with a full 1BZ and a      |'
-     write(*,20) '|         IBZ has also been found.                  |'
-     write(*,20) '|           ---------------------------------       |'
-     !
+    !
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with a full 1BZ and a      |'
+    write(*,20) '|         IBZ has also been found.                  |'
+    write(*,20) '|           ---------------------------------       |'
+    !
   elseif(IBZ) then
-     !
-     write(*,20) '|       - the kpoints present in the QE folders     |'
-     write(*,20) '|         are consistent with an IBZ.               |'
-     write(*,20) '|           ---------------------------------       |'
-     !
+    !
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with an IBZ.               |'
+    write(*,20) '|           ---------------------------------       |'
+    !
   else
-     !
-     write(*,20)      '**********************************************************'
-     write(*,20)      '* The kpoints present in the QE folders are not consistent'
-     write(*,20)      '* with the parameters of the input file!                 '
-     write(*,20)      '**********************************************************'
-     write(*,20) '* debug information:                                *'
-     write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-     write(*,*) '*        nkmesh      = ',nkmesh
-     write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
-     write(*,*) '*        IBZ         = ',IBZ
-     !
-     stop
-     !
+    !
+    write(*,20) '**********************************************************'
+    write(*,20) '* The kpoints present in the QE folders are not consistent'
+    write(*,20) '* with the parameters of the input file!                 '
+    write(*,20) '**********************************************************'
+    write(*,20) '* debug information:                                *'
+    write(*,*) '*        nkpoints_QE = ',nkpoints_QE
+    write(*,*) '*        nkmesh      = ',nkmesh
+    write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
+    write(*,*) '*        IBZ         = ',IBZ
+    !
+    stop
+    !
   endif
   !
   !================================================================================
@@ -377,11 +366,11 @@ program ep_melements
         !
      else
         !
-        write(*,20)      '**********************************************************'
-        write(*,20)      '* A full mesh is not present in the QE folders!          '
-        write(*,20)      '* The requested calculation is impossible.               '
-        write(*,20)      '*                   program stops.                       '
-        write(*,20)      '**********************************************************'
+        write(*,20) '**********************************************************'
+        write(*,20) '* A full mesh is not present in the QE folders!          '
+        write(*,20) '* The requested calculation is impossible.               '
+        write(*,20) '*                   program stops.                       '
+        write(*,20) '**********************************************************'
         !
         stop
         !
@@ -407,12 +396,12 @@ program ep_melements
   !
   if (.not.conmesurate_and_coarser(nk1,nk2,nk3,nq1,nq2,nq3)) then
      !
-     write(*,20)      '**********************************************************'
-     write(*,20)       '*ERROR                                                  '
-     write(*,20)       '*   the electron k and phonon q are not                 '
-     write(*,20)       '*   conmesurate and the k grid does not contain         '
-     write(*,20)       '*   the phonon q grid                                   '
-     write(*,20)      '**********************************************************'
+     write(*,20) '**********************************************************'
+     write(*,20) '*ERROR                                                  '
+     write(*,20) '*   the electron k and phonon q are not                 '
+     write(*,20) '*   conmesurate and the k grid does not contain         '
+     write(*,20) '*   the phonon q grid                                   '
+     write(*,20) '**********************************************************'
      !
      stop
      !
@@ -528,7 +517,7 @@ program ep_melements
   !================================================================================
   !
   call set_symmetry_relations(nq1,nq2,nq3,nqirr,q_irr_cryst,qmesh, &
-              q_points_consistent,QE_folder_sym_q,sym_G_q,symlink_q)
+              q_points_consistent,QE_folder_sym_q,sym_G_q,symlink_q, full_mesh_q, IBZ_q)
   !
   !================================================================================
   ! testing ...dv and mat_ep

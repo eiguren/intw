@@ -796,7 +796,7 @@ contains
   !*************************************************************************************
   !-------------------------------------------------------------------------------------
   subroutine set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, &
-                                    k_points_consistent,QE_folder_sym,sym_G,symlink)
+                                    k_points_consistent,QE_folder_sym,sym_G,symlink, full_mesh_, IBZ_)
     !-------------------------------------------------------------------------------------
     !
     !--------------------------------------------------------------------------!
@@ -823,6 +823,7 @@ contains
     integer, intent(out) :: QE_folder_sym(nk1*nk2*nk3)
     integer, intent(out) :: sym_G(3,nk1*nk2*nk3)
     integer, intent(out) :: symlink(nk1*nk2*nk3,2)
+    logical, intent(out) :: full_mesh_, IBZ_
 
     !output
     !     This subroutine will fill in the global arrays
@@ -1013,8 +1014,8 @@ contains
     ! test if all the kmesh points were found, and store the result
     ! in these GLOBAL logical variables
     !
-    IBZ       = all(kpoint_is_found_sym)
-    full_mesh = all(kpoint_is_found_nosym)
+    IBZ_       = all(kpoint_is_found_sym)
+    full_mesh_ = all(kpoint_is_found_nosym)
     !
     return
 

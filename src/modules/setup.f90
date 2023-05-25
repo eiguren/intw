@@ -176,7 +176,7 @@ stop
   !================================================================================
 
   call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
-             QE_folder_sym, sym_G, symlink )
+             QE_folder_sym, sym_G, symlink, full_mesh, IBZ )
 
   ! We need to be careful here. There are many possibilities:
   !  1) A full zone calculation is stored in the QE
@@ -365,7 +365,7 @@ stop
   !================================================================================
 
   call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
-          QE_folder_sym, sym_G, symlink )
+          QE_folder_sym, sym_G, symlink, full_mesh, IBZ )
 
   ! We need to be careful here. There are many possibilities:
   !  1) A full zone calculation is stored in the QE
