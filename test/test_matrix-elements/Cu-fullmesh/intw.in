@@ -5,7 +5,7 @@
  nk2		=	4
  nk3		=	4
  magnon          =	.false.
- TR_symmetry     =	.true.
+ TR_symmetry     =	.false.
  nk1s		=       31
  nk2s		=       31
  nk3s		=       31
