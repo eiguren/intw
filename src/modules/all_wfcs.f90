@@ -128,15 +128,15 @@ contains
       !
       ! Use the full BZ, no symmetry!
       !
-      ! wfc_k(:,:,:)=wfc_k_irr_all(ikpt,:,:,:)
-      ! list_iG(:)=list_iG_all(ikpt,:)
-      ! QE_eig(:)=QE_eig_irr_all(ikpt,:)
+      wfc_k_irr(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
+      list_iG_irr(:) = list_iG_all(ikpt,:)
+      QE_eig(:) = QE_eig_irr_all(ikpt,:)
 
       G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
       ftau_sym = ZERO
       sym      = s(:,:,identity_matrix_index)
 
-      call rotate_wfc_test(wfc_k_irr_all(ikpt,:,:,:),list_iG_all(ikpt,:),wfc_k, list_iG, &
+      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
                            identity_matrix_index, sym, ftau_sym, G_sym)
       !
     else
