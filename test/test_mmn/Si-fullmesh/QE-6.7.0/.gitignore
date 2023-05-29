@@ -1,0 +1,10 @@
+*
+!.gitignore
+!compare_mmn.py
+!Makefile.in
+!pw2intw.in
+!si.scf.in
+!Si.pbe-rrkj.UPF
+!si.win
+!si.nscf.in
+!si.pw2wannier.in

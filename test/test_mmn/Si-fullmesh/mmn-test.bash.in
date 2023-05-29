@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+QE_HOME=@QE_HOME@
+QE_VERSION=$(basename $PWD | sed 's/QE-//')
+
+# Run all necessary QE calculations
+make calculation
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+# Run the mmn calculation
+cp ../intw.in ./
+../../../../build/src/utilities/intw2W90.x < intw.in | tee intw.out
+
+cp si.mmn intw_si.mmn
+
+# Compare calculation
+python compare_mmn.py
+if [ $? -ne 0 ]; then
+  exit 1
+fi

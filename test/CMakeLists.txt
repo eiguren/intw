@@ -60,6 +60,19 @@ add_fortran_test_executable(
   test_IO/read_data.f90
 )
 
+## JLB: mmn
+add_test(
+  NAME test_mmn/Si-fullmesh
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_mmn/Si-fullmesh
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_mmn/Si-fullmesh/mmn-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_mmn/Si-fullmesh/QE-6.7.0/mmn-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_mmn/Si-fullmesh/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_mmn/Si-fullmesh/QE-6.7.0/Makefile" @ONLY)
+
+
+## HG: El-ph matrix elements
 
 add_test(
   NAME test_matrix-elements/Fe-O
