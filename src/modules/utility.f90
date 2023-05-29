@@ -554,13 +554,13 @@ end function intgr_spline_gaussq
     implicit none
 
     ! input
-    integer :: nk1, nk2, nk3             ! the mesh parameters
-    real(dp) :: kpoint(3)                 ! the kpoint of interest
+    integer, intent(in) :: nk1, nk2, nk3             ! the mesh parameters
+    real(dp), intent(in) :: kpoint(3)                 ! the kpoint of interest
 
     ! output
-    integer :: i, j, k                   ! the triplet coordinates of k_1BZ
-    real(dp) :: kpt_in_1BZ(3)             ! the k point in the 1BZ
-    integer :: G(3)                      ! the translation vector
+    integer, intent(out) :: i, j, k                   ! the triplet coordinates of k_1BZ
+    real(dp), intent(out) :: kpt_in_1BZ(3)             ! the k point in the 1BZ
+    integer, intent(out) :: G(3)                      ! the translation vector
 
     ! internal variables
     integer :: nG_im1, nG_jm1, nG_km1

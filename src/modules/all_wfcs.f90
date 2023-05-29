@@ -132,7 +132,7 @@ contains
       list_iG_irr(:) = list_iG_all(ikpt,:)
       QE_eig(:) = QE_eig_irr_all(ikpt,:)
 
-      G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
+      G_sym    = nosym_G(:,ikpt) !- G_plus(:) !Asier&&Idoia 24 06 2014
       ftau_sym = ZERO
       sym      = s(:,:,identity_matrix_index)
 

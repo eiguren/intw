@@ -4,6 +4,7 @@
     pseudo_dir = './',
     outdir='./',
     wf_collect=.true.
+    verbosity='high'
  /
  &system
     ibrav=2, 
