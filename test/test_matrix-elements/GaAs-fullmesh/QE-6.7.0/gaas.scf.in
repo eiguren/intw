@@ -14,7 +14,7 @@
     celldm(1)=10.7
     nat=2
     ntyp=2
-    ecutwfc=80.0
+    ecutwfc=60.0
     lspinorb=.false.
     noncolin=.false.
     occupations='smearing',

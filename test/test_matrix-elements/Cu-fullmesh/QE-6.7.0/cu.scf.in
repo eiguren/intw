@@ -15,7 +15,7 @@
     nat=1
     ntyp=1
     nbnd=10
-    ecutwfc=80.0
+    ecutwfc=60.0
     lspinorb=.false.
     noncolin=.false.
     occupations='smearing',
