@@ -10,13 +10,11 @@
   tstress = .false.
 /
 &system
-  nosym=.false.
-  noinv=.true.
   ibrav = 2
   celldm(1) = 10.2048933684
   ntyp = 1
   nat = 2
-  ecutwfc = 80.
+  ecutwfc = 60.
   occupations = 'smearing',
   degauss = 0.001
 /

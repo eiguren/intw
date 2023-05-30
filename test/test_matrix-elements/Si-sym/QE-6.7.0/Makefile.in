@@ -4,7 +4,7 @@ QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw2intw_files
+all: pw_nscf_files pw2intw_files
 
 calculation: all
 
@@ -30,23 +30,36 @@ run_pw2intw:
 	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
+run_pw_nscf:
+	rm -rf si-nscf.save
+	cp -r si.save si-nscf.save
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.nscf.in | tee si.nscf.out
+	./non-deg.bash
 
-PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat
+
+PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat si.save/wfc1.dat si.save/wfc8.dat
 PH_FILES = qq1/si.ph.out qq1/si.dyn qq1/_ph0/si.dvscf1 qq1/_ph0/si.phsave/patterns.1.xml
 Q2R_FILES = q2r.out si.fc
-PW2INTW_FILES = pw2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/si.dvscf_q1 si.save.intw/kpoints.dat si.save.intw/si.dyn_q1 si.save.intw/gvectors.dat si.save.intw/irrq_patterns.dat
+PW2INTW_FILES = pw2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/wfc00008.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/si.dvscf_q1 si.save.intw/kpoints.dat si.save.intw/si.dyn_q1 si.save.intw/gvectors.dat si.save.intw/irrq_patterns.dat
+PW_NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc1.dat si-nscf.save/wfc64.dat non_deg_file
 
 
 pw_files: $(PW_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
 pw2intw_files: $(PW2INTW_FILES)
+pw_nscf_files: $(PW_NSCF_FILES)
+
 
 si.scf.out:
 	make run_pw
 si.save/data-file-schema.xml:
 	make run_pw
 si.save/charge-density.dat:
+	make run_pw
+si.save/wfc1.dat:
+	make run_pw
+si.save/wfc8.dat:
 	make run_pw
 
 qq1/si.ph.out: $(PW_FILES)
@@ -84,6 +97,20 @@ si.save.intw/gvectors.dat: $(Q2R_FILES)
 si.save.intw/irrq_patterns.dat: $(Q2R_FILES)
 	make run_pw2intw
 
+si.nscf.out: $(PW_FILES)
+	make run_pw_nscf
+si-nscf.save/data-file-schema.xml:
+	make run_pw_nscf
+si-nscf.save/charge-density.dat:
+	make run_pw_nscf
+si-nscf.save/wfc1.dat:
+	make run_pw_nscf
+si-nscf.save/wfc64.dat:
+	make run_pw_nscf
+non_deg_file:
+	make run_pw_nscf
+
+
 
 clean:
 	rm -rf si.scf.out si.xml si.wfc* si.save
@@ -91,3 +118,4 @@ clean:
 	rm -rf q2r.out si.fc si.dyn1
 	rm -rf pw2intw.out si.save.intw
 	rm -rf intw.out ep_mat.dat_1
+	rm -rf si-nscf.save si-nscf.wfc* si-nscf.xml

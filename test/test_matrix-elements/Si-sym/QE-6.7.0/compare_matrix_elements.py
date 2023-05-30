@@ -14,22 +14,30 @@ MIN_MAT_EL = 0.01
 MAX_DIFF_PERCENTAGE = 5.00
 
 
-non_deg = []
-for ik in range(NKPTS):
-    non_deg_k = []
-    eig_file = "/home/haritz/Codes/intw/intw3.3/test/test_matrix-elements/Si-fullmesh_backup/QE-6.7.0/reference2/si.save.intw/wfc%05i.dat" % (ik+1)
-    with FortranFile(eig_file, "r") as eig_file:
-        eig_file.read_ints(np.int32)
-        eig_file.read_ints(np.int32)
-        eig = np.around(eig_file.read_reals(float), decimals=5)
-        for ib in range(NBANDS):
-            if any(abs(eig[np.arange(len(eig))!=ib]-eig[ib]) < 0.01):
-                pass
-            else:
-                non_deg_k.append(ib+1)
-    non_deg.append(non_deg_k)
+#non_deg = []
+#for ik in range(NKPTS):
+#    non_deg_k = []
+#    eig_file = "si.save.intw/wfc%05i.dat" % (ik+1)
+#    with FortranFile(eig_file, "r") as eig_file:
+#        eig_file.read_ints(np.int32)
+#        eig_file.read_ints(np.int32)
+#        eig = np.around(eig_file.read_reals(float), decimals=5)
+#        for ib in range(NBANDS):
+#            if any(abs(eig[np.arange(len(eig))!=ib]-eig[ib]) < 0.01):
+#                pass
+#            else:
+#                non_deg_k.append(ib+1)
+#    non_deg.append(non_deg_k)
 
-print(non_deg_k[0])
+non_deg = []
+with open("non_deg_file", "r") as f:
+    for line in f.readlines():
+        if line=="\n":
+            non_deg.append([None])
+        else:
+            non_deg.append(list(map(int, line.replace('\n', '').split(' '))))
+
+
 
 
 mat_r = np.fromfile("reference/ref_ep_mat.dat_1",  dtype=np.dtype('c16'))
