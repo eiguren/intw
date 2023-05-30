@@ -1,7 +1,7 @@
 &control
-    calculation='scf'
+    calculation='nscf'
     restart_mode='from_scratch'
-    prefix='gaas'
+    prefix='gaas-nscf'
     pseudo_dir = './'
     outdir='./'
     verbosity='high'

@@ -118,4 +118,4 @@ clean:
 	rm -rf q2r.out si.fc si.dyn1
 	rm -rf pw2intw.out si.save.intw
 	rm -rf intw.out ep_mat.dat_1
-	rm -rf si-nscf.save si-nscf.wfc* si-nscf.xml
+	rm -rf si.nscf.out si-nscf.save si-nscf.wfc* si-nscf.xml non_deg_file

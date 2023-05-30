@@ -120,11 +120,11 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/Si-sym/QE-6.7.0
 
 
 add_test(
-  NAME test_matrix-elements/GaAs-fullmesh
+  NAME test_matrix-elements/GaAs-sym
   COMMAND run-test.bash
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-fullmesh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-sym
 )
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-fullmesh/matrix-element-test.bash.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-fullmesh/QE-6.7.0/Makefile.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-fullmesh/QE-6.7.0/Makefile" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-sym/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-sym/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-sym/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/test_matrix-elements/GaAs-sym/QE-6.7.0/Makefile" @ONLY)

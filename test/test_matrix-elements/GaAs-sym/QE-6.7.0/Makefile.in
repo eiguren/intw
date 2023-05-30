@@ -4,7 +4,7 @@ QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw2intw_files
+all: pw_nscf_files pw2intw_files
 
 calculation: all
 
@@ -30,17 +30,24 @@ run_pw2intw:
 	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
+run_pw_nscf:
+	rm -rf gaas-nscf.save
+	cp -r gaas.save gaas-nscf.save
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
+	./non-deg.bash
 
 PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
 PH_FILES = qq1/gaas.ph.out qq1/gaas.dyn qq1/_ph0/gaas.dvscf1 qq1/_ph0/gaas.phsave/patterns.1.xml
 Q2R_FILES = q2r.out gaas.fc
 PW2INTW_FILES = pw2intw.out gaas.save.intw/crystal.dat gaas.save.intw/wfc00001.dat gaas.save.intw/iGlist.dat gaas.save.intw/1-KBPP.txt gaas.save.intw/gaas.dvscf_q1 gaas.save.intw/kpoints.dat gaas.save.intw/gaas.dyn_q1 gaas.save.intw/gvectors.dat gaas.save.intw/irrq_patterns.dat
+PW_NSCF_FILES = gaas.nscf.out gaas-nscf.save/data-file-schema.xml gaas-nscf.save/charge-density.dat gaas-nscf.save/wfc1.dat gaas-nscf.save/wfc64.dat non_deg_file
 
 
 pw_files: $(PW_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
 pw2intw_files: $(PW2INTW_FILES)
+pw_nscf_files: $(PW_NSCF_FILES)
 
 gaas.scf.out:
 	make run_pw
@@ -84,6 +91,18 @@ gaas.save.intw/gvectors.dat: $(Q2R_FILES)
 gaas.save.intw/irrq_patterns.dat: $(Q2R_FILES)
 	make run_pw2intw
 
+gaas.nscf.out: $(PW_FILES)
+	make run_pw_nscf
+gaas-nscf.save/data-file-schema.xml:
+	make run_pw_nscf
+gaas-nscf.save/charge-density.dat:
+	make run_pw_nscf
+gaas-nscf.save/wfc1.dat:
+	make run_pw_nscf
+gaas-nscf.save/wfc64.dat:
+	make run_pw_nscf
+non_deg_file:
+	make run_pw_nscf
 
 clean:
 	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save
@@ -91,3 +110,4 @@ clean:
 	rm -rf q2r.out gaas.fc gaas.dyn1
 	rm -rf pw2intw.out gaas.save.intw
 	rm -rf intw.out ep_mat.dat_1
+	rm -rf gaas.nscf.out gaas-nscf.save gaas-nscf.wfc* gaas-nscf.xml non_deg_file

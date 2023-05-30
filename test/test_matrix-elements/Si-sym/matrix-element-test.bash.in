@@ -9,9 +9,6 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Create the non degenerated states list
-./non-deg.bash
-
 
 # Run the matrix-element calculation
 cp ../intw.in ./

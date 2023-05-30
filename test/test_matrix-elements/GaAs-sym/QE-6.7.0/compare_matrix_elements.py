@@ -14,20 +14,14 @@ MIN_MAT_EL = 0.01
 MAX_DIFF_PERCENTAGE = 5.00
 
 
+
 non_deg = []
-for ik in range(NKPTS):
-    non_deg_k = []
-    eig_file = "gaas.save.intw/wfc%05i.dat" % (ik+1)
-    with FortranFile(eig_file, "r") as eig_file:
-        eig_file.read_ints(np.int32)
-        eig_file.read_ints(np.int32)
-        eig = np.around(eig_file.read_reals(float), decimals=4)
-        for ib in range(NBANDS):
-            if eig[ib] in eig[np.arange(len(eig))!=ib] or ib+1 == NBANDS:
-                pass
-            else:
-                non_deg_k.append(ib+1)
-    non_deg.append(non_deg_k)
+with open("non_deg_file", "r") as f:
+    for line in f.readlines():
+        if line=="\n":
+            non_deg.append([None])
+        else:
+            non_deg.append(list(map(int, line.replace('\n', '').split(' '))))
 
 
 
@@ -40,12 +34,12 @@ print("%5s %5s %5s %5s %20s %20s %20s %20s" %
       ("ikpt", "iband", "jband", "imode", "mat1", "mat2", "diff", "percentage"))
 for im in range(NMODE):
     for ik in range(NKPTS):
-        for ib in range(NBANDS):
-            for jb in range(NBANDS):
+        for ib in range(NBANDS-1):
+            for jb in range(NBANDS-1):
                 iel = NBANDS*NBANDS*NKPTS*im + NBANDS*NKPTS*ib + NKPTS*jb + ik
                 me_r = np.abs(mat_r[iel])
                 me_t =np.abs(mat_t[iel])
-                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik]):
+                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik] and ib+1):
                     if (me_r > MIN_MAT_EL):
                         print("%5i %5i %5i %5i %20.15f %20.15f %20.15f %20.5f" % (
                         ik+1, ib+1, jb+1, im+1, me_r,
