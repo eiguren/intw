@@ -39,7 +39,7 @@ for im in range(NMODE):
                 iel = NBANDS*NBANDS*NKPTS*im + NBANDS*NKPTS*ib + NKPTS*jb + ik
                 me_r = np.abs(mat_r[iel])
                 me_t =np.abs(mat_t[iel])
-                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik] and ib+1):
+                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik]):
                     if (me_r > MIN_MAT_EL):
                         print("%5i %5i %5i %5i %20.15f %20.15f %20.15f %20.5f" % (
                         ik+1, ib+1, jb+1, im+1, me_r,

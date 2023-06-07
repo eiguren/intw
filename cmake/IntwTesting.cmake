@@ -16,7 +16,7 @@ function (mangle_fortran_filename_list MANGLED)
     set (TMP)
     foreach (TFILE ${ARGN})
         string (REGEX REPLACE ".f90$" "" TESTNAME ${TFILE})
-        mangle_fortran_name (C_TESTNAME ${TESTNAME})
+        mangle_fortran_name (C_TESTNAME ${TESTNAME}_test)
         list (APPEND TMP ${C_TESTNAME})
     endforeach ()
     set (${MANGLED} ${TMP} PARENT_SCOPE)
@@ -43,9 +43,9 @@ function (add_fortran_test_executable TARGET)
         list (GET TEST_FILES ${INDEX} TEST_FILE)
         list (GET TEST_FILES_MANGLED ${INDEX} TEST_FILE_MANGLED)
         add_test (
-            NAME ${TEST_FILE}
+            NAME ${TARGET}/${TEST_FILE}
             COMMAND $<TARGET_FILE:${TARGET}.x> ${TEST_FILE_MANGLED}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET} )
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
         math (EXPR INDEX "${INDEX} + 1")
     endwhile ()
 endfunction ()

@@ -1,4 +1,4 @@
-integer function test_dummy_simple_test() result(r)
+integer function simple_test_test() result(r)
 
   use kinds, only: dp
   use intw_test_module, only: assert

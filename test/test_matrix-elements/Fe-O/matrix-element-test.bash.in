@@ -22,7 +22,7 @@ fi
 
 # Run the matrix-element calculation
 cp ../intw.in ./
-../../../../build/src/utilities/ep_melements_noW.x < intw.in | tee intw.out
+@CMAKE_BINARY_DIR@/src/utilities/ep_melements_noW.x < intw.in | tee intw.out
 
 
 

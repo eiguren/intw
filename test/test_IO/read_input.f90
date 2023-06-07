@@ -1,4 +1,4 @@
-integer function test_IO_read_input() result(r)
+integer function read_input_test() result(r)
 
   use kinds, only: dp
   use intw_test_module, only: assert

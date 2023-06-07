@@ -11,7 +11,7 @@ fi
 
 # Run the mmn calculation
 cp ../intw.in ./
-../../../../build/src/utilities/intw2W90.x < intw.in | tee intw.out
+@CMAKE_BINARY_DIR@/src/utilities/intw2W90.x < intw.in | tee intw.out
 
 cp si.mmn intw_si.mmn
 

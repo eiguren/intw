@@ -1,6 +1,7 @@
 
-QE_HOME=@QE_HOME@
+QE_HOME=@QE_BUILD_DIR@
 QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -12,22 +13,22 @@ calculation: all
 .PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
 
 run_pw:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.scf.in | tee si.scf.out
+	$(MPI_CMD) $(QE_HOME)/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph:
 	cp -r si.save qq1/
-	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/build/bin/ph.x < si.ph.in | tee si.ph.out ; rm -rf si.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/bin/ph.x < si.ph.in | tee si.ph.out ; rm -rf si.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH
 	cp qq1/si.dyn ./si.dyn1
-	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
+	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
 run_pw2intw:
-	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
+	$(BUILD_DIR)/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 

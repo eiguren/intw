@@ -23,7 +23,6 @@ for ik in range(NKPTS):
         eig_file.read_ints(np.int32)
         eig = np.around(eig_file.read_reals(float), decimals=4)
         for ib in range(NBANDS):
-            #if any(abs(eig[np.arange(len(eig))!=ib]-eig[ib]) < 0.01):
             if eig[ib] in eig[np.arange(len(eig))!=ib] or ib+1 == NBANDS:
                 pass
             else:

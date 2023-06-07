@@ -34,12 +34,12 @@ print("%5s %5s %5s %5s %20s %20s %20s %20s" %
       ("ikpt", "iband", "jband", "imode", "mat1", "mat2", "diff", "percentage"))
 for im in range(NMODE):
     for ik in range(NKPTS):
-        for ib in range(NBANDS-1):
-            for jb in range(NBANDS-1):
+        for ib in range(NBANDS):
+            for jb in range(NBANDS):
                 iel = NBANDS*NBANDS*NKPTS*im + NBANDS*NKPTS*ib + NKPTS*jb + ik
                 me_r = np.abs(mat_r[iel])
                 me_t =np.abs(mat_t[iel])
-                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik] and ib+1):
+                if (ib+1 in non_deg[ik] and jb+1 in non_deg[ik]):
                     if (me_r > MIN_MAT_EL):
                         print("%5i %5i %5i %5i %20.15f %20.15f %20.15f %20.5f" % (
                         ik+1, ib+1, jb+1, im+1, me_r,
