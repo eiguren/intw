@@ -1,0 +1,138 @@
+
+QE_HOME=@QE_HOME@
+QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+
+#MPI_CMD=@MPI_CMD@
+
+
+all: pw_nscf_files pw2intw_files
+
+calculation: all
+
+
+.PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
+
+run_pw:
+	$(QE_HOME)/build/bin/pw.x < cu.scf.in | tee cu.scf.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_ph1:
+	cp -r cu.save qq1/
+	( cd qq1 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+run_ph2:
+	cp -r cu.save qq2/
+	( cd qq2 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+run_ph3:
+	cp -r cu.save qq3/
+	( cd qq3 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+
+
+run_q2r:
+	rm -rf CRASH
+	cp qq1/cu.dyn ./cu.dyn1
+	cp qq2/cu.dyn ./cu.dyn2
+	cp qq3/cu.dyn ./cu.dyn3
+	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+
+run_pw2intw:
+	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_pw_nscf:
+	rm -rf cu-nscf.save
+	cp -r cu.save cu-nscf.save
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < cu.nscf.in | tee cu.nscf.out
+	./non-deg.bash
+
+
+
+PW_FILES = cu.scf.out cu.save/data-file-schema.xml cu.save/charge-density.dat
+PH_FILES_Q1 = qq1/cu.ph.out qq1/cu.dyn qq1/_ph0/cu.dvscf1 qq1/_ph0/cu.phsave/patterns.1.xml
+PH_FILES_Q2 = qq2/cu.ph.out qq2/cu.dyn qq2/_ph0/cu.dvscf1 qq2/_ph0/cu.phsave/patterns.1.xml
+PH_FILES_Q3 = qq3/cu.ph.out qq3/cu.dyn qq3/_ph0/cu.dvscf1 qq3/_ph0/cu.phsave/patterns.1.xml
+PH_FILES = $(PH_FILES_Q1) $(PH_FILES_Q2) $(PH_FILES_Q3)
+Q2R_FILES = q2r.out cu.fc
+PW2INTW_FILES = pw2intw.out cu.save.intw/crystal.dat cu.save.intw/cu.dvscf_q3 cu.save.intw/cu.dyn_q3 cu.save.intw/wfc00008.dat
+PW_NSCF_FILES = cu.nscf.out cu-nscf.save/data-file-schema.xml cu-nscf.save/charge-density.dat cu-nscf.save/wfc64.dat non_deg_file
+
+
+pw_files: $(PW_FILES)
+ph_files: $(PH_FILES)
+q2r_files: $(Q2R_FILES)
+pw2intw_files: $(PW2INTW_FILES)
+pw_nscf_files: $(PW_NSCF_FILES)
+
+cu.nscf.out: $(PW_FILES)
+	make run_pw_nscf
+cu-nscf.save/data-file-schema.xml: $(PW_FILES)
+	make run_pw_nscf
+cu-nscf.save/charge-density.dat: $(PW_FILES)
+	make run_pw_nscf
+cu-nscf.save/wfc64.dat: $(PW_FILES)
+	make run_pw_nscf
+non_deg_file: $(PW_FILES)
+	make run_pw_nscf
+
+cu.scf.out:
+	make run_pw
+cu.save/data-file-schema.xml:
+	make run_pw
+cu.save/charge-density.dat:
+	make run_pw
+
+qq1/cu.ph.out: $(PW_FILES)
+	make run_ph1
+qq2/cu.ph.out: $(PW_FILES)
+	make run_ph2
+qq3/cu.ph.out: $(PW_FILES)
+	make run_ph3
+
+qq1/cu.dyn: $(PW_FILES)
+	make run_ph1
+qq2/cu.dyn: $(PW_FILES)
+	make run_ph2
+qq3/cu.dyn: $(PW_FILES)
+	make run_ph3
+
+qq1/_ph0/cu.dvscf1: $(PW_FILES)
+	make run_ph1
+qq2/_ph0/cu.dvscf1: $(PW_FILES)
+	make run_ph2
+qq3/_ph0/cu.dvscf1: $(PW_FILES)
+	make run_ph3
+
+qq1/_ph0/cu.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph1
+qq2/_ph0/cu.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph2
+qq3/_ph0/cu.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph3
+
+q2r.out: $(PH_FILES)
+	make run_q2r
+cu.fc: $(PH_FILES)
+	make run_q2r
+
+pw2intw.out: $(Q2R_FILES)
+	make run_pw2intw
+cu.save.intw/crystal.dat: $(Q2R_FILES)
+	make run_pw2intw
+cu.save.intw/cu.dvscf_q3: $(Q2R_FILES)
+	make run_pw2intw
+cu.save.intw/cu.dyn_q3: $(Q2R_FILES)
+	make run_pw2intw
+cu.save.intw/wfc00008.dat: $(Q2R_FILES)
+	make run_pw2intw
+
+
+clean:
+	rm -rf cu.scf.out cu.xml cu.wfc* cu.save
+	rm -rf qq1/cu.dyn qq1/cu.ph.out qq1/cu.wfc* qq1/_ph0 qq1/cu.save
+	rm -rf qq2/cu.dyn qq2/cu.ph.out qq2/cu.wfc* qq2/_ph0 qq1/cu.save
+	rm -rf qq3/cu.dyn qq3/cu.ph.out qq3/cu.wfc* qq3/_ph0 qq1/cu.save
+	rm -rf q2r.out cu.fc cu.dyn1 cu.dyn2 cu.dyn3
+	rm -rf pw2intw.out cu.save.intw
+	rm -rf intw.out ep_mat.dat_1
+	rm -rf cu-nsvf.save non_deg_file

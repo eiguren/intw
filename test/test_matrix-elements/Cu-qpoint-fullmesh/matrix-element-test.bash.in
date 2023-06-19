@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+QE_HOME=@QE_HOME@
+QE_VERSION=$(basename $PWD | sed 's/QE-//')
+
+# Run all necessary QE calculations
+make calculation
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+
+# Run the matrix-element calculation
+rm -rf ep_mat.dat*
+cp ../intw.in ./
+@CMAKE_BINARY_DIR@/src/utilities/ep_melements_noW.x < intw.in | tee intw.out
+
+
+
+# Compare calculation
+python3 compare_matrix_elements.py
+if [ $? -ne 0 ]; then
+  exit 1
+fi

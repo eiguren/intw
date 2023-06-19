@@ -1,0 +1,5 @@
+&input
+ fildyn='cu.dyn',
+ zasr='simple',
+ flfrc='cu.fc'
+ /

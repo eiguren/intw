@@ -1,0 +1,32 @@
+&control
+    calculation='scf'
+    restart_mode='from_scratch'
+    prefix='cu'
+    pseudo_dir = './'
+    outdir='./'
+    verbosity='high'
+    wf_collect=.true.
+ /
+&system
+    nosym=.true.
+    noinv=.true.
+    ibrav=2
+    celldm(1)=7.2
+    nat=1
+    ntyp=1
+    nbnd=10
+    ecutwfc=60.0
+    lspinorb=.false.
+    noncolin=.false.
+    occupations='smearing',
+    degauss=0.001
+    /
+&electrons
+    conv_thr=1.0d-12
+ /
+ATOMIC_SPECIES
+Cu 63.546 Cu.pbe-tm.UPF
+ATOMIC_POSITIONS {crystal}
+Cu  0.000  0.000  0.000
+K_POINTS {automatic}
+ 4 4 4  0 0 0

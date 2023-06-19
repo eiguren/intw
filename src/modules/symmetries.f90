@@ -795,8 +795,9 @@ contains
   !-------------------------------------------------------------------------------------
   !*************************************************************************************
   !-------------------------------------------------------------------------------------
-  subroutine set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, &
-                                    k_points_consistent,QE_folder_sym,sym_G,symlink, full_mesh_, IBZ_)
+  subroutine set_symmetry_relations(nk1_,nk2_,nk3_,nkpoints_QE_,kpoints_QE_,kmesh_, k_points_consistent_, &
+                                    QE_folder_nosym_, QE_folder_sym_, nosym_G_, sym_G_, &
+                                    symlink_, full_mesh_, IBZ_)
     !-------------------------------------------------------------------------------------
     !
     !--------------------------------------------------------------------------!
@@ -816,13 +817,13 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: nk1, nk2, nk3, nkpoints_QE  ! Number of k points found in the QE folders
-    real(kind=dp), intent(in) :: kpoints_QE(3,nkpoints_QE)  ! The kpoints read from the QE folders
-    real(kind=dp), intent(in) :: kmesh(3,nk1*nk2*nk3)  ! The kmesh points, in canonical order
-    logical, intent(out) :: k_points_consistent  ! test if the kpoints are consistent with parameters of input
-    integer, intent(out) :: QE_folder_sym(nk1*nk2*nk3)
-    integer, intent(out) :: sym_G(3,nk1*nk2*nk3)
-    integer, intent(out) :: symlink(nk1*nk2*nk3,2)
+    integer, intent(in) :: nk1_, nk2_, nk3_, nkpoints_QE_  ! Number of k points found in the QE folders
+    real(kind=dp), intent(in) :: kpoints_QE_(3,nkpoints_QE_)  ! The kpoints read from the QE folders
+    real(kind=dp), intent(in) :: kmesh_(3,nk1_*nk2_*nk3_)  ! The kmesh points, in canonical order
+    logical, intent(out) :: k_points_consistent_  ! test if the kpoints are consistent with parameters of input
+    integer, intent(out) :: QE_folder_nosym_(nk1_*nk2_*nk3_), QE_folder_sym_(nk1_*nk2_*nk3_)
+    integer, intent(out) :: nosym_G_(3,nk1_*nk2_*nk3_), sym_G_(3,nk1_*nk2_*nk3_)
+    integer, intent(out) :: symlink_(nk1_*nk2_*nk3_,2)
     logical, intent(out) :: full_mesh_, IBZ_
 
     !output
@@ -838,7 +839,7 @@ contains
     !local variables
 
     real(kind=dp) :: kpt(3), rotated_kpt(3), kpt_in_1BZ(3), kpt_on_mesh(3), d_kpt(3)
-    logical :: kpoint_is_found_sym(nk1*nk2*nk3), kpoint_is_found_nosym(nk1*nk2*nk3)
+    logical :: kpoint_is_found_sym(nk1_*nk2_*nk3_), kpoint_is_found_nosym(nk1_*nk2_*nk3_)
     logical :: possible_full_mesh
     integer :: nkmesh, G(3)
     integer :: ikpt, switch, i, j, k, i_folder, isym
@@ -847,16 +848,19 @@ contains
     ! in the code, it will thus look for inexistent folders. It
     ! is better to crash than to produce wrong results!
     !
-    QE_folder_sym(:)   = -4
-    QE_folder_nosym(:) = -4
+    QE_folder_sym_(:)   = -4
+    QE_folder_nosym_(:) = -4
     !
-    k_points_consistent = .true.
+    k_points_consistent_ = .true.
+    !
+    nosym_G_ = -4
+    sym_G_ = -4
     !
     kpoint_is_found_sym(:)   = .false.
     kpoint_is_found_nosym(:) = .false.
-    nkmesh = nk1*nk2*nk3
+    nkmesh = nk1_*nk2_*nk3_
     !
-    if (nkpoints_QE==nkmesh) then
+    if (nkpoints_QE_==nkmesh) then
       !
       possible_full_mesh = .true.
       !
@@ -868,24 +872,24 @@ contains
     !
     switch = 1 ! triplet to singlet
     !
-    do i_folder=1,nkpoints_QE
+    do i_folder=1,nkpoints_QE_
       !
       ! coordinates of this k-point, which need not lie in the 1BZ
       !
-      kpt = kpoints_QE(:,i_folder)
+      kpt = kpoints_QE_(:,i_folder)
       !
       ! extract the triplet coordinates, the kpt in the 1BZ and
       ! the G vector
       !
-      call find_k_1BZ_and_G(kpt,nk1,nk2,nk3,i,j,k,kpt_in_1BZ,G)
+      call find_k_1BZ_and_G(kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
       !
       ! test that this triplet index indeed produces the k-point.
       ! This tests that the kpoint is indeed on a mesh consistent
       ! with the input file.
       !
-      kpt_on_mesh(1) = dble(i-1)/dble(nk1)
-      kpt_on_mesh(2) = dble(j-1)/dble(nk2)
-      kpt_on_mesh(3) = dble(k-1)/dble(nk3)
+      kpt_on_mesh(1) = dble(i-1)/dble(nk1_)
+      kpt_on_mesh(2) = dble(j-1)/dble(nk2_)
+      kpt_on_mesh(3) = dble(k-1)/dble(nk3_)
       !
       ! make sure this is identical to the original k-point
       !
@@ -893,7 +897,7 @@ contains
       !
       if (sqrt(dot_product(d_kpt,d_kpt)) > eps_8) then
         !
-        k_points_consistent = .false.
+        k_points_consistent_ = .false.
         !
         write(*,*) ' consistency FAILURE '
         write(*,'(A,3F8.4)') ' kpt        = ',kpt
@@ -916,11 +920,11 @@ contains
         !
         ! if (sqrt(G(1)**2.0+G(2)**2+G(3)**2) < eps_8) then
         !   !
-          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,switch)
+          call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           kpoint_is_found_nosym(ikpt) = .true.
-          QE_folder_nosym(ikpt)       = i_folder
-          nosym_G(:,ikpt)             = G
+          QE_folder_nosym_(ikpt)       = i_folder
+          nosym_G_(:,ikpt)             = G
         ! endif
         !
       endif !possible_full_mesh
@@ -948,26 +952,26 @@ contains
         ! extract the triplet coordinates, the kpt in the 1BZ and
         ! the G vector
         !
-        call find_k_1BZ_and_G(rotated_kpt,nk1,nk2,nk3,i,j,k,kpt_in_1BZ,G)
+        call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
         !
         ! Tabulate this point as found, but only if allowed to do so!
         !
         ! find its singlet coordinate
         !
-        call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,+1)
+        call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,+1)
         !
         ! if this point hasn't been found before, well, it's found now!
         !
         if (.not.kpoint_is_found_sym(ikpt)) then
           !
           kpoint_is_found_sym(ikpt) = .true.
-          QE_folder_sym(ikpt)       = i_folder
-          sym_G(:,ikpt)             = G
+          QE_folder_sym_(ikpt)       = i_folder
+          sym_G_(:,ikpt)             = G
           !ASIER 09/03/20222
           !we are taking the inverse of the inverse twice all over the code.
           !symlink(ikpt,1)           = inverse_index(isym)
-          symlink(ikpt,1)           = isym
-          symlink(ikpt,2)           = 0
+          symlink_(ikpt,1)           = isym
+          symlink_(ikpt,2)           = 0
           !
         endif
         !
@@ -983,21 +987,21 @@ contains
           !
           rotated_kpt = -rotated_kpt
           !
-          call find_k_1BZ_and_G(rotated_kpt,nk1,nk2,nk3,i,j,k,kpt_in_1BZ,G)
+          call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
           !
           ! find its singlet coordinate
           !
-          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,switch)
+          call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           if (.not.kpoint_is_found_sym(ikpt)) then
             !
             kpoint_is_found_sym(ikpt) = .true.
-            QE_folder_sym(ikpt)       = i_folder
-            sym_G(:,ikpt)             = -G
+            QE_folder_sym_(ikpt)       = i_folder
+            sym_G_(:,ikpt)             = -G
             !ASIER, same as above
-            symlink(ikpt,1)           = isym
+            symlink_(ikpt,1)           = isym
             !symlink(ikpt,1)           = inverse_indices(isym)
-            symlink(ikpt,2)           = 1
+            symlink_(ikpt,2)           = 1
             !
             ! CAREFUL! It is now -G which enters the sym_G array
             ! See the rotation code for details, as well as the

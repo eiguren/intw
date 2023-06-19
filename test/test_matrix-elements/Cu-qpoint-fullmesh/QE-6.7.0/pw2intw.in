@@ -1,0 +1,9 @@
+proba
+&inputpp
+ prefix = "cu",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 8,
+ dynxml = .false.,
+/
+

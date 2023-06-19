@@ -263,7 +263,7 @@ call allocate_and_build_spin_symmetry_matrices(nsym)
 !================================================================================
 
 call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
-             QE_folder_sym, sym_G, symlink, full_mesh, IBZ )
+                            QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, full_mesh, IBZ )
 
 
 

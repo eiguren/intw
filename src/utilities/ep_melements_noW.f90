@@ -15,7 +15,7 @@ program ep_melements
                           generate_kmesh, conmesurate_and_coarser, ainv, &
                           find_k_1BZ_and_G
   use intw_useful_constants, only: cmplx_0, cmplx_1
-  use intw_symmetries, only: full_mesh, IBZ, QE_folder_sym, sym_G, symlink, &
+  use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, &
                              symtable, rtau_index, rtau, tau_cryst, rtau_cryst, &
                              rot_atoms, &
                              find_size_of_irreducible_k_set, &
@@ -25,8 +25,8 @@ program ep_melements
                              allocate_and_build_spin_symmetry_matrices, &
                              set_symmetry_relations, multable
   use intw_fft, only: generate_nl, allocate_fft, nl
-  use intw_ph, only: nqmesh, qmesh, dvq_local, dvpsi, QE_folder_sym_q, sym_G_q, &
-                     symlink_q, q_irr, q_irr_cryst, frc, &
+  use intw_ph, only: nqmesh, qmesh, dvq_local, dvpsi, QE_folder_nosym_q, QE_folder_sym_q, &
+                     nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, frc, &
                      read_ph_information_xml, readfc, read_allq_dvr, get_dv, &
                      mat_inv_four_t, calculate_local_part_dv
   ! use intw_w90
@@ -50,7 +50,10 @@ program ep_melements
   real(dp)                 :: kpoint_in_1bz(3)
 
   !q point related variables
+  logical                  :: q_points_consistent
   real(dp)                 :: qpoint(3)
+  integer                  :: iq, nq1_, nq2_, nq3_
+  logical                  :: full_mesh_q, IBZ_q
 
   !phonon related variables
   character(len=256)       :: fc_file_name
@@ -67,29 +70,23 @@ program ep_melements
   !time related variables
   real(dp)                 :: time1, time2
 
-  !q point related variables
-  integer                  :: iq, nq1_, nq2_, nq3_
-  logical                  :: full_mesh_q, IBZ_q
-
   !ep interaction related variables
   integer                  :: ep_unit
-  logical                  :: q_points_consistent
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:,:,:), ep_mat_el(:,:,:,:,:,:)
   complex(dp), allocatable :: fr(:,:,:), fg(:,:,:)
 
   !wave function realted variables information
-  integer, allocatable     :: list_igk (:)
+  real(dp), allocatable    :: QE_eig_k(:)
+  real(dp), allocatable    :: QE_eig_kq(:)
+  integer, allocatable     :: list_igk(:)
   integer, allocatable     :: list_igkq(:)
   integer, allocatable     :: list_igk_aux (:)
   integer, allocatable     :: list_igk_orig (:)
-
   complex(dp), allocatable :: wfc_k (:,:,:) ! nG_max is defined in reading
   complex(dp), allocatable :: wfc_kq (:,:,:)
   complex(dp), allocatable :: wfc_k_aux (:,:,:)
   complex(dp), allocatable :: wfc_k_orig (:,:,:)
 
-  real(dp), allocatable    :: QE_eig_k(:)
-  real(dp), allocatable    :: QE_eig_kq(:)
 
   !fft related
   integer                  :: nr(3)
@@ -281,8 +278,9 @@ program ep_melements
   endif
 !Peio
   !
-  call set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, &
-                         k_points_consistent,QE_folder_sym,sym_G,symlink, full_mesh, IBZ)
+  call set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, k_points_consistent, &
+                              QE_folder_nosym, QE_folder_sym, &
+                              nosym_G, sym_G, symlink, full_mesh, IBZ)
   !
   !================================================================================
   !       Tell the user what is in the QE folders
@@ -495,7 +493,9 @@ program ep_melements
   ! Symmetry realtions between irreducible q directory file number and the full mesh.
   !================================================================================
   !
+  allocate(QE_folder_nosym_q(nqmesh))
   allocate(QE_folder_sym_q(nqmesh))
+  allocate(nosym_G_q(3,nqmesh))
   allocate(sym_G_q(3,nqmesh))
   allocate(symlink_q(nqmesh,2))
   allocate(q_irr_cryst(3,nqirr))
@@ -516,8 +516,9 @@ program ep_melements
   ! the induced potential for any q point.
   !================================================================================
   !
-  call set_symmetry_relations(nq1,nq2,nq3,nqirr,q_irr_cryst,qmesh, &
-              q_points_consistent,QE_folder_sym_q,sym_G_q,symlink_q, full_mesh_q, IBZ_q)
+  call set_symmetry_relations(nq1,nq2,nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
+                              QE_folder_nosym_q, QE_folder_sym_q, &
+                              nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
   !
   !================================================================================
   ! testing ...dv and mat_ep
@@ -557,7 +558,7 @@ program ep_melements
   !
   if (calc_epmat) then
      !
-     do iq=1,nqirr
+     do iq=1,nqmesh
         !
         if (                iq <   10) write(iq_loc,"(i1)")iq
         if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
@@ -603,8 +604,8 @@ program ep_melements
            !
            !-uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta. (k+q)
            !
-           call get_psi_general_k_all_wfc(.false.,kpoint       ,list_iGk ,wfc_k ,QE_eig_k ,G_plusk)
-           call get_psi_general_k_all_wfc(.false.,kpoint+qpoint,list_iGkq,wfc_kq,QE_eig_kq,G_pluskq)
+           call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k , QE_eig_k )
+           call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq, QE_eig_kq)
            !
            !-k eta k+q puntuen indizeak topatu. ikpt_1 ik-aldagaiaren berdina izan
            ! behar da, baina hurrengo eran segurtasuna irabazten dugu.
@@ -678,10 +679,12 @@ program ep_melements
         close(unit=ep_unit)
 #ifdef DEBUG
         ! write the matrix elements to a formatted file to compare with QE matrix elements
+        write(123400+iq,"(3f10.6)") qpoint
         write(123400+iq,"(i4)") nkmesh
         do ik=1,nkmesh
           kpoint = kmesh(:,ik)
           write(123400+iq,"(i4,3f10.6)") ik, kpoint
+          write(123400+iq,"(i4,3f10.6)") 2*(ik-1)+2, kpoint+qpoint
         enddo
         write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, aep_mat_el(iq,ik,ibnd,jbnd,1,1,imode), ibnd=1,num_bands), jbnd=1,num_bands), ik=1,nkmesh), imode=1,3*nat)
 #endif

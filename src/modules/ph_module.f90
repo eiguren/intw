@@ -30,8 +30,8 @@ module intw_ph
   save
   ! variables
   public :: nmodes, q_irr, u_irr, fcmat, dvscf_cart, dvscf_irr, amass_ph, frc, nqmesh, &
-            q_irr_cryst, qmesh, QE_folder_sym_q, sym_G_q, symlink_q, eigqts, dvloc, &
-            dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
+            q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
+            symlink_q, eigqts, dvloc, dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -56,7 +56,9 @@ module intw_ph
   real(dp),allocatable::  q_irr_cryst(:,:)
   real(dp),allocatable::  qmesh(:,:)
 
+  integer, allocatable ::  QE_folder_nosym_q(:)
   integer, allocatable ::  QE_folder_sym_q(:)
+  integer, allocatable ::  nosym_G_q      (:,:)
   integer, allocatable ::  sym_G_q      (:,:)
   integer, allocatable ::  symlink_q      (:,:)
 

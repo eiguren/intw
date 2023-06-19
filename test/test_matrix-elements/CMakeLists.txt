@@ -53,3 +53,25 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-sym/matrix-element-test.bash.in
   "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-sym/QE-6.7.0/matrix-element-test.bash" @ONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-sym/QE-6.7.0/Makefile.in"
   "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-sym/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_matrix-elements/Cu-qpoint-fullmesh
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-fullmesh
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-fullmesh/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-fullmesh/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-fullmesh/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_matrix-elements/Cu-qpoint-sym
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-sym
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-sym/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-sym/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-sym/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cu-qpoint-sym/QE-6.7.0/Makefile" @ONLY)

@@ -88,12 +88,12 @@ contains
 
   end subroutine allocate_and_get_all_irreducible_wfc
 
-  subroutine get_psi_general_k_all_wfc(add_G,kpoint,list_iG,wfc_k,QE_eig,G_plus) !, ngk, igk, gk )
+  subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
 
     use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: sym_G, full_mesh, inverse_indices, symlink, &
-                               QE_folder_sym, apply_TR_to_wfc, rotate_wfc_test, &
+                               QE_folder_sym, QE_folder_nosym, apply_TR_to_wfc, rotate_wfc_test, &
                                identity_matrix_index, nosym_G
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_fft, only: wfc_by_expigr
@@ -103,18 +103,16 @@ contains
     implicit none
 
     !I/O variables
-    logical, intent(in) :: add_G
     real(dp), intent(in) :: kpoint(3)
     integer, intent(out) :: list_iG(nG_max)
     real(dp), intent(out) :: QE_eig(num_bands)
     complex(dp), intent(out) :: wfc_k(nG_max,num_bands,nspin)
-    integer, intent(out) :: G_plus(3)
     !local variables
 
     integer :: ikpt, i_folder
     integer :: i_sym, TR
     integer :: i_1bz, j_1bz, k_1bz
-    integer :: sym(3,3), G_sym(3)
+    integer :: sym(3,3), G_sym(3), G_plus(3)
     real(dp) :: ftau_sym(3)
     real(dp) :: kpoint_1BZ(3), k_QE(3), ktest(3), ft(3)
     integer :: list_iG_irr(nG_max)
@@ -128,16 +126,16 @@ contains
       !
       ! Use the full BZ, no symmetry!
       !
-      wfc_k_irr(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
+      i_folder = QE_folder_nosym(ikpt)
+      k_QE = kpoints_QE(:,i_folder)
+      !
+      wfc_k(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
       list_iG_irr(:) = list_iG_all(ikpt,:)
       QE_eig(:) = QE_eig_irr_all(ikpt,:)
-
-      G_sym    = nosym_G(:,ikpt) !- G_plus(:) !Asier&&Idoia 24 06 2014
-      ftau_sym = ZERO
-      sym      = s(:,:,identity_matrix_index)
-
-      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
-                           identity_matrix_index, sym, ftau_sym, G_sym)
+      !
+      G_sym = kpoint - k_QE
+      !
+      call wfc_by_expigr(kpoint,num_bands,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
       !
     else
       !
@@ -146,43 +144,37 @@ contains
       ! This is the irreducible point
       ! connected to aimed kpoint
       i_folder = QE_folder_sym(ikpt)
-
+      k_QE = kpoints_QE(:,i_folder)
+      !
       ! The symmetry which takes kpoints_QE(:,i_folder) into aimed kpoint.
       ! sym * kpoints_QE =  kpoint
-      !
       i_sym    = symlink(ikpt,1)
       TR       = symlink(ikpt,2)
       ftau_sym = ftau(:,(i_sym))
       sym      = s(:,:,(i_sym))
-
+      !
       ! Load the corresponding irreducible wfcs in kpoints_QE
       wfc_k_irr(:,:,:) = wfc_k_irr_all(i_folder,:,:,:)
       list_iG_irr(:)   = list_iG_all(i_folder,:)
       QE_eig(:)        = QE_eig_irr_all(i_folder,:)
       !
-      !call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym, &
-      !                                                sym,ftau_sym,G_sym)
-      k_QE = kpoints_QE(:,i_folder)
-      ! ktest is only to check where is going the irreducible point kpoints_QE(:,i_folder)
-      ! under symmetry transformations. We check it correct below.
       ktest = matmul(sym ,k_QE)
-
-
+      !
       if (TR==1) then
-       ! If TR needed
-       ! G_sym  = aimed_kpoint -TR[S*QE_kpoint] = aimed_kpoint + S*QE_kpoint, such that
-       ! aimed_kpoint = -S*QE_kpoint + G_ sym
-       G_sym = nint(kpoint + ktest)
-       else
-       ! G_sym  = aimed_kpoint -   S*QE_kpoint, such that
-       ! aimed_kpoint =  S*QE_kpoint + G_ sym
-       G_sym = nint(kpoint - ktest)
+        ! If TR needed
+        ! G_sym  = aimed_kpoint -TR[S*QE_kpoint] = aimed_kpoint + S*QE_kpoint, such that
+        ! aimed_kpoint = -S*QE_kpoint + G_ sym
+        G_sym = nint(kpoint + ktest)
+      else
+        ! G_sym  = aimed_kpoint -   S*QE_kpoint, such that
+        ! aimed_kpoint =  S*QE_kpoint + G_ sym
+        G_sym = nint(kpoint - ktest)
       end if
       !
       ! ASIER: There was an important error here with introducing a G_sym shift
       ! before TR!!
       ft = (/nr1*ftau_sym(1), nr2*ftau_sym(2), nr3*ftau_sym(3)/)
-
+      !
       call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym, &
                                                       sym,ft,(/0,0,0/))
       !
@@ -204,17 +196,8 @@ contains
           write(*,"(a,100f12.6)") "Aimed kpoint is     :", kpoint
           write(*,"(a,100f12.6)") "Symmetry induced is :", ktest + G_sym
       end if
-
+      !
       call wfc_by_expigr(kpoint,num_bands,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
-
-      if (add_G) then
-        !
-        !Here we add G_plus to the wfc if required but this is not
-        !related to the symmetry transformation, it is just if we want to
-        !multiply the wfc by an additional plane wave in outout. It is usefull
-        !in wannier mmn calculation for example.
-        call wfc_by_expigr(kpoint,num_bands,nspin,ng_max,list_iG_irr,list_iG,wfc_k,-G_plus)
-      endif
       !
     endif
     !

@@ -1,0 +1,11 @@
+phonons for Cu
+ &inputph
+  tr2_ph = 1.0d-12
+  prefix = 'cu'
+  fildvscf = 'dvscf'
+  outdir = './'
+  fildyn = 'cu.dyn'
+  trans = .true.
+  verbosity = 'high'
+ /
+   0.5   0.5  -0.5

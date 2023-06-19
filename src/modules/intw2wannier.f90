@@ -498,7 +498,7 @@ contains
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use w90_parameters, only: num_bands
   use intw_symmetries, only:  QE_folder_sym
-  
+
 
   implicit none
 
@@ -558,7 +558,7 @@ contains
   !loop on all points
   do ikpt_1 = 1, nkmesh
     ! fetch the data
-    call get_psi_general_k_all_wfc( .true., nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig, G_plus)
+    call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig)
 
     ngk1= ngk_all(QE_folder_sym(ikpt_1))
 
@@ -575,20 +575,20 @@ contains
       write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
-      call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig, G_plus)
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig)
 
       ngk2= ngk_all(QE_folder_sym(ikpt_2))
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
-                        (G,list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+                        ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
           !call get_plane_wave_matrix_element_convolution      &
           !(G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 
 
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
-                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
+                        ((/0, 0, 0/),list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
       else
           write(*,*) 'ERROR in generate_mmn'
           stop
@@ -684,7 +684,7 @@ contains
     ! fetch the data
     !call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
 !     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , nspin,list_iG, wfc, QE_eig, G_plus)
-    call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig, G_plus)
+    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig)
 
     !loop on all bands and all trial functions
     do n_proj = 1,nnkp_n_proj

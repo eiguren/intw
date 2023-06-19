@@ -58,7 +58,7 @@ subroutine H_kb2Rew(nrr_k,irr_k,kmesh,ham_rw)
      write(*,*)'ik = ',ik,'/',nkmesh
      !
      kpoint(:)=kmesh(:,ik)
-     call get_psi_general_k_all_wfc(.true.,kpoint,list_iGk,wfc_k,QE_eig_k,G_plusk)
+     call get_psi_general_k_all_wfc(kpoint,list_iGk,wfc_k,QE_eig_k)
      !
      do jbnd=1,num_wann
         do ibnd=1,jbnd
