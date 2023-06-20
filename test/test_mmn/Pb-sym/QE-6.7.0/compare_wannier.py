@@ -29,7 +29,7 @@ for line in data:
 
 
 # Read previously generated file as reference
-out_file = "reference/pb.wout"
+out_file = "reference/ref_pb.wout"
 #
 with open(out_file, "rt") as f:
     data = f.readlines()
