@@ -1,0 +1,5 @@
+&input
+ fildyn='gaas.dyn',
+ zasr='simple',
+ flfrc='gaas.fc'
+ /

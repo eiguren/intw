@@ -1,0 +1,9 @@
+proba
+&inputpp
+ prefix = "si",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 3,
+ dynxml = .false.,
+/
+

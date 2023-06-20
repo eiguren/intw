@@ -689,7 +689,7 @@ contains
     !
     ! We rotate irr q using the symm.op. (s_index + imq)
     !
-    qpoint_rot=matmul(s(:,:,inverse_indices(s_index)),q_irr_cryst(:,q_index_irr))
+    qpoint_rot=matmul(s(:,:,s_index),q_irr_cryst(:,q_index_irr))
     if (imq==1) qpoint_rot=-qpoint_rot
     !
     ! We define the lattice vector relating q1BZ and qrot
@@ -757,7 +757,7 @@ contains
 
     integer :: ir, is, js, i, j, k, ri, rj, rk, rri, rrj, rrk
     integer :: ipol, jpol, lpol, kpol, na, rna
-    integer :: s_inv_index, r_index, rr_index, imode
+    integer :: r_index, rr_index, imode
     real(dp) :: s_cart(3,3), s_crys(3,3)
     real(dp) :: q_point(3), q_point_r(3) ! cart
     complex(dp) :: dv_aux(nr1*nr2*nr3,nmode,npol,npol), phase(nat)
@@ -768,17 +768,15 @@ contains
     !
     ! We define our sym op. label
     !
-    s_inv_index=inverse_indices(s_index)  ! Kontuz, hau behar bada alderantziz da.
-    !
     do ipol=1,3
        do jpol=1,3
-          s_crys(ipol,jpol) = real(s(ipol,jpol,s_inv_index),dp)
+          s_crys(ipol,jpol) = real(s(ipol,jpol,s_index),dp)
        enddo
     enddo
     !
     ! We rotate q irr. q rot cryst -> cart
     !
-    q_point_r = matmul(s(:,:,s_inv_index),q_point_crys_irr (:))
+    q_point_r = matmul(s(:,:,s_index),q_point_crys_irr (:))
     q_point_r = matmul(bg,q_point_r)
     !
     ! phase of q irr related to the atoms. We must remove this phase and add the one related
@@ -816,14 +814,14 @@ contains
              do j = 1, nr2
                 do i = 1, nr1
                    !
-                   ri=s(1,1,s_inv_index)*(i-1)+s(2,1,s_inv_index)*(j-1) &
-                     +s(3,1,s_inv_index)*(k-1)-nint(ftau(1,s_inv_index)*nr1)
+                   ri=s(1,1,s_index)*(i-1)+s(2,1,s_index)*(j-1) &
+                     +s(3,1,s_index)*(k-1)-nint(ftau(1,s_index)*nr1)
                    !
-                   rj=s(1,2,s_inv_index)*(i-1)+s(2,2,s_inv_index)*(j-1) &
-                     +s(3,2,s_inv_index)*(k-1)-nint(ftau(2,s_inv_index)*nr2)
+                   rj=s(1,2,s_index)*(i-1)+s(2,2,s_index)*(j-1) &
+                     +s(3,2,s_index)*(k-1)-nint(ftau(2,s_index)*nr2)
                    !
-                   rk=s(1,3,s_inv_index)*(i-1)+s(2,3,s_inv_index)*(j-1) &
-                     +s(3,3,s_inv_index)*(k-1)-nint(ftau(3,s_inv_index)*nr3)
+                   rk=s(1,3,s_index)*(i-1)+s(2,3,s_index)*(j-1) &
+                     +s(3,3,s_index)*(k-1)-nint(ftau(3,s_index)*nr3)
                    !
                    rri=mod(ri,nr1)+1
                    rrj=mod(rj,nr2)+1
@@ -838,7 +836,7 @@ contains
                    !
                    do na = 1, nat
                       !
-                      rna=rtau_index(na,s_inv_index)
+                      rna=rtau_index(na,s_index)
                       !
                       do ipol=1,3
                          do jpol=1,3
@@ -886,8 +884,8 @@ contains
        do ir=1,nr1*nr2*nr3
           do imode=1,3*nat
              !
-             dv_out(ir,imode,:,:)=matmul(cmplx_ainv_2(spin_symmetry_matrices(:,:,s_inv_index)), &
-                  matmul(dv_aux(ir,imode,:,:),spin_symmetry_matrices(:,:,s_inv_index)))
+             dv_out(ir,imode,:,:)=matmul(cmplx_ainv_2(spin_symmetry_matrices(:,:,s_index)), &
+                  matmul(dv_aux(ir,imode,:,:),spin_symmetry_matrices(:,:,s_index)))
              !
           enddo !imode
        enddo !ir

@@ -1,0 +1,120 @@
+
+QE_HOME=@QE_HOME@
+QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+
+#MPI_CMD=@MPI_CMD@
+
+
+all: pw_files ph_files q2r_files pw_nscf_files
+
+calculation: all
+
+
+.PHONY: all calculation clean run_pw run_ph run_q2r run_pw_nscf pw_files ph_files q2r_files pw_nscf_files
+
+run_pw:
+	$(QE_HOME)/build/bin/pw.x < gaas.scf.in | tee gaas.scf.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_ph1:
+	cp -r gaas.save qq1/
+	( cd qq1 ; $(QE_HOME)/build/bin/ph.x < gaas.ph.in | tee gaas.ph.out ; rm -rf gaas.save ; test -f CRASH && exit 1 || echo "OK" )
+run_ph2:
+	cp -r gaas.save qq2/
+	( cd qq2 ; $(QE_HOME)/build/bin/ph.x < gaas.ph.in | tee gaas.ph.out ; rm -rf gaas.save ; test -f CRASH && exit 1 || echo "OK" )
+run_ph3:
+	cp -r gaas.save qq3/
+	( cd qq3 ; $(QE_HOME)/build/bin/ph.x < gaas.ph.in | tee gaas.ph.out ; rm -rf gaas.save ; test -f CRASH && exit 1 || echo "OK" )
+
+run_q2r:
+	rm -rf CRASH
+	cp qq1/gaas.dyn ./gaas.dyn1
+	cp qq2/gaas.dyn ./gaas.dyn2
+	cp qq3/gaas.dyn ./gaas.dyn3
+	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_pw_nscf:
+	rm -rf gaas-nscf.save
+	cp -r gaas.save gaas-nscf.save
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
+	./non-deg.bash
+
+
+PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
+PH_FILES_Q1 = qq1/gaas.ph.out qq1/gaas.dyn qq1/_ph0/gaas.dvscf1 qq1/_ph0/gaas.phsave/patterns.1.xml
+PH_FILES_Q2 = qq2/gaas.ph.out qq2/gaas.dyn qq2/_ph0/gaas.dvscf1 qq2/_ph0/gaas.phsave/patterns.1.xml
+PH_FILES_Q3 = qq3/gaas.ph.out qq3/gaas.dyn qq3/_ph0/gaas.dvscf1 qq3/_ph0/gaas.phsave/patterns.1.xml
+PH_FILES = $(PH_FILES_Q1) $(PH_FILES_Q2) $(PH_FILES_Q3)
+Q2R_FILES = q2r.out gaas.fc
+PW_NSCF_FILES = gaas.nscf.out gaas-nscf.save/data-file-schema.xml gaas-nscf.save/charge-density.dat gaas-nscf.save/wfc64.dat non_deg_file
+
+
+pw_files: $(PW_FILES)
+ph_files: $(PH_FILES)
+q2r_files: $(Q2R_FILES)
+pw_nscf_files: $(PW_NSCF_FILES)
+
+
+gaas.nscf.out: $(PW_FILES)
+	make run_pw_nscf
+gaas-nscf.save/data-file-schema.xml: $(PW_FILES)
+	make run_pw_nscf
+gaas-nscf.save/charge-density.dat: $(PW_FILES)
+	make run_pw_nscf
+gaas-nscf.save/wfc64.dat: $(PW_FILES)
+	make run_pw_nscf
+non_deg_file: $(PW_FILES)
+	make run_pw_nscf
+
+
+gaas.scf.out:
+	make run_pw
+gaas.save/data-file-schema.xml:
+	make run_pw
+gaas.save/charge-density.dat:
+	make run_pw
+
+qq1/gaas.ph.out: $(PW_FILES)
+	make run_ph1
+qq2/gaas.ph.out: $(PW_FILES)
+	make run_ph2
+qq3/gaas.ph.out: $(PW_FILES)
+	make run_ph3
+
+qq1/gaas.dyn: $(PW_FILES)
+	make run_ph1
+qq2/gaas.dyn: $(PW_FILES)
+	make run_ph2
+qq3/gaas.dyn: $(PW_FILES)
+	make run_ph3
+
+qq1/_ph0/gaas.dvscf1: $(PW_FILES)
+	make run_ph1
+qq2/_ph0/gaas.dvscf1: $(PW_FILES)
+	make run_ph2
+qq3/_ph0/gaas.dvscf1: $(PW_FILES)
+	make run_ph3
+
+qq1/_ph0/gaas.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph1
+qq2/_ph0/gaas.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph2
+qq3/_ph0/gaas.phsave/patterns.1.xml: $(PW_FILES)
+	make run_ph3
+
+q2r.out: $(PH_FILES)
+	make run_q2r
+gaas.fc: $(PH_FILES)
+	make run_q2r
+
+
+clean:
+	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save
+	rm -rf gaas.nscf.out gaas-nscf.xml gaas-nscf.wfc* gaas-nscf.save non_deg_file
+	rm -rf qq1/gaas.dyn qq1/gaas.ph.out qq1/gaas.wfc* qq1/_ph0 qq1/gaas.save
+	rm -rf qq2/gaas.dyn qq2/gaas.ph.out qq2/gaas.wfc* qq2/_ph0 qq2/gaas.save
+	rm -rf qq3/gaas.dyn qq3/gaas.ph.out qq3/gaas.wfc* qq3/_ph0 qq3/gaas.save
+	rm -rf q2r.out gaas.fc gaas.dyn1 gaas.dyn2 gaas.dyn3
+	rm -rf pw2intw.out gaas.save.intw
+	rm -rf intw.out ep_mat.dat_*

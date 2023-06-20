@@ -180,7 +180,7 @@ contains
   SUBROUTINE scf_v_and_rho()
   !ASIER: 22/02/2022
   !Here we asume that:
-  ! nspin=1 (no magnetism at all)   
+  ! nspin=1 (no magnetism at all)
   ! nspin=2 (collinear)
   ! nspin=4 (non-collinear)
   ! It is clear that we must fix this, because
@@ -199,7 +199,7 @@ contains
   datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"scf_vr.dat")
   inquire(iolength=record_length) v%of_r(:,1)
   open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted",access='direct',recl=record_length)
-   
+
   do ispin=1, nspin
    write (unit=io_unit,rec=ispin) v%of_r(:,ispin)
   end do
@@ -209,7 +209,7 @@ contains
   datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"scf_rhor.dat")
   inquire(iolength=record_length) rho%of_r(:,1)
   open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted",access='direct',recl=record_length)
-   
+
   do ispin=1, nspin
    write (unit=io_unit,rec=ispin) rho%of_r(:,ispin)
   end do
@@ -294,7 +294,7 @@ contains
     if (existitu) then
       call system("cp "//rho_file//"   "//&
         trim(adjustl(intwdir))//"/"//trim(prefix)//".rho_q"//trim(adjustl(numq)) )
-    end if  
+    end if
   enddo
 !
   do iq=1, nqirr
@@ -475,7 +475,7 @@ contains
           write(unit=io_unit, fmt="(3i8)"), (s(i,j,isym), j=1,3)
        enddo
        write(unit=io_unit,fmt="(100f16.10)")  &
-            real(ft(1,isym),dp)/dfftp%nr1, real(ft(2,isym),dp)/dfftp%nr2, real(ft(3,isym),dp)/dfftp%nr3
+            real(ft(1,isym),dp), real(ft(2,isym),dp), real(ft(3,isym),dp)
        write(unit=io_unit,fmt="(48i3)")t_rev (isym)
     enddo
 
