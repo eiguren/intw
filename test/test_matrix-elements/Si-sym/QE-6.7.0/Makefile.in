@@ -5,14 +5,15 @@ BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw_nscf_files pw2intw_files
+all: scf_files ph_files q2r_files nscf_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
+.PHONY: all calculation clean run_scf run_ph run_q2r run_nscf scf_files ph_files q2r_files nscf_files
 
-run_pw:
+
+run_scf:
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
@@ -26,50 +27,41 @@ run_q2r:
 	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
-
-run_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
-	( test -f CRASH && exit 1 || echo "OK" )
-
-run_pw_nscf:
+run_nscf:
 	rm -rf si-nscf.save
 	cp -r si.save si-nscf.save
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < si.nscf.in | tee si.nscf.out
 	./non-deg.bash
 
 
-PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat si.save/wfc1.dat si.save/wfc8.dat
+SCF_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat si.save/wfc8.dat
 PH_FILES = qq1/si.ph.out qq1/si.dyn qq1/_ph0/si.dvscf1 qq1/_ph0/si.phsave/patterns.1.xml
 Q2R_FILES = q2r.out si.fc
-PW2INTW_FILES = pw2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/wfc00008.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/si.dvscf_q1 si.save.intw/kpoints.dat si.save.intw/si.dyn_q1 si.save.intw/gvectors.dat si.save.intw/irrq_patterns.dat
-PW_NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc1.dat si-nscf.save/wfc64.dat non_deg_file
+NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc64.dat non_deg_file
 
 
-pw_files: $(PW_FILES)
+scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
-pw2intw_files: $(PW2INTW_FILES)
-pw_nscf_files: $(PW_NSCF_FILES)
+nscf_files: $(NSCF_FILES)
 
 
 si.scf.out:
-	make run_pw
+	make run_scf
 si.save/data-file-schema.xml:
-	make run_pw
+	make run_scf
 si.save/charge-density.dat:
-	make run_pw
-si.save/wfc1.dat:
-	make run_pw
+	make run_scf
 si.save/wfc8.dat:
-	make run_pw
+	make run_scf
 
-qq1/si.ph.out: $(PW_FILES)
+qq1/si.ph.out: $(SCF_FILES)
 	make run_ph
-qq1/si.dyn: $(PW_FILES)
+qq1/si.dyn: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/si.dvscf1: $(PW_FILES)
+qq1/_ph0/si.dvscf1: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/si.phsave/patterns.1.xml: $(PW_FILES)
+qq1/_ph0/si.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph
 
 q2r.out: $(PH_FILES)
@@ -77,39 +69,16 @@ q2r.out: $(PH_FILES)
 si.fc: $(PH_FILES)
 	make run_q2r
 
-pw2intw.out: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/crystal.dat: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/wfc00001.dat: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/iGlist.dat: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/1-KBPP.txt: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/si.dvscf_q1: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/kpoints.dat: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/si.dyn_q1: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/gvectors.dat: $(Q2R_FILES)
-	make run_pw2intw
-si.save.intw/irrq_patterns.dat: $(Q2R_FILES)
-	make run_pw2intw
-
-si.nscf.out: $(PW_FILES)
-	make run_pw_nscf
+si.nscf.out: $(SCF_FILES)
+	make run_nscf
 si-nscf.save/data-file-schema.xml:
-	make run_pw_nscf
+	make run_nscf
 si-nscf.save/charge-density.dat:
-	make run_pw_nscf
-si-nscf.save/wfc1.dat:
-	make run_pw_nscf
+	make run_nscf
 si-nscf.save/wfc64.dat:
-	make run_pw_nscf
+	make run_nscf
 non_deg_file:
-	make run_pw_nscf
+	make run_nscf
 
 
 

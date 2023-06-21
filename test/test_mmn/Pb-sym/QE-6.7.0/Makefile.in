@@ -10,7 +10,7 @@ all: pw_files w90pp_files pw2intw_files intw_files w90_files
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_w90pp run_pw2intw run_intw run_w90 pw_files pw2intw_files intw_files w90_files
+.PHONY: all calculation clean run_pw run_w90pp run_pw2intw run_intw run_w90 pw_files pw2intw_files intw_files w90_files pb.mmn
 
 run_pw:
 	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < pb.scf.in | tee pb.scf.out

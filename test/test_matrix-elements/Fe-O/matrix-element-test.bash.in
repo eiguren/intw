@@ -18,12 +18,17 @@ if [ $? -ne 0 ]; then
 fi
 
 
+# Run pw2intw
+@CMAKE_BINARY_DIR@/src/QEtoINTW/${QE_VERSION}/pw2intw.x < pw2intw.in | tee pw2intw.out
+if [ -f CRASH ]; then
+  exit 1
+fi
 
 
 # Run the matrix-element calculation
+rm -rf ep_mat.dat*
 cp ../intw.in ./
 @CMAKE_BINARY_DIR@/src/utilities/ep_melements_noW.x < intw.in | tee intw.out
-
 
 
 # Compare calculation

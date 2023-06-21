@@ -5,14 +5,15 @@ QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 #MPI_CMD=@MPI_CMD@
 
 
-all: pw_files ph_files q2r_files pw_nscf_files
+all: scf_files ph_files q2r_files nscf_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_ph run_q2r run_pw_nscf pw_files ph_files q2r_files pw_nscf_files
+.PHONY: all calculation clean run_scf run_ph run_q2r run_nscf scf_files ph_files q2r_files nscf_files
 
-run_pw:
+
+run_scf:
 	$(QE_HOME)/build/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
@@ -34,73 +35,72 @@ run_q2r:
 	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
-run_pw_nscf:
+run_nscf:
 	rm -rf si-nscf.save
 	cp -r si.save si-nscf.save
 	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.nscf.in | tee si.nscf.out
 	./non-deg.bash
 
 
-PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat
+SCF_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat si.save/wfc8.dat
 PH_FILES_Q1 = qq1/si.ph.out qq1/si.dyn qq1/_ph0/si.dvscf1 qq1/_ph0/si.phsave/patterns.1.xml
 PH_FILES_Q2 = qq2/si.ph.out qq2/si.dyn qq2/_ph0/si.dvscf1 qq2/_ph0/si.phsave/patterns.1.xml
 PH_FILES_Q3 = qq3/si.ph.out qq3/si.dyn qq3/_ph0/si.dvscf1 qq3/_ph0/si.phsave/patterns.1.xml
 PH_FILES = $(PH_FILES_Q1) $(PH_FILES_Q2) $(PH_FILES_Q3)
 Q2R_FILES = q2r.out si.fc
-PW_NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc64.dat non_deg_file
+NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc64.dat non_deg_file
 
 
-pw_files: $(PW_FILES)
+scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
-pw_nscf_files: $(PW_NSCF_FILES)
+nscf_files: $(NSCF_FILES)
 
 
-si.nscf.out: $(PW_FILES)
-	make run_pw_nscf
-si-nscf.save/data-file-schema.xml: $(PW_FILES)
-	make run_pw_nscf
-si-nscf.save/charge-density.dat: $(PW_FILES)
-	make run_pw_nscf
-si-nscf.save/wfc64.dat: $(PW_FILES)
-	make run_pw_nscf
-non_deg_file: $(PW_FILES)
-	make run_pw_nscf
-
+si.nscf.out: $(SCF_FILES)
+	make run_nscf
+si-nscf.save/data-file-schema.xml: $(SCF_FILES)
+	make run_nscf
+si-nscf.save/charge-density.dat: $(SCF_FILES)
+	make run_nscf
+si-nscf.save/wfc64.dat: $(SCF_FILES)
+	make run_nscf
+non_deg_file: $(SCF_FILES)
+	make run_nscf
 
 si.scf.out:
-	make run_pw
+	make run_scf
 si.save/data-file-schema.xml:
-	make run_pw
+	make run_scf
 si.save/charge-density.dat:
-	make run_pw
+	make run_scf
 
-qq1/si.ph.out: $(PW_FILES)
+qq1/si.ph.out: $(SCF_FILES)
 	make run_ph1
-qq2/si.ph.out: $(PW_FILES)
+qq2/si.ph.out: $(SCF_FILES)
 	make run_ph2
-qq3/si.ph.out: $(PW_FILES)
+qq3/si.ph.out: $(SCF_FILES)
 	make run_ph3
 
-qq1/si.dyn: $(PW_FILES)
+qq1/si.dyn: $(SCF_FILES)
 	make run_ph1
-qq2/si.dyn: $(PW_FILES)
+qq2/si.dyn: $(SCF_FILES)
 	make run_ph2
-qq3/si.dyn: $(PW_FILES)
+qq3/si.dyn: $(SCF_FILES)
 	make run_ph3
 
-qq1/_ph0/si.dvscf1: $(PW_FILES)
+qq1/_ph0/si.dvscf1: $(SCF_FILES)
 	make run_ph1
-qq2/_ph0/si.dvscf1: $(PW_FILES)
+qq2/_ph0/si.dvscf1: $(SCF_FILES)
 	make run_ph2
-qq3/_ph0/si.dvscf1: $(PW_FILES)
+qq3/_ph0/si.dvscf1: $(SCF_FILES)
 	make run_ph3
 
-qq1/_ph0/si.phsave/patterns.1.xml: $(PW_FILES)
+qq1/_ph0/si.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph1
-qq2/_ph0/si.phsave/patterns.1.xml: $(PW_FILES)
+qq2/_ph0/si.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph2
-qq3/_ph0/si.phsave/patterns.1.xml: $(PW_FILES)
+qq3/_ph0/si.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph3
 
 q2r.out: $(PH_FILES)

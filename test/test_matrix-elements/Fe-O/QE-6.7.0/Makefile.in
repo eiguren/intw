@@ -5,14 +5,15 @@ BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw2intw_files
+all: 
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
+.PHONY: all calculation clean run_scf run_ph run_q2r scf_files ph_files q2r_files
 
-run_pw:
+
+run_scf:
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < fe-o.scf.in | tee fe-o.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
@@ -27,38 +28,32 @@ run_q2r:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
-run_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
-	( test -f CRASH && exit 1 || echo "OK" )
-
-
-PW_FILES = fe-o.scf.out fe-o.save/data-file-schema.xml fe-o.save/charge-density.dat
+SCF_FILES = fe-o.scf.out fe-o.save/data-file-schema.xml fe-o.save/charge-density.dat fe-o.save/wfc1.dat
 PH_FILES = qq1/fe-o.ph.out qq1/fe-o.dyn qq1/_ph0/fe-o.dvscf1 qq1/_ph0/fe-o.phsave/patterns.1.xml
 Q2R_FILES = q2r.out fe-o.fc
-PW2INTW_FILES = pw2intw.out fe-o.save.intw/crystal.dat fe-o.save.intw/wfc00001.dat fe-o.save.intw/iGlist.dat fe-o.save.intw/1-KBPP.txt fe-o.save.intw/2-KBPP.txt fe-o.save.intw/fe-o.dvscf_q1 fe-o.save.intw/kpoints.dat fe-o.save.intw/fe-o.dyn_q1 fe-o.save.intw/gvectors.dat fe-o.save.intw/irrq_patterns.dat
 
-clean:
-	rm -rf $(PW_FILES) $(PH_FILES) $(Q2R_FILES) $(PW2INTW_FILES)
 
-pw_files: $(PW_FILES)
+scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
-pw2intw_files: $(PW2INTW_FILES)
+
 
 fe-o.scf.out: fe-o.scf.in
-	make run_pw
+	make run_scf
 fe-o.save/data-file-schema.xml: fe-o.scf.in
-	make run_pw
+	make run_scf
 fe-o.save/charge-density.dat: fe-o.scf.in
-	make run_pw
+	make run_scf
+fe-o.save/wfc1.dat:
+	make run_scf
 
-qq1/fe-o.ph.out: qq1/fe-o.ph.in $(PW_FILES)
+qq1/fe-o.ph.out: qq1/fe-o.ph.in $(SCF_FILES)
 	make run_ph
-qq1/fe-o.dyn: qq1/fe-o.ph.in $(PW_FILES)
+qq1/fe-o.dyn: qq1/fe-o.ph.in $(SCF_FILES)
 	make run_ph
-qq1/_ph0/fe-o.dvscf1: qq1/fe-o.ph.in $(PW_FILES)
+qq1/_ph0/fe-o.dvscf1: qq1/fe-o.ph.in $(SCF_FILES)
 	make run_ph
-qq1/_ph0/fe-o.phsave/patterns.1.xml: qq1/fe-o.ph.in $(PW_FILES)
+qq1/_ph0/fe-o.phsave/patterns.1.xml: qq1/fe-o.ph.in $(SCF_FILES)
 	make run_ph
 
 q2r.out: q2r.in $(PH_FILES)
@@ -66,25 +61,6 @@ q2r.out: q2r.in $(PH_FILES)
 fe-o.fc: q2r.in $(PH_FILES)
 	make run_q2r
 
-pw2intw.out: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/crystal.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/wfc00001.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/iGlist.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/1-KBPP.txt: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/2-KBPP.txt: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/fe-o.dvscf_q1: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/kpoints.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/fe-o.dyn_q1: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/gvectors.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
-fe-o.save.intw/irrq_patterns.dat: pw2intw.in $(Q2R_FILES)
-	make run_pw2intw
+
+clean:
+	rm -rf $(SCF_FILES) $(PH_FILES) $(Q2R_FILES)

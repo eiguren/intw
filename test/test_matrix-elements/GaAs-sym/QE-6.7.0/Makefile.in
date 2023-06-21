@@ -5,14 +5,15 @@ BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw_nscf_files pw2intw_files
+all: scf_files ph_files q2r_files nscf_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
+.PHONY: all calculation clean run_scf run_ph run_q2r run_nscf scf_files ph_files q2r_files nscf_files
 
-run_pw:
+
+run_scf:
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < gaas.scf.in | tee gaas.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
@@ -26,44 +27,40 @@ run_q2r:
 	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
-
-run_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
-	( test -f CRASH && exit 1 || echo "OK" )
-
-run_pw_nscf:
+run_nscf:
 	rm -rf gaas-nscf.save
 	cp -r gaas.save gaas-nscf.save
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
 	./non-deg.bash
 
-PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
+
+SCF_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat gaas.save/wfc8.dat
 PH_FILES = qq1/gaas.ph.out qq1/gaas.dyn qq1/_ph0/gaas.dvscf1 qq1/_ph0/gaas.phsave/patterns.1.xml
 Q2R_FILES = q2r.out gaas.fc
-PW2INTW_FILES = pw2intw.out gaas.save.intw/crystal.dat gaas.save.intw/wfc00001.dat gaas.save.intw/iGlist.dat gaas.save.intw/1-KBPP.txt gaas.save.intw/gaas.dvscf_q1 gaas.save.intw/kpoints.dat gaas.save.intw/gaas.dyn_q1 gaas.save.intw/gvectors.dat gaas.save.intw/irrq_patterns.dat
-PW_NSCF_FILES = gaas.nscf.out gaas-nscf.save/data-file-schema.xml gaas-nscf.save/charge-density.dat gaas-nscf.save/wfc1.dat gaas-nscf.save/wfc64.dat non_deg_file
+NSCF_FILES = gaas.nscf.out gaas-nscf.save/data-file-schema.xml gaas-nscf.save/charge-density.dat gaas-nscf.save/wfc64.dat non_deg_file
 
 
-pw_files: $(PW_FILES)
+scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
-pw2intw_files: $(PW2INTW_FILES)
-pw_nscf_files: $(PW_NSCF_FILES)
+nscf_files: $(NSCF_FILES)
 
 gaas.scf.out:
-	make run_pw
+	make run_scf
 gaas.save/data-file-schema.xml:
-	make run_pw
+	make run_scf
 gaas.save/charge-density.dat:
-	make run_pw
+	make run_scf
+gaas.save/wfc8.dat:
+	make run_scf
 
-qq1/gaas.ph.out: $(PW_FILES)
+qq1/gaas.ph.out: $(SCF_FILES)
 	make run_ph
-qq1/gaas.dyn: $(PW_FILES)
+qq1/gaas.dyn: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/gaas.dvscf1: $(PW_FILES)
+qq1/_ph0/gaas.dvscf1: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/gaas.phsave/patterns.1.xml: $(PW_FILES)
+qq1/_ph0/gaas.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph
 
 q2r.out: $(PH_FILES)
@@ -71,39 +68,17 @@ q2r.out: $(PH_FILES)
 si.fc: $(PH_FILES)
 	make run_q2r
 
-pw2intw.out: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/crystal.dat: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/wfc00001.dat: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/iGlist.dat: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/1-KBPP.txt: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/gaas.dvscf_q1: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/kpoints.dat: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/gaas.dyn_q1: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/gvectors.dat: $(Q2R_FILES)
-	make run_pw2intw
-gaas.save.intw/irrq_patterns.dat: $(Q2R_FILES)
-	make run_pw2intw
-
-gaas.nscf.out: $(PW_FILES)
-	make run_pw_nscf
+gaas.nscf.out: $(SCF_FILES)
+	make run_nscf
 gaas-nscf.save/data-file-schema.xml:
-	make run_pw_nscf
+	make run_nscf
 gaas-nscf.save/charge-density.dat:
-	make run_pw_nscf
-gaas-nscf.save/wfc1.dat:
-	make run_pw_nscf
+	make run_nscf
 gaas-nscf.save/wfc64.dat:
-	make run_pw_nscf
+	make run_nscf
 non_deg_file:
-	make run_pw_nscf
+	make run_nscf
+
 
 clean:
 	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save

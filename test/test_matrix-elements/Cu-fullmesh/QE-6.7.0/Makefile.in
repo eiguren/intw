@@ -5,14 +5,15 @@ BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw2intw_files
+all: scf_files ph_files q2r_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_ph run_q2r run_pw2intw pw_files ph_files q2r_files pw2intw_files
+.PHONY: all calculation clean run_scf run_ph run_q2r scf_files ph_files q2r_files
 
-run_pw:
+
+run_scf:
 	$(MPI_CMD) $(QE_HOME)/bin/pw.x < cu.scf.in | tee cu.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
@@ -27,63 +28,37 @@ run_q2r:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
-run_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
-	( test -f CRASH && exit 1 || echo "OK" )
-
-
-PW_FILES = cu.scf.out cu.save/data-file-schema.xml cu.save/charge-density.dat
+SCF_FILES = cu.scf.out cu.save/data-file-schema.xml cu.save/charge-density.dat cu.save/wfc64.dat
 PH_FILES = qq1/cu.ph.out qq1/cu.dyn qq1/_ph0/cu.dvscf1 qq1/_ph0/cu.phsave/patterns.1.xml
 Q2R_FILES = q2r.out cu.fc
-PW2INTW_FILES = pw2intw.out cu.save.intw/crystal.dat cu.save.intw/wfc00001.dat cu.save.intw/iGlist.dat cu.save.intw/1-KBPP.txt cu.save.intw/cu.dvscf_q1 cu.save.intw/kpoints.dat cu.save.intw/cu.dyn_q1 cu.save.intw/gvectors.dat cu.save.intw/irrq_patterns.dat
 
 
-pw_files: $(PW_FILES)
+scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
-pw2intw_files: $(PW2INTW_FILES)
 
 cu.scf.out:
-	make run_pw
+	make run_scf
 cu.save/data-file-schema.xml:
-	make run_pw
+	make run_scf
 cu.save/charge-density.dat:
-	make run_pw
+	make run_scf
+cu.save/wfc64.dat:
+	make run_scf
 
-qq1/cu.ph.out: $(PW_FILES)
+qq1/cu.ph.out: $(SCF_FILES)
 	make run_ph
-qq1/cu.dyn: $(PW_FILES)
+qq1/cu.dyn: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/cu.dvscf1: $(PW_FILES)
+qq1/_ph0/cu.dvscf1: $(SCF_FILES)
 	make run_ph
-qq1/_ph0/cu.phsave/patterns.1.xml: $(PW_FILES)
+qq1/_ph0/cu.phsave/patterns.1.xml: $(SCF_FILES)
 	make run_ph
 
 q2r.out: $(PH_FILES)
 	make run_q2r
 cu.fc: $(PH_FILES)
 	make run_q2r
-
-pw2intw.out: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/crystal.dat: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/wfc00001.dat: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/iGlist.dat: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/1-KBPP.txt: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/cu.dvscf_q1: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/kpoints.dat: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/cu.dyn_q1: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/gvectors.dat: $(Q2R_FILES)
-	make run_pw2intw
-cu.save.intw/irrq_patterns.dat: $(Q2R_FILES)
-	make run_pw2intw
 
 
 clean:
