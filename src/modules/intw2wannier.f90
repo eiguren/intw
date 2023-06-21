@@ -919,7 +919,9 @@ contains
         !
         do ir=1,nr1*nr2*nr3
            !
-           fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
+           ! MBR
+           !fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
+           fr(ir)=fr(ir) + conjg(wfc_r(ir))*frr(ir)
            !
         enddo !ir
      enddo !is
