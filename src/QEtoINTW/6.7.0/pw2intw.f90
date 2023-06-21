@@ -377,7 +377,9 @@ contains
        write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
 
        do ibnd=1, nbnd
-          write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
+          ! MBR
+          !write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
+          write(unit=io_unit) evc(1:ngk(ik), ibnd), evc(npwx+1:npwx+ngk(ik), ibnd)
        enddo
        close(unit=io_unit)
 
