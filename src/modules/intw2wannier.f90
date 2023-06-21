@@ -793,7 +793,9 @@ contains
   proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
   zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
   !
-  call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
+  ! MBR radial integral based on pw2wannier
+  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function) 
+  call get_radial_part_numerical(nnkp_proj_l(n_proj), proj_nr,zona,k_plus_G_cart,guiding_function)
   !
   ! multiply by 4 pi (-i)^l e^{-i q * Wcenter}
   !
@@ -890,6 +892,7 @@ contains
 
   integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
   complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
+  complex(dp) :: frr(nr1*nr2*nr3)  !MBR
   complex(dp) :: fg(ngm)
 
   amn=cmplx_0
@@ -905,11 +908,14 @@ contains
   do ibnd=1,num_bands
      !
      fr(:)=cmplx_0
+     frr(:)=cmplx_0  !MBR
      !
      do is=1,nspin
         !
         call wfc_from_g_to_r (list_iG,wfc(:,ibnd,is),wfc_r)
-        call func_from_g_to_r (1,ngm,guiding_function,fr)
+        ! MBR ojo!!! antes se "mezclaba" fr en espacio real con la convolucion
+        !call func_from_g_to_r (1,ngm,guiding_function,fr)
+        call func_from_g_to_r (1,ngm,guiding_function,frr)
         !
         do ir=1,nr1*nr2*nr3
            !
@@ -1027,6 +1033,93 @@ contains
 
   end subroutine get_guiding_function_overlap_convolution
 !--------------------------------------------------------------------------
+!**************************************************************************
+  subroutine get_radial_part_numerical(proj_l, proj_nr,zona,k_plus_G_cart,guiding_function)
+   ! MBR
+   ! Numerical integration, c+p from pw2wannier for testing
+   use intw_reading, only: ngm, volume0
+   USE intw_utility, ONLY : simpson
+   use intw_useful_constants, only: fpi
+
+   implicit none
+
+   !I/O variables
+
+   integer,intent(in) :: proj_nr, proj_l
+   real(dp),intent(in) :: zona, k_plus_G_cart(3,ngm)
+   complex(dp),intent(inout) :: guiding_function(ngm)
+
+   !local variables
+
+   integer :: iG
+   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
+   real(dp) :: p(ngm)
+
+   ! from pw2wannier
+
+   integer :: mesh_r, ir
+   real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
+   real(DP) :: x
+   real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
+
+   z=zona
+   z2=z*z
+   z4=z2*z2
+   z6=z4*z2
+   sqrt_z=sqrt(z)
+   z52=z2*sqrt_z
+   !
+   !find the norms
+   !
+   do iG=1,ngm
+   !
+   p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
+            + k_plus_G_cart(2,iG)**2 &
+            + k_plus_G_cart(3,iG)**2 )
+   !
+   enddo !iG  
+
+   !
+   ! from pw2intw:
+   !
+   mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
+   ALLOCATE ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
+   ALLOCATE ( aux(mesh_r))
+   !
+   !    compute the radial mesh
+   !
+   DO ir = 1, mesh_r
+   x = xmin  + dble (ir - 1) * dx
+   r (ir) = exp (x) / zona
+   rij (ir) = dx  * r (ir)
+   ENDDO
+   !
+   !
+   if (proj_nr==1) then
+   func_r(:) = 2.d0 * zona**(3.d0/2.d0) * exp(-zona*r(:))
+   else if (proj_nr==2) then
+   func_r(:) = 1.d0/sqrt(8.d0) * zona**(3.d0/2.d0) * &
+            (2.0d0 - zona*r(:)) * exp(-zona*r(:)*0.5d0)
+   else if (proj_nr==3) then
+   func_r(:) = sqrt(4.d0/27.d0) * zona**(3.0d0/2.0d0) * &
+            (1.d0 - 2.0d0/3.0d0*zona*r(:) + 2.d0*(zona*r(:))**2/27.d0) * exp(-zona*r(:)/3.0d0)
+   else
+   write(*,*) 'ERROR in intw2W90: this radial projection is not implemented'
+   endif
+
+   DO iG=1,ngm
+   CALL sph_bes (mesh_r, r, p(iG), proj_l, bes)
+   aux = r*r*bes*func_r
+   CALL simpson (mesh_r, aux, rij, x)
+   guiding_function(ig) = cmplx( x * fpi/sqrt(volume0), 0.)
+   ENDDO
+
+
+   deallocate(bes,func_r,r,rij,aux)
+
+   return
+
+  end subroutine get_radial_part_numerical
 !**************************************************************************
 !--------------------------------------------------------------------------
   subroutine get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
