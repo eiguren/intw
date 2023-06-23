@@ -696,7 +696,6 @@ contains
     ! does not vanish. It will be assumed that gvec is large enough to
     ! insure proper normalization.
 
-
       call generate_guiding_function(ikpt,n_proj,guiding_function)
 
       if (trim(method) == 'CONVOLUTION') then
@@ -750,12 +749,15 @@ contains
 
   !local variables
 
+  integer, parameter :: lmax=3, lmmax=(lmax+1)**2 ! max Ylm implemented in wannier90
   integer :: i, mu, iG
   integer :: proj_nr, proj_l, proj_m
+  integer :: l, m, lm
   real(dp) :: zona, zaxis(3), xaxis(3), ylm(ngm)
   real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
   real(dp) :: k_plus_G_cart(3,ngm)
   real(dp) :: norm2, x, y
+  real(dp) :: radial_l(ngm, 0:lmax), coef(lmmax)
   complex(dp) :: four_pi_i_l
 
   ! get all the relevant vectors in reciprocal space
@@ -788,22 +790,47 @@ contains
   !
   guiding_function=cmplx_0
   !
-  ! get the part from the radial integration
+  ! Set projection l and m
+  proj_l=nnkp_proj_l(n_proj)
+  proj_m=nnkp_proj_m(n_proj)
+  ! JLB note: Not sure whether this works currently, needs to be tested
+  zaxis(:)=nnkp_proj_z(:,n_proj)
+  xaxis(:)=nnkp_proj_x(:,n_proj)
   !
+  ! JLB: Expansion coefficients of this projection in lm-s (needed for hybrids)
+  call projection_expansion(proj_l, proj_m, coef)
+  ! 
+  ! get the part from the radial integration
   proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
   zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
   !
-  ! MBR radial integral based on pw2wannier
+  ! MBR, JLB: radial integrals based on pw2wannier
   !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function) 
-  call get_radial_part_numerical(nnkp_proj_l(n_proj), proj_nr,zona,k_plus_G_cart,guiding_function)
+  call get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
   !
-  ! multiply by 4 pi (-i)^l e^{-i q * Wcenter}
+  do l=0, lmax
+      do m=1, 2*l+1
+      !
+      ! Check which lm are needed in this projection
+      lm = l**2 + m
+      if (abs(coef(lm)) < 1.0d-8) cycle
+      !
+      call get_angular_part(l, m, xaxis, zaxis, k_plus_G_cart, ylm)
+      !
+      four_pi_i_l=fpi*(-cmplx_i)**l
+         !
+         do iG=1,ngm
+            !
+            guiding_function(iG) = guiding_function(iG) +  coef(lm)*radial_l(iG, l)*ylm(iG)*four_pi_i_l
+            !
+         enddo !iG
+         !
+      end do !m
+  end do !l
   !
-  proj_l=nnkp_proj_l(n_proj)
-  !
+  ! Add extra phase coming from Wannier center positions
   tau_cryst=nnkp_Wcenters(:,n_proj) ! crystal coordinates
   tau_cart=ZERO
-  !
   do mu=1,3
      do i=1,3
         !
@@ -812,48 +839,15 @@ contains
      enddo !i
   enddo !mu
   !
-  ! TEST
-  !  write(111,'(a,3F8.4)') 'Wcenter = ',nnkp_Wcenters(:,n_proj)
-  !  write(111,'(a,3F8.4)') 'tau_cart = ',tau_cart(:)
-  !
-  ! compute the guiding function
-  !
-  four_pi_i_l=fpi*(-cmplx_i)**proj_l
-  !
   do iG=1,ngm
-     guiding_function(iG)=guiding_function(iG)*four_pi_i_l*exp(-cmplx_i* &
+     guiding_function(iG)=guiding_function(iG)*exp(-cmplx_i* &
                                         (k_plus_G_cart(1,iG)*tau_cart(1) &
                                        + k_plus_G_cart(2,iG)*tau_cart(2) &
                                        + k_plus_G_cart(3,iG)*tau_cart(3)))
   end do !iG
   !
-  ! get angular part
-  !
-  proj_m=nnkp_proj_m(n_proj)
-  zaxis(:)=nnkp_proj_z(:,n_proj)
-  xaxis(:)=nnkp_proj_x(:,n_proj)
-  !
-  call get_angular_part(proj_l,proj_m,xaxis,zaxis,k_plus_G_cart,ylm)
-  !
-  do iG=1,ngm
-     !
-     guiding_function(iG)=guiding_function(iG)*ylm(iG)
-     !
-  enddo !iG
-  !
-  ! normalize
-  !
-  norm2=ZERO
-  !
-  do iG=1,ngm
-     !
-     x=real(guiding_function(iG))
-     y=aimag(guiding_function(iG))
-     !
-     norm2=norm2+x**2+y**2
-     !
-  enddo !iG
-  !
+  ! Normalize
+  norm2=sum(abs(guiding_function)**2)
   guiding_function=guiding_function/sqrt(norm2)
   !
   return
@@ -1036,24 +1030,25 @@ contains
   end subroutine get_guiding_function_overlap_convolution
 !--------------------------------------------------------------------------
 !**************************************************************************
-  subroutine get_radial_part_numerical(proj_l, proj_nr,zona,k_plus_G_cart,guiding_function)
+  subroutine get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
    ! MBR
    ! Numerical integration, c+p from pw2wannier for testing
+   ! JLB: Extended to multiple l, needed for hybrid projections
    use intw_reading, only: ngm, volume0
    USE intw_utility, ONLY : simpson
-   use intw_useful_constants, only: fpi
+   use intw_useful_constants, only: fpi, ZERO
 
    implicit none
 
    !I/O variables
 
-   integer,intent(in) :: proj_nr, proj_l
-   real(dp),intent(in) :: zona, k_plus_G_cart(3,ngm)
-   complex(dp),intent(inout) :: guiding_function(ngm)
+   integer,intent(in) :: lmax, proj_nr
+   real(dp),intent(in) :: coef((lmax+1)**2), zona, k_plus_G_cart(3,ngm)
+   real(dp),intent(out) :: radial_l(ngm, 0:lmax)
 
    !local variables
 
-   integer :: iG
+   integer :: iG, l
    real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
    real(dp) :: p(ngm)
 
@@ -1061,7 +1056,7 @@ contains
 
    integer :: mesh_r, ir
    real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
-   real(DP) :: x
+   real(DP) :: x, rad_int
    real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
 
    z=zona
@@ -1085,16 +1080,16 @@ contains
    ! from pw2intw:
    !
    mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
-   ALLOCATE ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
-   ALLOCATE ( aux(mesh_r))
+   allocate ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
+   allocate ( aux(mesh_r))
    !
    !    compute the radial mesh
    !
-   DO ir = 1, mesh_r
+   do ir = 1, mesh_r
    x = xmin  + dble (ir - 1) * dx
    r (ir) = exp (x) / zona
    rij (ir) = dx  * r (ir)
-   ENDDO
+   end do
    !
    !
    if (proj_nr==1) then
@@ -1109,13 +1104,20 @@ contains
    write(*,*) 'ERROR in intw2W90: this radial projection is not implemented'
    endif
 
-   DO iG=1,ngm
-   CALL sph_bes (mesh_r, r, p(iG), proj_l, bes)
-   aux = r*r*bes*func_r
-   CALL simpson (mesh_r, aux, rij, x)
-   guiding_function(ig) = cmplx( x * fpi/sqrt(volume0), 0.)
-   ENDDO
-
+   radial_l = ZERO
+   do l=0, lmax
+      ! JLB: Check which l-s are used in this projection
+      if ( any(coef(l**2+1:l**2+1+2*l) > 1.0d-8) ) then
+         !
+         do iG=1,ngm
+            call sph_bes (mesh_r, r, p(iG), l, bes)
+            aux = r*r*bes*func_r
+            call simpson (mesh_r, aux, rij, rad_int)
+            radial_l(iG, l) = rad_int * fpi/sqrt(volume0)
+         end do
+         !
+      end if
+   end do
 
    deallocate(bes,func_r,r,rij,aux)
 
@@ -1247,10 +1249,10 @@ contains
 
   !I/O variables
 
-  integer,intent(inout) :: proj_l,proj_m
-  real(dp),intent(inout) :: xaxis(3), zaxis(3)
-  real(dp),intent(inout) :: k_plus_G_cart(3,ngm)
-  real(dp),intent(inout) :: ylm(ngm)
+  integer,intent(in) :: proj_l,proj_m
+  real(dp),intent(in) :: xaxis(3), zaxis(3)
+  real(dp),intent(in) :: k_plus_G_cart(3,ngm)
+  real(dp),intent(out) :: ylm(ngm)
 
   !local variables
 
@@ -1317,8 +1319,9 @@ contains
 
    !I/O variables
 
-   integer,intent(inout) :: l, mr, nr
-   real(dp),intent(inout) :: ylm(nr), r(3,nr)
+   integer,intent(in) :: l, mr, nr
+   real(dp), intent(in) :: r(3,nr)
+   real(dp),intent(out) :: ylm(nr) 
 
    !local variables
 
@@ -1478,6 +1481,191 @@ contains
    return
 
    end subroutine ylm_wannier
+!----------------------------------------------------------------------------!
+!****************************************
+!----------------------------------------
+   subroutine projection_expansion(l, mr, coef)
+!----------------------------------------
+!
+!--------------------------------------------------------------------------
+!     Outputs expansion coefficients for hybrid projections, 
+!     following wannier90 user guide table 3.2
+!--------------------------------------------------------------------------
+
+   use intw_useful_constants, only: ZERO
+
+   implicit none
+
+   !I/O variables
+   integer, intent(in)  :: l, mr
+   real(dp), intent(out) :: coef(:)
+   !
+   !local variables  
+   integer :: lm 
+   real(dp) :: fac1, fac2, fac3, fac4, fac5
+
+   coef = ZERO
+   !
+   ! Check if l and m are within what's implemented in wannier90
+   if (l>3 .or. l<-5) then
+      !
+      write(*,*)' projection_expansion: l out of range! '
+      stop
+      !
+   end if
+   !
+   ! Compute coefficients
+   !
+   if (l>-1) then   ! single orbitals
+      !
+      ! Double-check if l and mr make sense
+      if ( mr<1 .OR. mr>2*l+1 ) then
+         !
+         write(*,*)' ylm_wannier: m out of range! '
+         stop
+         !
+      endif
+      !
+      lm = l**2 + mr
+      coef(lm) = 1.d0
+      !
+   else ! hybrid orbitals
+      !
+      ! Double check if l and mr make sense
+      if (mr < 1 .or. mr > abs(l)+1 ) then
+         !
+         write(*,*)' ylm_wannier: m out of range! '
+         stop
+         !         
+      end if
+      !
+      if (l==-1) then  !  sp hybrids
+         !
+         fac1 = 1.d0/sqrt(2.d0)
+         !
+         if (mr==1) then ! sp-1
+            coef(1) = fac1
+            coef(3) = fac1
+         else if (mr==2) then ! sp-2
+            coef(1) =  fac1
+            coef(3) = -fac1
+         end if
+         !
+      else if (l==-2) then  !  sp2 hybrids
+         !
+         fac1 = 1.d0/sqrt(3.d0)
+         fac2 = 1.d0/sqrt(6.d0)
+         fac3 = 1.d0/sqrt(2.d0)
+         fac4 = 2.d0/sqrt(6.d0)
+         !
+         if (mr==1) then ! sp2-1
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(4) =  fac3
+         else if (mr==2) then ! sp2-2
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(4) = -fac3
+         else if (mr==3) then ! sp2-2
+            coef(1) =  fac1
+            coef(3) =  fac4
+         end if
+         !
+      else if (l==-3) then  !  sp3 hybrids
+         !
+         fac1 = 1.d0/2.d0
+         !
+         if (mr==1) then ! sp3-1
+            coef(1) =  fac1
+            coef(2) =  fac1
+            coef(3) =  fac1
+            coef(4) =  fac1
+         else if (mr==2) then ! sp3-2
+            coef(1) =  fac1
+            coef(2) = -fac1
+            coef(3) =  fac1
+            coef(4) = -fac1
+         else if (mr==3) then ! sp3-3
+            coef(1) =  fac1
+            coef(2) = -fac1
+            coef(3) = -fac1
+            coef(4) =  fac1
+         else if (mr==4) then ! sp3-4
+            coef(1) =  fac1
+            coef(2) =  fac1
+            coef(3) = -fac1
+            coef(4) = -fac1
+         end if
+         !
+      else if (l==-4) then  !  sp3d hybrids
+         !
+         fac1 = 1.d0/sqrt(3.d0)
+         fac2 = 1.d0/sqrt(6.d0)
+         fac3 = 1.d0/sqrt(2.d0)
+         fac4 = 2.d0/sqrt(6.d0)
+         !
+         if (mr==1) then ! sp3d-1
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(4) =  fac3
+         else if (mr==2) then ! sp3d-2
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(4) = -fac3
+         else if (mr==3) then ! sp3d-3
+            coef(1) =  fac1
+            coef(3) =  fac4
+         else if (mr==4) then ! sp3d-4
+            coef(2) =  fac3
+            coef(5) =  fac3
+         else if (mr==5) then ! sp3d-5
+            coef(2) = -fac3
+            coef(5) =  fac3
+         end if
+         !
+      else if (l==-5) then  !  sp3d2 hybrids
+         !
+         fac1 = 1.d0/sqrt(6.d0)
+         fac2 = 1.d0/sqrt(2.d0)
+         fac3 = 1.d0/sqrt(12.d0)
+         fac4 = 1.d0/2.d0
+         fac5 = 1.d0/sqrt(3.d0)
+         !
+         if (mr==1) then ! sp3d2-1
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(5) = -fac3
+            coef(8) =  fac4
+         else if (mr==2) then ! sp3d2-2
+            coef(1) =  fac1
+            coef(3) =  fac2
+            coef(5) = -fac3
+            coef(8) =  fac4
+         else if (mr==3) then ! sp3d2-3
+            coef(1) =  fac1
+            coef(3) = -fac2
+            coef(5) = -fac3
+            coef(8) = -fac4
+         else if (mr==4) then ! sp3d2-4
+            coef(1) =  fac1
+            coef(3) =  fac2
+            coef(5) = -fac3
+            coef(8) = -fac4
+         else if (mr==5) then ! sp3d2-5
+            coef(1) =  fac1
+            coef(2) = -fac2
+            coef(5) =  fac5
+         else if (mr==6) then ! sp3d2-6
+            coef(1) =  fac1
+            coef(2) =  fac2
+            coef(5) =  fac5
+         end if
+         !
+      end if
+      !
+   end if
+
+   end subroutine
 !----------------------------------------------------------------------------!
 !
 !
