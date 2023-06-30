@@ -13,11 +13,22 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/QE-6.7.0/Makefile.in"
 
 
 add_test(
-  NAME test_mmn/Pb-sym
+  NAME test_mmn/Si-sym
   COMMAND run-test.bash
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Pb-sym
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Si-sym
 )
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Pb-sym/mmn-test.bash.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pb-sym/QE-6.7.0/mmn-test.bash" @ONLY)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Pb-sym/QE-6.7.0/Makefile.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pb-sym/QE-6.7.0/Makefile" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/mmn-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/mmn-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_mmn/GaAs-soc
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/mmn-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/mmn-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/Makefile" @ONLY)

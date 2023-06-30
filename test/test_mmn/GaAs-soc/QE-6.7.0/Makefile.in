@@ -1,0 +1,174 @@
+QE_HOME=@QE_HOME@
+W_HOME=@W_HOME@
+QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+
+#MPI_CMD=@MPI_CMD@
+
+all: pw_files w90pp_files pw2wannier90_files w90_1_files pw2intw_files intw_files w90_2_files irr_pw_files irr_w90pp_files irr_pw2intw_files irr_intw_files irr_w90_files
+
+calculation: all
+
+
+.PHONY: all calculation clean run_pw run_w90pp run_pw2wannier90 run_w90_1 run_pw2intw run_intw run_w90_2 run_irr_pw run_irr_w90pp run_irr_pw2intw run_irr_intw run_irr_w90 pw_files pw2wannier90_files w90_2_files pw2intw_files intw_files w90_files irr_pw_files irr_w90pp_files irr_pw2intw_files irr_intw_files irr_w90_files
+
+# --- full grid nscf calculation
+
+run_pw:
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.scf.in | tee gaas.scf.out
+	( test -f CRASH && exit 1 || echo "OK" )
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_w90pp:
+	$(MPI_CMD) $(W_HOME)/wannier90.x -pp gaas
+
+run_pw2wannier90:
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw2wannier90.x < gaas.pw2wannier.in | tee gaas.pw2wannier.out
+	( test -f CRASH && exit 1 || echo "OK" )
+	cp gaas.mmn qe_gaas.mmn
+	cp gaas.mmn qe_gaas.amn
+
+run_w90_1:
+	$(MPI_CMD) $(W_HOME)/wannier90.x gaas
+	cp gaas.wout qe_gaas.wout
+
+run_pw2intw:
+	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < gaas.pw2intw.in | tee gaas.pw2intw.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_intw:
+	../../../../build/src/utilities/intw2W90.x < gaas.intw_fullmesh.in | tee gaas.intw_fullmesh.out
+	( test -f CRASH && exit 1 || echo "OK" )
+	cp gaas.mmn intw_fullmesh_gaas.mmn
+	cp gaas.amn intw_fullmesh_gaas.amn
+
+run_w90_2:
+	$(MPI_CMD) $(W_HOME)/wannier90.x gaas
+	cp gaas.wout intw_fullmesh_gaas.wout
+
+# --- irr scf calculation
+
+irr_run_pw:
+	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.scf_irr.in | tee gaas.scf_irr.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+irr_run_w90pp:
+	$(MPI_CMD) $(W_HOME)/wannier90.x -pp gaas_irr
+
+irr_run_pw2intw:
+	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < gaas.pw2intw_irr.in | tee gaas.pw2intw_irr.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+irr_run_intw:
+	../../../../build/src/utilities/intw2W90.x < gaas.intw_irr.in | tee gaas.intw_irr.out
+	( test -f CRASH && exit 1 || echo "OK" )
+	cp gaas_irr.mmn intw_gaas.mmn
+	cp gaas_irr.amn intw_gaas.amn
+
+irr_run_w90:
+	$(MPI_CMD) $(W_HOME)/wannier90.x gaas_irr
+	cp gaas_irr.wout intw_gaas.wout
+
+
+PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
+W90PP_FILES = gaas.nnkp
+PW2WANNIER90_FILES = qe_gaas.mmn
+W90_1_FILES = qe_gaas.wout
+PW2INTW_FILES = gaas.pw2intw.out gaas.save.intw/crystal.dat gaas.save.intw/wfc00001.dat gaas.save.intw/iGlist.dat gaas.save.intw/1-KBPP.txt gaas.save.intw/kpoints.dat gaas.save.intw/gvectors.dat
+INTW_FILES = intw_fullmesh_gaas.mmn
+W90_2_FILES = intw_fullmesh_gaas.wout
+#
+IRR_PW_FILES = gaas.scf_irr.out gaas_irr.save/data-file-schema.xml gaas_irr.save/charge-density.dat
+IRR_W90PP_FILES = gaas_irr.nnkp
+IRR_PW2INTW_FILES = gaas.pw2intw_irr.out gaas_irr.save.intw/crystal.dat gaas_irr.save.intw/wfc00001.dat gaas_irr.save.intw/iGlist.dat gaas_irr.save.intw/1-KBPP.txt gaas_irr.save.intw/kpoints.dat gaas_irr.save.intw/gvectors.dat
+IRR_INTW_FILES = intw_gaas.mmn
+IRR_W90_FILES = intw_gaas.wout
+
+
+
+pw_files: $(PW_FILES)
+w90pp_files: $(W90PP_FILES)
+pw2wannier90_files: $(PW2WANNIER90_FILES)
+pw2intw_files: $(PW2INTW_FILES)
+intw_files: $(INTW_FILES)
+w90_1_files: $(W90_1_FILES)
+w90_2_files: $(W90_2_FILES)
+irr_pw_files: $(IRR_PW_FILES)
+irr_w90pp_files: $(IRR_W90PP_FILES)
+irr_pw2intw_files: $(IRR_PW2INTW_FILES)
+irr_intw_files: $(IRR_INTW_FILES)
+irr_w90_files: $(IRR_W90_FILES)
+
+
+gaas.scf.out:
+	make run_pw
+gaas.nscf.out:
+	make run_pw
+gaas.save/data-file-schema.xml:
+	make run_pw
+gaas.save/charge-density.dat:
+	make run_pw
+
+gaas.nnkp: $(PW_FILES)
+	make run_w90pp
+
+qe_gaas.mmn: $(W90PP_FILES)
+	make run_pw2wannier90
+
+qe_gaas.wout: $(PW2WANNIER90_FILES)
+	make run_w90_1
+
+gaas.pw2intw.out: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/crystal.dat: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/wfc00001.dat: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/iGlist.dat: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/1-KBPP.txt: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/kpoints.dat: $(W90_1_FILES)
+	make run_pw2intw
+gaas.save.intw/gvectors.dat: $(W90_1_FILES)
+	make run_pw2intw
+
+intw_fullmesh_gaas.mmn: $(PW2INTW_FILES)
+	make run_intw
+
+intw_fullmesh_gaas.wout: $(INTW_FILES)
+	make run_w90_2
+
+#
+
+gaas.scf_irr.out:
+	make irr_run_pw
+
+gaas_irr.nnkp: $(IRR_PW_FILES)
+	make irr_run_w90pp
+
+gaas.pw2intw_irr.out: $(IRR_W90PP_FILES)
+	make irr_run_pw2intw
+
+intw_gaas.mmn: $(IRR_PW2INTW_FILES)
+	make irr_run_intw
+
+intw_gaas.wout: $(IRR_INTW_FILES)
+	make irr_run_w90
+
+
+clean:
+	rm -rf gaas.scf.out gaas.nscf.out gaas.xml gaas.wfc* gaas.save
+	rm -rf gaas.pw2wannier.out
+	rm -rf gaas.pw2intw.out gaas.save.intw
+	rm -rf gaas.intw.out gaas.mmn gaas.amn gaas.eig gaas.nnkp
+	rm -rf gaas.wout gaas_band.* gaas.chk
+	rm -rf qe_*
+	rm -rf gaas.intw_fullmesh.out intw_fullmesh_*
+	rm -rf gaas.scf_irr.out gaas_irr.xml gaas_irr.wfc* gaas_irr.save
+	rm -rf gaas.pw2intw_irr.out gaas_irr.save.intw
+	rm -rf gaas.intw_irr.out gaas_irr.mmn gaas_irr.amn gaas_irr.eig gaas_irr.nnkp
+	rm -rf gaas_irr.wout gaas_irr_band.* gaas_irr.chk
+	rm -rf nnkp.test
+	rm -rf intw_*
+

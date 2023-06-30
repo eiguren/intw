@@ -3,11 +3,8 @@ import numpy as np
 import re
 import sys
 
-# Set accuracy for comparison
-acc = 1.0E-6
-
 # Read INTW generated file
-out_file = "intw_si.mmn"
+out_file = "intw_fullmesh_gaas.mmn"
 #
 intw_remmn=[]
 intw_immmn=[]
@@ -22,7 +19,7 @@ intw_remmn=np.array(intw_remmn)
 intw_immmn=np.array(intw_immmn)
 
 # Read pw2wannier generated file
-out_file = "qe_si.mmn"
+out_file = "qe_gaas.mmn"
 #
 qe_remmn=[]
 qe_immmn=[]
@@ -40,10 +37,10 @@ qe_immmn=np.array(qe_immmn)
 # Compare
 ierr=0
 for i in range(len(intw_remmn)):
-    if (np.abs(intw_remmn[i] - qe_remmn[i]) > acc) or (np.abs(intw_immmn[i] - qe_immmn[i]) > acc) :
+    if (np.abs(intw_remmn[i] - qe_remmn[i]) > 1.0E-6) or (np.abs(intw_immmn[i] - qe_immmn[i]) > 1.0E-6) :
         print('Error in mmn element:', i)
-        print('INTW value:', intw_remmn[i],'+ i', intw_immmn[i], np.abs(intw_remmn[i]+1j*intw_immmn[i]))
-        print('pw2wannier90 value:', qe_remmn[i],'+ i', qe_immmn[i], np.abs(qe_remmn[i]+1j*qe_immmn[i]))
+        print('INTW value:', intw_remmn[i],'+ i', intw_immmn[i], ', modulus =', np.abs(intw_remmn[i]+1j*intw_immmn[i]))
+        print('pw2wannier90 value:', qe_remmn[i],'+ i', qe_immmn[i], ', modulus =', np.abs(qe_remmn[i]+1j*qe_immmn[i]))
         ierr=1
         sys.exit(1)
         break

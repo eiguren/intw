@@ -1,33 +1,23 @@
+
 QE_HOME=@QE_HOME@
 W_HOME=@W_HOME@
 QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw_files w90pp_files pw2wannier90_files w90_1_files pw2intw_files intw_files w90_2_files
+all: pw_files w90pp_files pw2wannier90_files pw2intw_files intw_files w90_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_pw run_w90pp run_pw2wannier90 run_w90_1 run_pw2intw run_intw run_w90_2 pw_files pw2wannier90_files w90_2_files pw2intw_files intw_files w90_files
+.PHONY: all calculation clean run_pw run_w90pp run_pw2intw run_intw run_w90 pw_files pw2intw_files intw_files w90_files
 
 run_pw:
 	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.nscf.in | tee si.nscf.out
-	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90pp:
 	$(MPI_CMD) $(W_HOME)/wannier90.x -pp si
-
-run_pw2wannier90:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw2wannier90.x < si.pw2wannier.in | tee si.pw2wannier.out
-	( test -f CRASH && exit 1 || echo "OK" )
-	cp si.mmn qe_si.mmn
-
-run_w90_1:
-	$(MPI_CMD) $(W_HOME)/wannier90.x si
-	cp si.wout qe_si.wout
 
 run_pw2intw:
 	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
@@ -36,31 +26,26 @@ run_pw2intw:
 run_intw:
 	../../../../build/src/utilities/intw2W90.x < intw.in | tee intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	cp si.mmn intw_si.mmn
 
-run_w90_2:
+run_w90:
 	$(MPI_CMD) $(W_HOME)/wannier90.x si
-	cp si.wout intw_si.wout
 
 
 PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat
 W90PP_FILES = si.nnkp
-PW2WANNIER90_FILES = qe_si.mmn
-W90_1_FILES = qe_si.wout
+PW2WANNIER90_FILES = si.mmn
 PW2INTW_FILES = pw2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/kpoints.dat si.save.intw/gvectors.dat
-INTW_FILES = intw_si.mmn
-W90_2_FILES = intw_si.wout
+INTW_FILES = si.mmn si.amn si.eig
+W90_FILES = si.wout
+
 pw_files: $(PW_FILES)
 w90pp_files: $(W90PP_FILES)
 pw2wannier90_files: $(PW2WANNIER90_FILES)
 pw2intw_files: $(PW2INTW_FILES)
 intw_files: $(INTW_FILES)
-w90_1_files: $(W90_1_FILES)
-w90_2_files: $(W90_2_FILES)
+w90_files: $(W90_FILES)
 
 si.scf.out:
-	make run_pw
-si.nscf.out:
 	make run_pw
 si.save/data-file-schema.xml:
 	make run_pw
@@ -70,32 +55,30 @@ si.save/charge-density.dat:
 si.nnkp: $(PW_FILES)
 	make run_w90pp
 
-qe_si.mmn: $(W90PP_FILES)
-	make run_pw2wannier90
-
-qe_si.wout: $(PW2WANNIER90_FILES)
-	make run_w90_1
-
-pw2intw.out: $(W90_1_FILES)
+pw2intw.out: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/crystal.dat: $(W90_1_FILES)
+si.save.intw/crystal.dat: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/wfc00001.dat: $(W90_1_FILES)
+si.save.intw/wfc00001.dat: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/iGlist.dat: $(W90_1_FILES)
+si.save.intw/iGlist.dat: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/1-KBPP.txt: $(W90_1_FILES)
+si.save.intw/1-KBPP.txt: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/kpoints.dat: $(W90_1_FILES)
+si.save.intw/kpoints.dat: $(W90PP_FILES)
 	make run_pw2intw
-si.save.intw/gvectors.dat: $(W90_1_FILES)
+si.save.intw/gvectors.dat: $(W90PP_FILES)
 	make run_pw2intw
 
-intw_si.mmn: $(PW2INTW_FILES)
+si.mmn: $(PW2INTW_FILES)
+	make run_intw
+si.amn: $(PW2INTW_FILES)
+	make run_intw
+si.eig: $(PW2INTW_FILES)
 	make run_intw
 
-intw_si.wout: $(INTW_FILES)
-	make run_w90_2
+si.wout: $(INTW_FILES)
+	make run_w90
 
 
 clean:
@@ -103,3 +86,4 @@ clean:
 	rm -rf pw2intw.out si.save.intw
 	rm -rf intw.out si.mmn si.amn si.eig
 	rm -rf si.wout si_band.* si.chk
+

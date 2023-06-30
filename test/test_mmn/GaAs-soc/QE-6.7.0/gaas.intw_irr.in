@@ -2,15 +2,15 @@
 /
 &input
 mesh_dir 	=	'./'
-prefix 		= 	'pb'
-nk1		=	6
-nk2		=	6
-nk3		=	6
+prefix 		= 	'gaas_irr'
+nk1		=	4
+nk2		=	4
+nk3		=	4
 magnon          =	.false.
 TR_symmetry     =	.true.
-nk1s		=       6
-nk2s		=       6
-nk3s		=       6
+nk1s		=       4
+nk2s		=       4
+nk3s		=       4
 number_G_shells =       4
 qpt1            =       0.00000
 qpt2            =       0.25000
@@ -20,8 +20,8 @@ chemical_potential =    10.0739
 /
 &intw2W
 intw2W_fullzone =       .false.
-!intw2W_method   =       'FFT'
 intw2W_method   =       'CONVOLUTION'
+!intw2W_method   =       'FFT'
 /
 &response
 interpolation_scheme =  'linear'

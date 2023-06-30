@@ -1,4 +1,4 @@
-!llwfc----------------------------------------------------------------------------!
+!----------------------------------------------------------------------------!
 !	intw project.
 !
 !----------------------------------------------------------------------------!
@@ -23,8 +23,9 @@ module intw_intw2wannier
   public :: nnkp_exclude_bands, nnkp_real_lattice, nnkp_recip_lattice, &
             nnkp_num_kpoints, nnkp_nnkpts, nnkp_n_proj, nnkp_kpoints, &
             nnkp_Wcenters, nnkp_proj_x, nnkp_proj_z, nnkp_proj_zona, &
-            nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, nnkp_list_ikpt_nn, &
-            nnkp_list_G, nnkp_excluded_bands
+            nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, &
+            nnkp_proj_s, nnkp_proj_spin_axis, &
+            nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands
   !
   ! subroutines
   public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
@@ -73,6 +74,10 @@ module intw_intw2wannier
   integer,allocatable  :: nnkp_proj_l(:)     ! the l-pojection, for trial
   integer,allocatable  :: nnkp_proj_m(:)     ! the m-pojection, for trial
 
+  ! JLB: Extra variables for spinor projections
+  real(dp),allocatable :: nnkp_proj_spin_axis(:,:)
+  integer,allocatable  :: nnkp_proj_s(:)
+
   integer,allocatable  :: nnkp_list_ikpt_nn(:,:) ! the neighbors of ikpt1
   integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another
 
@@ -84,6 +89,8 @@ contains
   subroutine deallocate_nnkp()
 !---------------------------------
 
+  use intw_reading, only: noncolin
+
   implicit none
 
   deallocate(nnkp_kpoints)
@@ -94,6 +101,8 @@ contains
   deallocate(nnkp_proj_x)
   deallocate(nnkp_proj_z)
   deallocate(nnkp_proj_zona)
+  if (noncolin) deallocate(nnkp_proj_spin_axis)
+  if (noncolin) deallocate(nnkp_proj_s)
   deallocate(nnkp_list_ikpt_nn)
   deallocate(nnkp_list_G)
   deallocate(nnkp_excluded_bands)
@@ -154,7 +163,7 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat
+  use intw_reading, only: alat, noncolin
   use intw_utility, only: find_free_unit
   use w90_parameters, only: num_exclude_bands, exclude_bands
 
@@ -225,9 +234,15 @@ contains
   ! projection information
   !==========================
   !
-  call scan_file_to (nnkp_unit,'projections')
-  !
-  read(nnkp_unit,*) nnkp_n_proj
+  if (noncolin) then
+    call scan_file_to (nnkp_unit,'spinor_projections')
+    read(nnkp_unit,*) nnkp_n_proj
+    allocate(nnkp_proj_s(nnkp_n_proj))
+    allocate(nnkp_proj_spin_axis(3,nnkp_n_proj))
+  else
+    call scan_file_to (nnkp_unit,'projections')
+    read(nnkp_unit,*) nnkp_n_proj
+  end if
   !
   allocate(nnkp_Wcenters(3,nnkp_n_proj))
   allocate(nnkp_proj_l(nnkp_n_proj))
@@ -247,6 +262,23 @@ contains
      read(nnkp_unit,*) (nnkp_proj_z(i,j),i=1,3), &
                        (nnkp_proj_x(i,j),i=1,3), &
                         nnkp_proj_zona(j)
+     !
+     if (noncolin) then
+       read(nnkp_unit,*) nnkp_proj_s(j), nnkp_proj_spin_axis(:,j)
+       ! Check
+       if (abs(nnkp_proj_s(j)) /= 1) then
+         write(*,*) "Error in spinor projection! Should be +-1"
+         write(*,*) "Stopping..."
+         stop
+       else if (abs(nnkp_proj_spin_axis(1,j))>eps_8 &
+                .or. abs(nnkp_proj_spin_axis(2,j))>eps_8 &
+                .or. abs(nnkp_proj_spin_axis(3,j)-1)>eps_8) then
+         write(*,*) "Currently, only (/0, 0, 1/) spin-axis orientation implemented"
+         write(*,*) "Stopping..."
+         stop
+       end if
+       !
+     end if
      !
   enddo
   !
@@ -311,6 +343,7 @@ contains
 ! This subroutine simply outputs what was read from the nnkp file, for
 ! testing.
 !----------------------------------------------------------------------------!
+  use intw_reading, only: noncolin
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -371,6 +404,11 @@ contains
                           (nnkp_proj_z  (i,j),i=1,3),   &
                           (nnkp_proj_x  (i,j),i=1,3),   &
                            nnkp_proj_zona( j)
+
+      if (noncolin) then
+         write(io_unit,'(I6, 3F12.6)') nnkp_proj_s(j), &
+                                       (nnkp_proj_spin_axis(i,j), i=1,3)
+      end if
 
   end do
 
@@ -628,6 +666,8 @@ contains
   !----------------------------------------------------------------------------!
    USE intw_allwfcs, only: get_psi_general_k_all_wfc
    use intw_utility, only: find_free_unit
+   use intw_useful_constants, only: cmplx_0
+   use intw_reading, only : noncolin
    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
    use w90_parameters, only: num_bands
 
@@ -649,7 +689,7 @@ contains
 
   complex(dp)    :: wfc(nG_max,num_bands,nspin)
 
-  complex(dp)    :: guiding_function(ngm)
+  complex(dp)    :: guiding_function(ngm,nspin)
 
   real(dp)       :: QE_eig(num_bands)
 
@@ -696,7 +736,18 @@ contains
     ! does not vanish. It will be assumed that gvec is large enough to
     ! insure proper normalization.
 
-      call generate_guiding_function(ikpt,n_proj,guiding_function)
+      call generate_guiding_function(ikpt,n_proj,guiding_function(:,1))
+
+      !JLB spinor projection. Should be generalized to quantization axis /= z
+      if (noncolin) then
+         if (nnkp_proj_s(n_proj) < 0) then
+            guiding_function(:,2) = guiding_function(:,1)
+            guiding_function(:,1) = cmplx_0
+         else
+            guiding_function(:,2) = cmplx_0
+         end if
+      end if
+      !
 
       if (trim(method) == 'CONVOLUTION') then
               call get_guiding_function_overlap_convolution(list_iG,wfc,   &
@@ -879,15 +930,15 @@ contains
 
   integer,intent(in) :: list_iG(nG_max)
   complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
-  complex(dp),intent(in) :: guiding_function(ngm)
+  complex(dp),intent(in) :: guiding_function(ngm,nspin)
   complex(dp),intent(out) :: amn(num_bands)
 
   !local variables
 
   integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
-  complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
-  complex(dp) :: frr(nr1*nr2*nr3)  !MBR
-  complex(dp) :: fg(ngm)
+  complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3,nspin)
+  complex(dp) :: frr(nr1*nr2*nr3,nspin)
+  complex(dp) :: fg(ngm,nspin)
 
   amn=cmplx_0
   !
@@ -901,28 +952,34 @@ contains
   !
   do ibnd=1,num_bands
      !
-     fr(:)=cmplx_0
-     frr(:)=cmplx_0  !MBR
+     fr=cmplx_0
+     frr=cmplx_0  !MBR
+     !
+     ! MBR ojo!!! antes se "mezclaba" fr en espacio real con la convolucion
+     ! MBR, JLB: Hay que sacarlo del loop nspin porque el I/O fg/fr asume dimension spinor
+     !call func_from_g_to_r (1,ngm,guiding_function,fr)
+     call func_from_g_to_r (1,ngm,guiding_function,frr)
      !
      do is=1,nspin
         !
         call wfc_from_g_to_r (list_iG,wfc(:,ibnd,is),wfc_r)
-        ! MBR ojo!!! antes se "mezclaba" fr en espacio real con la convolucion
-        !call func_from_g_to_r (1,ngm,guiding_function,fr)
-        call func_from_g_to_r (1,ngm,guiding_function,frr)
         !
         do ir=1,nr1*nr2*nr3
            !
            ! MBR
            !fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
-           fr(ir)=fr(ir) + conjg(wfc_r(ir))*frr(ir)
+           fr(ir,is)=fr(ir,is) + conjg(wfc_r(ir))*frr(ir,is)
            !
         enddo !ir
      enddo !is
      !
      call func_from_r_to_g (1,ngm,fr,fg)
      !
-     amn(ibnd)=fg(iG0_fft)
+     ! JLB: Sum both spin components
+     do is=1, nspin
+      amn(ibnd)=amn(ibnd)+fg(iG0_fft, is)
+     end do
+     !amn(ibnd)=fg(iG0_fft)
      !
   enddo !ibnd
   !
@@ -958,7 +1015,7 @@ contains
 
   integer,intent(in) :: list_iG(nG_max)
   complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
-  complex(dp),intent(in) :: guiding_function(ngm)
+  complex(dp),intent(in) :: guiding_function(ngm,nspin)
   complex(dp),intent(out) :: amn(num_bands)
 
   !local variables
@@ -1006,7 +1063,7 @@ contains
      do ibnd=1,num_bands
         do is=1,nspin
            !
-           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG)
+           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG,is)
            !
         enddo !is
      enddo !ibnd

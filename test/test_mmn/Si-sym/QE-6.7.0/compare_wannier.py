@@ -7,7 +7,7 @@ import sys
 acc = 1.0E-5
 
 # Read INTW+W90 generated file from IBZ calculation
-out_file = "pb.wout"
+out_file = "si.wout"
 #
 w_center=[]
 with open(out_file, "rt") as f:
@@ -28,8 +28,9 @@ for line in data:
 
 
 
-# Read previously generated file as reference
-out_file = "reference/ref_pb.wout"
+# Read previously generated file 
+# with INTW+W90 on full BZ grid
+out_file = "../../Si-fullmesh/QE-6.7.0/si.wout"
 #
 with open(out_file, "rt") as f:
     data = f.readlines()

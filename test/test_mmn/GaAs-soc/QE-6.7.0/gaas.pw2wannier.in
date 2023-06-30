@@ -1,0 +1,22 @@
+!!
+!!outdir         : location of temporary output files
+!!prefix         : pwscf filename prefix
+!!seedname       : wannier90 input/output filename prefix
+!!wan_mode       : 'standalone' or 'library' [1]
+!!write_mmn      : (logical) compute M_mn matrix [1]
+!!write_amn      : (logical) compute A_mn matrix [1]
+!!write_unk      : (logical) write wavefunctions to file [1]
+!!wvfn_formatted : (logical) formatted or unformatted output for wavefunctions
+!!reduce_unk     : (logical) output wavefunctions on a coarse grid to save memory
+!!spin_component : 'none', 'up' or 'down'
+!!
+&inputpp 
+   outdir = './'
+   prefix = 'gaas'
+   seedname = 'gaas'
+   wan_mode = 'standalone'
+   write_mmn = .true.
+   write_amn = .true.
+   write_unk = .false.
+   spin_component = 'none'
+/

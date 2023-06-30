@@ -1,6 +1,6 @@
 -- pw2intw
 &inputpp
- prefix = "pb",
+ prefix = "si",
  mesh_dir = "./",
  phonons = .false.,
  dynxml = .false.,

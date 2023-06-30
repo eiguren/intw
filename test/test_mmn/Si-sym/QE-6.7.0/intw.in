@@ -19,7 +19,7 @@ max_ram		=	1.5e9
 chemical_potential =    10.0739
 /
 &intw2W
-intw2W_fullzone =       .true.
+intw2W_fullzone =       .false.
 intw2W_method   =       'CONVOLUTION'
 /
 &response

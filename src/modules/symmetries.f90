@@ -2044,7 +2044,9 @@ contains
           do is=1,nspin
             do js=1,nspin
               !
-              wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,i_sym) * wfc_k_aux(i,ibnd,js)
+              ! JLB, MBR 29/06/2023
+              !wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,i_sym) * wfc_k_aux(i,ibnd,js)
+              wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,js)
               !
             enddo !js
           enddo !is

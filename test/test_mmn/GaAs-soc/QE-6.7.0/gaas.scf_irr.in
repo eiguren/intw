@@ -1,0 +1,33 @@
+&CONTROL
+  calculation = 'scf'
+  prefix = 'gaas_irr',
+  pseudo_dir = './',
+  outdir = './'
+  tstress = .true.
+  tprnfor = .true.
+  wf_collect = .true.
+  verbosity = 'high'
+/
+&SYSTEM
+  ibrav = 2,
+  ! vc-relaxed
+  celldm(1) = 10.863463112,
+  nat = 2,
+  ntyp = 2,
+  ecutwfc = 80.0,
+  occupations = 'fixed'
+  lspinorb=.true.,
+  noncolin=.true.
+/
+&ELECTRONS
+  mixing_beta = 0.7
+  conv_thr = 1.0d-14
+/
+ATOMIC_SPECIES
+  Ga  68.926  Ga.pbe.fr.dojo04.upf
+  As  74.922  As.pbe.fr.dojo04.upf 
+ATOMIC_POSITIONS {crystal}
+  Ga 0.00 0.00 0.00
+  As 0.25 0.25 0.25
+K_POINTS {automatic}
+  4 4 4 0 0 0

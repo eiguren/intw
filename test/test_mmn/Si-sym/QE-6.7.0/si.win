@@ -12,12 +12,7 @@ End Atoms_Frac
 Begin Projections
 !! !! Atom-centered sp3-orbitals
 !!Si:sp3
-!! !! Bond-centered s-orbitals
-!!f=0.125,0.125,0.125:s
-!!f=-0.125,0.125,0.375:s
-!!f=0.125,0.375,0.375:s
-!!f=-0.125,0.375,0.125:s
-!! Bond-centered, taken from GaAs example21
+! Bond-centered, taken from GaAs example21
 f= 0.125, 0.125, 0.125: s
 f= 0.125, 0.125, -.375: s
 f= -.375, 0.125, 0.125: s
