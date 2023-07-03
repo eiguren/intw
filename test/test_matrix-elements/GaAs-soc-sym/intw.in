@@ -1,0 +1,80 @@
+&input
+ mesh_dir 	=	'./'
+ prefix 		= 	'gaas'
+ nk1		=	4
+ nk2		=	4
+ nk3		=	4
+ magnon          =	.false.
+ TR_symmetry     =	.true.
+ nk1s		=       31
+ nk2s		=       31
+ nk3s		=       31
+ number_G_shells =       4
+ qpt1            =       0.00000
+ qpt2            =       0.25000
+ qpt3            =       0.00000
+ max_ram		=	1.5e9
+ chemical_potential =    10.0739
+/
+
+&intw2W
+ intw2W_fullzone =       .false.
+ intw2W_method   =       'CONVOLUTION'
+/
+
+&response
+ interpolation_scheme =  'linear'
+ hw_min               =  -64.0
+ hw_max               =   64.0
+ n_hw                 =   1001
+ chi0_file_prefix     =  'chi0'
+ broadening_function  =  'gaussian'
+ broadening_method    =  'adaptive'
+ real_part_chi0       =  'kramers-kronig'
+/
+
+&bands
+ bands_points	     =  501
+ crossing_method      =  'none'
+ bands_file           =  'cu_band.dat'
+/
+
+&fsh_input
+/
+
+&ph
+ nq1=1
+ nq2=1
+ nq3=1
+ nqirr=1
+ fc_mat = "gaas.fc"
+ calc_epmat = .true.
+/
+
+&product_basis
+ optimal_basis_size         =  27
+ super_factor_1             =  4
+ super_factor_2             =  4
+ super_factor_3             =  4
+ qpt_basis_1                =  0.000000
+ qpt_basis_2                =  0.250000
+ qpt_basis_3                =  0.000000
+ qpt_dir_1                  =  0.000000
+ qpt_dir_2                  =  0.250000
+ qpt_dir_3                  =  0.000000
+ product_basis_filename     = 'B_functions.nc'
+ overlaps_filename          = 'overlaps.nc'
+ wannier_functions_filename = './Wannier_functions/Wannier_functions.nc'
+ tolerance                  = 1.0e-8
+ basis_order		   = 'diagonal'
+ plane_wave_combination     = 'all'
+/
+
+Kpoint_Path
+6
+X -0.500  0.000  -0.50
+G  0.000  0.000   0.00
+L  0.000  0.500   0.00
+K -0.375  0.375  -0.00
+W -0.500  0.250  -0.25
+G  0.000  0.000   0.00

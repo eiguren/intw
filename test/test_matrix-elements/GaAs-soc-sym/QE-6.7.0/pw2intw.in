@@ -1,0 +1,9 @@
+proba
+&inputpp
+ prefix = "gaas",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 1,
+ dynxml = .false.,
+/
+

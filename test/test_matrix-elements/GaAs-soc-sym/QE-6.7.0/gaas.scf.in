@@ -1,0 +1,35 @@
+&control
+ calculation='scf'
+ restart_mode='from_scratch'
+ prefix='gaas'
+ pseudo_dir = './'
+ outdir='./'
+ verbosity='high'
+ wf_collect=.true.
+ /
+&system
+ nosym=.false.
+ noinv=.false.
+ ibrav=2
+ celldm(1)=10.7
+ nat=2
+ ntyp=2
+ ecutwfc=60.0
+ lspinorb=.false.
+ noncolin=.false.
+ occupations='smearing',
+ degauss=0.001
+ noncolin=.true.
+ lspinorb=.true.
+/
+&electrons
+ conv_thr=1.0d-12
+ /
+ATOMIC_SPECIES
+ Ga 69.723 Ga-fr.upf
+ As 74.922 As-fr.upf
+ATOMIC_POSITIONS {crystal}
+ Ga  0.000  0.000  0.000
+ As  0.250  0.250  0.250
+K_POINTS {automatic}
+ 4 4 4  0 0 0

@@ -1,0 +1,17 @@
+*
+!.gitignore
+!Makefile.in
+!Ga-fr.upf
+!As-fr.upf
+!gaas.scf.in
+!qq1/
+!gaas.ph.in
+!gaas.dyn0
+!q2r.in
+!qlist.txt
+!pw2intw.in
+!gaas.nscf.in
+!non-deg.bash
+!compare_matrix_elements.py
+!reference/
+!ref_ep_mat.dat_1

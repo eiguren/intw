@@ -686,7 +686,7 @@ program ep_melements
           write(123400+iq,"(i4,3f10.6)") ik, kpoint
           write(123400+iq,"(i4,3f10.6)") 2*(ik-1)+2, kpoint+qpoint
         enddo
-        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, aep_mat_el(iq,ik,ibnd,jbnd,1,1,imode), ibnd=1,num_bands), jbnd=1,num_bands), ik=1,nkmesh), imode=1,3*nat)
+        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, sum(aep_mat_el(iq,ik,ibnd,jbnd,:,:,imode)), ibnd=1,num_bands), jbnd=1,num_bands), ik=1,nkmesh), imode=1,3*nat)
 #endif
 
         !

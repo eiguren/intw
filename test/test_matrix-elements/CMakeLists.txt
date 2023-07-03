@@ -97,3 +97,26 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-qpoint-sym/matrix-element-test.
   "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-qpoint-sym/QE-6.7.0/matrix-element-test.bash" @ONLY)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-qpoint-sym/QE-6.7.0/Makefile.in"
   "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-qpoint-sym/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_matrix-elements/GaAs-soc-fullmesh
+  COMMAND bash -c "if [ \"\${INTW_RUN_LONG_TESTS:-}\" -ne 0 ]; then ./run-test.bash; else exit 127; fi"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-fullmesh
+)
+set_tests_properties(test_matrix-elements/GaAs-soc-fullmesh PROPERTIES SKIP_RETURN_CODE 127)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-fullmesh/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-fullmesh/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-fullmesh/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-fullmesh/QE-6.7.0/Makefile" @ONLY)
+
+
+add_test(
+  NAME test_matrix-elements/GaAs-soc-sym
+  COMMAND run-test.bash
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-sym
+)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-sym/matrix-element-test.bash.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-sym/QE-6.7.0/matrix-element-test.bash" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-sym/QE-6.7.0/Makefile.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc-sym/QE-6.7.0/Makefile" @ONLY)

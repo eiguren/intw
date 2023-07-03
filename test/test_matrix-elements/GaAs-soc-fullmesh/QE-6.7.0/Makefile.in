@@ -1,0 +1,76 @@
+
+QE_HOME=@QE_BUILD_DIR@
+QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+BUILD_DIR=@CMAKE_BINARY_DIR@
+
+#MPI_CMD=@MPI_CMD@
+
+all: scf_files ph_files q2r_files non_deg_file
+
+calculation: all
+
+
+.PHONY: all calculation clean run_scf run_ph run_q2r run_non-deg scf_files ph_files q2r_files
+
+
+run_scf:
+	$(MPI_CMD) $(QE_HOME)/bin/pw.x < gaas.scf.in | tee gaas.scf.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_ph:
+	cp -r gaas.save qq1/
+	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/bin/ph.x < gaas.ph.in | tee gaas.ph.out ; rm -rf gaas.save ; test -f CRASH && exit 1 || echo "OK" )
+
+run_q2r:
+	rm -rf CRASH
+	cp qq1/gaas.dyn ./gaas.dyn1
+	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
+	( test -f CRASH && exit 1 || echo "OK" )
+
+run_non-deg:
+	./non-deg.bash
+
+
+SCF_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat gaas.save/wfc64.dat
+PH_FILES = qq1/gaas.ph.out qq1/gaas.dyn qq1/_ph0/gaas.dvscf1 qq1/_ph0/gaas.phsave/patterns.1.xml
+Q2R_FILES = q2r.out gaas.fc
+
+
+scf_files: $(SCF_FILES)
+ph_files: $(PH_FILES)
+q2r_files: $(Q2R_FILES)
+
+
+gaas.scf.out:
+	make run_scf
+gaas.save/data-file-schema.xml:
+	make run_scf
+gaas.save/charge-density.dat:
+	make run_scf
+gaas.save/wfc64.dat:
+	make run_scf
+
+qq1/gaas.ph.out: $(SCF_FILES)
+	make run_ph
+qq1/gaas.dyn: $(SCF_FILES)
+	make run_ph
+qq1/_ph0/gaas.dvscf1: $(SCF_FILES)
+	make run_ph
+qq1/_ph0/gaas.phsave/patterns.1.xml: $(SCF_FILES)
+	make run_ph
+
+q2r.out: $(PH_FILES)
+	make run_q2r
+gaas.fc: $(PH_FILES)
+	make run_q2r
+
+non_deg_file: $(SCF_FILES)
+	make run_non-deg
+
+clean:
+	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save
+	rm -rf qq1/gaas.dyn qq1/gaas.ph.out qq1/gaas.wfc* qq1/_ph0 qq1/gaas.save
+	rm -rf q2r.out gaas.fc gaas.dyn1
+	rm -rf pw2intw.out gaas.save.intw
+	rm -rf non_deg_file
+	rm -rf intw.out ep_mat.dat_1
