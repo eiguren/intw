@@ -494,7 +494,11 @@ contains
     dvscf_irr=cmplx_0
     dvscf_cart=cmplx_0
     !
-    inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:npol**2)
+    if (spinorb_mag) then
+      inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:npol**2)
+    else
+      inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1)
+    endif
     !
     do iq=1,nqirr
        !
