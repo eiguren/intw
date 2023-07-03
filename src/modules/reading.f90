@@ -77,7 +77,7 @@ module intw_reading
   ! in which case nspin = 2 and npol = 1.
 
   integer :: nkpoints_QE
-  !ASIER 
+  !ASIER
   real(kind=dp), allocatable :: kpoints_QE(:,:)
   ! the number of kpoints in the QE folders
 
@@ -218,8 +218,8 @@ contains
 
     logical :: datafile_exists ! for checking if files in .save QE folder exist
 
-    integer, dimension(3,3,48) :: ss
-    real(kind=dp), dimension(4,48) :: fftau
+    integer, allocatable, dimension(:,:,:) :: ss
+    real(kind=dp), allocatable, dimension(:,:) :: fftau
     character(len=256) :: dummy
 
     integer :: i, j
@@ -349,6 +349,7 @@ contains
       read(unit=io_unit, fmt=*)  trev(ii)
     end do !ii
 
+
     if (nspin == 1 .or. nspin ==2.and. TR_symmetry) then
       ! This is the easy case. Simply read in the symmetries
 
@@ -380,29 +381,24 @@ contains
         if ( trev(ii) == 0) nsym = nsym + 1
       end do
 
-      !! JLB: Already allocated above
-      !! next, populate the symmetry array
-      !allocate(s(3,3,nsym))
-      !allocate(ftau(3,nsym))
-      !allocate(can_use_TR(nsym))
+      ! next, populate the symmetry array
+      allocate(ss(3,3,max_nsym))
+      allocate(fftau(3,max_nsym))
 
       can_use_TR(:) = .false.
+      ss(:,:,1:max_nsym) = s(:,:,1:max_nsym)
+      fftau(1:3,1:max_nsym) = ftau(1:3,1:max_nsym)
 
-      ss(:,:,1:nsym) = s(:,:,1:nsym)
-
-      fftau(1:3,1:nsym) = ftau(1:3,1:nsym)
       s = 0
       ftau = 0.0_dp
 
       i_sym = 0
-
       do ii=1,max_nsym
         if ( trev(ii) == 0) then
           i_sym = i_sym + 1
           s(:,:,i_sym) = ss(:,:,ii)
           ftau(:,i_sym) = fftau(:,ii)
         end if
-
       end do
 
     end if !nspin
@@ -601,7 +597,7 @@ contains
     integer,intent(out) :: list_iG(nG_max)
     real(dp),intent(out) :: QE_eig(nbands)
     complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
-    
+
      integer :: nG
 
     !logical variables
@@ -614,7 +610,7 @@ contains
     complex(dp) :: wfc_all(nG_max,nbands,nspin)
     real(dp) :: QE_eig_all(nbands)
 
-    
+
 
     band_excluded(:) = .false.
     !
@@ -749,7 +745,7 @@ contains
     !
     do ibnd=1,nbands
       !
-      if (band_excluded(ibnd)) cycle 
+      if (band_excluded(ibnd)) cycle
         !
         n_yes=n_yes+1
         do is=1,nspin
