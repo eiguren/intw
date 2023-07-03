@@ -44,7 +44,15 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
               if (ityp(naj) == ntj) then
                 do jh=1,nh(ityp(naj))
                   jkb = jkb + 1
-                  if (na==naj) Dij(ikb,jkb,:,:) = DKB(ih,jh,:,:,ityp(na))
+                  if (na==naj) then
+                    if (lspinorb) then
+                      Dij(ikb,jkb,:,:) = DKB(ih,jh,:,:,ityp(na))
+                    else
+                      do spol1=1,npol
+                        Dij(ikb,jkb,spol1,spol1) = DKB(ih,jh,1,1,ityp(na))
+                      enddo
+                    endif
+                  endif
                 enddo !jh
               endif
             enddo !naj
@@ -55,6 +63,7 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
       !
     enddo !na
   enddo !nt
+
 
 
 
@@ -114,12 +123,19 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, npol, nbands,ng_max, list_iGk
     Dij_projec_2 = cmplx_0
     do ipol=1,3
       !
-      do spol1=1,npol
-        do spol2=1,npol
-          Dij_projec_1(:,ipol,spol1,spol2) = matmul( Dij(:,:,spol1,spol2), projec_1(:,ipol,spol2) )
-          Dij_projec_2(:,ipol,spol1,spol2) = matmul( Dij(:,:,spol1,spol2), projec_2(:,ipol,spol2) )
-        enddo !spol2
-      enddo !spol1
+      if (lspinorb) then
+        do spol1=1,npol
+          do spol2=1,npol
+            Dij_projec_1(:,ipol,spol1,spol2) = matmul( Dij(:,:,spol1,spol2), projec_1(:,ipol,spol2) )
+            Dij_projec_2(:,ipol,spol1,spol2) = matmul( Dij(:,:,spol1,spol2), projec_2(:,ipol,spol2) )
+          enddo !spol2
+        enddo !spol1
+      else
+        do spol1=1,npol
+          Dij_projec_1(:,ipol,spol1,spol1) = matmul( Dij(:,:,spol1,spol1), projec_1(:,ipol,spol1) )
+          Dij_projec_2(:,ipol,spol1,spol1) = matmul( Dij(:,:,spol1,spol1), projec_2(:,ipol,spol1) )
+        enddo !spol1
+      endif
       !
     enddo !ipol
 
