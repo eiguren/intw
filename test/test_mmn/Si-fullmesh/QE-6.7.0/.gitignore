@@ -1,6 +1,7 @@
 *
 !.gitignore
 !compare_mmn.py
+!compare_wannier.py
 !Makefile.in
 !pw2intw.in
 !si.scf.in

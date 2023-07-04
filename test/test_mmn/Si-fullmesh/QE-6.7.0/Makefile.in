@@ -6,7 +6,7 @@ QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
 all: pw_files w90pp_files pw2wannier90_files w90_1_files pw2intw_files intw_files w90_2_files
 
-calculation: all
+calculation: all run_pw2intw run_intw run_w90_2
 
 
 .PHONY: all calculation clean run_pw run_w90pp run_pw2wannier90 run_w90_1 run_pw2intw run_intw run_w90_2 pw_files pw2wannier90_files w90_2_files pw2intw_files intw_files w90_files
