@@ -25,7 +25,8 @@ module intw_intw2wannier
             nnkp_Wcenters, nnkp_proj_x, nnkp_proj_z, nnkp_proj_zona, &
             nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, &
             nnkp_proj_s, nnkp_proj_spin_axis, &
-            nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands
+            nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands, &
+            num_bands_intw
   !
   ! subroutines
   public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
@@ -61,7 +62,14 @@ module intw_intw2wannier
 
   integer     :: nnkp_nnkpts            !the number near neighbor k-points
 
-  integer     :: nnkp_n_proj            !the number of Wannier functions used.
+  integer     :: nnkp_n_proj            !the number of projections specified 
+                                        !(should be the same as number of Wannier functions)
+
+  ! JLB: We should substitute num_bands from w90_parameters by this variable everywhere,
+  !      and then just rename to num_bands for simplicity
+  integer     :: num_bands_intw         !the number of bands used for wannierization
+                                        !can be different from nbands if exclude_bands is used
+                                        !can be different from num_wann if disentanglement is used
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
   real(dp),allocatable :: nnkp_Wcenters(:,:)  ! the Wannier centers, for trial projection
@@ -75,8 +83,8 @@ module intw_intw2wannier
   integer,allocatable  :: nnkp_proj_m(:)     ! the m-pojection, for trial
 
   ! JLB: Extra variables for spinor projections
-  real(dp),allocatable :: nnkp_proj_spin_axis(:,:)
-  integer,allocatable  :: nnkp_proj_s(:)
+  real(dp),allocatable :: nnkp_proj_spin_axis(:,:) ! spin quantization axis for spinor projection
+  integer,allocatable  :: nnkp_proj_s(:) ! up or down spin
 
   integer,allocatable  :: nnkp_list_ikpt_nn(:,:) ! the neighbors of ikpt1
   integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another
