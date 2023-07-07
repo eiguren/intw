@@ -60,7 +60,7 @@ module intw_reading
   ! the maximum number of G vectors for any  k point
 
   integer :: nbands
-  ! the number of bands computed
+  ! the number of bands computed in the QE calculation
 
   logical :: lspinorb
   ! if true, spin-orbit non-collinear calculation.

@@ -39,7 +39,7 @@ program intw2W90_2
                           read_kpoints_data_file_xml, deallocate_reading_variables
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
   use intw_utility, only: get_timing, generate_kmesh
-  USE w90_parameters, only: num_bands, num_wann
+  !USE w90_parameters, only: num_bands, num_wann
 
 !================================================================================
 !       Declare the variables
@@ -156,7 +156,8 @@ write(*,20) '|           ---------------------------------       |'
 
   call read_nnkp_file(nnkp_file)
   !
-  num_bands=nbands-nnkp_exclude_bands
+  !JLB
+  num_bands_intw=nbands-nnkp_exclude_bands
   !
   ! just as a test; can be removed later
   !
