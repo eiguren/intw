@@ -26,7 +26,7 @@ module intw_intw2wannier
             nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, &
             nnkp_proj_s, nnkp_proj_spin_axis, &
             nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands, &
-            num_bands_intw
+            num_bands_intw, num_wann_intw
   !
   ! subroutines
   public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
@@ -70,6 +70,12 @@ module intw_intw2wannier
   integer     :: num_bands_intw         !the number of bands used for wannierization
                                         !can be different from nbands if exclude_bands is used
                                         !can be different from num_wann if disentanglement is used
+
+  ! JLB: We should substitute num_wann from w90_parameters by this variable everywhere,
+  !      and then just rename to num_wann for simplicity
+  integer     :: num_wann_intw          !the number of wannier functions
+                                        !can be different from num_bands if disentanglement is used
+                                        !should be the same as n_proj (JLB: How to cross-check?)
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
   real(dp),allocatable :: nnkp_Wcenters(:,:)  ! the Wannier centers, for trial projection

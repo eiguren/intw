@@ -157,7 +157,8 @@ write(*,20) '|           ---------------------------------       |'
   call read_nnkp_file(nnkp_file)
   !
   !JLB
-  num_bands_intw=nbands-nnkp_exclude_bands
+  num_bands_intw = nbands-nnkp_exclude_bands
+  num_wann_intw = nnkp_n_proj
   !
   ! just as a test; can be removed later
   !
