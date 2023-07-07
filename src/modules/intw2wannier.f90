@@ -548,7 +548,7 @@ contains
   use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
   use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
   use intw_symmetries, only:  QE_folder_sym
 
 
@@ -572,16 +572,18 @@ contains
   integer        :: ngk1, ngk2
 
   integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
-  complex(dp)    :: wfc_1(nG_max,num_bands,nspin), wfc_2(nG_max,num_bands,nspin)
-  real(dp)       :: QE_eig(num_bands)
+  complex(dp)    :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+  real(dp)       :: QE_eig(num_bands_intw)
 
-  complex(dp)    :: pw_mat_el(num_bands,num_bands,nspin,nspin)
+  complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
   character(256) :: header
 
-  integer        :: nbands_loc
+  !integer        :: nbands_loc
+  !nbands_loc=num_bands
 
-  nbands_loc=num_bands
+   write(*,*) "TEST", num_bands_intw
+
   !-----------------------------------
   ! Open all the needed files
   !-----------------------------------
@@ -615,7 +617,7 @@ contains
     ngk1= ngk_all(QE_folder_sym(ikpt_1))
 
     ! print out the eigenvalues
-    do nb =1, nbands_loc
+    do nb =1, num_bands_intw
        write(io_unit_eig,'(2I5,F18.12)') nb, ikpt_1, QE_eig(nb)
     end do
 
@@ -647,18 +649,14 @@ contains
       end if
 
       if (nspin==2) then
-         do nb1 = 1,nbands_loc
-!         do nb1 = 1,nbands
-           do nb2 = 1,nbands_loc
-!           do nb2 = 1,nbands
+         do nb1 = 1,num_bands_intw
+           do nb2 = 1,num_bands_intw
               write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1) + pw_mat_el(nb2,nb1,2,2)
            end do
          end do
       else if  (nspin==1) then
-         do nb1 = 1,nbands_loc
-!         do nb1 = 1,nbands
-           do nb2 = 1,nbands_loc
-!           do nb2 = 1,nbands
+         do nb1 = 1,num_bands_intw
+           do nb2 = 1,num_bands_intw
               write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1)
            end do
          end do
@@ -683,7 +681,7 @@ contains
    use intw_useful_constants, only: cmplx_0
    use intw_reading, only : noncolin
    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-   use w90_parameters, only: num_bands
+   !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -701,24 +699,24 @@ contains
 
   integer        :: list_iG(nG_max)
 
-  complex(dp)    :: wfc(nG_max,num_bands,nspin)
+  complex(dp)    :: wfc(nG_max,num_bands_intw,nspin)
 
   complex(dp)    :: guiding_function(ngm,nspin)
 
-  real(dp)       :: QE_eig(num_bands)
+  real(dp)       :: QE_eig(num_bands_intw)
 
-  complex(dp)    :: amn(num_bands)
+  complex(dp)    :: amn(num_bands_intw)
 
   character(256) :: header
 
   integer :: G_plus(3)
 
-!Peio
-!The variable we use instead of num_bands
-  integer :: nbands_loc
-!Peio
+!!Peio
+!!The variable we use instead of num_bands
+!  integer :: nbands_loc
+!!Peio
+!nbands_loc=num_bands
 
-  nbands_loc=num_bands
   nkmesh = nk1*nk2*nk3
 
   io_unit_amn = find_free_unit()
@@ -776,8 +774,7 @@ contains
 
       !Write result to file $prefix.amn.
 
-      do nb = 1,nbands_loc
-!      do nb = 1,nbands
+      do nb = 1,num_bands_intw
         write(io_unit_amn,'(3I7,2F18.12)') nb, n_proj, ikpt, amn(nb)
       end do !nb
 
@@ -936,16 +933,16 @@ contains
   use intw_reading, only: ngm, nG_max, nr1, nr2, nr3
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
                       wfc_from_g_to_r
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
+  complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
   complex(dp),intent(in) :: guiding_function(ngm,nspin)
-  complex(dp),intent(out) :: amn(num_bands)
+  complex(dp),intent(out) :: amn(num_bands_intw)
 
   !local variables
 
@@ -964,7 +961,7 @@ contains
   !
   iG0_fft=nl(iG0)
   !
-  do ibnd=1,num_bands
+  do ibnd=1,num_bands_intw
      !
      fr=cmplx_0
      frr=cmplx_0  !MBR
@@ -1021,22 +1018,22 @@ contains
 !--------------------------------------------------------------------------
 
   use intw_reading, only: ngm, nG_max
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
+  complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
   complex(dp),intent(in) :: guiding_function(ngm,nspin)
-  complex(dp),intent(out) :: amn(num_bands)
+  complex(dp),intent(out) :: amn(num_bands_intw)
 
   !local variables
 
   integer :: i, ibnd, is, iG, nG_max_non_zero
   integer        :: list_iG1(nG_max)
-  complex(dp) :: amn_local(num_bands)
+  complex(dp) :: amn_local(num_bands_intw)
 !  real(dp)       :: wrong_norm2
 
   amn = cmplx_0
@@ -1059,7 +1056,7 @@ contains
   !
   !$omp parallel default(none)                          &
   !$omp shared(nG_max_non_zero,nG_max,list_iG,list_iG1,cmplx_0)  &
-  !$omp shared(nbands,num_bands,nspin,wfc,amn,guiding_function)   &
+  !$omp shared(nbands,num_bands_intw,nspin,wfc,amn,guiding_function)   &
   !$omp private(i,iG,ibnd,is,amn_local)
   !
   amn_local = cmplx_0
@@ -1074,7 +1071,7 @@ contains
      ! note that the guiding function is defined for all G in gvec;
      ! it is thus properly indexed by iG, not i.
      !
-     do ibnd=1,num_bands
+     do ibnd=1,num_bands_intw
         do is=1,nspin
            !
            amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG,is)
@@ -1086,7 +1083,7 @@ contains
   !
   !$omp end do
   !
-  do ibnd=1,num_bands
+  do ibnd=1,num_bands_intw
      !
      !$omp atomic
      !

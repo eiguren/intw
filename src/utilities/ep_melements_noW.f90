@@ -410,6 +410,7 @@ program ep_melements
   !       Allocate wfc related files
   !================================================================================
   !
+  !!!JLB: Careful here, discuss how to clean and make consistent
   num_bands = nbands
   nbands_loc = num_bands
   !
