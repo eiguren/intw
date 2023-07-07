@@ -380,10 +380,11 @@ contains
         if ( trev(ii) == 0) nsym = nsym + 1
       end do
 
-      ! next, populate the symmetry array
-      allocate(s(3,3,nsym))
-      allocate(ftau(3,nsym))
-      allocate(can_use_TR(nsym))
+      !! JLB: Already allocated above
+      !! next, populate the symmetry array
+      !allocate(s(3,3,nsym))
+      !allocate(ftau(3,nsym))
+      !allocate(can_use_TR(nsym))
 
       can_use_TR(:) = .false.
 

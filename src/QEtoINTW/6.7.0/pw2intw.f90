@@ -355,35 +355,76 @@ contains
     USE wvfct, ONLY : nbnd, et
     USE constants, ONLY: rytoev
     use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: eps_14
 
 
     integer :: ik, ibnd, is, npol, ig
     character(256) ::  wfc_file, datafile
     integer :: io_unit
+    !
+    complex(dp), allocatable :: evc_down(:, :) !JLB
 
     npol=1
     io_unit = find_free_unit()
 
     if (noncolin) npol=2
 
-    do ik=1,nks
+    ! JLB
+    ! Special case: Collinear spin-polarized calculation
+    if (lsda) then
+      !
+      ! The number of k-points is artificially doubled in QE for this case,
+      ! and the spin-up and down bands separated
+      allocate(evc_down(npwx*npol,nbnd))
+      write(*,*) nbnd, nks, nks/2
+      do ik=1,nks/2
 
-       write(wfc_file,100) ik
-       datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
-       open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted")
-       CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
-       write(unit=io_unit) ngk(ik)
-       write(unit=io_unit) igk_k(1:ngk(ik), ik)
-       write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
+        write(wfc_file,100) ik
+        datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+        open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted")
+        ! Read spin-up wf contained in ik
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
+        ! Read spin-down wf contained in nks/2+ik
+        CALL davcio (evc_down, 2*nwordwfc, iunwfc, nks/2+ik, -1 )
+        ! Write both up and down wfcs as spinors
+        write(unit=io_unit) ngk(ik)
+        write(unit=io_unit) igk_k(1:ngk(ik), ik)
+        write(unit=io_unit) ( et(ibnd,ik)*rytoev, et(ibnd,nks/2+ik)*rytoev, ibnd=1,nbnd )
+        do ibnd=1, nbnd
+            write(unit=io_unit) evc(1:ngk(ik), ibnd), 0.0*evc(1:ngk(ik), ibnd)
+            write(unit=io_unit) 0.d0*evc_down(1:ngk(ik), ibnd), evc_down(1:ngk(ik), ibnd)
+        enddo
+        write(*,'(4ES18.6)') evc(1, nbnd), evc(npwx+1, nbnd)
+        write(*,'(4ES18.6)') evc_down(1, nbnd), evc_down(npwx+1, nbnd)
+        close(unit=io_unit)
 
-       do ibnd=1, nbnd
-          ! MBR
-          !write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
-          write(unit=io_unit) evc(1:ngk(ik), ibnd), evc(npwx+1:npwx+ngk(ik), ibnd)
-       enddo
-       close(unit=io_unit)
+      end do !ik
+      !
+      deallocate(evc_down)
+      !
+    !end JLB
+    else
+      !
+      do ik=1,nks
 
-    end do !ik
+        write(wfc_file,100) ik
+        datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+        open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted")
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
+        write(unit=io_unit) ngk(ik)
+        write(unit=io_unit) igk_k(1:ngk(ik), ik)
+        write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
+
+        do ibnd=1, nbnd
+            ! MBR
+            !write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
+            write(unit=io_unit) evc(1:ngk(ik), ibnd), evc(npwx+1:npwx+ngk(ik), ibnd)
+        enddo
+        close(unit=io_unit)
+
+      end do !ik
+      !
+    end if
 100 format('wfc'I5.5'.dat')
 
   end subroutine write_wfc
@@ -419,9 +460,32 @@ contains
     CHARACTER(LEN=256) :: datafile
     integer :: io_unit
 
+    ! JLB new variables to support collinear spin-polarized calculation
+    LOGICAL :: noncolin_intw, domag_intw, lsda_intw
+    INTEGER :: nkstot_intw, nbnd_intw
+
     io_unit= find_free_unit()
     datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"crystal.dat")
     open(unit=io_unit,file=datafile,status="unknown", action="write",form="formatted")
+
+    ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
+    ! (see also subroutine write_wfc() below)
+    ! Here I define new variables to leave the ones read from QE modules unchanged
+    if (lsda) then
+      noncolin_intw = .true.
+      domag_intw = .true. ! not sure about this one
+      lsda_intw = .false.
+      nkstot_intw = nkstot / 2
+      nbnd_intw = nbnd * 2
+    else
+      ! Just leave as in QE
+      noncolin_intw = noncolin
+      domag_intw = domag
+      lsda_intw = lsda
+      nkstot_intw = nkstot
+      nbnd_intw = nbnd
+    end if
+    ! end JLB
 
     write(unit=io_unit,fmt=*)"ALAT"
     write(unit=io_unit,fmt="(f16.10)")alat
@@ -441,11 +505,11 @@ contains
     write(unit=io_unit,fmt=*)ecutrho
 
     write(unit=io_unit,fmt=*)"NONCOLIN"
-    write(unit=io_unit,fmt=*)noncolin
+    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
     write(unit=io_unit,fmt=*)"LSPINORB"
     write(unit=io_unit,fmt=*)lspinorb
     write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
-    write(unit=io_unit,fmt=*)domag
+    write(unit=io_unit,fmt=*)domag_intw !domag
     write(unit=io_unit,fmt=*)"NAT"
     write(unit=io_unit,fmt=*)nat
 
@@ -456,7 +520,7 @@ contains
     write(unit=io_unit,fmt=*) ef
 
     write(unit=io_unit,fmt=*)"LSDA"
-    write(unit=io_unit,fmt=*) lsda
+    write(unit=io_unit,fmt=*) lsda_intw !lsda
 
     write(unit=io_unit,fmt=*)"NTYP"
     write(unit=io_unit,fmt=*)nsp
@@ -482,13 +546,13 @@ contains
     enddo
 
     write(unit=io_unit,fmt=*)"NKS"
-    write(unit=io_unit,fmt=*)nkstot
+    write(unit=io_unit,fmt=*)nkstot_intw !nkstot
 
     write(unit=io_unit,fmt=*)"NGMAX"
     write(unit=io_unit,fmt=*)npwx
 
     write(unit=io_unit,fmt=*)"NBAND"
-    write(unit=io_unit,fmt=*)nbnd
+    write(unit=io_unit,fmt=*)nbnd_intw !nbnd
     close(unit=io_unit)
 
 
@@ -496,7 +560,7 @@ contains
     datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"kpoints.dat")
     open(unit=io_unit,file=datafile,status="unknown", action="write",form="formatted")
 
-    DO ik=1, nkstot
+    DO ik=1, nkstot_intw !nkstot
        write(unit=io_unit,fmt="(100f16.10)")( xk(i,ik), i = 1, 3 )
        !write(unit=io_unit,fmt="(100f16.10)") ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
     ENDDO
