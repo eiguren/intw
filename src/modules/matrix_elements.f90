@@ -35,7 +35,7 @@ contains
 !--------------------------------------------------------------------------------------------------
 subroutine get_plane_wave_matrix_element_convolution_map(G,list_iG_1,ngk1,list_iG_2,ngk2,wfc_1,wfc_2,pw_mat_el)
 !--------------------------------------------------------------------------------------------------
-!      
+!
 !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
 !
 !	                < wfc_1 | e^{-i G r} | wfc_2 >
@@ -70,7 +70,7 @@ use intw_fft, only : find_iG
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3), jd (1)
-  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2 
+  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
   integer :: nG_max_non_zero
   complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
   logical :: found
@@ -95,7 +95,14 @@ use intw_fft, only : find_iG
      !
 
      call find_iG(gvec(:,list_iG_1(i))+G,iG_1 )
-     jd   =findloc( list_iG_2, iG_1) 
+#if __GFORTRAN__ & __GNUC__ < 9
+     do j=1,nG_max
+       if (list_iG_2(j)==iG_1) exit
+     enddo
+     jd(1) = j
+#else
+     jd = findloc(list_iG_2, iG_1)
+#endif
 
      if (jd(1)==0) cycle
      !
@@ -367,7 +374,7 @@ end subroutine get_spin_component
 !----------------------------------------------------------------------------------------------------------------------
 
   subroutine get_plane_wave_matrix_element_convolution_orig      &
-                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el) 
+                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
   !--------------------------------------------------------------------------------
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
@@ -750,7 +757,7 @@ end subroutine get_spin_component
 
 
   subroutine get_plane_wave_matrix_element_convolution_alt_orig  &
-                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el) 
+                        (G,list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
   !--------------------------------------------------------------------------------
   !
   !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
