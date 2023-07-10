@@ -24,7 +24,7 @@ contains
     real(kind=dp), intent(in) :: prec
 
     r = .true.
-    if (a /= b) then
+    if (a .neqv. b) then
       r = .false.
     endif
 
