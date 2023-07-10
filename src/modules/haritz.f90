@@ -86,8 +86,8 @@ contains
 
     !call iotk_close_read (io_unit)
 
-    !ASIER Kontuz, orain irakurtzen da intw.save eta ez dakitz zein unitate izango 
-    ! Esango nuke /2 falta dela 
+    !ASIER Kontuz, orain irakurtzen da intw.save eta ez dakitz zein unitate izango
+    ! Esango nuke /2 falta dela
     efermi = e_fermi*Ha_in_eV
 
   end subroutine get_e_fermi_haritz
@@ -375,12 +375,12 @@ contains
     !logical        :: lsda
     !
     !
-    if (nspin==2 .and. noncolin==.true.) then
+    if (nspin==2 .and. noncolin) then
       !
       ! the value of nspin is correct
       return
       !
-    elseif (nspin==1 .and. noncolin==.false. ) then
+    elseif (nspin==1 .and. (.not.noncolin) ) then
       !
       ! the value of nspin could be incorrect
       !
@@ -393,7 +393,7 @@ contains
       !call iotk_close_read(io_unit)
       !
       ! check the values
-      if (lsda==.true.) then
+      if (lsda) then
         !
         ! nspin should be 2
         nspin=2
