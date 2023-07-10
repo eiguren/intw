@@ -293,13 +293,15 @@ contains
     !  !
     ALLOCATE ( frc(nr1,nr2,nr3,3,3,nat,nat) )
     frc(:,:,:,:,:,:,:) = 0.d0
+    allocate(frc_R(nq1,nq2,nq3,3,3,nat,nat))
+    frc_R(:,:,:,:,:,:,:) = 0.d0
     DO i=1,3
        DO j=1,3
           DO na=1,nat
              DO nb=1,nat
                 READ (io_unit,*) ibid, jbid, nabid, nbbid
                 READ (io_unit,*) (((m1bid, m2bid, m3bid,             &
-                     frc(m1,m2,m3,i,j,na,nb),                  &
+                     frc_R(m1,m2,m3,i,j,na,nb),                  &
                      m1=1,nr1),m2=1,nr2),m3=1,nr3)
 !                DO m3=1,nr3
 !                   DO m2=1,nr2
@@ -315,6 +317,7 @@ contains
     END DO
     !  !
     CLOSE(unit=io_unit)
+    frc=frc_R*cmplx_1
     !  !
        !IGG
        ! =========================================
@@ -326,9 +329,7 @@ contains
        ! And then in mat_inv_four_t it is complex again.
        asr='crystal'
        ALLOCATE (zeu(3,3,nat))
-       allocate(frc_R(nq1,nq2,nq3,3,3,nat,nat))
        zeu =0.d0
-       frc_R =real(frc,dp)                ! make it real
        write(*,*)
        write(*,*) 'Applying ASR : ' ,asr
 

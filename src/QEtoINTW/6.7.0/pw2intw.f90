@@ -277,7 +277,7 @@ contains
     write(unit=numq,fmt=*)iq
 !
     do imode=1,3*nat
-      write(unit=io_unit,fmt="(10000(a,f16.10,a,f16.10,a))") ( "(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ")",jmode=1,3*nat)
+      write(unit=io_unit,fmt="(10000(a,f16.10,a,f16.10,a))") ( "(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ") ",jmode=1,3*nat)
     enddo
 !
   enddo
