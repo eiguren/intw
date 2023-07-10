@@ -1,5 +1,5 @@
 ######################################################
-# Determine and set the Fortran compiler flags we want 
+# Determine and set the Fortran compiler flags we want
 ######################################################
 
 ####################################################################
@@ -10,34 +10,26 @@ INCLUDE(${CMAKE_MODULE_PATH}/SetCompileFlag.cmake)
 # Make sure the build type is uppercase
 STRING(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
 
-IF(NOT BT)
+IF(BT STREQUAL "RELEASE")
+    SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
+      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      FORCE)
+ELSEIF(BT STREQUAL "DEBUG")
+    SET (CMAKE_BUILD_TYPE DEBUG CACHE STRING
+      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      FORCE)
+ELSEIF(BT STREQUAL "TESTING")
+    SET (CMAKE_BUILD_TYPE TESTING CACHE STRING
+      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      FORCE)
+ELSEIF(NOT BT)
     SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
       "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
       FORCE)
     MESSAGE(STATUS "CMAKE_BUILD_TYPE not given, defaulting to RELEASE")
-ENDIF(NOT BT)
-
-
-#IF(BT STREQUAL "RELEASE")
-#    SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
-#      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
-#      FORCE)
-#ELSEIF(BT STREQUAL "DEBUG")
-#    SET (CMAKE_BUILD_TYPE DEBUG CACHE STRING
-#      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
-#      FORCE)
-#ELSEIF(BT STREQUAL "TESTING")
-#    SET (CMAKE_BUILD_TYPE TESTING CACHE STRING
-#      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
-#      FORCE)
-#ELSEIF(NOT BT)
-#    SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
-#      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
-#      FORCE)
-#    MESSAGE(STATUS "CMAKE_BUILD_TYPE not given, defaulting to RELEASE")
-#ELSE()
-#    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are DEBUG, RELEASE, or TESTING")
-#ENDIF(BT STREQUAL "RELEASE")
+ELSE()
+    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are DEBUG, RELEASE, or TESTING")
+ENDIF(BT STREQUAL "RELEASE")
 
 #########################################################
 # If the compiler flags have already been set, return now
@@ -51,7 +43,7 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
 # Determine the appropriate flags for this compiler for each build type.
 # For each option type, a list of possible flags is given that work
 # for various compilers.  The first flag that works is chosen.
-# If none of the flags work, nothing is added (unless the REQUIRED 
+# If none of the flags work, nothing is added (unless the REQUIRED
 # flag is given in the call).  This way unknown compiles are supported.
 #######################################################################
 
@@ -59,9 +51,6 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
 ### GENERAL FLAGS ###
 #####################
 
-# Don't add underscores in symbols for C-compatability
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-fno-underscoring")
 
 # There is some bug where -march=native doesn't work on Mac
 IF(APPLE)
@@ -77,29 +66,28 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                          "-ta=host"      # Portland Group
                 )
 
-# HARITZ Enable pre-processing
+# Allow any line length in free format
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-fpp"        # Intel
-                         "-cpp"        # GNU
+                 Fortran "-ffree-line-length-none"    # GNU
                 )
 
-# HARITZ OpenMP
+# Enable pre-processing
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-qopenmp"        # Intel
-                         "-fopenmp"        # GNU
+                 Fortran REQUIRED "-fpp"        # Intel
+                                  "-cpp"        # GNU
                 )
 
-# HARITZ Puts automatic arrays and arrays created for temporary computations on the heap instead of the stack
+# Puts automatic arrays and arrays created for temporary computations on the heap instead of the stack
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-heap-arrays"        # Intel
                 )
 
-# HARITZ Improves floating-point precision and consistency
+# Improves floating-point precision and consistency
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-mp1"  # Intel
                 )
 
-# HARITZ
+# Set record length units to bytes
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-assume byterecl"  # Intel
                 )
@@ -111,11 +99,11 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
 
 # Disable optimizations
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran REQUIRED "-O0" # All compilers not on Windows
-                                  "/Od" # Intel Windows
+                 Fortran "-O0" # All compilers not on Windows
+                         "/Od" # Intel Windows
                 )
 
-# Turn on all warnings 
+# Turn on all warnings
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-warn all" # Intel
                          "/warn:all" # Intel Windows
@@ -141,20 +129,20 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                 )
 
 
-# HARITZ 
+# Enables all check options except arg_temp_created
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-check all,noarg_temp_created"  # Intel
                 )
 
-# HARITZ
+# Generate complete debugging information
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-debug extended"  # Intel
                 )
 
-# HARITZ Disable floating-point exception 
+# Disable floating-point exception
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-fpe0"              # Intel
-		         "-mno-fp-exceptions" # GNU
+	            	         "-mno-fp-exceptions" # GNU
                 )
 
 #####################
@@ -163,8 +151,8 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
 
 # Optimizations
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_TESTING "${CMAKE_Fortran_FLAGS_TESTING}"
-                 Fortran REQUIRED "-O2" # All compilers not on Windows
-                                  "/O2" # Intel Windows
+                 Fortran "-O2" # All compilers not on Windows
+                         "/O2" # Intel Windows
                 )
 
 #####################
@@ -190,7 +178,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
                 )
 
 # Interprocedural (link-time) optimizations
-# HARITZ (hau kendu)
 #SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 #                 Fortran "-ipo"     # Intel
 #                         "/Qipo"    # Intel Windows
@@ -205,14 +192,9 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
                 )
 
 # Vectorize code
-# HARITZ (hau kendu)
 #SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 #                 Fortran "-vec-report0"  # Intel
 #                         "/Qvec-report0" # Intel Windows
 #                         "-Mvect"        # Portland Group
 #                )
 
-# HARITZ
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
-                 Fortran "-ftz"  # Intel
-                )

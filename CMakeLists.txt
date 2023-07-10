@@ -67,6 +67,13 @@ if(USE_MPI)
   add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
 endif()
 
+# Find OpenMP flag
+if(USE_OPENMP)
+  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+                   Fortran REQUIRED "-qopenmp"        # Intel
+                                    "-fopenmp"        # GNU
+                  )
+endif()
 
 
 
