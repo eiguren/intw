@@ -46,16 +46,16 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   q_=matmul(bg,qpoint_)
   !
   vkb_=cmplx_0
+  allocate (vkb1( npw_,nhm))
   vkb1=0.d0
   !
   if (lmaxkb.lt.0) return
   !
-  allocate (vkb1( npw_,nhm))    
-  allocate (  sk( npw_))    
-  allocate (  qg( npw_))    
-  allocate (  vq( npw_))    
-  allocate ( ylm( npw_, (lmaxkb + 1) **2))    
-  allocate (  gk( 3, npw_))    
+  allocate (  sk( npw_))
+  allocate (  qg( npw_))
+  allocate (  vq( npw_))
+  allocate ( ylm( npw_, (lmaxkb + 1) **2))
+  allocate (  gk( 3, npw_))
   !
   qg=0.d0
   !
@@ -95,21 +95,21 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   !
   jkb=0
   vq=0.d0
-  ! 
+  !
   do nt=1,ntyp
      !
      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
      !
      do nb=1,upf(nt)%nbeta
         !
-        do ig=1,npw_ 
+        do ig=1,npw_
            !
            if (igk_(ig)==0) exit
            !
            call splint_mcf (xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
         enddo !ig
         !
-        ! add spherical harmonic part  (Y_lm(q)*f_l(q)) 
+        ! add spherical harmonic part  (Y_lm(q)*f_l(q))
         !
         do ih=1,nh(nt)
            !
@@ -168,7 +168,7 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
                  !
                  vkb_(ig, jkb) = vkb1 (ig,ih) * sk (ig) * pref
                  !
-              enddo 
+              enddo
            enddo
         endif
      enddo !n bet
@@ -184,5 +184,5 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   !
   return
 
-end subroutine init_KB_projectors 
+end subroutine init_KB_projectors
 
