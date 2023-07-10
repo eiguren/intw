@@ -536,9 +536,9 @@ contains
     write(unit=io_unit,fmt=*)nsym
 
     do isym=1,nsym
-       write(unit=io_unit,fmt="(i8)"), isym
+       write(unit=io_unit,fmt="(i8)") isym
        do i=1, 3
-          write(unit=io_unit, fmt="(3i8)"), (s(i,j,isym), j=1,3)
+          write(unit=io_unit, fmt="(3i8)") (s(i,j,isym), j=1,3)
        enddo
        write(unit=io_unit,fmt="(100f16.10)")  &
             real(ft(1,isym),dp), real(ft(2,isym),dp), real(ft(3,isym),dp)

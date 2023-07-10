@@ -343,9 +343,9 @@ contains
     do ii=1,nsym
       read(unit=io_unit,fmt=*) i_sym
       do i=1, 3
-        read(unit=io_unit, fmt=*), (s(i,j,ii), j=1,3)
+        read(unit=io_unit, fmt=*) (s(i,j,ii), j=1,3)
       enddo
-      read(unit=io_unit, fmt=*), ( ftau(j,ii), j=1,3)
+      read(unit=io_unit, fmt=*) ( ftau(j,ii), j=1,3)
       read(unit=io_unit, fmt=*)  trev(ii)
     end do !ii
 
