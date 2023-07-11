@@ -444,7 +444,7 @@ contains
 
     integer, parameter :: lwmax = 1000
     integer :: info, lwork
-    real(kind=dp) :: work(lwmax)
+    real(kind=dp), allocatable :: work(:)
     integer :: m = 3
     integer :: n = 3
     integer :: ind, k, i
@@ -462,7 +462,13 @@ contains
 
     AI = A - I3
 
-    lwork = 6
+    lwork = -1
+    allocate(work(1))
+    call dgesvd( 'A', 'A', N, N, AI, N, S, U, N, VT, N, &
+                WORK, LWORK, INFO )
+    lwork = work(1)
+    deallocate(work)
+    allocate(work(lwork))
     call dgesvd( 'A', 'A', N, N, AI, N, S, U, N, VT, N, &
                 WORK, LWORK, INFO )
 
