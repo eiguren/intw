@@ -24,10 +24,12 @@ run_pw2intw:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
+	rm -rf si.mmn
 	../../../../build/src/utilities/intw2W90.x < intw.in | tee intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90:
+	rm -rf si.wout
 	$(MPI_CMD) $(W_HOME)/wannier90.x si
 
 

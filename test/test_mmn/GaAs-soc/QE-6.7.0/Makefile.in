@@ -37,12 +37,14 @@ run_pw2intw:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
+	rm -rf gaas.mmn gaas.amn
 	../../../../build/src/utilities/intw2W90.x < gaas.intw_fullmesh.in | tee gaas.intw_fullmesh.out
 	( test -f CRASH && exit 1 || echo "OK" )
 	cp gaas.mmn intw_fullmesh_gaas.mmn
 	cp gaas.amn intw_fullmesh_gaas.amn
 
 run_w90_2:
+	rm -rf gaas.wout
 	$(MPI_CMD) $(W_HOME)/wannier90.x gaas
 	cp gaas.wout intw_fullmesh_gaas.wout
 
@@ -60,12 +62,14 @@ irr_run_pw2intw:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 irr_run_intw:
+	rm -rf gaas_irr.mmn gaas_irr.amn
 	../../../../build/src/utilities/intw2W90.x < gaas.intw_irr.in | tee gaas.intw_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
 	cp gaas_irr.mmn intw_gaas.mmn
 	cp gaas_irr.amn intw_gaas.amn
 
 irr_run_w90:
+	rm -rf gaas_irr.wout
 	$(MPI_CMD) $(W_HOME)/wannier90.x gaas_irr
 	cp gaas_irr.wout intw_gaas.wout
 
