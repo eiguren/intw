@@ -25,7 +25,6 @@ set(SOURCES
   imselfen2reselfen_t0.f90
   init_pp.f90
   init_KB_projectors.f90
-  dft_fftw.f90
   kinds.f90
   haritz.f90
   input_parameters.f90
