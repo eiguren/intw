@@ -20,13 +20,24 @@
 program intw2W90_2
 
   use kinds, only: dp
-  use intw_useful_constants
-  use intw_intw2wannier
-  use intw_symmetries
-  use intw_fft
-  use intw_input_parameters
-  use intw_reading
-  USE intw_allwfcs
+  use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, &
+                               intw2w90_check_mesh, generate_mmn_using_allwfc, &
+                               generate_amn_using_allwfc, deallocate_nnkp
+  use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, &
+                             nosym_G, sym_G, symlink, find_size_of_irreducible_k_set, &
+                             find_the_irreducible_k_set, allocate_symmetry_related_k, &
+                             find_inverse_symmetry_matrices_indices, &
+                             allocate_and_build_spin_symmetry_matrices, &
+                             set_symmetry_relations, deallocate_symmetry_related_k, &
+                             deallocate_spin_symmetry_matrices
+  use intw_fft, only: allocate_fft, deallocate_fft, generate_nl
+  use intw_input_parameters, only: mesh_dir, prefix, intw2W_fullzone, intw2W_method, tr_symmetry, &
+                                   nk1, nk2, nk3, tr_symmetry, compute_mmn, compute_amn, &
+                                   read_input
+  use intw_reading, only: gvec, ngm, nbands, kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
+                          read_parameters_data_file_xml, get_ngm, get_ngmax, get_gvec, &
+                          read_kpoints_data_file_xml, deallocate_reading_variables
+  USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
   use intw_utility, only: get_timing, generate_kmesh
   USE w90_parameters, only: num_bands, num_wann
 
