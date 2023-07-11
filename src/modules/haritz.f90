@@ -249,7 +249,9 @@ contains
       !
       if (gamma_only) then
         !
-        if ( gvec(1,igm_)==-gvec(1,igm_) .and. gvec(2,igm_)==-gvec(2,igm_) .and. gvec(3,igm_)==-gvec(3,igm_) ) assigned(n1,n2,n3)=.false.
+        if ( gvec(1,igm_)==-gvec(1,igm_) .and. &
+             gvec(2,igm_)==-gvec(2,igm_) .and. &
+             gvec(3,igm_)==-gvec(3,igm_) ) assigned(n1,n2,n3)=.false.
         !
         n1 = modulo( -gvec(1,igm_), nr1 ) + 1
         n2 = modulo( -gvec(2,igm_), nr2 ) + 1
