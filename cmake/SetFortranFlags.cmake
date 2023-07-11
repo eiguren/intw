@@ -51,6 +51,12 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
 ### GENERAL FLAGS ###
 #####################
 
+#TODO: This is strongly discouraged and cfftnd.f90 should be fixed
+#TODO: to avoid the use of this flag
+# Allow argument mismatch
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
+                 Fortran "-fallow-argument-mismatch"    # GNU
+                )
 
 # There is some bug where -march=native doesn't work on Mac
 IF(APPLE)
