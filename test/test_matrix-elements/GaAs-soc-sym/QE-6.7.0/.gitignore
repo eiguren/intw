@@ -10,6 +10,7 @@
 !q2r.in
 !qlist.txt
 !pw2intw.in
+!nscf.pw2intw.in
 !gaas.nscf.in
 !compare_matrix_elements.py
 !reference/

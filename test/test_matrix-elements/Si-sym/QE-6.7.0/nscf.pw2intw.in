@@ -1,0 +1,5 @@
+&inputpp
+ prefix = "si-nscf"
+ phonons = .false.
+/
+

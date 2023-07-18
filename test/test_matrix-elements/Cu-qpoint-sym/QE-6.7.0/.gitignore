@@ -11,6 +11,7 @@
 !q2r.in
 !cu.dyn0
 !pw2intw.in
+!nscf.pw2intw.in
 !qlist.txt
 !compare_matrix_elements.py
 !reference/

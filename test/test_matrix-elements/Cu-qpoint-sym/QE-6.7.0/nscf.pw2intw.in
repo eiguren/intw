@@ -1,0 +1,5 @@
+&inputpp
+ prefix = "cu-nscf"
+ phonons = .false.
+/
+
