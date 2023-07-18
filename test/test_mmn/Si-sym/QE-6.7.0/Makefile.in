@@ -5,9 +5,9 @@ QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
 
 #MPI_CMD=@MPI_CMD@
 
-all: pw_files w90pp_files pw2wannier90_files pw2intw_files intw_files w90_files
+all: pw_files w90pp_files pw2intw_files intw_files w90_files
 
-calculation: all run_pw2intw run_intw run_w90
+calculation: pw_files w90pp_files run_pw2intw run_intw run_w90
 
 
 .PHONY: all calculation clean run_pw run_w90pp run_pw2intw run_intw run_w90 pw_files pw2intw_files intw_files w90_files
@@ -35,14 +35,12 @@ run_w90:
 
 PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat
 W90PP_FILES = si.nnkp
-PW2WANNIER90_FILES = si.mmn
 PW2INTW_FILES = pw2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/kpoints.dat si.save.intw/gvectors.dat
 INTW_FILES = si.mmn si.amn si.eig
 W90_FILES = si.wout
 
 pw_files: $(PW_FILES)
 w90pp_files: $(W90PP_FILES)
-pw2wannier90_files: $(PW2WANNIER90_FILES)
 pw2intw_files: $(PW2INTW_FILES)
 intw_files: $(INTW_FILES)
 w90_files: $(W90_FILES)
