@@ -142,14 +142,14 @@ contains
     write(unit=io_unit,fmt=*) upf(is)%nbeta
 
     write(unit=io_unit,fmt="(a)")"NUMBER of GRID POINTS FOR EACH BETA"
-    write(unit=io_unit,fmt=*) upf(is)%kbeta
+    write(unit=io_unit,fmt=*) upf(is)%kbeta(1:upf(is)%nbeta)
 
     write(unit=io_unit,fmt="(a)")"L FOR EACH BETA"
-    write(unit=io_unit,fmt="(100i4)") upf(is)%lll
+    write(unit=io_unit,fmt="(100i4)") upf(is)%lll(1:upf(is)%nbeta)
 
     write(unit=io_unit,fmt="(a)")"J FOR EACH BETA (IF SO COUPLING)"
     if (upf(is)%has_so) then
-      write(unit=io_unit,fmt="(100f6.2)") upf(is)%jjj
+      write(unit=io_unit,fmt="(100f6.2)") upf(is)%jjj(1:upf(is)%nbeta)
     else
       write(unit=io_unit,fmt=*)"NOTHING"
     end if
