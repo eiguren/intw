@@ -96,4 +96,5 @@ clean:
 	rm -rf q2r.out si.fc si.dyn1
 	rm -rf si.nscf.out si-nscf.save si-nscf.wfc* si-nscf.xml
 	rm -rf pw2intw.out si.save.intw
+	rm -rf nscf.pw2intw.out si-nscf.save.intw
 	rm -rf intw.out ep_mat.dat_1

@@ -127,6 +127,6 @@ clean:
 	rm -rf qq3/gaas.dyn qq3/gaas.ph.out qq3/gaas.wfc* qq3/_ph0 qq3/gaas.save
 	rm -rf q2r.out gaas.fc gaas.dyn1 gaas.dyn2 gaas.dyn3
 	rm -rf gaas.nscf.out gaas-nscf.xml gaas-nscf.wfc* gaas-nscf.save
-	rm -rf nscf.pw2intw.out cu-nscf.save.intw
+	rm -rf nscf.pw2intw.out gaas-nscf.save.intw
 	rm -rf pw2intw.out gaas.save.intw
 	rm -rf intw.out ep_mat.dat_*
