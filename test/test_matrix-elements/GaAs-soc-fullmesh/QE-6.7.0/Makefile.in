@@ -5,12 +5,12 @@ BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
-all: scf_files ph_files q2r_files non_deg_file
+all: scf_files ph_files q2r_files
 
 calculation: all
 
 
-.PHONY: all calculation clean run_scf run_ph run_q2r run_non-deg scf_files ph_files q2r_files
+.PHONY: all calculation clean run_scf run_ph run_q2r scf_files ph_files q2r_files
 
 
 run_scf:
@@ -26,9 +26,6 @@ run_q2r:
 	cp qq1/gaas.dyn ./gaas.dyn1
 	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
-
-run_non-deg:
-	./non-deg.bash
 
 
 SCF_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat gaas.save/wfc64.dat
@@ -64,13 +61,9 @@ q2r.out: $(PH_FILES)
 gaas.fc: $(PH_FILES)
 	make run_q2r
 
-non_deg_file: $(SCF_FILES)
-	make run_non-deg
-
 clean:
 	rm -rf gaas.scf.out gaas.xml gaas.wfc* gaas.save
 	rm -rf qq1/gaas.dyn qq1/gaas.ph.out qq1/gaas.wfc* qq1/_ph0 qq1/gaas.save
 	rm -rf q2r.out gaas.fc gaas.dyn1
 	rm -rf pw2intw.out gaas.save.intw
-	rm -rf non_deg_file
 	rm -rf intw.out ep_mat.dat_1
