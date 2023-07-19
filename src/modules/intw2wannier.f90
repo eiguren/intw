@@ -25,11 +25,10 @@ module intw_intw2wannier
             nnkp_Wcenters, nnkp_proj_x, nnkp_proj_z, nnkp_proj_zona, &
             nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, &
             nnkp_proj_s, nnkp_proj_spin_axis, &
-            nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands, &
-            num_bands_intw, num_wann_intw
+            nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands
   !
   ! subroutines
-  public :: deallocate_nnkp, scan_file_to, read_nnkp_file, output_nnkp_file, &
+  public :: deallocate_nnkp, read_nnkp_file, output_nnkp_file, &
             intw2W90_check_mesh, generate_header,  &
             generate_mmn_using_allwfc, generate_amn_using_allwfc, &
             generate_guiding_function, &
@@ -64,18 +63,6 @@ module intw_intw2wannier
 
   integer     :: nnkp_n_proj            !the number of projections specified 
                                         !(should be the same as number of Wannier functions)
-
-  ! JLB: We should substitute num_bands from w90_parameters by this variable everywhere,
-  !      and then just rename to num_bands for simplicity
-  integer     :: num_bands_intw         !the number of bands used for wannierization
-                                        !can be different from nbands if exclude_bands is used
-                                        !can be different from num_wann if disentanglement is used
-
-  ! JLB: We should substitute num_wann from w90_parameters by this variable everywhere,
-  !      and then just rename to num_wann for simplicity
-  integer     :: num_wann_intw          !the number of wannier functions
-                                        !can be different from num_bands if disentanglement is used
-                                        !should be the same as n_proj (JLB: How to cross-check?)
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
   real(dp),allocatable :: nnkp_Wcenters(:,:)  ! the Wannier centers, for trial projection
@@ -124,49 +111,6 @@ contains
   end subroutine deallocate_nnkp
 !----------------------------------------------
 !**********************************************
-!----------------------------------------------
-  subroutine scan_file_to (nnkp_unit,keyword)
-!----------------------------------------------
-!
-!----------------------------------------------------------------------!
-! This subroutine reads a file all the way to the line
-!            begin $keyword
-! This is useful when extracting parameters from the ascii file $seed.nnkp.
-! The subroutine is heavily inspired by the subroutine
-!     QE/PP/pw2pwannier.f90{scan_file_to}
-!-----------------------------------------------------------------------!
-
-  implicit none
-
-  character(len=*)   :: keyword
-  character(len=256) :: word1, word2
-  logical            :: found, test
-  integer            :: ios,   nnkp_unit
-
-  found=.false.
-  !
-  do
-     !
-     read(nnkp_unit,*,iostat=ios) word1, word2
-     !
-     test=(trim(word1).eq.'begin').and.(trim(word2).eq.keyword)
-     !
-     if (test) exit
-     !
-     if (ios.ne.0) then
-        !
-        write (*,*) keyword," data-block missing "
-        stop
-        !
-     endif
-     !
-  enddo
-  !
-  return
-
-  end subroutine scan_file_to
-!------------------------------------------
-!******************************************
 !------------------------------------------
   subroutine read_nnkp_file(nnkp_file)
 !------------------------------------------
@@ -177,9 +121,9 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, noncolin
+  use intw_reading, only: alat, noncolin, scan_file_to
   use intw_utility, only: find_free_unit
-  use w90_parameters, only: num_exclude_bands, exclude_bands
+  !use w90_parameters, only: num_exclude_bands, exclude_bands
 
   implicit none
 
@@ -323,9 +267,12 @@ contains
   !
   read(nnkp_unit,*) nnkp_exclude_bands
   !
-  num_exclude_bands=nnkp_exclude_bands
+  ! JLB: Now this is done in reading.f90 -> set_num_bands
+  !      Here only poulating nnkp_* variables, 
+  !      then check for consistency with intw_* in main program / utility
+  !num_exclude_bands=nnkp_exclude_bands
+  !allocate(exclude_bands(num_exclude_bands))
   !
-  allocate(exclude_bands(num_exclude_bands))
   allocate(nnkp_excluded_bands(nbands))
   !
   nnkp_excluded_bands(:)=.false.
@@ -334,7 +281,7 @@ contains
      !
      read(nnkp_unit,*) nn
      nnkp_excluded_bands(nn)=.true.
-     exclude_bands(j)=nn
+     !exclude_bands(j)=nn
      !
   enddo
   !
@@ -549,6 +496,7 @@ contains
   use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   !use w90_parameters, only: num_bands
+  use intw_reading, only: num_bands_intw
   use intw_symmetries, only:  QE_folder_sym
 
 
@@ -581,8 +529,6 @@ contains
 
   !integer        :: nbands_loc
   !nbands_loc=num_bands
-
-   write(*,*) "TEST", num_bands_intw
 
   !-----------------------------------
   ! Open all the needed files
@@ -679,7 +625,7 @@ contains
    USE intw_allwfcs, only: get_psi_general_k_all_wfc
    use intw_utility, only: find_free_unit
    use intw_useful_constants, only: cmplx_0
-   use intw_reading, only : noncolin
+   use intw_reading, only : noncolin, num_bands_intw
    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
    !use w90_parameters, only: num_bands
 
@@ -930,7 +876,7 @@ contains
 !  The computation is done over all bands using FFT.
 !------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3
+  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
                       wfc_from_g_to_r
   !use w90_parameters, only: num_bands
@@ -1017,7 +963,7 @@ contains
 !
 !--------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max
+  use intw_reading, only: ngm, nG_max, num_bands_intw
   !use w90_parameters, only: num_bands
 
   implicit none

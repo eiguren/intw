@@ -1957,8 +1957,8 @@ contains
     use intw_fft, only: find_iG
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
     use intw_utility, only: HPSORT, cmplx_ainv_2
-    use intw_reading, only: nG_max, gvec, nspin
-    use w90_parameters, only: num_bands
+    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
+    !use w90_parameters, only: num_bands
 
     implicit none
 
@@ -1969,13 +1969,13 @@ contains
     integer, intent(in) :: sym(3,3) ! inverse point group operation the one acting on k (cryst.coord.)
     integer, intent(in) :: list_iG(nG_max) ! G vector indices for k_irr
     real(kind=dp), intent(in) :: ftau(3) ! fractional translation associated with point group operation
-    complex(kind=dp), intent(inout) :: wfc_k_irr(nG_max,num_bands,nspin) ! wfc at point k_irr in the IBZ
+    complex(kind=dp), intent(inout) :: wfc_k_irr(nG_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
     integer, intent(out) :: list_iG_k(nG_max) ! G vector indices for k, sorted
-    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands,nspin) ! rotated wfc at point k in the 1BZ
+    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
 
     !local variables
 
-    complex(kind=dp) :: wfc_k_aux(nG_max,num_bands,nspin)
+    complex(kind=dp) :: wfc_k_aux(nG_max,num_bands_intw,nspin)
     integer :: p_i, i, alpha, iGk, iG_k
     integer :: Gk(3) ! a vector for k in the IBZ
     integer :: RGk(3) ! ( symmetry operation )* G_k
@@ -2024,7 +2024,7 @@ contains
       !
       p_i = permutations(i)
       !
-      do ibnd=1,num_bands
+      do ibnd=1,num_bands_intw
         do is=1,nspin
           !
           wfc_k(i,ibnd,is) = wfc_k_irr(p_i,ibnd,is) * phases(p_i)
@@ -2046,7 +2046,7 @@ contains
       wfc_k     = cmplx_0
       !
       do i=1,nG
-        do ibnd=1,num_bands
+        do ibnd=1,num_bands_intw
           do is=1,nspin
             do js=1,nspin
               !
@@ -2086,11 +2086,11 @@ contains
     !----------------------------------------------------------------------------!
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_reading, only: get_K_folder_data
-    use intw_reading, only: s, ftau, nG_max, npol, nspin
+    use intw_reading, only: s, ftau, nG_max, npol, nspin, num_bands_intw
     use intw_useful_constants, only: ZERO
     use intw_fft, only: wfc_by_expigr
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
-    use w90_parameters, only: num_bands
+    !use w90_parameters, only: num_bands
 
     implicit none
 
@@ -2098,13 +2098,13 @@ contains
     logical, intent(in) :: use_IBZ
 
 
-    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
     ! complex(kind=dp), intent(out) :: wfc_k(nG_max,nbands,nspin)
     integer, intent(out) :: list_iG(nG_max)
-    real(kind=dp), intent(out) :: QE_eig(num_bands)
+    real(kind=dp), intent(out) :: QE_eig(num_bands_intw)
     ! real(kind=dp), intent(out) :: QE_eig(nbands)
 
-    complex(kind=dp) :: wfc_k_irr(nG_max,num_bands,nspin)
+    complex(kind=dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
     ! complex(kind=dp) :: wfc_k_irr(nG_max,nbands,nspin)
     integer :: list_iG_irr(nG_max)
 
@@ -2122,12 +2122,11 @@ contains
     real(kind=dp) :: kpoint_1BZ(3)
 
 
-    !Peio
-    !The variable we use instead of num_bands
-    integer :: nbands_loc
-    !Peio
-
-    nbands_loc = num_bands
+    !!Peio
+    !!The variable we use instead of num_bands
+    !integer :: nbands_loc
+    !!Peio
+    !nbands_loc = num_bands_intw
 
     if (.not. use_IBZ .and. .not. full_mesh) then
       ! the parameters are not consistent
@@ -2190,7 +2189,7 @@ contains
 
     list_iG_irr = list_iG
 
-    call wfc_by_expigr(kpoint, nbands_loc, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
+    call wfc_by_expigr(kpoint, num_bands_intw, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
 
     !    call wfc_by_expigr(kpoint, nbands, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
     !(list_iG_irr, list_iG, G_plus)
@@ -2349,15 +2348,15 @@ contains
     use intw_fft, only: find_iG
     use intw_useful_constants, only: cmplx_0
     use intw_utility, only: HPSORT
-    use intw_reading, only: nG_max, gvec, nspin
-    use w90_parameters, only: num_bands
+    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
+    !use w90_parameters, only: num_bands
 
     implicit none
 
     !I/O variables
 
     integer, intent(inout) :: list_iG(nG_max)
-    complex(kind=dp), intent(inout) :: wfc(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(inout) :: wfc(nG_max,num_bands_intw,nspin)
 
     !local variables
 
@@ -2366,7 +2365,7 @@ contains
     integer :: nG ! counter on the number of G vectors in the array
     integer :: permutations(nG_max) ! index permutation which orders list_G
     integer :: list_iG_tmp(nG_max)
-    complex(kind=dp) :: wfc_tmp(nG_max,num_bands,nspin)
+    complex(kind=dp) :: wfc_tmp(nG_max,num_bands_intw,nspin)
 
     ! Initialize the different variables
     !

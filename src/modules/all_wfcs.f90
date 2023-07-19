@@ -103,14 +103,14 @@ contains
 
   subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
 
-    use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3
+    use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: sym_G, full_mesh, inverse_indices, symlink, &
                                QE_folder_sym, QE_folder_nosym, apply_TR_to_wfc, rotate_wfc_test, &
                                identity_matrix_index, nosym_G
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_fft, only: wfc_by_expigr
-    use w90_parameters, only: num_bands
+    !use w90_parameters, only: num_bands
     use intw_useful_constants, only : eps_5, ZERO
 
     implicit none
@@ -118,8 +118,8 @@ contains
     !I/O variables
     real(dp), intent(in) :: kpoint(3)
     integer, intent(out) :: list_iG(nG_max)
-    real(dp), intent(out) :: QE_eig(num_bands)
-    complex(dp), intent(out) :: wfc_k(nG_max,num_bands,nspin)
+    real(dp), intent(out) :: QE_eig(num_bands_intw)
+    complex(dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
     !local variables
 
     integer :: ikpt, i_folder
@@ -129,7 +129,7 @@ contains
     real(dp) :: ftau_sym(3)
     real(dp) :: kpoint_1BZ(3), k_QE(3), ktest(3)
     integer :: list_iG_irr(nG_max)
-    complex(dp) :: wfc_k_irr(nG_max,num_bands,nspin)
+    complex(dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
 
     call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz,k_1bz,kpoint_1bz,G_plus)
     !
@@ -148,7 +148,7 @@ contains
       !
       G_sym = kpoint - k_QE
       !
-      call wfc_by_expigr(kpoint,num_bands,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
+      call wfc_by_expigr(kpoint,num_bands_intw,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
       !
     else
       !
@@ -206,7 +206,7 @@ contains
           write(*,"(a,100f12.6)") "Symmetry induced is :", ktest + G_sym
       end if
       !
-      call wfc_by_expigr(kpoint,num_bands,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
+      call wfc_by_expigr(kpoint,num_bands_intw,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
       !
     endif
     !

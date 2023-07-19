@@ -20,7 +20,7 @@
 program intw2W90_2
 
   use kinds, only: dp
-  use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, &
+  use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, nnkp_n_proj, &
                                intw2w90_check_mesh, generate_mmn_using_allwfc, &
                                generate_amn_using_allwfc, deallocate_nnkp
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, &
@@ -36,7 +36,9 @@ program intw2W90_2
                                    read_input
   use intw_reading, only: gvec, ngm, nbands, kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
                           read_parameters_data_file_xml, get_ngm, get_ngmax, get_gvec, &
-                          read_kpoints_data_file_xml, deallocate_reading_variables
+                          read_kpoints_data_file_xml, deallocate_reading_variables, &
+                          num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw, &
+                          set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
   use intw_utility, only: get_timing, generate_kmesh
   !USE w90_parameters, only: num_bands, num_wann
@@ -95,6 +97,9 @@ end if
 call read_parameters_data_file_xml()
 
 !-call test_symmetry_axis_angle()
+
+! JLB set the number of bands for the calculation
+call set_num_bands()
 
 
 !================================================================================
@@ -156,9 +161,18 @@ write(*,20) '|           ---------------------------------       |'
 
   call read_nnkp_file(nnkp_file)
   !
-  !JLB
-  num_bands_intw = nbands-nnkp_exclude_bands
-  num_wann_intw = nnkp_n_proj
+  !JLB: double-check
+  if (nnkp_exclude_bands .ne. num_exclude_bands_intw) then
+        write(*,20)      '**********************************************************'
+        write(*,20)      '* Mismatch in number of excluded bands                    '
+        write(*,20)      '**********************************************************'
+        stop
+  else if (nnkp_n_proj .ne. num_wann_intw) then
+        write(*,20)      '**********************************************************'
+        write(*,20)      '* Mismatch in number of projections/wannier functions     '
+        write(*,20)      '**********************************************************'
+        stop
+  end if
   !
   ! just as a test; can be removed later
   !

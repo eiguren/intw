@@ -29,7 +29,8 @@ module intw_reading
             s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels, &
             at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
             ngm, gvec, QE_ngk, QE_igk, noncolin, spinorb_mag, ecutwfc, ecutrho, &
-            tpiba, tpiba2, dual, gcutm, gamma_only, e_fermi, lsda
+            tpiba, tpiba2, dual, gcutm, gamma_only, e_fermi, lsda, &
+            num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw
   !
   ! subroutines
   public :: read_parameters_data_file_xml, &
@@ -39,7 +40,9 @@ module intw_reading
             get_gvec, &
             get_K_folder_data, get_K_folder_data_with_nG,&
             write_tag, &
-            deallocate_reading_variables
+            deallocate_reading_variables, &
+            set_num_bands, &
+            scan_file_to
   !
   private
   !
@@ -61,6 +64,27 @@ module intw_reading
 
   integer :: nbands
   ! the number of bands computed in the QE calculation
+
+  !! JLB: These are not read from QE but I think it's cleanest to put them here.
+  !!      They are set in the subroutine "set_num_bands" in this module.
+  !!      To be discussed.
+  integer :: num_bands_intw
+  ! Number of bands forming the subspace from which Wannier functions are to be obtained
+  ! Might be different from nbands if exclude_bands is used
+  ! JLB: We should substitute num_bands from w90_parameters by this variable everywhere
+
+  integer :: num_wann_intw
+  ! Number of Wannier functions, or equivalently bands/KS states to be interpolated
+  ! Might be different from num_bands_intw if disentanglement is used
+  ! JLB: We should substitute num_wann from w90_parameters by this variable everywhere
+
+  integer :: num_exclude_bands_intw
+  ! Number of bands to be excluded
+  ! JLB: We should substitute num_exclude_bands from w90_parameters by this variable everywhere
+
+  integer, allocatable :: band_excluded_intw(:)
+  ! Array determining the bands to be excluded
+  ! JLB: We should substitute exclude_bands from w90_parameters by this variable everywhere
 
   logical :: lspinorb
   ! if true, spin-orbit non-collinear calculation.
@@ -587,7 +611,7 @@ contains
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    use w90_parameters, only: num_exclude_bands, exclude_bands
+    !use w90_parameters, only: num_exclude_bands, exclude_bands
 
     implicit none
 
@@ -603,7 +627,7 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    logical :: band_excluded(nbands)
+    !logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
@@ -612,14 +636,14 @@ contains
 
 
 
-    band_excluded(:) = .false.
-    !
-    do i=1,num_exclude_bands
-       !
-       nexclude = exclude_bands(i)
-       band_excluded(nexclude) = .true.
-       !
-    enddo
+    !band_excluded(:) = .false.
+    !!
+    !do i=1,num_exclude_bands_intw
+    !   !
+    !   nexclude = exclude_bands(i)
+    !   band_excluded(nexclude) = .true.
+    !   !
+    !enddo
     !
     ! initialize the arrays to zero (zero will be broadcasted)
     !
@@ -644,7 +668,8 @@ contains
     !
     do ibnd=1,nbands
       !
-      if (band_excluded(ibnd)) then
+      !if (band_excluded(ibnd)) then
+      if (band_excluded_intw(ibnd)) then
         !
       else
         !
@@ -691,7 +716,7 @@ contains
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    use w90_parameters, only: num_exclude_bands, exclude_bands
+    !use w90_parameters, only: num_exclude_bands, exclude_bands
 
     implicit none
 
@@ -706,7 +731,7 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    logical :: band_excluded(nbands)
+    !logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
@@ -714,14 +739,14 @@ contains
     real(dp) :: QE_eig_all(nbands)
     integer :: iG
 
-    band_excluded(:) = .false.
-    !
-    do i=1,num_exclude_bands
-       !
-       nexclude = exclude_bands(i)
-       band_excluded(nexclude) = .true.
-       !
-    enddo
+    !band_excluded(:) = .false.
+    !!
+    !do i=1,num_exclude_bands
+    !   !
+    !   nexclude = exclude_bands(i)
+    !   band_excluded(nexclude) = .true.
+    !   !
+    !enddo
     !
     ! initialize the arrays to zero (zero will be broadcasted)
     !
@@ -745,7 +770,8 @@ contains
     !
     do ibnd=1,nbands
       !
-      if (band_excluded(ibnd)) cycle
+      !if (band_excluded(ibnd)) cycle
+      if (band_excluded_intw(ibnd)) cycle
         !
         n_yes=n_yes+1
         do is=1,nspin
@@ -814,7 +840,141 @@ contains
     deallocate(s)
     deallocate(ftau)
 
+    ! JLB: Not sure whether this should go somewhere else
+    if (allocated(band_excluded_intw)) deallocate(band_excluded_intw)
+
   end subroutine deallocate_reading_variables
+
+
+  !----------------------------------------------
+  subroutine scan_file_to (nnkp_unit,keyword)
+    !----------------------------------------------
+    !
+    !----------------------------------------------------------------------!
+    ! This subroutine reads a file all the way to the line
+    !            begin $keyword
+    ! This is useful when extracting parameters from the ascii file $seed.nnkp.
+    ! The subroutine is heavily inspired by the subroutine
+    !     QE/PP/pw2pwannier.f90{scan_file_to}
+    !
+    ! JLB 07/2023: Moved this subroutine here from intw2wannier.f90
+    !-----------------------------------------------------------------------!
+    
+      implicit none
+    
+      character(len=*)   :: keyword
+      character(len=256) :: word1, word2
+      logical            :: found, test
+      integer            :: ios,   nnkp_unit
+    
+      found=.false.
+      !
+      do
+         !
+         read(nnkp_unit,*,iostat=ios) word1, word2
+         !
+         test=(trim(word1).eq.'begin').and.(trim(word2).eq.keyword)
+         !
+         if (test) exit
+         !
+         if (ios.ne.0) then
+            !
+            write (*,*) keyword," data-block missing "
+            stop
+            !
+         endif
+         !
+      enddo
+      !
+      return
+    
+      end subroutine scan_file_to
+    !------------------------------------------
+
+
+  subroutine set_num_bands()
+    !----------------------------------------------------------------------
+    !       This subroutine sets the sizes of the different band subspaces.
+    !       Very important for all subsequent calculations, 
+    !       should be called at the beginning of all utilities.
+    !
+    !       For the moment it detects whether a .nnkp file exists,
+    !       and in that case it reads them from there.
+    !       If there's no such file, the number of bands is set to nbands 
+    !       (the number of bands in the QE calculation).
+    !       JLB: I think it would be useful to add the option to set them on input.
+    !
+    !       WARNING: This subroutine must always be called after "read_parameters_data_file_xml"
+    !                so that nbands is set.
+    !
+    !------------------------------------------------------------------------
+
+    use intw_utility, only: find_free_unit
+    use intw_input_parameters, only: prefix
+
+    implicit none
+
+    character(len=256) :: nnkp_filename
+    logical :: have_nnkp
+    integer :: nnkp_unit, i, nn
+
+    ! Check if .nnkp file exists
+    nnkp_filename = trim(prefix)//trim('.nnkp')
+    inquire (file=nnkp_filename,exist=have_nnkp)
+
+    ! Write info
+    if(have_nnkp) then
+      write(*,'(A)') '|       - .nnkp file found                          |'
+      write(*,'(A)') '|         Setting the number of bands from .nnkp    |'
+      write(*,'(A)') '|           ---------------------------------       |'
+    else
+      write(*,'(A)') '|       - .nnkp file NOT found                      |'
+      write(*,'(A)') '|         Setting the number of bands from QE       |'
+      write(*,'(A)') '|           ---------------------------------       |'
+    end if
+
+    ! Set number of bands
+
+    ! from .nnkp
+    if(have_nnkp) then
+      !
+      nnkp_unit=find_free_unit()
+      open(unit=nnkp_unit,file=nnkp_filename,status='old')
+      !
+      ! Number of wannier functions (after disentanglement)
+      ! must be the same as number of projections
+      if (noncolin) then
+        call scan_file_to (nnkp_unit,'spinor_projections')
+        read(nnkp_unit,*) num_wann_intw
+      else
+        call scan_file_to (nnkp_unit,'projections')
+        read(nnkp_unit,*) num_wann_intw
+      end if
+      !
+      ! Excluded bands, if any
+      call scan_file_to (nnkp_unit,'exclude_bands ')
+      read(nnkp_unit,*) num_exclude_bands_intw
+      allocate(band_excluded_intw(nbands))
+      band_excluded_intw(:)=.false.
+      do i=1, num_exclude_bands_intw
+         read(nnkp_unit,*) nn
+         band_excluded_intw(nn)=.true.
+      enddo
+      !
+      ! Number of bands (before disentanglement)
+      num_bands_intw = nbands - num_exclude_bands_intw
+      !
+    ! all bands from QE 
+    else
+      !
+      allocate(band_excluded_intw(nbands))
+      band_excluded_intw(:) = .false.
+      num_bands_intw = nbands
+      num_wann_intw = nbands
+      !
+    end if
+
+  end subroutine
 
 
 end module intw_reading

@@ -53,9 +53,8 @@ subroutine get_plane_wave_matrix_element_convolution_map(G,list_iG_1,ngk1,list_i
 !
 !--------------------------------------------------------------------------------
 use intw_useful_constants, only: zero, one, cmplx_0
-use intw_reading, only: nG_max, gvec, nspin, nbands, ngm
-use w90_parameters, only: num_bands
-USE intw_reading, ONLY : gvec
+use intw_reading, only: nG_max, gvec, nspin, nbands, ngm, num_bands_intw
+!use w90_parameters, only: num_bands
 use intw_fft, only : find_iG
   implicit none
 
@@ -63,22 +62,22 @@ use intw_fft, only : find_iG
 
   integer,intent(in) :: G(3), ngk1, ngk2
   integer,intent(in) :: list_iG_1(nG_max),list_iG_2(nG_max)
-  complex(dp),intent(in) :: wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
-  complex(dp),intent(out) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
+  complex(dp),intent(in) :: wfc_1(nG_max,num_bands_intw,nspin),wfc_2(nG_max,num_bands_intw,nspin)
+  complex(dp),intent(out) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3), jd (1)
   integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
   integer :: nG_max_non_zero
-  complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
+  complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
   logical :: found
 
   pw_mat_el=cmplx_0
 
   !$omp parallel default(none)                             &
   !$omp shared(list_iG_1,list_iG_2,ngk1,ngk2) &
-  !$omp shared(num_bands,nspin,wfc_1,wfc_2, pw_mat_el,nG_max)  &
+  !$omp shared(num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nG_max)  &
   !$omp shared(cmplx_0)         			   &
   !$omp private(i,jd,ibnd,jbnd,is,js)    &
   !$omp private( pw_mat_el_local)
@@ -107,8 +106,8 @@ use intw_fft, only : find_iG
      !
            do js=1,nspin
               do is=1,nspin
-                 do jbnd=1,num_bands
-                    do ibnd=1,num_bands
+                 do jbnd=1,num_bands_intw
+                    do ibnd=1,num_bands_intw
                        !
                        pw_mat_el_local(ibnd,jbnd,is,js)=pw_mat_el_local(ibnd,jbnd,is,js)+ &
                                                    conjg(wfc_1(i,ibnd,is))*wfc_2(jd(1),jbnd,js)
@@ -131,8 +130,8 @@ use intw_fft, only : find_iG
   !
   do js=1,nspin
      do is=1,nspin
-        do jbnd=1,num_bands
-           do ibnd=1,num_bands
+        do jbnd=1,num_bands_intw
+           do ibnd=1,num_bands_intw
               !
               ! make sure the update is atomic!
               !$omp atomic
@@ -176,8 +175,8 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
 !
 !--------------------------------------------------------------------------------
 use intw_useful_constants, only: zero, one, cmplx_0
-use intw_reading, only: nG_max, gvec, nspin, nbands
-use w90_parameters, only: num_bands
+use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
+!use w90_parameters, only: num_bands
 
   implicit none
 
@@ -185,15 +184,15 @@ use w90_parameters, only: num_bands
 
   integer,intent(in) :: G(3)
   integer,intent(in) :: list_iG_1(nG_max),list_iG_2(nG_max)
-  complex(dp),intent(in) :: wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
-  complex(dp),intent(out) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
+  complex(dp),intent(in) :: wfc_1(nG_max,num_bands_intw,nspin),wfc_2(nG_max,num_bands_intw,nspin)
+  complex(dp),intent(out) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3)
   integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
   integer :: nG_max_non_zero
-  complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
+  complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
   logical :: found
 
   pw_mat_el=cmplx_0
@@ -212,7 +211,7 @@ use w90_parameters, only: num_bands
   !
   !$omp parallel default(none)                             &
   !$omp shared(list_iG_1,list_iG_2,gvec,G) &
-  !$omp shared(nG_max_non_zero,nbands,num_bands,nspin,wfc_1,wfc_2,pw_mat_el,nG_max)  &
+  !$omp shared(nG_max_non_zero,nbands,num_bands_intw,nspin,wfc_1,wfc_2,pw_mat_el,nG_max)  &
   !$omp shared(cmplx_0)         			   &
   !$omp private(i,iG_1,iG_2,G1,G2,Gprime,found,j,ibnd,jbnd,is,js)    &
   !$omp private( pw_mat_el_local)
@@ -252,8 +251,8 @@ use w90_parameters, only: num_bands
            !
            do js=1,nspin
               do is=1,nspin
-                 do jbnd=1,num_bands
-                    do ibnd=1,num_bands
+                 do jbnd=1,num_bands_intw
+                    do ibnd=1,num_bands_intw
                        !
                        pw_mat_el_local(ibnd,jbnd,is,js)=pw_mat_el_local(ibnd,jbnd,is,js)+ &
                                                    conjg(wfc_1(i,ibnd,is))*wfc_2(j,jbnd,js)
@@ -280,8 +279,8 @@ use w90_parameters, only: num_bands
   !
   do js=1,nspin
      do is=1,nspin
-        do jbnd=1,num_bands
-           do ibnd=1,num_bands
+        do jbnd=1,num_bands_intw
+           do ibnd=1,num_bands_intw
               !
               ! make sure the update is atomic!
               !$omp atomic
@@ -322,16 +321,16 @@ subroutine get_spin_component(list_iG,wfc,spin)
 !--------------------------------------------------------------------------------
 
   use intw_useful_constants, only: zero, one, cmplx_0, sig_x, sig_y, sig_z
-  use intw_reading, only: nG_max, nspin
-  use w90_parameters, only: num_bands
+  use intw_reading, only: nG_max, nspin, num_bands_intw
+  !use w90_parameters, only: num_bands
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands,nspin)
-  complex(dp),intent(out) :: spin(num_bands,3)
+  complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
+  complex(dp),intent(out) :: spin(num_bands_intw,3)
 
   !local variables
 
@@ -342,7 +341,7 @@ subroutine get_spin_component(list_iG,wfc,spin)
   do iG=1,nG_max
      !
      do ipol=1,3
-        do ibnd=1,num_bands
+        do ibnd=1,num_bands_intw
            do is=1,nspin
               do js=1,nspin
                  !
@@ -533,9 +532,9 @@ end subroutine get_spin_component
 !-------------------------------------------------------------------------
 
   use intw_fft, only: wfc_from_g_to_r, nl, find_iG
-  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
   use intw_useful_constants, only: zero, one, cmplx_0
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -545,8 +544,8 @@ end subroutine get_spin_component
 
   integer,intent(in) :: G(3)
   integer,intent(in) :: list_iG_1(nG_max),list_iG_2(nG_max)
-  complex(dp),intent(in) :: wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
-  complex(dp),intent(inout) :: pw_mat_el(num_bands,num_bands,nspin,nspin)
+  complex(dp),intent(in) :: wfc_1(nG_max,num_bands_intw,nspin),wfc_2(nG_max,num_bands_intw,nspin)
+  complex(dp),intent(inout) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
   !local variables
 
@@ -572,13 +571,13 @@ end subroutine get_spin_component
         !
         ! loop on bands
         !
-        do ibnd=1,num_bands
+        do ibnd=1,num_bands_intw
            !
            ! fourier- transform the 1st wavefunction
            !
            call wfc_from_g_to_r(list_iG_1,wfc_1(:,ibnd,is),wfc_r1)
            !
-           do jbnd=1,num_bands
+           do jbnd=1,num_bands_intw
               !
               ! fourier- transform the 2nd wavefunction
               !
@@ -862,21 +861,21 @@ end subroutine get_spin_component
   !  vector is identified by a triplet index.
   !
   !--------------------------------------------------------
-  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin
+  use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
   use intw_useful_constants, only: zero, one, cmplx_0
   use intw_utility, only: switch_indices
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
   use intw_fft, only: nl
 
   implicit none
 
   ! input
   integer        :: list_iG (nG_max)
-  complex(dp)    :: wfc_G_1D(nG_max,num_bands,nspin)
+  complex(dp)    :: wfc_G_1D(nG_max,num_bands_intw,nspin)
 !  complex(dp)    :: wfc_G_1D(nG_max,nbands,nspin)
 
   ! output
-  complex(dp)    :: wfc_G_3D(nr1,nr2,nr3,num_bands,nspin)
+  complex(dp)    :: wfc_G_3D(nr1,nr2,nr3,num_bands_intw,nspin)
 !  complex(dp)    :: wfc_G_3D(nr1,nr2,nr3,nbands,nspin)
 
   ! computation variables

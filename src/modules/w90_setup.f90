@@ -58,11 +58,11 @@ contains
   !----------------------------------------------------------------------------!
   subroutine read_w90_chk()
   !----------------------------------------------------------------------------!
-  use intw_reading, only: nbands
+  use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
-  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, nnkp_num_kpoints, &
-           nnkp_kpoints, num_bands_intw, num_wann_intw  
+  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
+                               nnkp_num_kpoints, nnkp_kpoints  
   implicit none
 
   character(20) :: checkpoint
@@ -165,7 +165,8 @@ contains
     ! TODO explore the possibility of symmetrization...
     !----------------------------------------------------------------------------!
     use intw_useful_constants, only: cmplx_0
-    use intw_intw2wannier, only: nnkp_num_kpoints, num_bands_intw, num_wann_intw, nnkp_excluded_bands  
+    use intw_reading, only: num_bands_intw, num_wann_intw
+    use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands  
     implicit none
 
     integer :: i, ik, n1, n2, nb1
@@ -212,11 +213,11 @@ contains
   !----------------------------------------------------------------------------!
   subroutine write_formatted_u_mesh (eigenval)
   !----------------------------------------------------------------------------!
-  use intw_reading, only: nbands
+  use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix
   use intw_utility, only: find_free_unit
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
-          nnkp_num_kpoints, num_bands_intw, num_wann_intw, nnkp_kpoints 
+                               nnkp_num_kpoints, nnkp_kpoints 
   implicit none
 
   character(256) :: filename
@@ -339,7 +340,8 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0
-  use intw_intw2wannier, only: nnkp_num_kpoints, num_bands_intw, num_wann_intw, nnkp_kpoints  
+  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints  
   !
   implicit none
   !
@@ -383,9 +385,9 @@ contains
   !  Construct ham_r by Fourier transform of ham_k, k in the fullzone k-mesh
   !----------------------------------------------------------------------------!
   !
-  use intw_reading, only: alat, bg
+  use intw_reading, only: alat, bg, num_bands_intw, num_wann_intw
   use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-  use intw_intw2wannier, only: nnkp_num_kpoints, num_bands_intw, num_wann_intw, nnkp_kpoints  
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints  
   !
   implicit none
   !
