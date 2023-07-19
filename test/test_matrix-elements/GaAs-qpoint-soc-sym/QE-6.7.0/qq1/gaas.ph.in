@@ -1,0 +1,11 @@
+phonons for GaAs
+ &inputph
+  tr2_ph = 1.0d-12
+  prefix = 'gaas'
+  fildvscf = 'dvscf'
+  outdir = './'
+  fildyn = 'gaas.dyn'
+  trans = .true.
+  verbosity = 'high'
+ /
+   0.0   0.0   0.0
