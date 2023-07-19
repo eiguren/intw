@@ -28,7 +28,6 @@ endif(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   if(DEFINED ENV{CPATH})
-    #set(CPATH $ENV{CPATH})
     string(REPLACE ":" ";" CPATH $ENV{CPATH})
   endif()
   include_directories(${CPATH})
@@ -81,8 +80,6 @@ endif()
 # Find BLAS and LAPACK
 find_package(LAPACK REQUIRED)
 
-# FFTW3 (Asier)
-#find_package(fftw3 REQUIRED)
 
 
 
@@ -104,9 +101,12 @@ add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
 add_subdirectory(src/QEtoINTW/6.7.0)
 
-
-enable_testing()
-add_subdirectory(test)
+# Find python3 for test scripts
+find_package (Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+  enable_testing()
+  add_subdirectory(test)
+endif()
 
 
 # Add uninstall target
@@ -148,6 +148,11 @@ message("-- FFLAGS_DEBUG: ${CMAKE_Fortran_FLAGS_DEBUG}")
 message("-- FFLAGS_TESTING: ${CMAKE_Fortran_FLAGS_TESTING}")
 message("-- FFLAGS_RELWITHDEBINFO: ${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}")
 message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
+if(Python3_Interpreter_FOUND)
+  message("-- Python3: ${Python3_EXECUTABLE}")
+else()
+  message("-- Python3: NOT-FOUND (test suite disabled)")
+endif()
 message("-- QE_HOME: ${QE_HOME}")
 message("-- W_HOME: ${W_HOME}")
 message("")

@@ -12,8 +12,8 @@ acc = 1.0E-6
 # Detect degenerate bands
 out_file = prefix+".eig"
 band, kpoint, eigen = np.loadtxt(out_file, unpack=True)
-nb = np.int(np.max(band))
-nk = np.int(np.max(kpoint))
+nb = int(np.max(band))
+nk = int(np.max(kpoint))
 #
 degen = np.zeros((nk, nb), dtype=bool)
 j=0
@@ -27,7 +27,7 @@ for ik in range(nk):
         #
         ep=e
         j=j+1
- 
+
 
 # Read INTW generated file starting from IBZ wave functions
 out_file = "intw_"+prefix+".amn"

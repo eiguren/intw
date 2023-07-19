@@ -9,14 +9,20 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Compare Amn
-python compare_amn_ibz2fullbz.py
+# Compare Mmn INTW vs QE
+@Python3_EXECUTABLE@ compare_mmn.py
 if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Compare wannier result
-python compare_wannier.py
+# Compare Amn INTW IBZ vs fullBZ
+@Python3_EXECUTABLE@ compare_amn_ibz2fullbz.py
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+# Compare wannier INTW+W90 IBZ vs fullBZ
+@Python3_EXECUTABLE@ compare_wannier.py
 if [ $? -ne 0 ]; then
   exit 1
 fi

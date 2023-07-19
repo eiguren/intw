@@ -10,13 +10,13 @@ if [ $? -ne 0 ]; then
 fi
 
 # Compare mmn
-python compare_mmn.py
+@Python3_EXECUTABLE@ compare_mmn.py
 if [ $? -ne 0 ]; then
   exit 1
 fi
 
 # Compare wannier
-python compare_wannier.py
+@Python3_EXECUTABLE@ compare_wannier.py
 if [ $? -ne 0 ]; then
   exit 1
 fi

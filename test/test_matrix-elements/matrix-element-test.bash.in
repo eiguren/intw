@@ -24,7 +24,7 @@ cp ../intw.in ./
 
 
 # Compare calculation
-python3 compare_matrix_elements.py
+@Python3_EXECUTABLE@ compare_matrix_elements.py
 if [ $? -ne 0 ]; then
   exit 1
 fi

@@ -28,7 +28,7 @@ for line in data:
 
 
 
-# Read previously generated file 
+# Read previously generated file
 # with INTW+W90 on full BZ grid
 out_file = "intw_fullmesh_gaas.wout"
 #
