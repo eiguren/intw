@@ -6,10 +6,11 @@
 !!      Here w90_parameters: num_exclude_bands is used to only read the bands to be used in wannierization from the QE folders.
 !!      But I think this is confusing, since read_nnkp_file from intw2wannier.f90 has to be called before,
 !!      where num_exclude_bands and exclude_bands(:) is read from the .nnkp file and passed to the w90 variables.
-!!      We should make this clearer. Three set of bands: 
+!!      Maybe we should make this clearer? Three set of bands: 
 !!      (i) nbands (computed with QE) 
 !!      (ii) num_bands (bands used for wannierization, where some might have been excluded)
 !!      (iii) num_wann (number of Wannier functions, which might be smaller than num_bands if disentanglement is used)
+!!      Also allocating only num_bands might be interesting for memory efficiency.
 
 module intw_allwfcs
   ! 1. Modulo honetan uhin funtzioak irakurri transformatu eta berriro inv-transformatuko ditugu igk, igkq lista
@@ -38,7 +39,8 @@ contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands,get_K_folder_data
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands,get_K_folder_data, &
+                            num_bands_intw
     use intw_useful_constants, only: cmplx_0
     !use w90_parameters, only: num_wann, num_bands
 
@@ -56,16 +58,20 @@ contains
     allocate   (list_iG(nG_max))
     !
     if (allocated(QE_eig)) deallocate (QE_eig)
-    allocate   (QE_eig(nbands))
+    !allocate   (QE_eig(nbands))
+    allocate   (QE_eig(num_bands_intw))
     !
     if (allocated(wfc_g)) deallocate (wfc_g)
-    allocate   (wfc_g(nG_max,nbands,nspin))
+    !allocate   (wfc_g(nG_max,nbands,nspin))
+    allocate   (wfc_g(nG_max,num_bands_intw,nspin))
     !
     if (allocated(wfc_k_irr_all)) deallocate (wfc_k_irr_all)
-    allocate (wfc_k_irr_all(nkpoints_QE,nG_max,nbands,nspin))
+    !allocate (wfc_k_irr_all(nkpoints_QE,nG_max,nbands,nspin))
+    allocate (wfc_k_irr_all(nkpoints_QE,nG_max,num_bands_intw,nspin))
     !
     if (allocated(QE_eig_irr_all)) deallocate (QE_eig_irr_all)
-    allocate (QE_eig_irr_all(nkpoints_QE,nbands))
+    !allocate (QE_eig_irr_all(nkpoints_QE,nbands))
+    allocate (QE_eig_irr_all(nkpoints_QE,num_bands_intw))
     !
     if (allocated(list_iG_all)) deallocate(list_iG_all)
     allocate (list_iG_all(nkpoints_QE,nG_max))
@@ -81,13 +87,15 @@ contains
       !
       call get_K_folder_data_with_nG(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
       !
-      QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
+      !QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
+      QE_eig_irr_all(i_folder,:)=QE_eig(:)
       !
       list_iG_all(i_folder,1:ngk_all(i_folder)  )=list_iG(1:ngk_all(i_folder))
       !
       do iG=1,ngk_all(i_folder)
         do ipol=1,nspin
-          do ibnd=1,nbands
+          !do ibnd=1,nbands
+          do ibnd=1, num_bands_intw
             !
             wfc_k_irr_all(i_folder,iG,ibnd,ipol)=wfc_g(iG,ibnd,ipol)
             !

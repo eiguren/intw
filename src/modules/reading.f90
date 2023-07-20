@@ -607,6 +607,12 @@ contains
     ! M ~ [ m_{11} m_{21} m_{31} m_{12} m_{22} m_{32} m_{13} m_{23} m_{33}]
     ! Thus, it makes GOOD SENSE to put the G index first, as this is
     ! the index that will be used to perform inner products.
+    !
+    ! JLB: Excluded bands are taken care for at this point.
+    !      Only relevant "num_bands_intw" wave functions are stored on output.
+    !      This subroutine is only called in symmetries.f90, 
+    !      where only the wfc-s within "num_bands_intw" are rotated.
+    !
     !------------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
@@ -620,7 +626,9 @@ contains
     integer,intent(in) :: ik
     integer,intent(out) :: list_iG(nG_max)
     real(dp),intent(out) :: QE_eig(nbands)
-    complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    !complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    !JLB
+    complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
 
      integer :: nG
 
@@ -669,15 +677,15 @@ contains
     do ibnd=1,nbands
       !
       !if (band_excluded(ibnd)) then
-      if (band_excluded_intw(ibnd)) then
-        !
-      else
-        !
-        n_yes=n_yes+1
-        wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
-        QE_eig(n_yes) = QE_eig_all(ibnd)
-        !
-      endif
+      !!
+      !else
+      if (band_excluded_intw(ibnd)) cycle
+      !
+      n_yes=n_yes+1
+      wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
+      QE_eig(n_yes) = QE_eig_all(ibnd)
+      !
+      !endif
       !
     enddo
     close(io_unit)
@@ -712,6 +720,9 @@ contains
     ! M ~ [ m_{11} m_{21} m_{31} m_{12} m_{22} m_{32} m_{13} m_{23} m_{33}]
     ! Thus, it makes GOOD SENSE to put the G index first, as this is
     ! the index that will be used to perform inner products.
+    !
+    ! JLB 07/2023: Shouldn't output wfc have dimensions num_bands_intw instead of nbands?
+    !
     !------------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
@@ -724,8 +735,10 @@ contains
 
     integer,intent(in) :: ik
     integer,intent(out) :: list_iG(nG_max)
-    real(dp),intent(out) :: QE_eig(nbands)
-    complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    !real(dp),intent(out) :: QE_eig(nbands)
+    real(dp),intent(out) :: QE_eig(num_bands_intw)
+    !complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
+    complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
     integer, intent(out) :: nG
 
     !logical variables
@@ -772,15 +785,14 @@ contains
       !
       !if (band_excluded(ibnd)) cycle
       if (band_excluded_intw(ibnd)) cycle
-        !
-        n_yes=n_yes+1
-        do is=1,nspin
-         do iG=1,nG
-         wfc(iG,n_yes,is) = wfc_all((is-1)*nG+iG,ibnd)
-         end do !iG
-        end do!is
-        QE_eig(n_yes) = QE_eig_all(ibnd)
-        !
+      !
+      n_yes=n_yes+1
+      do is=1,nspin
+        do iG=1,nG
+          wfc(iG,n_yes,is) = wfc_all((is-1)*nG+iG,ibnd)
+        end do !iG
+      end do!is
+      QE_eig(n_yes) = QE_eig_all(ibnd)
       !
     enddo
     close(io_unit)
