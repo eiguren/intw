@@ -9,7 +9,8 @@ program ep_melements
                           spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
                           ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
                           read_parameters_data_file_xml, get_ngm, get_gvec, &
-                          read_kpoints_data_file_xml
+                          read_kpoints_data_file_xml, &
+                          num_bands_intw, set_num_bands
   use intw_pseudo, only: vkb, vkqb, read_all_pseudo
   use intw_utility, only: get_timing, find_free_unit, switch_indices, &
                           generate_kmesh, conmesurate_and_coarser, ainv, &
@@ -31,7 +32,7 @@ program ep_melements
                      mat_inv_four_t, calculate_local_part_dv
   ! use intw_w90
   use w90_io, only: io_error,io_file_unit,io_time,io_stopwatch
-  use w90_parameters, only: num_bands
+  !use w90_parameters, only: num_bands
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
   use intw_allwfcs, only: get_psi_general_k_all_wfc
 
@@ -410,27 +411,30 @@ program ep_melements
   !       Allocate wfc related files
   !================================================================================
   !
-  !!!JLB: Careful here, discuss how to clean and make consistent
-  num_bands = nbands
-  nbands_loc = num_bands
+  !!!JLB: To be discussed
+  !num_bands = nbands
+  !nbands_loc = num_bands
+  !
+  call set_num_bands()
+  nbands_loc = num_bands_intw ! JLB: Why do we need this?
   !
   allocate(list_igk(nG_max))
   allocate(list_igkq(nG_max))
   allocate(list_igk_aux(nG_max))
   allocate(list_igk_orig(nG_max))
   !
-  allocate(wfc_k(nG_max,num_bands,nspin))
-  allocate(wfc_kq(nG_max,num_bands,nspin))
-  allocate(wfc_k_aux(nG_max,num_bands,nspin))
-  allocate(wfc_k_orig(nG_max,num_bands,nspin))
+  allocate(wfc_k(nG_max,num_bands_intw,nspin))
+  allocate(wfc_kq(nG_max,num_bands_intw,nspin))
+  allocate(wfc_k_aux(nG_max,num_bands_intw,nspin))
+  allocate(wfc_k_orig(nG_max,num_bands_intw,nspin))
   !
   allocate(wfc_k_r(nr1*nr2*nr3))
   !
-  allocate(QE_eig_k(num_bands))
-  allocate(QE_eig_kq(num_bands))
+  allocate(QE_eig_k(num_bands_intw))
+  allocate(QE_eig_kq(num_bands_intw))
   !
-  allocate(fr(nr1*nr2*nr3,num_bands,nspin))
-  allocate(fg(nG_max,num_bands,nspin))
+  allocate(fr(nr1*nr2*nr3,num_bands_intw,nspin))
+  allocate(fg(nG_max,num_bands_intw,nspin))
   !
   !================================================================================
   !       Read all the information about phonons and pseudopotentials
@@ -466,8 +470,8 @@ program ep_melements
   !
   call generate_kmesh(qmesh,nq1,nq2,nq3)
   !
-  allocate(ep_mat_el(nk1*nk2*nk3,num_bands,num_bands,nspin,nspin,3*nat))
-  allocate(aep_mat_el(nqmesh,nk1*nk2*nk3,num_bands,num_bands,nspin,nspin,3*nat))
+  allocate(ep_mat_el(nk1*nk2*nk3,num_bands_intw,num_bands_intw,nspin,nspin,3*nat))
+  allocate(aep_mat_el(nqmesh,nk1*nk2*nk3,num_bands_intw,num_bands_intw,nspin,nspin,3*nat))
   !
   aep_mat_el(:,:,:,:,:,:,:) = cmplx_0
   !
@@ -533,13 +537,13 @@ program ep_melements
   !
   allocate(nsym_sgk(nk_irr))
   allocate(sindex_sgk(nk_irr,nsym))
-  allocate(unit_sym_sgk(nkmesh,nsym,num_bands,num_bands))
-  allocate(umat(num_bands,num_bands))
+  allocate(unit_sym_sgk(nkmesh,nsym,num_bands_intw,num_bands_intw))
+  allocate(umat(num_bands_intw,num_bands_intw))
   !
   unit_sym_sgk = cmplx_0
   !
   do ik=1,nkmesh
-     do ibnd=1,num_bands
+     do ibnd=1,num_bands_intw
         !
         unit_sym_sgk(ik,1:nsym,ibnd,ibnd) = cmplx_1
         !
@@ -661,8 +665,8 @@ program ep_melements
               !
               do jpol=1,nspin
                  do ipol=1,nspin
-                    do jbnd=1,num_bands
-                       do ibnd=1,num_bands
+                    do jbnd=1,num_bands_intw
+                       do ibnd=1,num_bands_intw
                           !
                           aep_mat_el(iq,ikpt_k,ibnd,jbnd,ipol,jpol,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ipol), 1, dvpsi(:,jbnd,ipol,jpol,imode), 1 )
                           !
@@ -687,7 +691,7 @@ program ep_melements
           write(123400+iq,"(i4,3f10.6)") ik, kpoint
           write(123400+iq,"(i4,3f10.6)") 2*(ik-1)+2, kpoint+qpoint
         enddo
-        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, sum(aep_mat_el(iq,ik,ibnd,jbnd,:,:,imode)), ibnd=1,num_bands), jbnd=1,num_bands), ik=1,nkmesh), imode=1,3*nat)
+        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, sum(aep_mat_el(iq,ik,ibnd,jbnd,:,:,imode)), ibnd=1,num_bands_intw), jbnd=1,num_bands_intw), ik=1,nkmesh), imode=1,3*nat)
 #endif
 
         !

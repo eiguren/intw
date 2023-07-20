@@ -1,6 +1,9 @@
 !-----------------------------------------------------------------------
 subroutine allocate_phq
   !-----------------------------------------------------------------------
+  !JLB: Commented out all bands references, not used.
+  !     Many variables are declared and not used, I don't understand why.
+  !     Discuss with Haritz/Asier, and then remove and clean up.
   !
   USE kinds, only : DP
   USE intw_reading, only : nat, ntyp, nbands, nr1,nr2,nr3
@@ -15,18 +18,18 @@ subroutine allocate_phq
   use intw_input_parameters, only: nk1, nk2, nk3
 !haritz
 
-!Peio
-!Number of Bloch Original states for the wannierization
-  use w90_parameters, only: num_bands 
-!Peio
+!!Peio
+!!Number of Bloch Original states for the wannierization
+!  use w90_parameters, only: num_bands 
+!!Peio
 
   implicit none
   INTEGER :: ipol, ik
 
-  integer :: nbands_loc
+  !integer :: nbands_loc
 
   !
-  nbands_loc=num_bands
+  !nbands_loc=num_bands
   allocate (eigqts(nat))
   allocate (vlocq ( ngm , ntyp))
   allocate (dvloc(nr1*nr2*nr3))
