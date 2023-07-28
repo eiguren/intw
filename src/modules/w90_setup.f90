@@ -34,10 +34,11 @@ module intw_w90_setup
   public :: ndimwin, lwindow   !!! DUDA ... probably we do not need these outside the module 
                                  !!! if the information is contained in u_mesh...
   public :: u_mesh
+  public :: eigenval_intw          !!! coarse-mesh eigenvalues used in wannier (read from .eig)
   !
   ! subroutines
   public :: read_w90_chk, allocate_and_build_u_mesh, write_formatted_u_mesh, allocate_and_build_ws_irvec, &
-            allocate_and_build_ham_k, allocate_and_build_ham_r
+            allocate_and_build_ham_k, allocate_and_build_ham_r, read_eig, write_ham_r
   !
   private
   !
@@ -49,7 +50,9 @@ module intw_w90_setup
   integer, allocatable :: ndegen(:), ndimwin(:)
   integer, parameter :: n_wss=27  !! TODO give somewhere as input
   integer, dimension(3) , parameter :: n_ws_search =(/ 1,1,1 /) !! TODO give somewhere as input
-  real(kind=dp), allocatable :: irvec(:,:)
+  !real(kind=dp), allocatable :: irvec(:,:)
+  integer, allocatable :: irvec(:,:)
+  real(kind=dp), allocatable :: eigenval_intw(:,:)
   complex(kind=dp), allocatable :: u_mesh(:,:,:), ham_k(:,:,:), ham_r(:,:,:)
   complex(kind=dp), allocatable  :: u_matrix(:,:,:), u_matrix_opt(:,:,:)
   !
@@ -57,6 +60,9 @@ contains
   !
   !----------------------------------------------------------------------------!
   subroutine read_w90_chk()
+  !----------------------------------------------------------------------------!
+  ! This subroutine assumes set_num_bands() and read_nnkp_file()
+  ! have been called before
   !----------------------------------------------------------------------------!
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
@@ -76,7 +82,7 @@ contains
 
   io_unit_chk = find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('.chk')
-  open(unit=io_unit_chk,file=filename,status='unknown')
+  open(unit=io_unit_chk,file=filename,status='unknown',form='unformatted')
 
   ! TODO add comments in consistency check with existing data from nnkp
   ! (I think that full-zone k-list should be read from there, since 
@@ -105,7 +111,11 @@ contains
 
   ! k grid
   read (io_unit_chk) nkpt
-  if ( nkpt .ne. nnkp_num_kpoints) stop
+  if ( nkpt .ne. nnkp_num_kpoints) then
+   write(*,*) "Number of k-points in .chk is not the same as in .nnkp file"
+   write(*,*) "Stopping..."
+   stop
+  end if
   read (io_unit_chk) n1, n2, n3
   if ( (n1 .ne. nk1) .or. (n2 .ne. nk2) .or. (n3 .ne. nk3) ) stop
   allocate (kpts(3,nkpt))
@@ -148,57 +158,93 @@ contains
   end subroutine read_w90_chk
   !
   !----------------------------------------------------------------------------!
-    subroutine allocate_and_build_u_mesh()
-    !----------------------------------------------------------------------------!
-    ! This is pretty much produce_u_mesh from W90_to_wannier
-    !
-    ! This subroutine computes the "rotation" matrices which must be applied
-    ! to the matrix elements to take them from band space to Wannier space.
-    !
-    ! If disentanglement is used, u_mesh    = u_matrix_opt x u_matrix
-    ! If no disentanglement is used, u_mesh = u_matrix
-    !
-    ! note that the number of k-points in the coarse mesh, in Wannier90,
-    ! is defined in the variable num_kpts. Consistency demands that this number
-    ! be equal to nkmesh, the same quantity in the intw program.
-    !
-    ! TODO explore the possibility of symmetrization...
-    !----------------------------------------------------------------------------!
-    use intw_useful_constants, only: cmplx_0
-    use intw_reading, only: num_bands_intw, num_wann_intw
-    use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands  
-    implicit none
+  subroutine read_eig(eigenval)
+  !----------------------------------------------------------------------------!
+  ! Read the eigenvalues for the relevant num_bands_intw from the .eig file    !
+  !----------------------------------------------------------------------------!
+  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_utility, only: find_free_unit
+  use intw_reading, only: num_bands_intw
+  use intw_intw2wannier, only: nnkp_num_kpoints
 
-    integer :: i, ik, n1, n2, nb1
+  ! I/O
+  real(kind=dp), intent(out) :: eigenval(num_bands_intw,nnkp_num_kpoints)
+  ! Local variables
+  character(256) :: filename
+  integer :: io_unit, ik, in, i, j
 
-    call read_w90_chk ()       ! allocate and read use_disentanglement, lwindow, u_matrix_opt, u_matrix
+  io_unit=find_free_unit()
+  filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
+  open(unit=io_unit,file=filename,form='formatted',status='old')
+  !
+  do ik=1,nnkp_num_kpoints
+    do in=1,num_bands_intw
+      !
+      read(io_unit,*) i, j, eigenval(in,ik)
+      !
+    enddo
+  enddo
 
-    allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  !fullzone k-points 
-    u_mesh = cmplx_0
-
-    if (use_disentanglement) then     ! DUDA no seria mejor añadir aqui lwindow??? (reordenar m_opt, se puede hacer aqui o
-                                      !  cada vez que se use u_mesh con la lista de eigvals...)
-      do ik=1, nnkp_num_kpoints
-        n1 = 0
-        do nb1=1, num_bands_intw
-        !!!! if (excluded_bands(nb1)) cycle !! DUDA excluded_bands or lwindow  ?????
+  end subroutine
+  !
+  !----------------------------------------------------------------------------!
+  subroutine allocate_and_build_u_mesh()
+  !----------------------------------------------------------------------------!
+  ! This is pretty much produce_u_mesh from W90_to_wannier
+  !
+  ! This subroutine computes the "rotation" matrices which must be applied
+  ! to the matrix elements to take them from band space to Wannier space.
+  !
+  ! If disentanglement is used, u_mesh    = u_matrix_opt x u_matrix
+  ! If no disentanglement is used, u_mesh = u_matrix
+  !
+  ! note that the number of k-points in the coarse mesh, in Wannier90,
+  ! is defined in the variable num_kpts. Consistency demands that this number
+  ! be equal to nkmesh, the same quantity in the intw program.
+  !
+  ! TODO explore the possibility of symmetrization...
+  !----------------------------------------------------------------------------!
+  use intw_useful_constants, only: cmplx_0
+  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands  
+  implicit none
+  
+  integer :: i, ik, n1, n2, nb1
+  
+  call read_w90_chk ()       ! allocate and read use_disentanglement, lwindow, u_matrix_opt, u_matrix
+  
+  allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  !fullzone k-points 
+  u_mesh = cmplx_0
+  
+  if (use_disentanglement) then     ! DUDA no seria mejor añadir aqui lwindow??? (reordenar m_opt, se puede hacer aqui o
+                                   !  cada vez que se use u_mesh con la lista de eigvals...)
+    do ik=1, nnkp_num_kpoints
+       n1 = 0
+       do nb1=1, num_bands_intw
+          
+          ! MBR-JBL: decided to use lwindow as in w90, instead of exclude_bands as in previus INTW version
+          if (lwindow(nb1, ik)) cycle 
+    
           n1 = n1 + 1
           do n2=1,num_wann_intw
-            do i=1,num_wann_intw
-              u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
-            enddo !i
+          do i=1,num_wann_intw
+             ! JLB: Shouldn't this be u_mesh(nb1,nb2,ik)?
+             u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
+          enddo !i
           enddo !n2
-        enddo !nb1
-      enddo !ik
-    else
-      u_mesh = u_matrix
-    endif
-    !
-    ! deallocate these arrays from W90, which are no longer useful
-    if (use_disentanglement) deallocate(u_matrix_opt)
-    deallocate(u_matrix)
-    !
-    return
+       enddo !nb1
+    enddo !ik
+
+  else
+    u_mesh = u_matrix
+
+  endif
+  !
+  ! deallocate these arrays from W90, which are no longer useful
+  if (use_disentanglement) deallocate(u_matrix_opt)
+  deallocate(u_matrix)
+  !
+  return
   end subroutine allocate_and_build_u_mesh
 
 
@@ -211,7 +257,7 @@ contains
 
 
   !----------------------------------------------------------------------------!
-  subroutine write_formatted_u_mesh (eigenval)
+  subroutine write_formatted_u_mesh(eigenval)
   !----------------------------------------------------------------------------!
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix
@@ -255,14 +301,14 @@ contains
   end subroutine write_formatted_u_mesh
   !
   !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ws_irvec (nk1,nk2,nk3)
+  subroutine allocate_and_build_ws_irvec(nk1,nk2,nk3)
   !----------------------------------------------------------------------------!
   !  Calculate real-space Wigner-Seitz lattice vectors
   !----------------------------------------------------------------------------!
   !
   use intw_reading, only: alat, at
   use intw_useful_constants, only: eps_6
-  use intw_utility, only: generate_kmesh
+  use intw_utility, only: generate_kmesh, cryst_to_cart, HPSORT_real 
   !
   implicit none
   !
@@ -270,8 +316,9 @@ contains
   !
   integer :: ik, nws, i,j,k,l
   integer :: permu(n_wss), rdeg_ws_max(nk1*nk2*nk3) 
+  integer :: r_ws_max(3,n_wss,nk1*nk2*nk3)
   real(kind=dp) :: kmesh(3,nk1*nk2*nk3)
-  real(kind=dp) :: r_cryst(3,n_wss), r_length(n_wss), r_cart(3), r_ws_max(3,n_wss,nk1*nk2*nk3)
+  real(kind=dp) :: r_cryst(3,n_wss), r_length(n_wss), r_cart(3)
   !
   call generate_kmesh (kmesh,nk1,nk2,nk3)
   !
@@ -288,7 +335,7 @@ contains
          r_cryst(3,l) =  kmesh(3,ik) + real(k,dp)
          r_cart = r_cryst(:,l)
          !R-vector from crystallographic to cartesian
-         call cryst_to_cart (1, r_cryst, at, 1)
+         call cryst_to_cart (1, r_cart, at, 1)
          r_cart = r_cart * alat  ! bohr units
          r_length(l) = sqrt ( sum(r_cart*r_cart) )
      end do   
@@ -297,13 +344,13 @@ contains
      ! order by ascending length
      call HPSORT_real(n_wss,r_length,permu)
      ! store first vector (shortest)
-     r_ws_max(:,1,ik) = r_cryst(:,permu(1))
+     r_ws_max(:,1,ik) = INT(r_cryst(:,permu(1)) * (/ nk1, nk2, nk3 /) )
      rdeg_ws_max(ik) = 1
      nws = nws + 1
      ! detect degeneracies and store vectors if degenerate
      do l = 2,n_wss
         if ( abs(r_length(l) - r_length(l-1))<eps_6) then
-           r_ws_max(:,l,ik) = r_cryst(:,permu(l))
+           r_ws_max(:,l,ik) = INT(r_cryst(:,permu(l)) * (/ nk1, nk2, nk3 /) )
            rdeg_ws_max(ik) = rdeg_ws_max(ik) + 1
            nws = nws + 1
         else
@@ -328,13 +375,18 @@ contains
      end do
   end do
 
+  !!JLB test
+  !write (*, '(15I5)') (ndegen(i), i=1, nrpts)
+  !do i = 1, nrpts
+  !      write (*, '(3I6)') irvec(:, i)
+  !end do
+
   return
   end subroutine allocate_and_build_ws_irvec
 
   !
   !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ham_k (eigenval)
-          ! eigenval has already removed excl_bands
+  subroutine allocate_and_build_ham_k(eigenval)
   !----------------------------------------------------------------------------!
   !  Construct ham_k with u_matrices on the fullzone k-mesh
   !----------------------------------------------------------------------------!
@@ -354,8 +406,9 @@ contains
   ham_k = cmplx_0
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
-     do iw = 1,num_wann_intw
-       do jw = 1,iw 
+     do jw = 1,num_wann_intw
+       do iw = 1,jw 
+           ! JLB: Needs to be checked. I think lwindow has been incorporated in u_mesh building so here just multiply.
            if (use_disentanglement) then
                    !  DUDA ver mi comentario sobre lwindow en allocate_and_build_u_mesh...
                    !  excl_bands should have been already excluded.
@@ -365,9 +418,12 @@ contains
            else
               cterm = sum( conjg(u_mesh(:,iw,ik)) * eigenval(:,ik) * u_mesh(:,jw,ik) )
            end if
-           ham_k(iw,jw,ik) = ham_k(iw,jw,ik) + cterm
-           ! force hermiticity
-           ham_k(jw,iw,ik) = ham_k(jw,iw,ik) + cterm
+           !ham_k(iw,jw,ik) = ham_k(iw,jw,ik) + cterm
+           !! force hermiticity
+           !ham_k(jw,iw,ik) = ham_k(jw,iw,ik) + cterm
+           !JLB (changed order of jw, iw loops above):
+           ham_k(iw,jw,ik) = cterm
+           if(iw .lt. jw) ham_k(jw,iw,ik) = conjg(cterm)
        end do
      end do
   end do
@@ -380,7 +436,7 @@ contains
   
   !
   !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ham_r ()
+  subroutine allocate_and_build_ham_r()
   !----------------------------------------------------------------------------!
   !  Construct ham_r by Fourier transform of ham_k, k in the fullzone k-mesh
   !----------------------------------------------------------------------------!
@@ -398,7 +454,7 @@ contains
   ham_r = cmplx_0
   do i = 1,nrpts
      do ik = 1,nnkp_num_kpoints
-          phasefac = exp( -cmplx_i*tpi*sum( nnkp_kpoints(:,ik)*real(irvec(:,i) ) ) )
+          phasefac = exp( -cmplx_i*tpi*sum( nnkp_kpoints(:,ik)*irvec(:,i) ) )
           ham_r(:,:,i) = ham_r(:,:,i) + phasefac*ham_k(:,:,ik)
      enddo
   enddo
@@ -406,6 +462,46 @@ contains
 
   return
   end subroutine allocate_and_build_ham_r
+  !
+  !----------------------------------------------------------------------------!
+  subroutine write_ham_r()
+   !----------------------------------------------------------------------------!
+   !  Write ham_r to file, to check decay (and compare to w90 if needed)
+   !----------------------------------------------------------------------------!
+   !
+   use intw_utility, only: find_free_unit
+   use intw_input_parameters, only: mesh_dir, prefix
+   use intw_reading, only:  num_wann_intw
+   use intw_intw2wannier, only : generate_header
+   !
+   implicit none
+   !
+   character(256) :: filename, header
+   integer :: io_unit, ir, in, jn
+   !
+   io_unit = find_free_unit()
+   filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
+   open (io_unit, file=filename, form='formatted', status='unknown')
+   call generate_header(' ',header)
+   write (io_unit, *) trim(header)
+   write (io_unit, *) num_wann_intw
+   write (io_unit, *) nrpts
+   write (io_unit, '(15I5)') (ndegen(ir), ir=1, nrpts)
+   do ir = 1, nrpts
+     do in = 1, num_wann_intw
+       do jn = 1, num_wann_intw
+         ! JLB: I would increase the writing accuracy, here just same as w90 for comparison
+         write (io_unit, '(5I5,2F12.6)') irvec(:, ir), jn, in, ham_r(jn, in, ir)
+       end do
+     end do
+   end do
+
+   close (io_unit)
+   return
+   end subroutine write_ham_r
+ !
+
+
 !----------------------------------------------------------------------------!
 end module intw_w90_setup
 !----------------------------------------------------------------------------!
