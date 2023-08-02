@@ -21,3 +21,5 @@ add_subdirectory(test_mmn)
 
 add_subdirectory(test_matrix-elements)
 
+add_subdirectory(test_w902intw)
+

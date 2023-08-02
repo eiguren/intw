@@ -465,41 +465,41 @@ contains
   !
   !----------------------------------------------------------------------------!
   subroutine write_ham_r()
-   !----------------------------------------------------------------------------!
-   !  Write ham_r to file, to check decay (and compare to w90 if needed)
-   !----------------------------------------------------------------------------!
-   !
-   use intw_utility, only: find_free_unit
-   use intw_input_parameters, only: mesh_dir, prefix
-   use intw_reading, only:  num_wann_intw
-   use intw_intw2wannier, only : generate_header
-   !
-   implicit none
-   !
-   character(256) :: filename, header
-   integer :: io_unit, ir, in, jn
-   !
-   io_unit = find_free_unit()
-   filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
-   open (io_unit, file=filename, form='formatted', status='unknown')
-   call generate_header(' ',header)
-   write (io_unit, *) trim(header)
-   write (io_unit, *) num_wann_intw
-   write (io_unit, *) nrpts
-   write (io_unit, '(15I5)') (ndegen(ir), ir=1, nrpts)
-   do ir = 1, nrpts
-     do in = 1, num_wann_intw
-       do jn = 1, num_wann_intw
-         ! JLB: I would increase the writing accuracy, here just same as w90 for comparison
-         write (io_unit, '(5I5,2F12.6)') irvec(:, ir), jn, in, ham_r(jn, in, ir)
-       end do
-     end do
-   end do
+  !----------------------------------------------------------------------------!
+  !  Write ham_r to file, to check decay (and compare to w90 if needed)
+  !----------------------------------------------------------------------------!
+  !
+  use intw_utility, only: find_free_unit
+  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_reading, only:  num_wann_intw
+  use intw_intw2wannier, only : generate_header
+  !
+  implicit none
+  !
+  character(256) :: filename, header
+  integer :: io_unit, ir, in, jn
+  !
+  io_unit = find_free_unit()
+  filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
+  open (io_unit, file=filename, form='formatted', status='unknown')
+  call generate_header(' ',header)
+  write (io_unit, *) trim(header)
+  write (io_unit, *) num_wann_intw
+  write (io_unit, *) nrpts
+  write (io_unit, '(15I5)') (ndegen(ir), ir=1, nrpts)
+  do ir = 1, nrpts
+    do in = 1, num_wann_intw
+      do jn = 1, num_wann_intw
+        ! JLB: I would increase the writing accuracy, here just same as w90 for comparison
+        write (io_unit, '(5I5,2F12.6)') irvec(:, ir), jn, in, ham_r(jn, in, ir)
+      end do
+    end do
+  end do
 
-   close (io_unit)
-   return
-   end subroutine write_ham_r
- !
+  close (io_unit)
+  return
+  end subroutine write_ham_r
+  !
 
 
 !----------------------------------------------------------------------------!
