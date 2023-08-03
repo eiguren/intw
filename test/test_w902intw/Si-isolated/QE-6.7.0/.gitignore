@@ -1,0 +1,11 @@
+*
+!.gitignore
+!compare_hr.py
+!Makefile.in
+!w902intw-isolated-test.bash.in
+!si.pw2intw.in
+!si.scf.in
+!Si.pz-vbc.UPF
+!si.win
+!intw.in
+!pw2intw.in
