@@ -243,9 +243,10 @@ contains
 
   endif
   !
-  ! deallocate arrays which are no longer useful
-  if (use_disentanglement) deallocate(u_matrix_opt)
-  deallocate(u_matrix)
+  !JLB: These are written to file. We should think of a good way of cleaning up all the alllocations.
+  !! deallocate arrays which are no longer useful
+  !if (use_disentanglement) deallocate(u_matrix_opt)
+  !deallocate(u_matrix)
   !
   return
   end subroutine allocate_and_build_u_mesh
@@ -298,6 +299,16 @@ contains
      do ib = 1,num_bands_intw
         write(io_unit_u,"(5es18.8,/)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
      end do
+     if (use_disentanglement) then
+       write(io_unit_u,*) 'u_matrix_opt'
+       do ib = 1,num_bands_intw
+          write(io_unit_u,"(5es18.8,/)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
+       end do
+       write(io_unit_u,*) 'u_matrix'
+       do ib = 1,num_wann_intw
+          write(io_unit_u,"(5es18.8,/)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
+       end do
+     end if
   end do
 
   close(io_unit_u)
@@ -409,7 +420,6 @@ contains
   ham_k = cmplx_0
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
-     write(*,*) ik, u_mesh(1:4,1:4,ik)
      do jw = 1,num_wann_intw
        do iw = 1,jw 
            ! JLB: Needs to be checked. I think lwindow has been incorporated in u_mesh building so here just multiply.
@@ -431,15 +441,6 @@ contains
        end do
      end do
   end do
-  !
-  !JLB test
-   do ik=1, nnkp_num_kpoints
-      do iw=1, num_wann_intw
-            do jw=1, num_wann_intw
-               write(*,'(3I6, 2F12.6)') ik, iw, jw, real(ham_k(iw,jw,ik),dp), aimag(ham_k(iw,jw,ik))
-            end do
-      end do
-   end do
   !
   return
   end subroutine allocate_and_build_ham_k
