@@ -77,7 +77,7 @@ contains
   integer :: io_unit_chk, nb, nexc, nkpt, nw, nntot
   integer :: n1, n2, n3, i, j, ik, iw, ib
   integer :: exc_bands(nnkp_exclude_bands)
-  real(kind=dp) :: dir_latt(3,3), rec_latt(3,3)
+  real(kind=dp) :: dir_latt(3,3), rec_latt(3,3), omega_invariant
   real(kind=dp), allocatable  :: kpts(:,:)
 
   io_unit_chk = find_free_unit()
@@ -138,6 +138,7 @@ contains
   allocate (u_matrix_opt(num_bands_intw,num_wann_intw,nnkp_num_kpoints))
 
   if (use_disentanglement) then
+       read (io_unit_chk) omega_invariant     ! not used
        read (io_unit_chk) ((lwindow(ib,ik),ib=1,num_bands_intw),ik=1,nnkp_num_kpoints)
        read (io_unit_chk) (ndimwin(ik), ik=1,nnkp_num_kpoints)
        read (io_unit_chk) (((u_matrix_opt(ib,iw,ik),ib=1,num_bands_intw),iw=1,num_wann_intw),ik=1,nnkp_num_kpoints)
@@ -216,21 +217,23 @@ contains
   allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  !fullzone k-points 
   u_mesh = cmplx_0
   
-  if (use_disentanglement) then     ! DUDA no seria mejor añadir aqui lwindow??? (reordenar m_opt, se puede hacer aqui o
-                                   !  cada vez que se use u_mesh con la lista de eigvals...)
+  if (use_disentanglement) then
+
     do ik=1, nnkp_num_kpoints
        n1 = 0
        do nb1=1, num_bands_intw
           
           ! MBR-JBL: decided to use lwindow as in w90, instead of exclude_bands as in previus INTW version
-          if (lwindow(nb1, ik)) cycle 
+          if (.not. lwindow(nb1, ik)) cycle 
     
+          ! At each k, bands are reordered so that 
+          ! u_matrix_opt for bands within the disentanglement window are filled first 
+          ! and the rest are just padded with zeros
           n1 = n1 + 1
           do n2=1,num_wann_intw
-          do i=1,num_wann_intw
-             ! JLB: Shouldn't this be u_mesh(nb1,nb2,ik)?
-             u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
-          enddo !i
+            do i=1,num_wann_intw
+               u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
+            enddo !i
           enddo !n2
        enddo !nb1
     enddo !ik
@@ -240,7 +243,7 @@ contains
 
   endif
   !
-  ! deallocate these arrays from W90, which are no longer useful
+  ! deallocate arrays which are no longer useful
   if (use_disentanglement) deallocate(u_matrix_opt)
   deallocate(u_matrix)
   !
@@ -406,6 +409,7 @@ contains
   ham_k = cmplx_0
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
+     write(*,*) ik, u_mesh(1:4,1:4,ik)
      do jw = 1,num_wann_intw
        do iw = 1,jw 
            ! JLB: Needs to be checked. I think lwindow has been incorporated in u_mesh building so here just multiply.
@@ -421,12 +425,21 @@ contains
            !ham_k(iw,jw,ik) = ham_k(iw,jw,ik) + cterm
            !! force hermiticity
            !ham_k(jw,iw,ik) = ham_k(jw,iw,ik) + cterm
-           !JLB (changed order of jw, iw loops above):
+           !JLB (also changed order of jw, iw loops above):
            ham_k(iw,jw,ik) = cterm
            if(iw .lt. jw) ham_k(jw,iw,ik) = conjg(cterm)
        end do
      end do
   end do
+  !
+  !JLB test
+   do ik=1, nnkp_num_kpoints
+      do iw=1, num_wann_intw
+            do jw=1, num_wann_intw
+               write(*,'(3I6, 2F12.6)') ik, iw, jw, real(ham_k(iw,jw,ik),dp), aimag(ham_k(iw,jw,ik))
+            end do
+      end do
+   end do
   !
   return
   end subroutine allocate_and_build_ham_k
@@ -447,15 +460,19 @@ contains
   !
   implicit none
   !
-  integer :: ik, i
+  integer :: ik, i, ib, jb
   complex(kind=dp) :: phasefac
   !
   allocate (ham_r(num_wann_intw, num_wann_intw,nrpts))
   ham_r = cmplx_0
   do i = 1,nrpts
      do ik = 1,nnkp_num_kpoints
-          phasefac = exp( -cmplx_i*tpi*sum( nnkp_kpoints(:,ik)*irvec(:,i) ) )
-          ham_r(:,:,i) = ham_r(:,:,i) + phasefac*ham_k(:,:,ik)
+       do ib = 1, num_wann_intw
+         do jb = 1, num_wann_intw 
+           phasefac = exp( -cmplx_i*tpi*sum( nnkp_kpoints(:,ik)*irvec(:,i) ) )
+           ham_r(ib,jb,i) = ham_r(ib,jb,i) + phasefac*ham_k(ib,jb,ik)
+         end do
+       end do
      enddo
   enddo
   ham_r = ham_r/real(nnkp_num_kpoints,dp) 
