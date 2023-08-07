@@ -1,7 +1,5 @@
 
-QE_HOME=@QE_BUILD_DIR@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
-BUILD_DIR=@CMAKE_BINARY_DIR@
+QE_BUILD_DIR=@QE_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -14,26 +12,28 @@ calculation: all
 
 
 run_scf:
-	$(MPI_CMD) $(QE_HOME)/bin/pw.x < si.scf.in | tee si.scf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph:
 	cp -r si.save qq1/
-	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/bin/ph.x < si.ph.in | tee si.ph.out ; rm -rf si.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(MPI_CMD) $(QE_BUILD_DIR)/bin/ph.x < si.ph.in | tee si.ph.out ; rm -rf si.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH
 	cp qq1/si.dyn ./si.dyn1
-	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
+	$(QE_BUILD_DIR)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_nscf:
 	rm -rf si-nscf.save
 	cp -r si.save si-nscf.save
-	$(MPI_CMD) $(QE_HOME)/bin/pw.x < si.nscf.in | tee si.nscf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < si.nscf.in | tee si.nscf.out
+	( test -f CRASH && exit 1 || echo "OK" )
 
 run_nscf_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/${QE_VERSION}/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
+	${QE_BUILD_DIR}/bin/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
+	( test -f CRASH && exit 1 || echo "OK" )
 
 
 SCF_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat si.save/wfc8.dat

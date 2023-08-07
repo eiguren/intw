@@ -44,7 +44,7 @@ PROGRAM pw2intw
   mesh_dir="./"
 
 
-#if defined(MPI)
+#if defined(__MPI)
   CALL mp_startup ( )
 #endif
 
@@ -277,7 +277,8 @@ contains
     write(unit=numq,fmt=*)iq
 !
     do imode=1,3*nat
-      write(unit=io_unit,fmt="(10000(a,f16.10,a,f16.10,a))") ( "(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ") ",jmode=1,3*nat)
+      write(unit=io_unit,fmt="(10000(a,f16.10,a,f16.10,a))") &
+        ( "(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ") ",jmode=1,3*nat)
     enddo
 !
   enddo
@@ -354,13 +355,12 @@ contains
     USE noncollin_module, ONLY : noncolin
     USE wvfct, ONLY : nbnd, et
     USE constants, ONLY: rytoev
-    use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: eps_14
 
 
     integer :: ik, ibnd, is, npol, ig
     character(256) ::  wfc_file, datafile
     integer :: io_unit
+    integer, external :: find_free_unit
     !
     complex(dp), allocatable :: evc_down(:, :) !JLB
 

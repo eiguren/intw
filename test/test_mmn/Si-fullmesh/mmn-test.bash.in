@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-QE_HOME=@QE_HOME@
-QE_VERSION=$(basename $PWD | sed 's/QE-//')
-
 # Run all necessary QE calculations
 make calculation
 if [ $? -ne 0 ]; then

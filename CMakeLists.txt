@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 # Add our local modlues to the module path
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -99,7 +99,7 @@ include(SetWannier)
 
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
-add_subdirectory(src/QEtoINTW/6.7.0)
+add_subdirectory(src/QEtoINTW)
 
 # Find python3 for test scripts
 find_package (Python3 COMPONENTS Interpreter)
