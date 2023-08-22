@@ -95,10 +95,13 @@ use intw_fft, only : find_iG
 
      call find_iG(gvec(:,list_iG_1(i))+G,iG_1 )
 #if __GFORTRAN__ & __GNUC__ < 9
+     jd(1) = 0
      do j=1,nG_max
-       if (list_iG_2(j)==iG_1) exit
+       if (list_iG_2(j)==iG_1) then
+         jd(1) = j
+         exit
+       endif
      enddo
-     jd(1) = j
 #else
      jd = findloc(list_iG_2, iG_1)
 #endif
