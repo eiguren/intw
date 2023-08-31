@@ -3,8 +3,7 @@ program w902intw
     use kinds, only: dp
     use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
                               allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
-                              allocate_and_build_ham_r, write_ham_r, &
-                              eigenval_intw
+                              allocate_and_build_ham_r, write_ham_r
     use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input
     use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                             num_bands_intw
@@ -19,6 +18,7 @@ program w902intw
     character(256) :: nnkp_file
 
     logical        :: read_status
+    real(kind=dp), allocatable :: eigenval(:,:)
 
 
 !--------------------------------------------------------------------------------
@@ -61,11 +61,16 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 !       read .chk file, build u matrix and write to file
 !================================================================================
-    allocate(eigenval_intw(num_bands_intw,nnkp_num_kpoints))
-    call read_eig(eigenval_intw)
-    call allocate_and_build_u_mesh()
+    allocate(eigenval(num_bands_intw,nnkp_num_kpoints))
+    call read_eig(eigenval)
 
-    call write_formatted_u_mesh(eigenval_intw)
+    ! MBR Note: when read_eig is called, eigenvalues are stored in eigenval_intw
+    ! of w90_setup. This eigenval array is a "copy" to be used OPTIONALLY 
+    ! inside the utility if needed. 
+    ! The next u_mesh, ham_k, ham_r builds use the internal eigenval_intw.
+
+    call allocate_and_build_u_mesh()
+    call write_formatted_u_mesh()
 
 
 !================================================================================
@@ -77,7 +82,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 !       build H(k) and H(R), write H(R) to file
 !================================================================================
-    call allocate_and_build_ham_k(eigenval_intw)
+    call allocate_and_build_ham_k()
     call allocate_and_build_ham_r()
 
     call write_ham_r()
@@ -86,7 +91,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 !       clean up and finish
 !================================================================================
-    deallocate(eigenval_intw)
+    deallocate(eigenval)
 
     write(*,'(A)') '====================================================='
     write(*,'(A)') '|               end program w902intw                |'

@@ -38,7 +38,9 @@ module intw_w90_setup
   !
   ! subroutines
   public :: read_w90_chk, allocate_and_build_u_mesh, write_formatted_u_mesh, allocate_and_build_ws_irvec, &
-            allocate_and_build_ham_k, allocate_and_build_ham_r, read_eig, write_ham_r
+            allocate_and_build_ham_k, allocate_and_build_ham_r, read_eig, write_ham_r, &
+            allocate_and_read_ham_r, allocate_and_read_u_mesh, &
+            interpolate_1k, interpolated_DOS
   !
   private
   !
@@ -82,7 +84,7 @@ contains
 
   io_unit_chk = find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('.chk')
-  open(unit=io_unit_chk,file=filename,status='unknown',form='unformatted')
+  open(unit=io_unit_chk,file=filename,status='old',form='unformatted')
 
   ! TODO add comments in consistency check with existing data from nnkp
   ! (I think that full-zone k-list should be read from there, since 
@@ -161,7 +163,7 @@ contains
   !----------------------------------------------------------------------------!
   subroutine read_eig(eigenval)
   !----------------------------------------------------------------------------!
-  ! Read the eigenvalues for the relevant num_bands_intw from the .eig file    !
+  ! Allocates and reads the eigenvalues for the relevant num_bands_intw from the .eig file    !
   !----------------------------------------------------------------------------!
   use intw_input_parameters, only: mesh_dir, prefix
   use intw_utility, only: find_free_unit
@@ -169,22 +171,26 @@ contains
   use intw_intw2wannier, only: nnkp_num_kpoints
 
   ! I/O
-  real(kind=dp), intent(out) :: eigenval(num_bands_intw,nnkp_num_kpoints)
+  real(kind=dp), optional, intent(out) :: eigenval(num_bands_intw,nnkp_num_kpoints)
   ! Local variables
   character(256) :: filename
-  integer :: io_unit, ik, in, i, j
+  integer :: io_unit, ik, ib, i, j
+
+  allocate (eigenval_intw(num_bands_intw,nnkp_num_kpoints))
 
   io_unit=find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
   open(unit=io_unit,file=filename,form='formatted',status='old')
   !
   do ik=1,nnkp_num_kpoints
-    do in=1,num_bands_intw
+    do ib=1,num_bands_intw
       !
-      read(io_unit,*) i, j, eigenval(in,ik)
+      read(io_unit,*) i, j, eigenval_intw(ib,ik)
       !
     enddo
   enddo
+
+  if (present(eigenval)) eigenval = eigenval_intw
 
   end subroutine
   !
@@ -252,16 +258,9 @@ contains
   end subroutine allocate_and_build_u_mesh
 
 
-  !
-  !----------------------------------------------------------------------------!
-  !subroutine read_formatted_u_mesh ()
-  !        TODO first take a decision on how will it be printed.
-  !        Create a type wannier and store stuff there upon reading
-  !----------------------------------------------------------------------------!
-
 
   !----------------------------------------------------------------------------!
-  subroutine write_formatted_u_mesh(eigenval)
+  subroutine write_formatted_u_mesh()
   !----------------------------------------------------------------------------!
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix
@@ -272,7 +271,6 @@ contains
 
   character(256) :: filename
   integer :: i,ik,ib,iw,io_unit_u
-  real(kind=dp), intent(in) :: eigenval(num_bands_intw,nnkp_num_kpoints)
 
   io_unit_u = find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('.u_mesh')
@@ -294,7 +292,7 @@ contains
      write(io_unit_u,*) 'LWINDOW'
      write(io_unit_u,*) (lwindow(ib,ik), ib=1,num_bands_intw)
      write(io_unit_u,*) 'EIGENVALUES'
-     write(io_unit_u,"(5es18.8,/)") (eigenval(ib,ik), ib=1,num_bands_intw)
+     write(io_unit_u,"(5es18.8,/)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
      write(io_unit_u,*) 'u_mesh'
      do ib = 1,num_bands_intw
         write(io_unit_u,"(5es18.8,/)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
@@ -400,7 +398,7 @@ contains
 
   !
   !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ham_k(eigenval)
+  subroutine allocate_and_build_ham_k()
   !----------------------------------------------------------------------------!
   !  Construct ham_k with u_matrices on the fullzone k-mesh
   !----------------------------------------------------------------------------!
@@ -411,7 +409,6 @@ contains
   !
   implicit none
   !
-  real(kind=dp) , intent(in) :: eigenval(num_bands_intw,nnkp_num_kpoints)
   !
   integer :: ik, iw, jw, nwin
   complex(kind=dp) :: cterm
@@ -428,9 +425,9 @@ contains
                    !  excl_bands should have been already excluded.
               ! Pick up eigenvalues inside the opt window for this k.
               ! They correspond to the first items in u_matrix_opt.
-              cterm = sum( conjg(u_mesh(1:nwin,iw,ik)) * pack(eigenval(:,ik),lwindow(:,ik)) * u_mesh(1:nwin,jw,ik) )
+              cterm = sum( conjg(u_mesh(1:nwin,iw,ik)) * pack(eigenval_intw(:,ik),lwindow(:,ik)) * u_mesh(1:nwin,jw,ik) )
            else
-              cterm = sum( conjg(u_mesh(:,iw,ik)) * eigenval(:,ik) * u_mesh(:,jw,ik) )
+              cterm = sum( conjg(u_mesh(:,iw,ik)) * eigenval_intw(:,ik) * u_mesh(:,jw,ik) )
            end if
            !ham_k(iw,jw,ik) = ham_k(iw,jw,ik) + cterm
            !! force hermiticity
@@ -519,10 +516,304 @@ contains
   end subroutine write_ham_r
   !
 
+  ! MBR new routines 28/08/23:
+  ! allocate_and_read_u_mesh and _ham_r: reads previously generated and 
+  ! printed u_mesh and _ham_r by utility W902intw.
+   
+  !
+  !----------------------------------------------------------------------------!
+  subroutine allocate_and_read_ham_r()
+  !
+  !----------------------------------------------------------------------------!
+  !  MBR:
+  !  This reads: nrpts, ndegen, irvec, ham_r 
+  !  (num_bands_intw, num_wann_intw have been read previously from nnkp using set_numbands)
+  !  from formatted file mesh_dir/prefix_hr_intw.dat
+  !----------------------------------------------------------------------------!
+  !
+  use intw_useful_constants, only: cmplx_0
+  use intw_utility, only: find_free_unit
+  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_input_parameters, only: mesh_dir, prefix
+  !
+  implicit none
+  !
+  character(256) :: filename, header
+  integer :: io_unit, ir, in, jn, i, j
+  !
+  ! open file and read dimensions
+  !
+  io_unit = find_free_unit()
+  filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
+  open (io_unit, file=filename, form='formatted', status='old') 
+  read (io_unit, *) header
+  read (io_unit, *) ir
+  if (ir .ne. num_wann_intw) then
+      write(*,*) 'num_wann_intw in ', filename,' does not coincide with nnkp value. Stopping.'
+      stop
+  end if
+  read (io_unit, *) nrpts
+  !
+  ! allocate arrays 
+  ! careful, in case they had been allocated by previous call to build ham_r
+  !
+  if (.not. allocated(ndegen)) &
+     allocate (ndegen(nrpts))  
+  if (.not. allocated(irvec)) &
+     allocate (irvec(3,nrpts) )
+  if (.not. allocated(ham_r)) &
+     allocate (ham_r(num_wann_intw, num_wann_intw,nrpts))
+  ndegen = 0
+  irvec = 0
+  ham_r = cmplx_0
+  !
+  ! read irvec, ham_r 
+  !
+  read (io_unit, '(15I5)') (ndegen(ir), ir=1, nrpts)
+  do ir = 1, nrpts
+    do in = 1, num_wann_intw
+      do jn = 1, num_wann_intw
+        read (io_unit, '(5I5,2F12.6)') irvec(:, ir), j, i, ham_r(jn, in, ir)
+      end do
+    end do
+  end do
+  !
+  close (io_unit)
+  !
+  return
+  end subroutine allocate_and_read_ham_r
+
+
+  subroutine allocate_and_read_u_mesh
+  !
+  !----------------------------------------------------------------------------!
+  !  MBR:
+  !  This reads all dimensions in the W90 problem 
+  !  (except for nbands, num_bands_intw, num_wann_intw have been read previously 
+  !  from nnkp using set_numbands)
+  !  which include: nnkp_num_kpoints, nnkp_exclude_bands, 
+  !  and quantities use_disentanglement, nnkp_excluded_bands, &
+  !  nnkp_kpoints, eigenval, lwindow, u_mesh, etc. 
+  !  from formatted file mesh_dir/prefix_u_mesh.dat
+  !
+  !----------------------------------------------------------------------------!
+  !
+  use intw_reading, only: nbands, num_bands_intw, num_wann_intw
+  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_utility, only: find_free_unit
+  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
+                               nnkp_num_kpoints, nnkp_kpoints
+  implicit none
+
+  character(256) :: filename, varname
+  integer :: i,ik,ib,iw,io_unit_u
+
+  io_unit_u = find_free_unit()
+  filename = trim(mesh_dir)//trim(prefix)//trim('.u_mesh')
+  open(unit=io_unit_u,file=filename,status='old')
+
+  read(io_unit_u,*) varname !'NBANDS'
+  read(io_unit_u,*) ib
+  if (ib .ne. nbands) then
+     write(*,*) 'nbands in ', filename,' does not coincide with value in QE. Stopping.'
+     stop
+  end if     
+  read(io_unit_u,*) varname !'EXCLUDED_BANDS'
+  read(io_unit_u,*) nnkp_exclude_bands
+  if (.not. allocated(nnkp_excluded_bands)) &
+     allocate (nnkp_excluded_bands(nbands))
+  read(io_unit_u,*) (nnkp_excluded_bands(i),i=1,nbands)
+  read(io_unit_u,*) varname !'num_bands  num_wann  num_kpt'
+  read(io_unit_u,*) ib, iw, nnkp_num_kpoints
+  if ( ib .ne. num_bands_intw ) then
+     write(*,*) 'num_bands_intw in ', filename,' does not coincide with nnkp value. Stopping.'
+     stop
+  end if
+  if ( iw .ne. num_wann_intw ) then
+     write(*,*) 'num_wann_intw in ', filename,' does not coincide with nnkp value. Stopping.'
+     stop
+  end if
+  read(io_unit_u,*) varname ! 'USE_DISENTANGLEMENT'
+  read(io_unit_u,*) use_disentanglement
+  !
+  ! allocate quantities  
+  ! (careful in case allocate_and_build had been called first)
+  !
+  if (.not. allocated(nnkp_kpoints)) &
+     allocate (nnkp_kpoints(3,nnkp_num_kpoints))
+  if (.not. allocated(lwindow)) &
+     allocate (lwindow(num_bands_intw,nnkp_num_kpoints))
+  if (.not. allocated(eigenval_intw)) &
+     allocate (eigenval_intw(num_bands_intw,nnkp_num_kpoints))
+  if (.not. allocated(u_mesh)) &
+     allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  
+  if (use_disentanglement) then
+     if (.not. allocated(u_matrix_opt)) &
+        allocate (u_matrix_opt(num_bands_intw,num_wann_intw,nnkp_num_kpoints))
+     if (.not. allocated(u_matrix)) &
+        allocate (u_matrix(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
+  end if
+  !
+  do ik = 1,nnkp_num_kpoints
+     !
+     read (io_unit_u,*) varname ! 'K-POINT', ik
+     read(io_unit_u,"(3f16.10)") (nnkp_kpoints(i,ik), i=1,3 )
+     read(io_unit_u,*) varname ! 'LWINDOW'
+     read(io_unit_u,*) (lwindow(ib,ik), ib=1,num_bands_intw)
+     read(io_unit_u,*) varname ! 'EIGENVALUES'
+     read(io_unit_u,"(5es18.8,/)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
+     read(io_unit_u,*) varname ! 'u_mesh'
+     do ib = 1,num_bands_intw
+        read(io_unit_u,"(5es18.8,/)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
+     end do
+     !
+     if (use_disentanglement) then
+       read(io_unit_u,*) varname ! 'u_matrix_opt'
+       do ib = 1,num_bands_intw
+          read(io_unit_u,"(5es18.8,/)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
+       end do
+       read(io_unit_u,*) varname ! 'u_matrix'
+       do ib = 1,num_wann_intw
+          read(io_unit_u,"(5es18.8,/)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
+       end do
+     end if
+     ! 
+  end do
+  !
+  close(io_unit_u)
+  !
+  end subroutine allocate_and_read_u_mesh
+
+
+!!! Finally, TODO modules for interpolation utilities
+
+  subroutine interpolate_1k (kpoint, eig_int, u_interp)
+  !
+  !----------------------------------------------------------------------------!
+  !  MBR:
+  !  Given a kpoint in crystal coordinates, it interpolates the eigenvalues
+  !  using already available variables eigenval_intw, ham_r, ir_vec, ndegen, nrpts.
+  !
+  !  Interpolation matrix, which can be used to obtain weights for fatbands,
+  !  is an optional output
+  !
+  !----------------------------------------------------------------------------!
+  !
+  use intw_useful_constants, only: cmplx_0, cmplx_i, twopi
+  use intw_reading, only: num_bands_intw, num_wann_intw
+  !
+  implicit none
+  !
+  integer :: ir,i,j
+  real(kind=dp), intent(in) :: kpoint(3)
+  real(kind=dp), intent(out) :: eig_int(num_wann_intw)
+  complex(kind=dp) :: cfac
+  complex(kind=dp) :: ham_pack_1k((num_wann_intw*(num_wann_intw+1))/2)
+  complex(kind=dp) :: u_pass(num_wann_intw,num_wann_intw)
+  complex(kind=dp) , optional, intent(out) :: u_interp(num_wann_intw,num_wann_intw)
+  ! for ZHPEVX we use the same dimensions as W90 does
+  integer :: neig_found, info
+  integer :: iwork(5*num_wann_intw), ifail(num_wann_intw)
+  real(kind=dp) :: rwork(7*num_wann_intw)
+  complex(kind=dp) :: cwork(2*num_wann_intw)
+  !
+  ! generate ham_k directly packed at this point
+  !
+  ham_pack_1k = cmplx_0
+  do ir = 1,nrpts
+     cfac = exp(cmplx_i*twopi*dot_product(kpoint(:),irvec(:,ir)))/real(ndegen(ir),dp)
+     do j=1,num_wann_intw
+       do i=1,j
+          ham_pack_1k(i+((j-1)*j)/2) = ham_pack_1k(i+((j-1)*j)/2) + cfac * ham_r(i,j,ir)
+       end do
+     end do  
+  end do
+  !
+  ! diagonalize
+  ! Note: actual Wannier interpolation matrix will be upass^dagger
+  !
+  eig_int=0.0_dp
+  call ZHPEVX('V', 'A', 'U', num_wann_intw, ham_pack_1k, &
+              0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
+              neig_found, eig_int, u_pass, num_wann_intw, &
+              cwork, rwork, iwork, ifail, info)
+  ! 
+  if (info < 0) then
+     write(*,*) 'Wrong argument in ZHPEVX. Stopping.'
+     stop
+  else if (info > 0) then
+     write(*,*) 'ZHPEVX failed. Stopping.'
+     stop
+  end if 
+  !
+  ! Interpolation matrix each eigenergy on the WFs 
+  !
+  if (present(u_interp)) then
+     u_interp = conjg(transpose(u_pass))
+  end if
+  !
+  end subroutine interpolate_1k
+
+
+
+  subroutine interpolated_DOS (nik1, nik2, nik3, eini, efin, esmear, ne, DOS, PDOS)
+  !
+  !----------------------------------------------------------------------------!
+  !  MBR:
+  !
+  !  Calculate DOS using a fine grid nik1 x nik2 x nik3
+  !  and a lorentzian smearing.
+  !  Optionally, write PDOS using weights from u_interp  
+  !
+  !----------------------------------------------------------------------------!
+  !
+  use intw_useful_constants, only: cmplx_0, cmplx_i, twopi
+  use intw_reading, only: num_bands_intw, num_wann_intw
+  !
+  implicit none 
+  !
+  integer :: ik, ik1, ik2, ik3, ie, iw
+  integer, intent(in) :: nik1, nik2, nik3, ne
+  real(kind=dp), intent(in) :: eini, efin, esmear
+  real(kind=dp), intent(out) :: DOS(ne)
+  real(kind=dp), optional, intent(out) :: PDOS(ne,num_wann_intw)
+  real(kind=dp) :: ener, estep, lorentz
+  real(kind=dp) :: kpoint(3), eig_int(num_wann_intw)
+  complex(kind=dp) :: u_interp(num_wann_intw,num_wann_intw)
+
+  estep=(efin-eini)/real(ne-1,dp)
+  DOS = 0.0_dp
+  if (present(PDOS)) PDOS = 0.0_dp
+
+  ! construct fine grid of kpoints, interpolate 1 by 1 and add 
+  ! contribution to DOS(e)
+
+  do ik1 = 1,nik1
+     kpoint(1) = real(ik1-1,dp) / real(nik1,dp)
+  do ik2 = 1,nik2
+     kpoint(2) = real(ik2-1,dp) / real(nik2,dp)
+  do ik3 = 1,nik3
+     kpoint(3) = real(ik3-1,dp) / real(nik3,dp)
+     !
+     call interpolate_1k (kpoint, eig_int, u_interp)
+     do ie = 1,ne
+        ener = eini + (ie-1)*estep
+        do iw = 1,num_wann_intw
+          lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
+          lorentz = lorentz * 0.5_dp*esmear/twopi 
+          DOS(ie) = DOS(ie) + lorentz
+          if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
+        end do  
+     end do
+     !
+  end do
+  end do
+  end do
+  !
+  end subroutine interpolated_DOS        
 
 !----------------------------------------------------------------------------!
 end module intw_w90_setup
 !----------------------------------------------------------------------------!
 
 
-!!! Finally, TODO modules for interpolation utilities

@@ -7,6 +7,7 @@ set(PROGS
   read_pp_test
   intw2W90
   w902intw
+  interpolate
 )
 
 list(REMOVE_DUPLICATES PROGS)
