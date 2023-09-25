@@ -2,91 +2,72 @@
 #
 #############################################################################
 
-# Maybe it is a good idea to ask the user directly for this directory, since
-# it can have any name other than build.
-set(QE_BUILD_DIR ${QE_HOME}/build)
+message("-- Checking QE.")
+
+# List of supported QE versions
+set(SUPPORTED_QE
+  "6.7+"
+  )
 
 
-set(QE_INCLUDE_DIRS
-  ${QE_BUILD_DIR}/atomic/mod/qe_atomic
-  ${QE_BUILD_DIR}/CPV/mod/qe_cpv
-  ${QE_BUILD_DIR}/CPV/mod/qe_cpv_wfdd_exe
-  ${QE_BUILD_DIR}/dft-d3/mod/qe_dftd3
-  ${QE_BUILD_DIR}/EPW/mod/qe_epw
-  ${QE_BUILD_DIR}/external/fox/common/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/fox/dom/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/fox/fsys/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/fox/sax/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/fox/utils/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/fox/wxml/mod/FoX_fsys
-  ${QE_BUILD_DIR}/external/mbd/src
-  ${QE_BUILD_DIR}/external/mod/qe_devxlib
-  ${QE_BUILD_DIR}/external/mod/qe_w90chk2chk_exe
-  ${QE_BUILD_DIR}/external/mod/qe_wannier90
-  ${QE_BUILD_DIR}/FFTXlib/mod/qe_fftx
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww_bse
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww_pw4gww
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww_simple
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww_simplebse
-  ${QE_BUILD_DIR}/GWW/mod/qe_gww_simpleip
-  ${QE_BUILD_DIR}/HP/mod/qe_hp
-  ${QE_BUILD_DIR}/KS_Solvers/mod/qe_kssolver_davidson
-  ${QE_BUILD_DIR}/KS_Solvers/mod/qe_kssolver_davidsonrci
-  ${QE_BUILD_DIR}/LAXlib/mod/qe_lax
-  ${QE_BUILD_DIR}/LR_Modules/mod/qe_lr_modules
-  ${QE_BUILD_DIR}/Modules/mod/qe_modules
-  ${QE_BUILD_DIR}/NEB/mod/qe_neb
-  ${QE_BUILD_DIR}/NEB/mod/qe_neb_pathinterpolation_exe
-  ${QE_BUILD_DIR}/PHonon/mod/qe_phonon_alpha2f_exe
-  ${QE_BUILD_DIR}/PHonon/mod/qe_phonon_gamma
-  ${QE_BUILD_DIR}/PHonon/mod/qe_phonon_matdyn_exe
-  ${QE_BUILD_DIR}/PHonon/mod/qe_phonon_ph
-  ${QE_BUILD_DIR}/PP/mod/qe_pp
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_epsilon_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_fermiproj_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_fermisurface_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_pawplot_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_pw2wannier90_exe
-  ${QE_BUILD_DIR}/PP/mod/qe_pp_st_dos_exe
-  ${QE_BUILD_DIR}/PWCOND/mod/qe_pwcond_exe
-  ${QE_BUILD_DIR}/PW/mod/qe_pw
-  ${QE_BUILD_DIR}/TDDFPT/mod/qe_tddfpt
-  ${QE_BUILD_DIR}/upflib/mod/qe_upflib
-  ${QE_BUILD_DIR}/upflib/mod/qe_upflib_upfconv_exe
-  ${QE_BUILD_DIR}/UtilXlib/mod/qe_utilx
-  ${QE_BUILD_DIR}/XClib/mod/qe_xclib
-  ${QE_BUILD_DIR}/XSpectra/mod/qe_xspectra
-  ${QE_BUILD_DIR}/XSpectra/mod/qe_xspectra_gipaw
-)
+# Find QE build dir
+file(GLOB files_and_dirs RELATIVE ${QE_HOME} ${QE_HOME}/*)
+set(dirs "")
+foreach(file_or_dir ${files_and_dirs})
+  if(IS_DIRECTORY ${QE_HOME}/${file_or_dir})
+    list(APPEND dirs ${file_or_dir})
+  endif()
+endforeach()
 
-set(QE_LIBS
-  ${QE_BUILD_DIR}/lib/libqe_pw.a
-  ${QE_BUILD_DIR}/lib/libqe_modules.a
-  ${QE_BUILD_DIR}/lib/libqe_upflib.a
-  ${QE_BUILD_DIR}/lib/libqe_pp.a
-  ${QE_BUILD_DIR}/lib/libqe_fftx.a
-  ${QE_BUILD_DIR}/lib/libqe_xclib.a
-  ${QE_BUILD_DIR}/lib/libqe_kssolver_davidson.a
-  ${QE_BUILD_DIR}/lib/libqe_kssolver_cg.a
-  ${QE_BUILD_DIR}/lib/libqe_kssolver_ppcg.a
-  ${QE_BUILD_DIR}/lib/libqe_kssolver_paro.a
-  ${QE_BUILD_DIR}/lib/libqe_kssolver_dense.a
-  ${QE_BUILD_DIR}/lib/libqe_dftd3.a
-  ${QE_BUILD_DIR}/lib/libmbd.a
-  ${QE_BUILD_DIR}/lib/libFoX_dom.a
-  ${QE_BUILD_DIR}/lib/libFoX_sax.a
-  ${QE_BUILD_DIR}/lib/libFoX_wxml.a
-  ${QE_BUILD_DIR}/lib/libFoX_common.a
-  ${QE_BUILD_DIR}/lib/libFoX_utils.a
-  ${QE_BUILD_DIR}/lib/libFoX_fsys.a
-  ${QE_BUILD_DIR}/lib/libqe_libbeef.a
-  ${QE_BUILD_DIR}/lib/libqe_lax.a
-  ${QE_BUILD_DIR}/lib/libqe_utilx.a
-  ${QE_BUILD_DIR}/lib/libqe_clib.a
-)
+find_file(QE_CMAKE CMakeCache.txt PATHS ${QE_HOME} PATH_SUFFIXES ${dirs} NO_DEFAULT_PATH)
+if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
+  message("-- QE built with autotools.")
+  set(QE_BUILD_DIR ${QE_HOME})
+else()
+  message("-- QE built with CMake.")
+  get_filename_component(QE_BUILD_DIR ${QE_CMAKE} DIRECTORY)
+endif()
+message("-- Found QE_BUILD_DIR: ${QE_BUILD_DIR}")
 
-add_library(QE_lib INTERFACE IMPORTED)
-target_include_directories( QE_lib INTERFACE ${QE_INCLUDE_DIRS} )
-target_link_libraries( QE_lib INTERFACE ${QE_LIBS})
+
+# Some checks
+message("-- Checking QE build.")
+find_program(QE_PW_EXE pw.x PATHS ${QE_BUILD_DIR}/bin NO_DEFAULT_PATH)
+if("${QE_PW_EXE}" STREQUAL "QE_PW_EXE-NOTFOUND")
+  message(FATAL_ERROR "QE_PW_EXE NOT FOUND! QE is not compiled or QE_HOME is incorrect.")
+endif()
+find_program(QE_PH_EXE ph.x PATHS ${QE_BUILD_DIR}/bin NO_DEFAULT_PATH)
+if("${QE_PH_EXE}" STREQUAL "QE_PH_EXE-NOTFOUND")
+  message(FATAL_ERROR "QE_PH_EXE NOT FOUND! QE is not compiled or QE_HOME is incorrect.")
+endif()
+
+
+# Find QE version number
+find_file(QE_VERSION_FILE qe_version.h PATHS ${QE_HOME}/include NO_DEFAULT_PATH)
+if("${QE_VERSION_FILE}" STREQUAL "QE_VERSION_FILE-NOTFOUND")
+  # 6.6 version have the version number in a different file
+  find_file(QE_VERSION_FILE version.h PATHS ${QE_HOME}/include NO_DEFAULT_PATH)
+endif()
+if("${QE_VERSION_FILE}" STREQUAL "QE_VERSION_FILE-NOTFOUND")
+  # Older versions have the version number in a different file
+  find_file(QE_VERSION_FILE version.f90 PATHS ${QE_HOME}/Modules NO_DEFAULT_PATH)
+endif()
+
+if("${QE_VERSION_FILE}" STREQUAL "QE_VERSION_FILE-NOTFOUND")
+  message(FATAL_ERROR "QE_VERSION_FILE NOT FOUND!")
+endif()
+
+file(STRINGS ${QE_VERSION_FILE} QE_VERSION_LINE REGEX "version_number")
+string(REGEX MATCH "'([0-9]+)(\\.[0-9]+)?(\\.[0-9]+)?(MaX)?(\\+)?'" QE_VERSION ${QE_VERSION_LINE})
+string(REPLACE "'" "" QE_VERSION "${QE_VERSION}")
+message("-- Found QE_VERSION: ${QE_VERSION}")
+
+
+# Check if the given QE version is supported by intw
+list(FIND SUPPORTED_QE ${QE_VERSION} QE_SUPPORTED)
+if("${QE_SUPPORTED}" EQUAL "-1")
+  message("QE especified by QE_HOME is not suported!")
+  message("Supported QE versions: ${SUPPORTED_QE}")
+  message(FATAL_ERROR)
+endif()
+

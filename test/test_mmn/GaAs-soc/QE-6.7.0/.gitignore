@@ -4,7 +4,6 @@
 !compare_wannier.py
 !compare_amn_ibz2fullbz.py
 !Makefile.in
-!mmn-test.bash.in
 !gaas.pw2intw.in
 !gaas.scf.in
 !gaas.scf_irr.in

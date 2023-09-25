@@ -1,7 +1,7 @@
 
-QE_HOME=@QE_HOME@
-W_HOME=@W_HOME@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+QE_BUILD_DIR=@QE_BUILD_DIR@
+W_BUILD_DIR=@W_BUILD_DIR@
+INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -13,24 +13,25 @@ calculation: pw_files w90pp_files run_pw2intw run_intw run_w90
 .PHONY: all calculation clean run_pw run_w90pp run_pw2intw run_intw run_w90 pw_files pw2intw_files intw_files w90_files
 
 run_pw:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < si.scf.in | tee si.scf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < si.scf.in | tee si.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90pp:
-	$(MPI_CMD) $(W_HOME)/wannier90.x -pp si
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp si
 
 run_pw2intw:
-	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
+	rm -rf si.save.intw
+	$(QE_BUILD_DIR)/bin/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
 	rm -rf si.mmn
-	../../../../build/src/utilities/intw2W90.x < intw.in | tee intw.out
+	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < intw.in | tee intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90:
 	rm -rf si.wout
-	$(MPI_CMD) $(W_HOME)/wannier90.x si
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x si
 
 
 PW_FILES = si.scf.out si.save/data-file-schema.xml si.save/charge-density.dat

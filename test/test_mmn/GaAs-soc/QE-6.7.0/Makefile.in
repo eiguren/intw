@@ -1,6 +1,6 @@
-QE_HOME=@QE_HOME@
-W_HOME=@W_HOME@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+QE_BUILD_DIR=@QE_BUILD_DIR@
+W_BUILD_DIR=@W_BUILD_DIR@
+INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -14,63 +14,65 @@ calculation: pw_files w90pp_files pw2wannier90_files w90_1_files run_pw2intw run
 # --- full grid nscf calculation
 
 run_pw:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.scf.in | tee gaas.scf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < gaas.scf.in | tee gaas.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < gaas.nscf.in | tee gaas.nscf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90pp:
-	$(MPI_CMD) $(W_HOME)/wannier90.x -pp gaas
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp gaas
 
 run_pw2wannier90:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw2wannier90.x < gaas.pw2wannier.in | tee gaas.pw2wannier.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw2wannier90.x < gaas.pw2wannier.in | tee gaas.pw2wannier.out
 	( test -f CRASH && exit 1 || echo "OK" )
 	cp gaas.mmn qe_gaas.mmn
 	cp gaas.mmn qe_gaas.amn
 
 run_w90_1:
-	$(MPI_CMD) $(W_HOME)/wannier90.x gaas
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas
 	cp gaas.wout qe_gaas.wout
 
 run_pw2intw:
-	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < gaas.pw2intw.in | tee gaas.pw2intw.out
+	rm -rf gaas.save.intw
+	$(QE_BUILD_DIR)/bin/pw2intw.x < gaas.pw2intw.in | tee gaas.pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
 	rm -rf gaas.mmn gaas.amn
-	../../../../build/src/utilities/intw2W90.x < gaas.intw_fullmesh.in | tee gaas.intw_fullmesh.out
+	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < gaas.intw_fullmesh.in | tee gaas.intw_fullmesh.out
 	( test -f CRASH && exit 1 || echo "OK" )
 	cp gaas.mmn intw_fullmesh_gaas.mmn
 	cp gaas.amn intw_fullmesh_gaas.amn
 
 run_w90_2:
 	rm -rf gaas.wout
-	$(MPI_CMD) $(W_HOME)/wannier90.x gaas
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas
 	cp gaas.wout intw_fullmesh_gaas.wout
 
 # --- irr scf calculation
 
 irr_run_pw:
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < gaas.scf_irr.in | tee gaas.scf_irr.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < gaas.scf_irr.in | tee gaas.scf_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 irr_run_w90pp:
-	$(MPI_CMD) $(W_HOME)/wannier90.x -pp gaas_irr
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp gaas_irr
 
 irr_run_pw2intw:
-	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < gaas.pw2intw_irr.in | tee gaas.pw2intw_irr.out
+	rm -rf gaas_irr.save.intw
+	$(QE_BUILD_DIR)/bin/pw2intw.x < gaas.pw2intw_irr.in | tee gaas.pw2intw_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 irr_run_intw:
 	rm -rf gaas_irr.mmn gaas_irr.amn
-	../../../../build/src/utilities/intw2W90.x < gaas.intw_irr.in | tee gaas.intw_irr.out
+	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < gaas.intw_irr.in | tee gaas.intw_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
 	cp gaas_irr.mmn intw_gaas.mmn
 	cp gaas_irr.amn intw_gaas.amn
 
 irr_run_w90:
 	rm -rf gaas_irr.wout
-	$(MPI_CMD) $(W_HOME)/wannier90.x gaas_irr
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas_irr
 	cp gaas_irr.wout intw_gaas.wout
 
 

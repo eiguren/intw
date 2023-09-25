@@ -2,6 +2,8 @@
 #
 #############################################################################
 
+set(W_BUILD_DIR "${W_HOME}")
+
 unset(W_INCLUDE_DIRS CACHE)
 find_path( W_INCLUDE_DIRS w90_constants.mod PATHS ${W_HOME} PATH_SUFFIXES src src/obj src/objp NO_DEFAULT_PATH )
 

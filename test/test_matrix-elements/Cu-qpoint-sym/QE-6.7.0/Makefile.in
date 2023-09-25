@@ -1,7 +1,5 @@
 
-QE_HOME=@QE_HOME@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
-BUILD_DIR=@CMAKE_BINARY_DIR@
+QE_BUILD_DIR=@QE_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -15,35 +13,36 @@ calculation: all
 
 
 run_scf:
-	$(QE_HOME)/build/bin/pw.x < cu.scf.in | tee cu.scf.out
+	$(QE_BUILD_DIR)/bin/pw.x < cu.scf.in | tee cu.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph1:
 	cp -r cu.save qq1/
-	( cd qq1 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph2:
 	cp -r cu.save qq2/
-	( cd qq2 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq2 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph3:
 	cp -r cu.save qq3/
-	( cd qq3 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq3 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH
 	cp qq1/cu.dyn ./cu.dyn1
 	cp qq2/cu.dyn ./cu.dyn2
 	cp qq3/cu.dyn ./cu.dyn3
-	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
+	$(QE_BUILD_DIR)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
-
 
 run_nscf:
 	rm -rf cu-nscf.save
 	cp -r cu.save cu-nscf.save
-	$(MPI_CMD) $(QE_HOME)/build/bin/pw.x < cu.nscf.in | tee cu.nscf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < cu.nscf.in | tee cu.nscf.out
+	( test -f CRASH && exit 1 || echo "OK" )
 
 run_nscf_pw2intw:
-	$(BUILD_DIR)/src/QEtoINTW/${QE_VERSION}/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
+	${QE_BUILD_DIR}/bin/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
+	( test -f CRASH && exit 1 || echo "OK" )
 
 
 SCF_FILES = cu.scf.out cu.save/data-file-schema.xml cu.save/charge-density.dat cu.save/wfc8.dat
