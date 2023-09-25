@@ -1958,7 +1958,6 @@ contains
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
     use intw_utility, only: HPSORT, cmplx_ainv_2
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
-    !use w90_parameters, only: num_bands
 
     implicit none
 
@@ -2090,7 +2089,6 @@ contains
     use intw_useful_constants, only: ZERO
     use intw_fft, only: wfc_by_expigr
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
-    !use w90_parameters, only: num_bands
 
     implicit none
 
@@ -2349,7 +2347,6 @@ contains
     use intw_useful_constants, only: cmplx_0
     use intw_utility, only: HPSORT
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
-    !use w90_parameters, only: num_bands
 
     implicit none
 

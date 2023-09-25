@@ -123,7 +123,6 @@ contains
 
   use intw_reading, only: alat, noncolin, scan_file_to
   use intw_utility, only: find_free_unit
-  !use w90_parameters, only: num_exclude_bands, exclude_bands
 
   implicit none
 
@@ -495,7 +494,6 @@ contains
   use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
   use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  !use w90_parameters, only: num_bands
   use intw_reading, only: num_bands_intw
   use intw_symmetries, only:  QE_folder_sym
 
@@ -627,7 +625,6 @@ contains
    use intw_useful_constants, only: cmplx_0
    use intw_reading, only : noncolin, num_bands_intw
    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-   !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -879,7 +876,6 @@ contains
   use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
                       wfc_from_g_to_r
-  !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -964,7 +960,6 @@ contains
 !--------------------------------------------------------------------------
 
   use intw_reading, only: ngm, nG_max, num_bands_intw
-  !use w90_parameters, only: num_bands
 
   implicit none
 

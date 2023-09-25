@@ -54,7 +54,6 @@ subroutine get_plane_wave_matrix_element_convolution_map(G,list_iG_1,ngk1,list_i
 !--------------------------------------------------------------------------------
 use intw_useful_constants, only: zero, one, cmplx_0
 use intw_reading, only: nG_max, gvec, nspin, nbands, ngm, num_bands_intw
-!use w90_parameters, only: num_bands
 use intw_fft, only : find_iG
   implicit none
 
@@ -179,7 +178,6 @@ subroutine get_plane_wave_matrix_element_convolution(G,list_iG_1,list_iG_2,wfc_1
 !--------------------------------------------------------------------------------
 use intw_useful_constants, only: zero, one, cmplx_0
 use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
-!use w90_parameters, only: num_bands
 
   implicit none
 
@@ -325,7 +323,6 @@ subroutine get_spin_component(list_iG,wfc,spin)
 
   use intw_useful_constants, only: zero, one, cmplx_0, sig_x, sig_y, sig_z
   use intw_reading, only: nG_max, nspin, num_bands_intw
-  !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -537,7 +534,6 @@ end subroutine get_spin_component
   use intw_fft, only: wfc_from_g_to_r, nl, find_iG
   use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
   use intw_useful_constants, only: zero, one, cmplx_0
-  !use w90_parameters, only: num_bands
 
   implicit none
 
@@ -867,7 +863,6 @@ end subroutine get_spin_component
   use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
   use intw_useful_constants, only: zero, one, cmplx_0
   use intw_utility, only: switch_indices
-  !use w90_parameters, only: num_bands
   use intw_fft, only: nl
 
   implicit none

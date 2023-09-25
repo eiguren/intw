@@ -41,7 +41,6 @@ program intw2W90_2
                           set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
   use intw_utility, only: get_timing, generate_kmesh
-  !USE w90_parameters, only: num_bands, num_wann
 
 !================================================================================
 !       Declare the variables

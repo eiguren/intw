@@ -1,17 +1,3 @@
-!! JLB: I think I found an inconsistency here. 
-!!      In allocate_and_get_all_irreducible_wfc, wfc_k_irr_all is allocated and filled with nbands, i.e. number of bands used in QE.
-!!      In get_psi_general_k_all_wfc, wfc_k and wfc_k_irr are filled with num_bands, i.e. number of bands used for wannierization.
-!!      These might differ if exclude_bands is used. In any case nbands>num_bands and that's why I guess we don't get segmentation fault.
-!!      I think this is "artifically" fixed in reading.f90 -> get_K_folder_data.
-!!      Here w90_parameters: num_exclude_bands is used to only read the bands to be used in wannierization from the QE folders.
-!!      But I think this is confusing, since read_nnkp_file from intw2wannier.f90 has to be called before,
-!!      where num_exclude_bands and exclude_bands(:) is read from the .nnkp file and passed to the w90 variables.
-!!      Maybe we should make this clearer? Three set of bands: 
-!!      (i) nbands (computed with QE) 
-!!      (ii) num_bands (bands used for wannierization, where some might have been excluded)
-!!      (iii) num_wann (number of Wannier functions, which might be smaller than num_bands if disentanglement is used)
-!!      Also allocating only num_bands might be interesting for memory efficiency.
-
 module intw_allwfcs
   ! 1. Modulo honetan uhin funtzioak irakurri transformatu eta berriro inv-transformatuko ditugu igk, igkq lista
   ! berdinak erabiliz. Era horretan sinplifikazio nabarmenta lortuko dugu.
@@ -42,7 +28,6 @@ contains
     use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands,get_K_folder_data, &
                             num_bands_intw
     use intw_useful_constants, only: cmplx_0
-    !use w90_parameters, only: num_wann, num_bands
 
     implicit none
 
@@ -118,7 +103,6 @@ contains
                                identity_matrix_index, nosym_G
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_fft, only: wfc_by_expigr
-    !use w90_parameters, only: num_bands
     use intw_useful_constants, only : eps_5, ZERO
 
     implicit none

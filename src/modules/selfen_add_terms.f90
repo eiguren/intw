@@ -19,7 +19,6 @@ subroutine add_q_m_nu_imag(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
@@ -102,7 +101,6 @@ subroutine add_q_m_nu_imag_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
@@ -177,7 +175,6 @@ subroutine add_q_m_nu_imag_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5, pi
   use intw_utility
 
@@ -252,7 +249,6 @@ subroutine add_q_m_nu_real(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus,termminus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5
   use intw_utility
 
@@ -327,7 +323,6 @@ subroutine add_q_m_nu_real_minus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termminus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5
   use intw_utility
 
@@ -398,7 +393,6 @@ subroutine add_q_m_nu_real_plus(sigma_w,sigma_e,ekk,ekq,wqv,g_me,termplus)
   use kinds, only: dp
   use intw_input_parameters
   use intw_reading
-  use w90_parameters, only: num_wann
   use intw_useful_constants, only: eps_5
   use intw_utility
 

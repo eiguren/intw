@@ -71,20 +71,16 @@ module intw_reading
   integer :: num_bands_intw
   ! Number of bands forming the subspace from which Wannier functions are to be obtained
   ! Might be different from nbands if exclude_bands is used
-  ! JLB: We should substitute num_bands from w90_parameters by this variable everywhere
 
   integer :: num_wann_intw
   ! Number of Wannier functions, or equivalently bands/KS states to be interpolated
   ! Might be different from num_bands_intw if disentanglement is used
-  ! JLB: We should substitute num_wann from w90_parameters by this variable everywhere
 
   integer :: num_exclude_bands_intw
   ! Number of bands to be excluded
-  ! JLB: We should substitute num_exclude_bands from w90_parameters by this variable everywhere
 
   integer, allocatable :: band_excluded_intw(:)
   ! Array determining the bands to be excluded
-  ! JLB: We should substitute exclude_bands from w90_parameters by this variable everywhere
 
   logical :: lspinorb
   ! if true, spin-orbit non-collinear calculation.
@@ -617,7 +613,6 @@ contains
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    !use w90_parameters, only: num_exclude_bands, exclude_bands
 
     implicit none
 
@@ -727,7 +722,6 @@ contains
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    !use w90_parameters, only: num_exclude_bands, exclude_bands
 
     implicit none
 

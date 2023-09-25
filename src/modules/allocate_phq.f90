@@ -18,11 +18,6 @@ subroutine allocate_phq
   use intw_input_parameters, only: nk1, nk2, nk3
 !haritz
 
-!!Peio
-!!Number of Bloch Original states for the wannierization
-!  use w90_parameters, only: num_bands 
-!!Peio
-
   implicit none
   INTEGER :: ipol, ik
 

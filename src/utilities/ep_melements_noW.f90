@@ -30,9 +30,6 @@ program ep_melements
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, frc, &
                      read_ph_information_xml, readfc, read_allq_dvr, get_dv, &
                      mat_inv_four_t, calculate_local_part_dv
-  ! use intw_w90
-  use w90_io, only: io_error,io_file_unit,io_time,io_stopwatch
-  !use w90_parameters, only: num_bands
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
   use intw_allwfcs, only: get_psi_general_k_all_wfc
 

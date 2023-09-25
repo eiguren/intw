@@ -16,12 +16,7 @@ set(SOURCES
   fft.f90
   force_linearity_G.f90
   gaussian.f90
-  G_kqw2kqb.f90
-  G_kqw2ReRpw.f90
   gk_sort.f90
-  G_ReRpw2kqw.f90
-  H_kb2Rew.f90
-  H_Rew2kb.f90
   imselfen2reselfen_t0.f90
   init_pp.f90
   init_KB_projectors.f90
@@ -42,15 +37,10 @@ set(SOURCES
   sph_bes.f90
   setlocq.f90
   sort.f90
-  spin_kb2Rw.f90
   spin_orb.f90
-  spin_Rw2kb.f90
   symmetries.f90
   useful_constants.f90
   utility.f90
-  W90_to_intw.f90
-  wigner_seitz.f90
-  wigner_seitz_wannier.f90
   ylmr2.f90
   fft_interp.f90
   splinelib.f90
@@ -69,7 +59,6 @@ add_library(intw_modules STATIC ${SOURCES})
 
 
 
-target_link_libraries( intw_modules PUBLIC W_lib)
 # And with INTERFACE, the include directories are only added to the targets that depend on intw_modules, but will not be added for the target intw_modules itself.
 target_include_directories( intw_modules INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
 

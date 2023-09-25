@@ -29,8 +29,6 @@ subroutine DM_Rp2q(nrr_q,irr_q,ndegen_q,qpoint,dyn_r,P_diag,omega)
   use kinds, only: dp
   use intw_reading
   use intw_useful_constants
-  use intw_W90
-  use w90_parameters, only: num_wann,num_bands
 
   implicit none
 
