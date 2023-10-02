@@ -79,7 +79,7 @@ module intw_reading
   integer :: num_exclude_bands_intw
   ! Number of bands to be excluded
 
-  integer, allocatable :: band_excluded_intw(:)
+  logical, allocatable :: band_excluded_intw(:)
   ! Array determining the bands to be excluded
 
   logical :: lspinorb
@@ -621,8 +621,6 @@ contains
     integer,intent(in) :: ik
     integer,intent(out) :: list_iG(nG_max)
     real(dp),intent(out) :: QE_eig(nbands)
-    !complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
-    !JLB
     complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
 
      integer :: nG
@@ -630,7 +628,6 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    !logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
@@ -671,9 +668,6 @@ contains
     !
     do ibnd=1,nbands
       !
-      !if (band_excluded(ibnd)) then
-      !!
-      !else
       if (band_excluded_intw(ibnd)) cycle
       !
       n_yes=n_yes+1
@@ -738,7 +732,6 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    !logical :: band_excluded(nbands)
     integer :: io_unit,is,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
@@ -777,7 +770,6 @@ contains
     !
     do ibnd=1,nbands
       !
-      !if (band_excluded(ibnd)) cycle
       if (band_excluded_intw(ibnd)) cycle
       !
       n_yes=n_yes+1
