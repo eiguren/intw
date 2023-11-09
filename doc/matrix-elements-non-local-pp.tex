@@ -1,9 +1,6 @@
 % !TeX encoding = UTF-8
 % !TeX spellcheck = en_US
-
-
 \documentclass[12pt,a4paper]{article}
-
 
 
 \usepackage[latin1]{inputenc}
@@ -16,23 +13,20 @@
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
 
 
-
-
-\title{Electron-phonon matrix elements for non-local pseudopotentials}
-
-
-
-
 \allowdisplaybreaks
-\begin{document}
-
 \renewcommand{\vec}{\mathbf}
 
 
+
+
+\begin{document}
+
+
+\title{Electron-phonon matrix elements for non-local pseudo-potentials}
+\author{Haritz Garai Marin}
+\date{October 10, 2023}
+
 \maketitle
-
-
-
 
 
 \section{Unit cell}
@@ -175,7 +169,7 @@ e^{i\vec{G}\cdot\vec{r}}
 \tilde{u}_{n\vec{k}}(\vec{G})
 e^{i(\vec{k}+\vec{G})\cdot\vec{r}}
 .\end{align}
-Thus, due to the crystal periodicity and Bolch's theorem, the Fourier expansion of the wave function $\psi_{n\vec{k}}$ only has non-zero $\tilde{\psi}_{n\vec{k}}(\vec{G}_{SC})$ components that differ form $\vec{k}$ by a reciplocal space lattice vector $\vec{G}$. And, in fact,
+Thus, due to the crystal periodicity and Bloch's theorem, the Fourier expansion of the wave function $\psi_{n\vec{k}}$ only has non-zero $\tilde{\psi}_{n\vec{k}}(\vec{G}_{SC})$ components that differ form $\vec{k}$ by a reciprocal space lattice vector $\vec{G}$. And, in fact,
 \begin{align}
 \tilde{\psi}_{n\vec{k}}(\vec{k}+\vec{G})
 &=
@@ -716,7 +710,7 @@ e^{-i(\vec{q}'+\vec{G})\cdot\vec{u}_{s',\vec{q}}e^{i\vec{q}\cdot\vec{R}}}
 \tilde{v}_{s'}(\vec{q}'+\vec{G})
 .\end{align}
 
-Now, the first derivative of the $V_{loc}^{\vec{q}}$ potential with respect to the phonon polarization $\vec{u}_{s,\vec{q}}$ along the cartesian direction $\alpha$ around the atomic equilibrium positions:
+Now, the first derivative of the $V_{loc}^{\vec{q}}$ potential with respect to the phonon polarization $\vec{u}_{s,\vec{q}}$ along the Cartesian direction $\alpha$ around the atomic equilibrium positions:
 \begin{align}
 \frac{d V_{loc}^{\vec{q}}(\vec{r})}{d \mathrm{u}_{s,\vec{q}}^{\alpha}}
 |_{\vec{u}=0}
@@ -1007,7 +1001,7 @@ Within intw, the matrix element of the local part is computed in two steps:
 =
 \partial_{s,\vec{q}}^{\alpha} \tilde{V}_{loc}(\vec{r})\psi_{m\vec{k}}(\vec{r})
 \end{equation}
-and then $\verb|vpsi|(\vec{G})$ is obtained by makin the Fourier transform. This is equivalent of doing the combolution in Fourier space of eq. \eqref{eq:dvpsi-combolution-1} and  \eqref{eq:dvpsi-combolution-1}, which is
+and then $\verb|vpsi|(\vec{G})$ is obtained by making the Fourier transform. This is equivalent of doing the convolution in Fourier space of eq. \eqref{eq:dvpsi-combolution-1} and  \eqref{eq:dvpsi-combolution-1}, which is
 \begin{equation}
 \verb|vpsi|(\vec{G})
 =
@@ -1223,7 +1217,7 @@ D_{si,si'}
 \tilde{\beta}^*_{si'}(\vec{q}''+\vec{G}'')
 .\end{align}
 
-And the first derivative of $V_{NL}^{\vec{q}}$ with respect to the phonon polarization $\vec{u}_{s,\vec{q}}$ along the cartesian direction $\alpha$ around the atomic equilibrium positions:
+And the first derivative of $V_{NL}^{\vec{q}}$ with respect to the phonon polarization $\vec{u}_{s,\vec{q}}$ along the Cartesian direction $\alpha$ around the atomic equilibrium positions:
 \begin{align}
 \partial_{s,\vec{q}}^{\alpha} V_{NL}(\vec{r}',\vec{r}'')
 &\equiv
