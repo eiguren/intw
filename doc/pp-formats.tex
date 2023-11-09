@@ -1,0 +1,683 @@
+% !TeX encoding = ISO-8859-1
+% !TeX spellcheck = en_US
+\documentclass[12pt,a4paper,onecolumn]{article}
+
+
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+\usepackage{indentfirst}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[left=3cm,right=3cm,bottom=3.3cm]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\ttfamily,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+
+
+\allowdisplaybreaks
+\renewcommand{\vec}{\mathbf}
+
+
+
+\begin{document}
+
+
+\title{Quantum Espresso and SIESTA pseudo-potentials}
+\author{Haritz Garai Marin}
+\date{November 9, 2023}
+
+
+\maketitle
+
+
+\abstract{In this document I collect all the information that I learned about pseudo-potentials in general. Particularly, I studied the UPF format used by Quantum Espresso and the PSF format used by SIESTA. In the first section of the document I explain general concepts about pseudo-potentials (different types of pseudo-potentials, how to create one, equivalent forms to express them, etc.) to understand better the next sections. In the second section I describe the pseudo-potential formats used by Quantum Espresso and SIESTA, and how the different quantities are stored in it.}
+
+
+\tableofcontents
+
+\newpage
+
+\section{General things about pseudo-potentials}
+
+Before explaining how to represent a pseudo-potential (PP) I will explain how can we solve the atomic Schrödinger equation since the concepts used are the basis for construction of \textit{ab-initio} PPs.
+
+\subsection{The atomic Schrödinger equation}
+
+For a spherically symmetric atom, the radial and angular parts of the wave function can be separated using spherical harmonics:
+
+\begin{equation}
+\Psi_{nlm}(\vec{r})
+=
+\psi_{nl}(r)Y_{lm}(\theta,\phi)
+.\end{equation}
+The resulting equation for the radial wave function is
+\begin{equation}
+-\frac{1}{2r^2}\frac{d}{dr}\left[ r^2\frac{d}{dr} \psi_{nl}(r) \right]
++
+\left[ \frac{l(l+1)}{2r^2} + V_{ext}(r) \right] \psi_{nl}(r)
+=
+\varepsilon_{nl} \psi_{nl}(r)
+,\end{equation}
+and with the transformation $u_{nl}(r)=r\psi_{nl}(r)$:
+\begin{equation}
+-\frac{1}{2}\frac{d^2}{dr^2} u_{nl}(r)
++
+\left[ \frac{l(l+1)}{2r^2} + V_{ext}(r) \right] u_{nl}(r)
+=
+\varepsilon_{nl} \psi_{nl}(r)
+.\end{equation}
+With the boundary conditions $u_{nl}(r\rightarrow0)\propto r^{l+1}$ and $u_{nl}(r\rightarrow\infty)\rightarrow 0$. This means that $u_{nl}$ should be zero at the origin.
+
+The complete wave function should be normalized, thus,
+\begin{equation}
+\int |\Psi_{nlm}(\vec{r})|^2\, d\vec{r}
+=
+\int_{0}^{\infty} r^2 |\psi_{nl}(r)|^2 dr \int_{0}^{2\pi} \int_{0}^{\pi} sin\theta\,  |Y_{lm}(\theta,\phi)|^2\, d\theta d\phi
+=
+1
+.\end{equation}
+And integrating the angular part you obtain the normalization for the radial wave function:
+\begin{equation}
+\int_{0}^{\infty} r^2 |\psi_{nl}(r)|^2 dr
+=
+1
+\quad
+\text{or}
+\quad
+\int_{0}^{\infty} |u_{nl}(r)|^2 dr
+=
+1
+.\end{equation}
+
+It is important to have this difference clear before the construction of the pseudo-potential, because it cold be created using $u_{nl}(r)$ or $\psi_{nl}(r)$.
+
+
+
+\subsection{$l$-dependent pseudo-potentials}
+
+The first type of PP is the semi-local one which can be written as
+\begin{align*}
+\hat{V}_{SL}
+&=
+V_{local}(r)
++
+\delta\hat{V}_{SL}\\
+&=
+V_{local}(r)
++
+\sum_{l,m} |Y_{lm}(\theta,\phi)\rangle \delta V_l(r) \langle Y_{lm}(\theta,\phi)|
+,\end{align*}
+where
+\begin{equation}
+V_l(r)
+=
+V_{l,total}-(V_{Hartree}^{PS}(r)+V_{xc}^{PS}(r))
+,\end{equation}
+and
+\begin{equation}
+\delta V_l(r)
+=
+V_l(r)-V_{local}(r)
+.\end{equation}
+In this type of PP the wave functions are projected into spherical harmonics in order to obtain the potential. This is computationally expensive involving integrals of two wave functions:
+\begin{equation}
+\langle \psi_i | \delta\hat{V}_{SL} | \psi_j \rangle
+=
+\int \left[ \psi_i(r,\theta,\phi) \sum_{l,m} Y_{lm}(\theta,\phi) \delta V_l(r)
+\int sin\theta'\, Y_{lm}(\theta',\phi') \psi_j(r,\theta',\phi')\, d\theta' d\phi'\right]d\vec{r}
+.\end{equation}
+
+
+
+
+\subsection{Separable pseudo-potentials}
+
+To avoid this integrals Kleinman and Bylander showed that the effect of the semi-local  $\delta V_l(r)$ can be replaced by a separable operator $\delta\hat{V}_{NL}$ so that the PP has the form
+
+\begin{equation}
+\hat{V}_{PP}
+=
+V_{local}(r) + \delta\hat{V}_{NL}
+,\end{equation}
+with
+\begin{equation}\label{eq:separable-vl}
+\delta\hat{V}_{NL}
+=
+\sum_{l,m}
+\dfrac
+{|\psi_{lm}^{PS} \delta V_l\rangle\langle \delta V_l \psi_{lm}^{PS}|}
+{\langle \psi_{lm}^{PS} | \delta V_l | \psi_{lm}^{PS}\rangle}
+.\end{equation}
+The functions $\langle \delta V_l \psi_{lm}^{PS}|$ are projectors that operate on the wave functions as
+\begin{equation}
+\langle \delta V_l \psi_{lm}^{PS} | \psi \rangle
+=
+\int d\vec{r} \delta V_l(r) \psi_{lm}^{PS}(\vec{r})\psi(\vec{r})
+.\end{equation}
+The advantage of this method is that matrix elements require only products of single wave function projections:
+\begin{align*}
+\langle \psi_i | \delta\hat{V}_{NL} | \psi_j \rangle
+&=
+\sum_{l,m}
+\dfrac
+{\langle\psi_i|\psi_{lm}^{PS} \delta V_l\rangle\langle \delta V_l \psi_{lm}^{PS}|\psi_j\rangle}
+{\langle \psi_{lm}^{PS} | \delta V_l | \psi_{lm}^{PS}\rangle}\\
+&=
+\sum_{l,m}
+\left[\int d\vec{r} \delta V_l(r) \psi_{lm}^{PS}(\vec{r})\psi_i(\vec{r})\right]
+\dfrac{1}{\langle \psi_{lm}^{PS} | \delta V_l | \psi_{lm}^{PS}\rangle}
+\left[\int d\vec{r} \delta V_l(r) \psi_{lm}^{PS}(\vec{r})\psi_j(\vec{r})\right]
+.\end{align*}
+
+The construction of the separable potential could be modified to generate the PP directly without constructing the semi-local $V_l(r)$ first. Initially the pseudo wave functions $\psi_{lm}^{PS}(\vec{r})$ and the local potential $V_{local}(r)$ are created, as in the creation of a semi-local PP. Defining the Kleinman-Bylander (KB) projectors
+\begin{equation}
+\chi_{lm}(\vec{r})
+=
+\left\{ \varepsilon_l - \left[ -\frac{\nabla^2}{2} + V_{local}(r) \right] \right\} \psi_{lm}^{PS}(\vec{r})
+,\end{equation}
+the operator
+\begin{equation}
+\delta\hat{V}_{NL}
+=
+\sum_{l,m}\dfrac{|\chi_{lm}\rangle\langle\chi_{lm}|}{\langle\chi_{lm}|\psi_{lm}^{PS}\rangle}
+\end{equation}
+has the same properties of \eqref{eq:separable-vl}, i.e.
+\begin{equation}
+\hat{H}\psi_{lm}^{PS}=\varepsilon_{l}\psi_{lm}^{PS}
+.\end{equation}
+
+To extend the range of energies over which the phase shifts of the original all-electron potential are described, the construction procedure of the projectors could be generalized to satisfy the Schrödinger equation at different $\varepsilon_{ls}$ reference energies for each angular momentum. Thus,
+\begin{equation}\label{eq:general-KB-PP}
+\chi_{lms}(\vec{r})
+=
+\left\{ \varepsilon_{ls} - \left[ -\frac{\nabla^2}{2} + V_{local}(r) \right] \right\} \psi_{lms}^{PS}(\vec{r})
+.\end{equation}
+And doing the transformation
+\begin{equation}
+\beta_{lms}
+=
+\sum_{s'} D_{lms,lms'}^{-1} \chi_{lms'}
+,\end{equation}
+where
+\begin{equation}
+D_{lms,l'm's'}
+=
+\langle\psi_{lms}^{PS}|\chi_{l'm's'}\rangle
+=
+\delta_{lm,l'm'}\langle\psi_{lms}^{PS}|\chi_{lms'}\rangle
+,\end{equation}
+the separable KB PP can be written as
+\begin{equation}\label{eq:qe-like PP}
+\delta\hat{V}_{NL}
+=
+\sum_{l,m}
+\left[
+\sum_{s,s'}
+D_{lms,lms'}|\beta_{lms}\rangle\langle\beta_{lms'}|
+\right]
+.\end{equation}
+
+
+
+
+\section{Different implementations of the pseudo-potential approach}
+
+Despite the theory of PPs is clear, different codes use their own implementation of PPs. This creates confusion when trying to compare PPs of different codes. In this section the main differences in the usage of PPs in Quantum-Espresso and SIESTA are explained. Including the particular way to represent the PP, and even the format used.
+
+\subsection{Quantum-Espresso}
+
+This code can use different formats, but the most used one (or even the only) is the UPF format.
+
+
+\subsection*{The UPF format}
+
+In this PP the separable KB PP is stored directly, and can contain this information:
+\begin{itemize}
+\item The header.
+\item The radial grid.
+\item The local potential: $V_{local}(r)$.
+\item The core charge density used for the non-linear core corrections (nlcc): $\rho_{core}(r)$.
+\item The projectors: $\beta_{s}(r)$.
+\item The $B_{s,s'}$ matrix.
+\item The pseudo-wave functions used to generate the projectors: $\psi_{s}(r)$
+\item The pseudo-charge density of the atom.
+\end{itemize}
+
+Another possible way to express the PP (within the UPF format) is the semi-local form, with an $l$-dependent potential $V_{l}(r)$ for each channel of the PP. This second way is used in some PP's converted from other formats, for example, generated using \lstinline|FHI98PP|, and converted with \lstinline|fhi2upf.x|.
+
+\subsubsection*{Units}
+
+\begin{itemize}
+	\item Length:
+	\item Energy:
+\end{itemize}
+
+
+\subsubsection*{The header}
+
+This section of the UPF file contains the information about each variable of the PP. As variables are self-explained, an example of a header is enough to understand all the information.
+
+\begin{lstlisting}[language=xml, basicstyle=\footnotesize, caption=Example of the header in a UPF.]
+<PP_HEADER
+    generated='Generated using "atomic" code by A. Dal Corso  v.6.1 svn rev. 13369'
+    author="Haritz Garai"
+    date="15Jan2018"
+    comment=""
+    element="Ag"
+    pseudo_type="NC"
+    relativistic="scalar"
+    is_ultrasoft="F"
+    is_paw="F"
+    is_coulomb="F"
+    has_so="F"
+    has_wfc="F"
+    has_gipaw="T"
+    paw_as_gipaw="F"
+    core_correction="F"
+    functional="PBE"
+    z_valence="1.100000000000000E+001"
+    total_psenergy="-7.338668863194746E+001"
+    wfc_cutoff="7.089059409926990E+001"
+    rho_cutoff="2.835623763970796E+002"
+    l_max="2"
+    l_max_rho="4"
+    l_local="0"
+    mesh_size="1237"
+    number_of_wfc="2"
+    number_of_proj="2"
+/>
+\end{lstlisting}
+
+\subsubsection*{The radial grid}
+
+Because the radial grid used in Quantum-Espresso is expressed numerically, this could be of any form. Anyway, the default radial grid for a PP generated with the \lstinline|ld1.x| program included with Quantum-Espresso is
+\begin{equation}
+r(i)
+=
+\frac{1}{Z} e^{x_{min}+dx(i-1)}
+,\end{equation}
+with $x_{min}=-7.0$ bohr and $dx=0.0125$ bohr. The only requirement is that the grid must be in atomic units (bohr).
+
+\begin{lstlisting}[language=xml, basicstyle=\footnotesize, caption=Example of the radial grid in a UPF.]
+<PP_MESH dx="1.250000000000000E-002" mesh="1237" xmin="-7.000000000000000E+000" rmax="1.000000000000000E+002"
+zmesh="4.7000000000000000E+001">
+  <PP_R type="real" size="1237" columns="4">
+    ...
+  </PP_R>
+  <PP_RAB type="real" size="1237" columns="4">
+    ...
+  </PP_RAB>
+</PP_MESH>
+\end{lstlisting}
+
+\subsubsection*{The core charge density}
+
+\begin{equation}
+\rho_{core}(r)
+\end{equation}
+
+\subsubsection*{The local potential}
+
+The local potential could be the potential of a $l$ channel, i.e., $V_{local}(r)=V_{l}(r)$, or independent to all the channels. In the first case, there will not be a projector for that particular $l$ channel.
+
+For $r$ greater than $rloc_{cut}$, the local potential is equal to the Coulomb potential:
+\begin{equation}
+V_{local}(r)
+=
+-\frac{2Z_{val}}{r}
+.\end{equation}
+
+\subsubsection*{The projectors}
+
+The UPF format uses the separable KB PP as defined in equation \eqref{eq:qe-like PP}. Thus, the $\beta_{lms}$ projectors and the $D_{lms,lms'}$ matrix are stored in the file. The projectors are named as \lstinline|BETA|, and information as the label of the channel, angular momentum $l$ and cut-off radius is stored with each projector. The matrix is named as \lstinline|DIJ|.
+
+The projectors are not exactly the $| \beta_{lms} \rangle$ of the previous sections. Instead of obtaining them with $\psi^{PS}_{lms}$, are calculated using $u^{PS}_{lms}$. Therefore $\beta_{lms}(r \rightarrow 0) \propto r^{l+1}$, and
+\begin{equation}
+D_{lms,l'm's'}
+=
+\langle u_{lms}^{PS}|\chi_{l'm's'}\rangle
+=
+\delta_{lm,l'm'}\langle u_{lms}^{PS}|\chi_{lms'}\rangle
+.\end{equation}
+
+
+
+\begin{lstlisting}[language=xml, basicstyle=\footnotesize, caption=Example of the KB projectors in a UPF.]
+<PP_NONLOCAL>
+    <PP_BETA.1 type="real" size="1237" columns="4" index="1" label="5P" angular_momentum="1" cutoff_radius_index="945"
+cutoff_radius="2.300000000000000E+000" ultrasoft_cutoff_radius="2.300000000000000E+000">
+        ...
+    </PP_BETA.1>
+    <PP_BETA.2 type="real" size="1237" columns="4" index="2" label="4D" angular_momentum="2" cutoff_radius_index="940"
+cutoff_radius="1.800000000000000E+000" ultrasoft_cutoff_radius="1.800000000000000E+000">
+        ...
+    </PP_BETA.2>
+    <PP_DIJ type="real" size="4" columns="4">
+        ...
+    </PP_DIJ>
+</PP_NONLOCAL>
+\end{lstlisting}
+
+\subsubsection*{The wave functions}
+
+Three different wave functions could be stored in a UPF file. The first ones, called \lstinline|CHI|, are always present in the UPF.
+If \lstinline|has_wfc="T"| in the header, also \lstinline|AEWFC| and \lstinline|PSWFC| will be available. This are the all-electron and pseudo wave functions, respectively, used in the pseudo-potential generation. \lstinline|AEWFC|'s are exactly $u_{nl}$, therefore, \lstinline|CHI|'s and \lstinline|PSWFC|'s are $u_{nl}^{PS}$.
+
+\lstinline|CHI|'s also contain information as the label of the channel, angular momentum $l$, occupation, pseudo energy and cut-off radius. And are stored \textbf{ONLY} when the pseudo energy is negative, i.e., when the wave function is a bound state. If an unbound state is used to generate one channel of the PP, the pseudo wave function used to generate the projector of that channel will not be stored in this section.
+
+\lstinline|CHI| and \lstinline|PSWFC| wave functions are the same, except a sign. \lstinline|CHI|'s are always positive, while \lstinline|PSWFC|'s are sometimes negative, depending on the sign of the \lstinline|AEWFC|'s. This difference looks trivial, but it is important to obtain the $l$-dependent potential $\delta V_{l}(r)$.
+
+\subsubsection*{The pseudo charge density}
+
+\begin{equation}
+\rho_{valence}(r)
+=
+\sum_{l,m} oc_{lm}\, |u_{lm}^{PS}(r)|^2
+=
+\sum_{l,m} oc_{lm}\, r^2 |\psi_{lm}^{PS}(r)|^2
+\end{equation}
+
+\subsubsection*{Relation with the $l$-dependent potential}
+
+The $l$-dependent potential $V_l(r)$ could be obtained from the separable one. There are some important points that are necessary to be able to do this transformation. 
+
+First, all the pseudo wave functions used to generate the projectors are needed. I think that additionally, this wave functions should be the bound states for each $l$ channel. I'm not sure about this, but I think that if the wave function is not the bound state, the potential that you obtain is not exactly $V_l(r)$.
+
+The effect of applying the separable potential of equation \eqref{eq:qe-like PP} to a bound state $\psi_{lm}$ should be
+\begin{equation}
+\delta\hat{V}_{NL}|\psi_{lm}\rangle
+=
+\delta V_{l}|\psi_{lm}\rangle
+\quad
+\text{or}
+\quad
+\delta\hat{V}_{NL}|u_{lm}\rangle
+=
+\delta V_{l}|u_{lm}\rangle
+.\end{equation}
+Thus,
+\begin{equation}
+\delta\hat{V}_{NL}|u_{lm}\rangle
+=
+\delta V_{l}|u_{lm}\rangle
+=
+\sum_{l',m'}
+\left[
+\sum_{s,s'}
+B_{l'm's,l'm's'}|\beta_{l'm's}\rangle\langle\beta_{l'm's'}|u_{lm}\rangle
+\right]
+.\end{equation}
+If the PP is generated using only the bound state of each angular momentum, $s=s'=1$,
+\begin{equation}
+\delta\hat{V}_{NL}|u_{lm}\rangle
+=
+\delta V_{l}|u_{lm}\rangle
+=
+\sum_{l',m'}
+B_{l'm',l'm'}|\beta_{l'm'}\rangle\langle\beta_{l'm'}|u_{lm}\rangle
+.\end{equation}
+And using $\langle\beta_{l'm'}|u_{lm}\rangle=\delta_{l'm',lm}$
+\begin{equation}
+\delta\hat{V}_{NL}|u_{lm}\rangle
+=
+B_{lm,lm}
+|\beta_{lm}\rangle
+,\end{equation}
+and you obtain that
+\begin{equation}
+\delta V_{l}(r)
+=
+B_{lm,lm}
+\dfrac{\beta_{lm}(r)}{u_{lm}(r)}
+.\end{equation}
+
+But the important thing in this procedure is that the wave function used is the bound state for the given angular momentum $l$, i.e., $u_{lm}$. I think that it is not possible to follow this procedure with a wave function of an unbound state.
+
+Another important point is that in the UPF file, in the case of one projector per channel, $\langle\beta_{l'm'}|u_{lm}\rangle=\delta_{l'm',lm}$ is true if the wave functions $u_{lm}$ are the \lstinline|PSWFC|'s. If the wave functions are the \lstinline|CHI|'s, there is an undetermined sign, $\langle\beta_{lm}|u_{lm}\rangle=\pm1$. But, this is not a problem, because including explicitly the integral $\langle\beta_{lm}|u_{lm}\rangle$, the last equation will be
+\begin{equation}
+\delta V_{l}(r)
+=
+B_{lm,lm}
+\langle\beta_{lm}|u_{lm}\rangle
+\dfrac{\beta_{lm}(r)}{u_{lm}(r)}
+,\end{equation}
+and the correct sign will be determined by the result of the integral.
+
+From this two observations, I arrive to this conclusions:
+\begin{enumerate}
+\item The bound states of each angular momentum channel are needed. So, if this are used in the generation of the PP, they will always be present as \lstinline|CHI|'s.
+\item Taking into account this, there must be the same number of \lstinline|CHI|'s as the number of channels in the UPF file. Only if this condition is satisfied, all the $l$-dependent potentials $V_l(r)$ can be calculated.
+\item If all the channels of the PP are generated with the bound states, and thus, all the necessary \lstinline|CHI|'s are present, fulfilling the previous condition, the \lstinline|PSWFC|'s are not needed. Because the sign indeterminacy can be  solved doing the $\langle\beta_{lm}|u_{lm}\rangle$ integral.
+\item Furthermore, when there are more than one projector per channel, and if one of them is the bound state (as it is necessary), only this wave function will be present in the \lstinline|CHI|'s. Contrariwise, all the wave functions associated with each projector will be present in the \lstinline|PSWFC|'s. And since the only information that \lstinline|PSWFC|'s have is the label of the channel, there is not way to automatize which of this wave functions should be taken as $u_{lm}$, and \lstinline|CHI|'s should be used necessarily.
+\end{enumerate}
+With this four points, it is clear that \textbf{to obtain the $l$-dependent potentials $V_l(r)$ \lstinline|CHI|'s should be used}.
+
+
+
+\subsection{SIESTA}
+
+The implementation of PP's of SIESTA is more complicated. The PP file is written in PSF format, which contains the $l$ dependent potentials $V_l(r)$ for each channel of the PP. But then, in the initialization of a calculation, these $V_l(r)$ are used to calculate some projectors in order to have a separable KB PP, and this information is stored in the \lstinline|*.ion| files.
+
+
+\subsection*{The PSF format}
+
+\subsubsection*{Units}
+
+\begin{itemize}
+	\item Length: Bohr
+	\item Energy: Rydberg
+\end{itemize}
+
+
+\subsubsection*{The header}
+
+
+
+\subsubsection*{The radial grid}
+
+
+\begin{equation}
+r(i)
+=
+a\left[ e^{\beta(i-1)} - 1 \right]
+\end{equation}
+
+\subsubsection*{Semi-local potential}
+
+
+\subsubsection*{The core charge density}
+
+\begin{equation}
+4\pi r^2 \rho_{core}(r)
+\end{equation}
+
+
+
+
+
+
+\subsection*{The \lstinline|*.ion| files}
+
+The \lstinline|.ion| files store all the information related to both, the numerical atomic orbital basis and the KB PP used for the calculation.
+
+Both things are computed by the \lstinline|atom_main| subroutine defined in \lstinline|atom.F|. this is the call tree to arrive to \lstinline|atom_main|:
+\lstinline|siesta -> siesta_init -> initatom -> atom_main|.
+
+First, the local PP is calculated with subroutines \lstinline|vlocal1| or \lstinline|vlocal2|, depending on the requested local PP type. An then, the KB projectors are calculated by the subroutine \lstinline|KBgen|.
+
+Within \lstinline|KBgen|, first the pseudo wave functions of the semi-local PP are calculated with \lstinline|schro_eq| if reference energies are not given, or with \lstinline|rphi_vs_e| if the reference energies are given. And finally, once the local PP and the pseudo wave functions are calculated, the KB projectors are calculated with \lstinline|KBproj|.
+
+Finally, only the local variables \lstinline|proj| and \lstinline|ekb| of subroutine \lstinline|KBproj| are stored in the global \lstinline|table| variable to be stored in the \lstinline|*.ion| file. Therefore, this is the only available information in the \lstinline|*.ion| file. Additionally, the local variable \lstinline|dkbcos| of subroutine \lstinline|KBproj| is also printed to the output together with \lstinline|ekb|:
+\begin{lstlisting}[numbers=none ,basicstyle=\scriptsize, caption=Example of the SIESTA output., label=listing:siesta-output]
+KBgen: Kleinman-Bylander projectors:
+   l= 0   rc=  1.682861   el= -0.994239   Ekb=  5.531778   kbcos=  0.306261
+   l= 1   rc=  1.682861   el= -0.378352   Ekb= -3.902640   kbcos= -0.352736
+   l= 2   rc=  1.769164   el=  0.002326   Ekb= -0.965738   kbcos= -0.009007
+\end{lstlisting}
+
+
+There are some other internal variables, but none of them is accessible by reading any file or calling any subroutine.
+
+%I did not explore the case where more than one KB projector per orbital channel are used in SIESTA, therefore, the following expressions will not include the $s$ index.
+
+
+\subsubsection*{The projectors}
+
+In siesta, the projectors stored in the \lstinline|*.ion| file are calculated as 
+\begin{equation}
+\verb|proj|_{lms}
+=
+\frac{\chi_{lms}}{\sqrt{ \langle \chi_{lms} | \chi_{lms} \rangle }}
+,\end{equation}
+where
+\begin{equation}
+\chi_{lms}
+=
+\delta V_{lm} u^{PS}_{lms}
+.\end{equation}
+
+\subsubsection*{\lstinline|ekb|}
+
+This variable is stored in the \lstinline|*.ion| file for each projector as \lstinline|ref_energy|, and it is also printed in the output as \lstinline|Ekb| (See \lstlistingname~\ref{listing:siesta-output}).
+
+It is calculated as
+\begin{equation}
+\verb|ekb|_{lms}
+=
+\frac{
+\langle \delta V_{lm} u^{PS}_{lms} | \delta V_{lm} u^{PS}_{lms} \rangle
+}{
+\langle \delta V_{lm} u^{PS}_{lms} | u^{PS}_{lms} \rangle
+}
+=
+\frac{\langle\chi_{lms}|\chi_{lms}\rangle}{\langle \chi_{lms} | u^{PS}_{lms} \rangle}
+.\end{equation}
+
+
+\subsubsection*{\lstinline|kbcos|}
+
+
+This variable is only printed in the output for each projector as \lstinline|kbcos| (See \lstlistingname~\ref{listing:siesta-output}).
+
+It is calculated as
+\begin{equation}
+\verb|kbcos|_{lms}
+=
+\frac{\langle\delta V_{lm} \psi^{PS}_{lms}|u^{PS}_{lms}\rangle}{\sqrt{\langle\delta V_{lm} u^{PS}_{lms} | \delta V_{lm}u^{PS}_{lms} \rangle}}
+=
+\frac{\langle\chi_{lms}|u^{PS}_{lms}\rangle}{\sqrt{\langle \chi_{lms} | \chi_{lms} \rangle}}
+.\end{equation}
+
+\subsubsection*{Connection with UPF}
+
+It is possible to transform the KB PP of the \lstinline|*.ion| file to the UPF format. However, I did not explore the case where more than one KB projector per orbital is added in SIESTA, therefore, the $s$ index will not be used in this section, and only a diagonal $D_{lms,lms'}$ matrix will be considered.
+
+The KB projectors in the UPF file are computed by
+\begin{equation}
+\beta_{lm}
+=
+\dfrac{\delta V_{lm} u^{PS}_{lm}}{ \langle \delta V_{lm} u^{PS}_{lm} | u^{PS}_{lm} \rangle }
+=
+\dfrac{\chi_{lm}}{ \langle \chi_{lm} | u^{PS}_{lm} \rangle }
+,\end{equation}
+therefore:
+\begin{equation}
+\beta_{lm}
+=
+\dfrac{\chi_{lm}}{\sqrt{ \langle \chi_{lm} | \chi_{lm} \rangle }}
+\dfrac{\sqrt{ \langle \chi_{lm} | \chi_{lm} \rangle }}{\langle \chi_{lm} | u^{PS}_{lm} \rangle}
+=
+\verb|proj|_{lm}
+\ / \ 
+\verb|kbcos|_{lm}
+.\end{equation}
+
+The $D_{lm,lm}$ matrix in the UPF file is computed by
+\begin{equation}
+D_{lm,lm}
+=
+\langle \chi_{lm} | u_{lm}^{PS} \rangle
+,\end{equation}
+therefore:
+\begin{equation}
+D_{lm,lm}
+=
+\frac{\langle\chi_{lm}|\chi_{lm}\rangle}{\langle \chi_{lm} | u^{PS}_{lm} \rangle}
+\left[
+\frac{\langle\chi_{lm}|u^{PS}_{lm}\rangle}{\sqrt{\langle \chi_{lm} | \chi_{lm} \rangle}}
+\right]^2
+=
+\verb|ekb|_{lm} \times \verb|kbcos|_{lm}^2
+.\end{equation}
+
+
+I think that it is also possible to use more than one KB projector per orbital channel in SIESTA (I am not completely sure), but I never used that option. In any case, I would say that in this case would not be possible to transform the KB PP of SIESTA to the UPF format. For that we will need the full $D_{lms,lms'}$ matrix, and therefore we will need
+\begin{equation}
+\verb|ekb|_{lmss'}
+=
+\frac{\langle\chi_{lms}|\chi_{lms}\rangle}{\langle \chi_{lms} | u^{PS}_{lms'} \rangle}
+,\end{equation}
+and
+\begin{equation}
+\verb|kbcos|_{lmss'}
+=
+\frac{\langle\chi_{lms}|u^{PS}_{lms'}\rangle}{\sqrt{\langle \chi_{lms} | \chi_{lms} \rangle}}
+,\end{equation}
+or something similar, and I would say that SIESTA does not provide that neither in the \lstinline|*.ion| files nor in the output. 
+
+If $\langle\chi_{lms}|u^{PS}_{lms'}\rangle\propto\delta_{s,s'}$, this should not be a problem. But I am not sure if this should happen always, as I think that I have found UPF PPs where $\langle\chi_{lms}|u^{PS}_{lms'}\rangle\propto\delta_{s,s'}$ is not fulfilled. However, reading Ref.~\cite{Soler2002} suggests that in siesta we allays have $\langle\chi_{lms}|u^{PS}_{lms'}\rangle\propto\delta_{s,s'}$. I would say that this is imposed by using  a orthogonalization procedure.
+
+
+\renewcommand{\refname}{\selectfont\normalsize References} 
+\begin{thebibliography}{X}
+\bibitem{Soler2002}
+J.~M. Soler, E.~Artacho, J.~D. Gale, A.~ Garc{\'{i}}a, J.~ Junquera, P.~ Ordej{\'{o}}n, and D.~ S{\'{a}}nchez-Portal,
+\href{https://doi.org/10.1088/0953-8984/14/11/302}
+{Journal of Physics: Condensed Matter \textbf{14}, 2745 (2002)}.
+\end{thebibliography}
+
+
+
+
+\subsection*{PSML}
+
+This is another format that can be used with a special version of SIESTA. There is a converter from PSML to PSF, but I do not found any PSF to PSML converter.
+
+It can be used for both semi-local PPs and fully non-local KB PPs. If only the semi-local PP is present on the file, there is a program (\lstinline|PSOP|) to calculate the separable KB PP as it is done in Siesta.
+
+This is interesting, because we could modify \lstinline|PSOP| to read a PSML PP that contains only the semi-local PP, calculate the KB PP and store it in a UPF (a PSML to UPF converter). Or even better, we could modify \lstinline|PSOP| to read directly a PSF file (this should be simple as it only contains the semi-local PP), calculate the KB PP and store it in a UPF (a PSF to UPF converter).
+
+This will be the best solution in my opinion: it is elegant and clear. The main problem that I see to this approach is that the KB PP calculated by \lstinline|PSOP| could differ from the one calculated and used internally by SIESTA. I guess that this could be solved by using the same parameters to generate the KB PP in \lstinline|PSOP| and in the \lstinline|fdf| file.
+
+Another option is to take \lstinline|PSOP| as a reference to convert the \lstinline|*.ion| file to a UPF. In the \lstinline|*.ion| file the full KB PP is already stored, but necessary information to transform it to a UPF is missing (\lstinline|kbcos|).
+
+
+
+
+\end{document}
