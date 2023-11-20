@@ -121,7 +121,7 @@ contains
       end if
       io_unit= find_free_unit()
       datafile = trim(intwdir)//trim(pp_file)
-      open(unit=io_unit, file=pp_file, status="unknown", iostat= ios)
+      open(unit=io_unit, file=datafile, status="unknown", iostat= ios)
       if (ios /= 0) stop "ERROR: write_pp_intw: error opening pp_file"
 
       write(unit=io_unit,fmt="(a)")"ATOM LABEL"
