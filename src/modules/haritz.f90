@@ -21,8 +21,7 @@ module intw_haritz
   !public :: gamma_only, nlm, all_ngm
   !
   ! Declare public subroutines
-  public :: get_e_fermi_haritz, &
-            wfc_from_g_to_r_haritz, &
+  public :: wfc_from_g_to_r_haritz, &
             wfc_from_r_to_g_haritz, &
             generate_nl_haritz, &
             get_gamma_only_haritz, &
@@ -54,45 +53,6 @@ module intw_haritz
 
 contains
 
-  subroutine get_e_fermi_haritz(efermi)
-    !
-    ! This subroutine reads the Fermi energy from the .save
-    !
-    use intw_input_parameters, only: mesh_dir, prefix
-    use intw_useful_constants, only: Ha_in_eV
-    use intw_utility, only: find_free_unit
-
-    !ASIER July
-     use intw_reading, only:e_fermi
-    !use intw_utility, only:e_fermi
-    !ASIER July 2021
-    !use iotk_module
-    !
-    implicit none
-    !
-    real(kind=dp), intent(out) :: efermi
-    !
-    character(256) :: datafile ! full path of the data-file.xml file
-    integer :: io_unit
-    !
-    !datafile  = trim(mesh_dir)//trim(prefix)//".save/"//trim("data-file.xml")
-    !
-    !io_unit = find_free_unit()
-    !call iotk_open_read (io_unit,trim(datafile))
-
-    !call iotk_scan_begin (io_unit,"BAND_STRUCTURE_INFO")
-    ! call iotk_scan_dat (io_unit,"FERMI_ENERGY",e_fermi)
-    !call iotk_scan_end (io_unit,"BAND_STRUCTURE_INFO")
-
-    !call iotk_close_read (io_unit)
-
-    !ASIER Kontuz, orain irakurtzen da intw.save eta ez dakitz zein unitate izango
-    ! Esango nuke /2 falta dela
-    efermi = e_fermi*Ha_in_eV
-
-  end subroutine get_e_fermi_haritz
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine wfc_from_g_to_r_haritz( list_iG, wfc_g, wfc_r )
     !

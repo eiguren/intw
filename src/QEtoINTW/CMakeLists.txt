@@ -31,6 +31,7 @@ else()
     COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90" "${QE_HOME}/PP/src/pw2intw.f90"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp"
     COMMENT "Copying pw2intw.f90 to QE/PP"
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp

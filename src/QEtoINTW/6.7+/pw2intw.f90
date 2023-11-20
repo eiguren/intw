@@ -489,49 +489,54 @@ contains
 
     write(unit=io_unit,fmt=*)"ALAT"
     write(unit=io_unit,fmt="(f16.10)")alat
+
     write(unit=io_unit,fmt=*)"AT"
     do i=1,3
        write(unit=io_unit, fmt="(3f12.6)")(at(i,j), j=1,3)
     enddo
+
     write(unit=io_unit,fmt=*)"BG"
     do i=1,3
        write(unit=io_unit, fmt="(3f12.6)")(bg(i,j), j=1,3)
     enddo
+
     write(unit=io_unit,fmt=*)"FFT GRID"
     write(unit=io_unit,fmt=*)dfftp%nr1,dfftp%nr2, dfftp%nr3
+
     write(unit=io_unit,fmt=*)"ECUTWFC"
     write(unit=io_unit,fmt=*)ecutwfc
+
     write(unit=io_unit,fmt=*)"ECUTRHO"
     write(unit=io_unit,fmt=*)ecutrho
-
-    write(unit=io_unit,fmt=*)"NONCOLIN"
-    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
-    write(unit=io_unit,fmt=*)"LSPINORB"
-    write(unit=io_unit,fmt=*)lspinorb
-    write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
-    write(unit=io_unit,fmt=*)domag_intw !domag
-    write(unit=io_unit,fmt=*)"NAT"
-    write(unit=io_unit,fmt=*)nat
-
-    write(unit=io_unit,fmt=*)"GAMMA ONLY"
-    write(unit=io_unit,fmt=*) gamma_only
-
-    write(unit=io_unit,fmt=*)"EFERMI"
-    write(unit=io_unit,fmt=*) ef
 
     write(unit=io_unit,fmt=*)"LSDA"
     write(unit=io_unit,fmt=*) lsda_intw !lsda
 
+    write(unit=io_unit,fmt=*)"NONCOLIN"
+    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
+
+    write(unit=io_unit,fmt=*)"LSPINORB"
+    write(unit=io_unit,fmt=*)lspinorb
+
+    write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
+    write(unit=io_unit,fmt=*)domag_intw !domag
+
+    write(unit=io_unit,fmt=*)"NAT"
+    write(unit=io_unit,fmt=*)nat
+
     write(unit=io_unit,fmt=*)"NTYP"
     write(unit=io_unit,fmt=*)nsp
+
     write(unit=io_unit,fmt=*)"ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
     do i=1,nsp
        write(unit=io_unit,fmt="(a,f16.5,x,a)")atm(i), amass(i), trim(psfile(i))
     enddo
+
     write(unit=io_unit,fmt=*)"POSITIONS (1:NAT)"
     do i=1,nat
        write(unit=io_unit,fmt="(a,i4,3f16.8)")atm(ityp(i)),ityp(i), tau(:,i)
     end do
+
     write(unit=io_unit,fmt=*)"NSYM"
     write(unit=io_unit,fmt=*)nsym
 
@@ -548,13 +553,16 @@ contains
     write(unit=io_unit,fmt=*)"NKS"
     write(unit=io_unit,fmt=*)nkstot_intw !nkstot
 
+    write(unit=io_unit,fmt=*)"GAMMA ONLY"
+    write(unit=io_unit,fmt=*) gamma_only
+
     write(unit=io_unit,fmt=*)"NGMAX"
     write(unit=io_unit,fmt=*)npwx
 
     write(unit=io_unit,fmt=*)"NBAND"
     write(unit=io_unit,fmt=*)nbnd_intw !nbnd
-    close(unit=io_unit)
 
+    close(unit=io_unit)
 
     io_unit= find_free_unit()
     datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"kpoints.dat")

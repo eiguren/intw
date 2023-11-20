@@ -28,8 +28,8 @@ module intw_reading
   public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, kpoints_QE, &
             s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels, &
             at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
-            ngm, gvec, QE_ngk, QE_igk, noncolin, spinorb_mag, ecutwfc, ecutrho, &
-            tpiba, tpiba2, dual, gcutm, gamma_only, e_fermi, lsda, &
+            ngm, gvec, QE_ngk, QE_igk, lsda, noncolin, spinorb_mag, ecutwfc, ecutrho, &
+            tpiba, tpiba2, dual, gcutm, gamma_only, &
             num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw
   !
   ! subroutines
@@ -203,7 +203,6 @@ module intw_reading
   real(dp) :: gcutm
 
   logical :: gamma_only
-  real(dp) :: e_fermi
 
   logical :: lsda
 
@@ -301,6 +300,10 @@ contains
     tpiba2 = tpiba*tpiba
     dual = ecutrho/ecutwfc
     gcutm = dual * ecutwfc / tpiba2
+
+    !LSDA
+    read(unit=io_unit,fmt=*)dummy
+    read(unit=io_unit,fmt=*)lsda
     !NONCOLIN
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)noncolin
@@ -319,19 +322,6 @@ contains
     !NAT
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nat
-
-    !GAMMA_ONLY
-    read(unit=io_unit,fmt=*)dummy
-    read(unit=io_unit,fmt=*)gamma_only
-
-    !EFERMI
-    read(unit=io_unit,fmt=*)dummy
-    read(unit=io_unit,fmt=*)e_fermi
-
-    !LSDA
-    read(unit=io_unit,fmt=*)dummy
-    read(unit=io_unit,fmt=*)lsda
-
 
     !NTYP
     read(unit=io_unit,fmt=*)dummy
@@ -427,6 +417,10 @@ contains
     npol=nspin
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nkpoints_QE
+
+    !GAMMA_ONLY
+    read(unit=io_unit,fmt=*)dummy
+    read(unit=io_unit,fmt=*)gamma_only
 
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nG_max
@@ -606,7 +600,7 @@ contains
     !
     ! JLB: Excluded bands are taken care for at this point.
     !      Only relevant "num_bands_intw" wave functions are stored on output.
-    !      This subroutine is only called in symmetries.f90, 
+    !      This subroutine is only called in symmetries.f90,
     !      where only the wfc-s within "num_bands_intw" are rotated.
     !
     !------------------------------------------------------------------------
@@ -857,14 +851,14 @@ contains
     !
     ! JLB 07/2023: Moved this subroutine here from intw2wannier.f90
     !-----------------------------------------------------------------------!
-    
+
       implicit none
-    
+
       character(len=*)   :: keyword
       character(len=256) :: word1, word2
       logical            :: found, test
       integer            :: ios,   nnkp_unit
-    
+
       found=.false.
       !
       do
@@ -885,7 +879,7 @@ contains
       enddo
       !
       return
-    
+
       end subroutine scan_file_to
     !------------------------------------------
 
@@ -893,12 +887,12 @@ contains
   subroutine set_num_bands()
     !----------------------------------------------------------------------
     !       This subroutine sets the sizes of the different band subspaces.
-    !       Very important for all subsequent calculations, 
+    !       Very important for all subsequent calculations,
     !       should be called at the beginning of all utilities.
     !
     !       For the moment it detects whether a .nnkp file exists,
     !       and in that case it reads them from there.
-    !       If there's no such file, the number of bands is set to nbands 
+    !       If there's no such file, the number of bands is set to nbands
     !       (the number of bands in the QE calculation).
     !       JLB: I think it would be useful to add the option to set them on input.
     !
@@ -962,7 +956,7 @@ contains
       ! Number of bands (before disentanglement)
       num_bands_intw = nbands - num_exclude_bands_intw
       !
-    ! all bands from QE 
+    ! all bands from QE
     else
       !
       allocate(band_excluded_intw(nbands))
