@@ -1,5 +1,6 @@
 *.out
 *.xml
+*.wfc*
 
 
 cu.save
@@ -9,3 +10,4 @@ cu.save.intw/gvectors.dat
 cu.save.intw/iGlist.dat
 cu.save.intw/kpoints.dat
 cu.save.intw/wfc*.dat
+cu.save.intw/scf*.dat

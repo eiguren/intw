@@ -14,6 +14,8 @@
    80.0000000000000     
  ECUTRHO
    320.000000000000     
+ LSDA
+ F
  NONCOLIN
  F
  LSPINORB
@@ -22,12 +24,6 @@
  F
  NAT
            1
- GAMMA ONLY
- F
- EFERMI
-  0.755461561109014     
- LSDA
- F
  NTYP
            1
  ATOM_LABELS, MASS AND PP_FILE (1:NTYP)
@@ -326,6 +322,8 @@ Cu    1      0.00000000      0.00000000      0.00000000
   0
  NKS
           29
+ GAMMA ONLY
+ F
  NGMAX
         1158
  NBAND
