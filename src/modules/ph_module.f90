@@ -178,17 +178,17 @@ contains
     !------------------------------------------------------------------
     implicit none
 
-    integer        ::  io_unit  ! input/output file unit
+    integer ::  io_unit, ios
 
     character(256) :: datafile ! full path of the data-file.xml file
     ! in the .xml file
 
-    integer        :: imode, jmode, iq
+    integer :: imode, jmode, iq
     !
-    character(len=8)  :: dummy
+    character(len=8) :: dummy
 
 
-    nmodes =3 * nat
+    nmodes = 3 * nat
 
     write(*,"(4(a,i4))     ")"PH BZ division is             : ", nq1," x",nq2," x",nq3
     write(*,"(a,i4)"     ) "Input n. of irreducible points: ", nqirr
@@ -198,7 +198,8 @@ contains
     allocate(q_irr(3,nqirr))
 
     io_unit = find_free_unit()
-    open(unit=io_unit, file=trim(trim(mesh_dir)//trim(ph_dir)//trim(qlist)),status="old")
+    open(unit=io_unit, file=trim(mesh_dir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
+    if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening qlist."
 
     do iq=1,nqirr
       read(io_unit,*) dummy, q_irr(1:3,iq)
@@ -208,8 +209,9 @@ contains
 
 
     io_unit = find_free_unit()
-    datafile=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat")
-    open(unit=io_unit, file=datafile,status="old")
+    datafile = trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat"
+    open(unit=io_unit, file=datafile, status="old", iostat=ios)
+    if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening irrq_patterns."
 
     !Read displacement patters for each q.
     allocate (u_irr(nmodes,nmodes,nqirr))
@@ -247,12 +249,13 @@ contains
     CHARACTER(LEN=9) :: symm_type
     real(dp) :: tau_fc(3, nat), zeu_fc(3,3,nat)
     integer  :: ityp_fc(nat)
-    integer :: io_unit
+    integer :: io_unit, ios
 
     !  !
     !  !
     io_unit = find_free_unit()
-    OPEN (unit=io_unit,file=flfrc,status='old',form='formatted')
+    OPEN(unit=io_unit, file=flfrc, status='old', form='formatted', iostat=ios)
+    IF ( ios /= 0 ) STOP 'ERROR: readfc: error opening flfrc'
     !  !
     !  !  read cell data
     !  !
@@ -476,7 +479,7 @@ contains
     !local variables
 
     integer :: iq, record_length, mode, ios, is, js
-    character(len=20) ::  num
+    character(len=4) ::  num
     integer :: nr(3), io_unit, ir, ipol, imode, jmode
     character(len=256) :: dv_name
 
@@ -515,10 +518,11 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num))
+       dv_name=trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num)
        !
-       open (io_unit, file = dv_name, iostat = ios, &
-            form = 'unformatted', status = 'old', access = 'direct', recl= record_length )
+       open(unit=io_unit, file=dv_name, iostat = ios, &
+            form='unformatted', status='old', access='direct', recl=record_length)
+       if (ios /= 0) stop "ERROR: read_allq_dvr: error opening dv_name."
 !
        write(unit=*,fmt="(2a,x,a,i4)")"Reading irreducible displacement dvscr file ", &
             trim(dv_name),",ios: ",ios
