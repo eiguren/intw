@@ -71,7 +71,6 @@ program ep_melements
   !ep interaction related variables
   integer                  :: ep_unit
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:,:,:), ep_mat_el(:,:,:,:,:,:)
-  complex(dp), allocatable :: fr(:,:,:), fg(:,:,:)
 
   !wave function realted variables information
   real(dp), allocatable    :: QE_eig_k(:)
@@ -130,9 +129,9 @@ program ep_melements
   method=trim(intw2W_method)
   !
   if (read_status) then
-     !
-     stop
-     !
+    !
+    stop
+    !
   endif
   !
   !================================================================================
@@ -151,7 +150,7 @@ program ep_melements
   !      wavefunction rotation code!
   !================================================================================
   !
-!haritz: ngm irakurri da read_parameters_data_file_xml()-en, eztao get_ngm() erabili beharrik
+  !haritz: ngm irakurri da read_parameters_data_file_xml()-en, eztao get_ngm() erabili beharrik
   call get_ngm()
   allocate(gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
   !
@@ -166,22 +165,22 @@ program ep_melements
   call generate_nl()
   !
   if (method=='CONVOLUTION') then
-     !
-     write(*,20) '|       - intw2W_method   = CONVOLUTION             |'
-     !
+    !
+    write(*,20) '|       - intw2W_method   = CONVOLUTION             |'
+    !
   elseif (method=='FFT') then
-     !
-     write(*,20) '|       - intw2W_method   = FFT                     |'
-     !
+    !
+    write(*,20) '|       - intw2W_method   = FFT                     |'
+    !
   else
-     !
-     write(*,20) '***********************************************'
-     write(*,20) '* UNKNOWN COMPUTATION METHOD:'
-     write(*,20) '* Only "CONVOLUTION" and "FFT" available'
-     write(*,20) '***********************************************'
-     !
-     stop
-     !
+    !
+    write(*,20) '***********************************************'
+    write(*,20) '* UNKNOWN COMPUTATION METHOD:'
+    write(*,20) '* Only "CONVOLUTION" and "FFT" available'
+    write(*,20) '***********************************************'
+    !
+    stop
+    !
   endif
   !
   write(*,20) '|           ---------------------------------       |'
@@ -204,32 +203,32 @@ program ep_melements
   !
   !
   if (nspin==1) then
-     !
-     write(*,20) '|       - The calculation is paramagnetic nspin=1   |'
-     write(*,20) '|                                                   |'
-     write(*,20) '|           ---------------------------------       |'
-     !
+    !
+    write(*,20) '|       - The calculation is paramagnetic nspin=1   |'
+    write(*,20) '|                                                   |'
+    write(*,20) '|           ---------------------------------       |'
+    !
   elseif (nspin==2) then
-     !
-     write(*,20) '|       - Spin calculation nspin = 2                |'
-     !
-     if (noncolin) then
-        !
-        write(*,20) '|         Non-collinear Spin calculation            |'
-        !
-     endif
-     !
-     write(*,20) '|           ---------------------------------       |'
-     !
+    !
+    write(*,20) '|       - Spin calculation nspin = 2                |'
+    !
+    if (noncolin) then
+      !
+      write(*,20) '|         Non-collinear Spin calculation            |'
+      !
+    endif
+    !
+    write(*,20) '|           ---------------------------------       |'
+    !
   else
-     !
-     write(*,20) '*****************************************************'
-     write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-     write(*,20) '*            program stops.                         *'
-     write(*,20) '*****************************************************'
-     !
-     stop
-     !
+    !
+    write(*,20) '*****************************************************'
+    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
+    write(*,20) '*            program stops.                         *'
+    write(*,20) '*****************************************************'
+    !
+    stop
+    !
   endif
   !
   !================================================================================
@@ -270,11 +269,11 @@ program ep_melements
   !      Fill the symmetry arrays appropriately
   !================================================================================
   !
-!Peio
+  !Peio
   if (spinorb_mag) then
-     can_use_TR=.true.
+    can_use_TR=.true.
   endif
-!Peio
+  !Peio
   !
   call set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, k_points_consistent, &
                               QE_folder_nosym, QE_folder_sym, &
@@ -350,34 +349,34 @@ program ep_melements
   !================================================================================
   !
   if (intw2W_fullzone) then
-     !
-     write(*,20) '|       - intw2W_fullzone = .true.                  |'
-     !
-     if (full_mesh) then
-        !
-        write(*,20) '|         all k-points are explicitely calculated   |'
-        write(*,20) '|         no symmetry is assumed.                   |'
-        write(*,20) '|             (This is mostly for testing)          |'
-        write(*,20) '|           ---------------------------------       |'
-        !
-     else
-        !
-        write(*,20) '**********************************************************'
-        write(*,20) '* A full mesh is not present in the QE folders!          '
-        write(*,20) '* The requested calculation is impossible.               '
-        write(*,20) '*                   program stops.                       '
-        write(*,20) '**********************************************************'
-        !
-        stop
-        !
-     endif
-     !
+    !
+    write(*,20) '|       - intw2W_fullzone = .true.                  |'
+    !
+    if (full_mesh) then
+      !
+      write(*,20) '|         all k-points are explicitely calculated   |'
+      write(*,20) '|         no symmetry is assumed.                   |'
+      write(*,20) '|             (This is mostly for testing)          |'
+      write(*,20) '|           ---------------------------------       |'
+      !
+    else
+      !
+      write(*,20) '**********************************************************'
+      write(*,20) '* A full mesh is not present in the QE folders!          '
+      write(*,20) '* The requested calculation is impossible.               '
+      write(*,20) '*                   program stops.                       '
+      write(*,20) '**********************************************************'
+      !
+      stop
+      !
+    endif
+    !
   else
-     !
-     write(*,20) '|       - intw2W_fullzone = .false.                 |'
-     write(*,20) '|         Symmetries will be utilized.              |'
-     write(*,20) '|           ---------------------------------       |'
-     !
+    !
+    write(*,20) '|       - intw2W_fullzone = .false.                 |'
+    write(*,20) '|         Symmetries will be utilized.              |'
+    write(*,20) '|           ---------------------------------       |'
+    !
   endif
   !
   write(*,20) '|       - reading pseudopotentials from UPF files   |'
@@ -391,16 +390,16 @@ program ep_melements
   write(*,20) '|           ---------------------------------       |'
   !
   if (.not.conmesurate_and_coarser(nk1,nk2,nk3,nq1,nq2,nq3)) then
-     !
-     write(*,20) '**********************************************************'
-     write(*,20) '*ERROR                                                  '
-     write(*,20) '*   the electron k and phonon q are not                 '
-     write(*,20) '*   conmesurate and the k grid does not contain         '
-     write(*,20) '*   the phonon q grid                                   '
-     write(*,20) '**********************************************************'
-     !
-     stop
-     !
+    !
+    write(*,20) '**********************************************************'
+    write(*,20) '*ERROR                                                  '
+    write(*,20) '*   the electron k and phonon q are not                 '
+    write(*,20) '*   conmesurate and the k grid does not contain         '
+    write(*,20) '*   the phonon q grid                                   '
+    write(*,20) '**********************************************************'
+    !
+    stop
+    !
   endif
   !
   !
@@ -430,8 +429,6 @@ program ep_melements
   allocate(QE_eig_k(num_bands_intw))
   allocate(QE_eig_kq(num_bands_intw))
   !
-  allocate(fr(nr1*nr2*nr3,num_bands_intw,nspin))
-  allocate(fg(nG_max,num_bands_intw,nspin))
   !
   !================================================================================
   !       Read all the information about phonons and pseudopotentials
@@ -443,13 +440,13 @@ program ep_melements
   !       Read the force constant matrix from the QE directory
   !================================================================================
   !
-  fc_file_name = trim(trim(mesh_dir)//trim(ph_dir)//trim(fc_mat))
+  fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
   !
-!  if (.not.lspinorb) then
-!     call readfc(fc_file_name,nq1_,nq2_,nq3_,nat,alat,at_frc,ntyp,amass)
-!  else
-!     call read_fc_from_XML ()
-!  endif
+  ! if (.not.lspinorb) then
+  !    call readfc(fc_file_name,nq1_,nq2_,nq3_,nat,alat,at_frc,ntyp,amass)
+  ! else
+  !    call read_fc_from_XML ()
+  ! endif
   !
   call readfc(fc_file_name,nq1_,nq2_,nq3_,nat,alat,at_frc,ntyp,amass)
   !
@@ -504,7 +501,7 @@ program ep_melements
   allocate(qstar(3,48))
   !
   do iq=1,nqirr
-     q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
+    q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
   enddo
   !
   !================================================================================
@@ -540,11 +537,11 @@ program ep_melements
   unit_sym_sgk = cmplx_0
   !
   do ik=1,nkmesh
-     do ibnd=1,num_bands_intw
-        !
-        unit_sym_sgk(ik,1:nsym,ibnd,ibnd) = cmplx_1
-        !
-     enddo !ibnd
+    do ibnd=1,num_bands_intw
+      !
+      unit_sym_sgk(ik,1:nsym,ibnd,ibnd) = cmplx_1
+      !
+    enddo !ibnd
   enddo !ik
   !
   call allocate_nlpot
@@ -555,166 +552,173 @@ program ep_melements
 
   ep_mat_el = cmplx_0
   !
-!-------------------------------------------------------------------------------------------------------------
-!-------------------------------------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------------------------------------
   !
   if (calc_epmat) then
-     !
-     do iq=1,nqmesh
+    !
+    do iq=1,nqmesh
+      !
+      qpoint = qmesh(:,iq)
+      write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
+      !
+      if (                iq <   10) write(iq_loc,"(i1)")iq
+      if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
+      if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)")iq
+      !
+      ep_unit = find_free_unit()
+      inquire(iolength=record_lengh) ep_mat_el
+      open(unit=ep_unit, iostat=ierr, &
+           file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
+           form='unformatted', status='unknown', access='direct', recl=record_lengh)
+      if (ierr /= 0 ) stop 'Error opening ep_mat_file'
+      !
+      !
+      !-matrize dinamikoa kalkulatu q puntu jakin batentzat.
+      !
+      call mat_inv_four_t(qpoint,nq1,nq2,nq3,3*nat,frc,dyn_q)
+      !
+      !diagonalizatu goian kalkulatutako matrize dinamikoa: polarizazio bektore eta energiak lortu ditugu ia.
+      !
+      call diagonalize_cmat(3*nat, dyn_q, w2)
+      !
+      call set_nqxq(qpoint)
+      !
+      !-potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
+      !
+      dvq_local = cmplx_0
+      call get_dv(iq,qpoint,3*nat,npol,dvq_local)
+      !
+      !-alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
+      !
+      call phq_init(matmul(bg,qpoint))
+      call calculate_local_part_dv(qpoint,nat,npol,dvq_local)
+      !
+      !-bi subroutina hauek (goikoak), biak batera joan behar dira beti).
+      !
+      do ik=1,nkmesh
         !
-        if (                iq <   10) write(iq_loc,"(i1)")iq
-        if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
-        if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)")iq
+        kpoint=kmesh(:,ik)
+        kpoint_cart=matmul(bg,kpoint)
+        kqpoint_cart=matmul(bg,kpoint+qpoint)
         !
-        ep_unit=find_free_unit()
-        inquire(iolength=record_lengh) ep_mat_el
-        open(unit=ep_unit,file=trim(trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc)),iostat=ierr,&
-        form='unformatted',status='unknown',access='direct',recl=record_lengh)
+        write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
         !
-        qpoint(:)=qmesh(:,iq)
-        write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
+        !-uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta. (k+q)
         !
-        !-matrize dinamikoa kalkulatu q puntu jakin batentzat.
+        call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k , QE_eig_k )
+        call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq, QE_eig_kq)
         !
-        call mat_inv_four_t(qpoint,nq1,nq2,nq3,3*nat,frc,dyn_q)
+        !-k eta k+q puntuen indizeak topatu. ikpt_1 ik-aldagaiaren berdina izan
+        ! behar da, baina hurrengo eran segurtasuna irabazten dugu.
+        ! k-ren indizea: ikpt_k
         !
-        !diagonalizatu goian kalkulatutako matrize dinamikoa: polarizazio bektore eta energiak lortu ditugu ia.
+        call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i,j,k,kpoint_in_1bz,GKQ_bz)
+        call switch_indices(nk1,nk2,nk3,ikpt_k,i,j,k,+1)
         !
-        call diagonalize_cmat(3*nat, dyn_q, w2)
+        ! kq-ren indizea: ikpt_kq
         !
-        call set_nqxq(qpoint)
+        call find_k_1BZ_and_G(kpoint+qpoint,nk1,nk2,nk3,i,j,k,kqpoint_in_1bz,GKQ_bz)
+        call switch_indices(nk1,nk2,nk3,ikpt_kq,i,j,k,+1)
         !
-        !-potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
+        ! Ordenan jartzen ditugu G bektoreak, k=0-n nola dauden ordenatuta arabera
         !
-        dvq_local = cmplx_0
-        call get_dv(iq,qpoint,3*nat,npol,dvq_local)
-        !
-        !-alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
-        !
-        call phq_init(matmul(bg,qpoint))
-        call calculate_local_part_dv(qpoint,nat,npol,dvq_local)
-        !
-        !-bi subroutina hauek (goikoak), biak batera joan behar dira beti).
-        !
-        do ik=1,nkmesh
-           !
-           kpoint=kmesh(:,ik)
-           kpoint_cart=matmul(bg,kpoint)
-           kqpoint_cart=matmul(bg,kpoint+qpoint)
-           !
-           write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
-           !
-           !-uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta. (k+q)
-           !
-           call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k , QE_eig_k )
-           call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq, QE_eig_kq)
-           !
-           !-k eta k+q puntuen indizeak topatu. ikpt_1 ik-aldagaiaren berdina izan
-           ! behar da, baina hurrengo eran segurtasuna irabazten dugu.
-           ! k-ren indizea: ikpt_k
-           !
-           call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i,j,k,kpoint_in_1bz,GKQ_bz)
-           call switch_indices(nk1,nk2,nk3,ikpt_k,i,j,k,+1)
-           !
-           ! kq-ren indizea: ikpt_kq
-           !
-           call find_k_1BZ_and_G(kpoint+qpoint,nk1,nk2,nk3,i,j,k,kqpoint_in_1bz,GKQ_bz)
-           call switch_indices(nk1,nk2,nk3,ikpt_kq,i,j,k,+1)
-           !
-           ! Ordenan jartzen ditugu G bektoreak, k=0-n nola dauden ordenatuta arabera
-           !
-           nG=0
-           do iG=1,nG_max
-              if (list_iGk(iG)==0) exit
-              nG=nG+1
-           enddo
-           npw=nG
-           nG=0
-           do iG=1,nG_max
-              if (list_iGkq(iG)==0) exit
-              nG=nG+1
-           enddo
-           npwq=nG
-           !
-           !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren).
-           !
-           vkb =cmplx_0
-           vkqb=cmplx_0
-           !
-           call init_KB_projectors(npw ,nG_max,list_iGk ,kpoint       ,vkb )
-           call init_KB_projectors(npwq,nG_max,list_iGkq,kpoint+qpoint,vkqb)
-           !
-           !-psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
-           ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-           !
-           call dvqpsi_local(3*nat, nG_max, nbands_loc, npol, list_iGk, list_iGkq, wfc_k, dvq_local, &
-                                                    dvpsi(1:nG_max,1:nbands_loc,1:npol,1:npol,1:3*nat))
-           !
-           !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
-           !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
-           !                                  (lokala) + (ez lokala)
-           call multiply_psi_by_dvKB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
-           !
-           !-QE-ren subroutina goikoaren berdina egiteko.
-           !
-           do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz.
-              !matrize elementuak kalkulatu
-              !
-              do jpol=1,nspin
-                 do ipol=1,nspin
-                    do jbnd=1,num_bands_intw
-                       do ibnd=1,num_bands_intw
-                          !
-                          aep_mat_el(iq,ikpt_k,ibnd,jbnd,ipol,jpol,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ipol), 1, dvpsi(:,jbnd,ipol,jpol,imode), 1 )
-                          !
-                       enddo !ibnd
-                    enddo !jbnd
-                 enddo !is
-              enddo !js
-              !
-           enddo !imode
-           !
-        enddo !ik
-        !
-        write(unit=ep_unit, rec = 1, iostat = ierr) aep_mat_el(iq,:,:,:,:,:,:)
-        !
-        close(unit=ep_unit)
-#ifdef DEBUG
-        ! write the matrix elements to a formatted file to compare with QE matrix elements
-        write(123400+iq,"(3f10.6)") qpoint
-        write(123400+iq,"(i4)") nkmesh
-        do ik=1,nkmesh
-          kpoint = kmesh(:,ik)
-          write(123400+iq,"(i4,3f10.6)") ik, kpoint
-          write(123400+iq,"(i4,3f10.6)") 2*(ik-1)+2, kpoint+qpoint
+        nG=0
+        do iG=1,nG_max
+          if (list_iGk(iG)==0) exit
+          nG=nG+1
         enddo
-        write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, sum(aep_mat_el(iq,ik,ibnd,jbnd,:,:,imode)), ibnd=1,num_bands_intw), jbnd=1,num_bands_intw), ik=1,nkmesh), imode=1,3*nat)
+        npw=nG
+        nG=0
+        do iG=1,nG_max
+          if (list_iGkq(iG)==0) exit
+          nG=nG+1
+        enddo
+        npwq=nG
+        !
+        !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren).
+        !
+        vkb =cmplx_0
+        vkqb=cmplx_0
+        !
+        call init_KB_projectors(npw ,nG_max,list_iGk ,kpoint       ,vkb )
+        call init_KB_projectors(npwq,nG_max,list_iGkq,kpoint+qpoint,vkqb)
+        !
+        !-psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
+        ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
+        !
+        call dvqpsi_local(3*nat, nG_max, nbands_loc, npol, list_iGk, list_iGkq, wfc_k, dvq_local, &
+                                                dvpsi(1:nG_max,1:nbands_loc,1:npol,1:npol,1:3*nat))
+        !
+        !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
+        !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
+        !                                  (lokala) + (ez lokala)
+        call multiply_psi_by_dvKB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
+        !
+        !-QE-ren subroutina goikoaren berdina egiteko.
+        !
+        do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz.
+          !matrize elementuak kalkulatu
+          !
+          do jpol=1,nspin
+            do ipol=1,nspin
+              do jbnd=1,num_bands_intw
+                do ibnd=1,num_bands_intw
+                  !
+                  aep_mat_el(iq,ikpt_k,ibnd,jbnd,ipol,jpol,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ipol), 1, dvpsi(:,jbnd,ipol,jpol,imode), 1 )
+                  !
+                enddo !ibnd
+              enddo !jbnd
+            enddo !is
+          enddo !js
+          !
+        enddo !imode
+        !
+      enddo !ik
+      !
+      write(unit=ep_unit, rec = 1, iostat = ierr) aep_mat_el(iq,:,:,:,:,:,:)
+      !
+      close(unit=ep_unit)
+      !
+
+#ifdef DEBUG
+      ! write the matrix elements to a formatted file to compare with QE matrix elements
+      write(123400+iq,"(3f10.6)") qpoint
+      write(123400+iq,"(i4)") nkmesh
+      do ik=1,nkmesh
+        kpoint = kmesh(:,ik)
+        write(123400+iq,"(i4,3f10.6)") ik, kpoint
+        write(123400+iq,"(i4,3f10.6)") 2*(ik-1)+2, kpoint+qpoint
+      enddo
+      write(123400+iq,"(4i4,2f20.15)")((((ik, ibnd, jbnd, imode, sum(aep_mat_el(iq,ik,ibnd,jbnd,:,:,imode)), ibnd=1,num_bands_intw), jbnd=1,num_bands_intw), ik=1,nkmesh), imode=1,3*nat)
 #endif
 
-        !
-     enddo !iq
+      !
+    enddo !iq
 
-     else
+  else
 
-        do iq=1,1
-           qpoint(:)=qmesh(:,iq)
-           !
-           if (                iq <   10) write(iq_loc,"(i1)")iq
-           if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
-           if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)")iq
-           !
-           ep_unit=find_free_unit()
-           inquire(iolength=record_lengh) ep_mat_el
-           open(unit=ep_unit,&
-           file=trim(trim(mesh_dir)//trim('./')//trim(ep_mat_file)//trim('_')//adjustl(iq_loc)),&
-           iostat=ierr,form='unformatted',status='unknown',access='direct',recl=record_lengh)
-           !
-           write(*,*)'Reading Reciprocal Bloch matrix elements in the coarse mesh for iq = ',iq,'/',nqmesh,ierr
-           read(unit=ep_unit,rec=1,iostat=ierr) aep_mat_el(iq,:,:,:,:,:,:)
-           !
-           close(unit=ep_unit)
-           !
-        enddo !iq
+    do iq=1,nqmesh
+      !
+      qpoint = qmesh(:,iq)
+      write(*,*)'Reading Reciprocal Bloch matrix elements in the coarse mesh for iq = ', iq, '/', nqmesh
+      !
+      if (                iq <   10) write(iq_loc,"(i1)")iq
+      if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
+      if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)")iq
+      !
+      ep_unit = find_free_unit()
+      inquire(iolength=record_lengh) ep_mat_el
+      open(unit=ep_unit, iostat=ierr, &
+           file=trim(mesh_dir)//trim('./')//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
+           form='unformatted', status='unknown', access='direct', recl=record_lengh)
+      if (ierr /= 0 ) stop 'Error opening ep_mat_file'
+      !
+      read(unit=ep_unit,rec=1,iostat=ierr) aep_mat_el(iq,:,:,:,:,:,:)
+      !
+      close(unit=ep_unit)
+      !
+    enddo !iq
 
   end if ! calc_epmat
 
@@ -725,7 +729,6 @@ program ep_melements
   deallocate(sindex_sgk)
   deallocate(kpoints_irr )
 
-  !call deallocate_upfeak ()
   !================================================================================
   !       Finish
   !================================================================================
@@ -734,9 +737,9 @@ program ep_melements
   write(*,30) '|     total time: ',time2-time1,' seconds            |'
   write(*,20) '====================================================='
 
+  20 format(A)
+  30 format(A,F8.2,6X,A)
 
-20 format(A)
-30 format(A,F8.2,6X,A)
 
 contains
 
@@ -759,68 +762,67 @@ contains
     !
     do imode =1,nmode !3*nat
       do ibnd=1,nbands
+        !
+        wfc_r1(:,:)=cmplx_0
+        wfc_r(:,:,:)=cmplx_0
+        !
+        do ipol=1,npol !elektroi uhin funtzioak espazio errelarela pasatu. SO kasuan ipol osagaiz osagai.
+          do ig=1,nG_max
+            !
+            if (list_iGk(ig)==0) exit
+            wfc_r1(nl(list_iGk(ig)),ipol)=wfc_k(ig,ibnd,ipol)
+            !
+          enddo !ig
           !
-          wfc_r1(:,:)=cmplx_0
-          wfc_r(:,:,:)=cmplx_0
+          call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r1(:,ipol))
           !
-          do ipol=1,npol !elektroi uhin funtzioak espazio errelarela pasatu. SO kasuan ipol osagaiz osagai.
-             do ig=1,nG_max
-                !
-                if (list_iGk(ig)==0) exit
-                wfc_r1(nl(list_iGk(ig)),ipol)=wfc_k(ig,ibnd,ipol)
-                !
-             enddo !ig
-             !
-             call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r1(:,ipol))
-             !
-          enddo !ipol
+        enddo !ipol
 
+        !
+        ! if ((npol==2).and.spinorb_mag) then
+        if (npol==2) then
           !
-!          if ((npol==2).and.spinorb_mag) then
-          if (npol==2) then
-             !
-             do ir=1,nr1*nr2*nr3
+          do ir=1,nr1*nr2*nr3
+            !
+            do ipol=1,npol
+              do jpol=1,npol
                 !
-                do ipol=1,npol
-                   do jpol=1,npol
-                   !
-                   wfc_r(ir,ipol,jpol)=dvq_local(ir,imode,ipol,jpol)*wfc_r1(ir,jpol)
-                   !
-                   enddo !jpol
-                enddo !ipol
+                wfc_r(ir,ipol,jpol)=dvq_local(ir,imode,ipol,jpol)*wfc_r1(ir,jpol)
                 !
-             enddo !ir
-             !
-          else !npol
-             !
-             do ir=1,nr1*nr2*nr3
-                !
-                wfc_r(ir,1,1)=dvq_local(ir,imode,1,1)*wfc_r1(ir,1)
-                !
-             enddo !ir
-             !
-          endif !npol
+              enddo !jpol
+            enddo !ipol
+            !
+          enddo !ir
           !
-          do ipol=1,npol
-             do jpol=1,npol
-                !
-                call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r(:,ipol,jpol))
-                !
-                do ig=1,nG_max
-                   !
-                   if (list_iGkq(ig)==0) exit
-                   !
-!                   dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(ig),ipol,jpol)
-                   dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(list_iGkq(ig)),ipol,jpol)
-                   !
-                enddo !ig
-             enddo !jpol
-          enddo !ipol
+        else !npol
           !
-       enddo !ibnd
+          do ir=1,nr1*nr2*nr3
+            !
+            wfc_r(ir,1,1)=dvq_local(ir,imode,1,1)*wfc_r1(ir,1)
+            !
+          enddo !ir
+          !
+        endif !npol
+        !
+        do ipol=1,npol
+          do jpol=1,npol
+            !
+            call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r(:,ipol,jpol))
+            !
+            do ig=1,nG_max
+              !
+              if (list_iGkq(ig)==0) exit
+              !
+              ! dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(ig),ipol,jpol)
+              dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(list_iGkq(ig)),ipol,jpol)
+              !
+            enddo !ig
+          enddo !jpol
+        enddo !ipol
+        !
+      enddo !ibnd
+      !
     enddo !imode
-    !
-    return
 
   end subroutine dvqpsi_local
 
@@ -842,9 +844,9 @@ contains
 
 
     do j=1,n
-       do i=1,j
-          a_pack(i+((j-1)*j)/2)=a(i,j)
-       enddo
+      do i=1,j
+        a_pack(i+((j-1)*j)/2)=a(i,j)
+      enddo
     enddo
 
     ! Diagonalizing routine from lapack. Go see QE/.../lapack_atlas.f
