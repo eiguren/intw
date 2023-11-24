@@ -10,7 +10,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Compare WS and H(R), INTW vs. w90
-python compare_hr.py
+python3 compare_hr.py
 if [ $? -ne 0 ]; then
   exit 1
 fi

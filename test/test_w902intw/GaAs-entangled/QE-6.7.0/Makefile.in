@@ -1,6 +1,7 @@
 QE_HOME=@QE_HOME@
 W_HOME=@W_HOME@
 QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+QE_BUILD_DIR=@QE_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -19,7 +20,7 @@ run_w90pp:
 	$(MPI_CMD) $(W_HOME)/wannier90.x -pp gaas
 
 run_pw2intw:
-	../../../../build/src/QEtoINTW/$(QE_VERSION)/pw2intw.x < pw2intw.in | tee pw2intw.out
+	${QE_BUILD_DIR}/bin/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
