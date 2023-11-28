@@ -20,5 +20,7 @@ foreach(prog IN ITEMS ${PROGS})
 
   target_link_libraries(${prog}.x PRIVATE intw_modules)
   target_link_libraries(${prog}.x PRIVATE ${LAPACK_LIBRARIES})
-  target_link_libraries(${prog}.x PRIVATE MPI::MPI_Fortran)
+  if(USE_MPI)
+    target_link_libraries(${prog}.x PRIVATE MPI::MPI_Fortran)
+  endif()
 endforeach()

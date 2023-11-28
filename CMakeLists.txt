@@ -33,9 +33,9 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   include_directories(${CPATH})
 endif()
 
-option(USE_MPI "Use the MPI library for parallelization" ON)
+option(USE_MPI "Use the MPI library for parallelization" OFF)
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
-option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " ON)
+option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
 
 #message("CMAKE_Fortran_CREATE_SHARED_LIBRARY: ${CMAKE_Fortran_CREATE_SHARED_LIBRARY}")
 #message("CMAKE_Fortran_CREATE_SHARED_MODULE: ${CMAKE_Fortran_CREATE_SHARED_MODULE}")
