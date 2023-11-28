@@ -3,10 +3,10 @@
 # and choose the first flag that works.  If no flags work, then nothing
 # will be set, unless the REQUIRED key is given, in which case an error
 # will be given.
-# 
+#
 # Call is:
 # SET_COMPILE_FLAG(FLAGVAR FLAGVAL (Fortran|C|CXX) <REQUIRED> flag1 flag2...)
-# 
+#
 # For example, if you have the flag CMAKE_C_FLAGS and you want to add
 # warnings and want to fail if this is not possible, you might call this
 # function in this manner:
@@ -17,7 +17,7 @@
 # The optin "-Wall" will be checked first, and if it works, will be
 # appended to the CMAKE_C_FLAGS variable.  If it doesn't work, then
 # "-warn all" will be tried.  If this doesn't work then checking will
-# terminate because REQUIRED was given.  
+# terminate because REQUIRED was given.
 #
 # The reasong that the variable must be given twice (first as the name then
 # as the value in quotes) is because of the way CMAKE handles the passing
@@ -55,6 +55,10 @@ FUNCTION(SET_COMPILE_FLAG FLAGVAR FLAGVAL LANG)
         IF(UP STREQUAL "REQUIRED")
             SET(FLAG_REQUIRED TRUE)
         ELSE()
+            STRING(REGEX MATCH "${var}" PRESENT "${FLAGVAL}")
+            IF(PRESENT)
+                RETURN()
+            ENDIF(PRESENT)
             SET(FLAGLIST ${FLAGLIST} "${var}")
         ENDIF(UP STREQUAL "REQUIRED")
     ENDFOREACH (var ${ARGN})
@@ -81,7 +85,7 @@ end program dummyprog
 ")
             TRY_COMPILE(FLAG_WORKS ${CMAKE_BINARY_DIR} ${TESTFILE}
                 COMPILE_DEFINITIONS "${flag}" OUTPUT_VARIABLE OUTPUT)
-            
+
             # Check that the output message doesn't match any errors
             FOREACH(rx ${FAIL_REGEX})
                 IF("${OUTPUT}" MATCHES "${rx}")

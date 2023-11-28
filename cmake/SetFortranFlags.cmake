@@ -5,40 +5,42 @@
 ####################################################################
 # Make sure that the default build type is RELEASE if not specified.
 ####################################################################
-INCLUDE(${CMAKE_MODULE_PATH}/SetCompileFlag.cmake)
+INCLUDE(SetCompileFlag)
 
 # Make sure the build type is uppercase
 STRING(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
 
 IF(BT STREQUAL "RELEASE")
     SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
-      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
       FORCE)
 ELSEIF(BT STREQUAL "DEBUG")
     SET (CMAKE_BUILD_TYPE DEBUG CACHE STRING
-      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
       FORCE)
-ELSEIF(BT STREQUAL "TESTING")
-    SET (CMAKE_BUILD_TYPE TESTING CACHE STRING
-      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+ELSEIF(BT STREQUAL "RELWITHDEBINFO")
+    SET (CMAKE_BUILD_TYPE RELWITHDEBINFO CACHE STRING
+      "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
       FORCE)
 ELSEIF(NOT BT)
     SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
-      "Choose the type of build, options are DEBUG, RELEASE, or TESTING."
+      "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
       FORCE)
     MESSAGE(STATUS "CMAKE_BUILD_TYPE not given, defaulting to RELEASE")
 ELSE()
-    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are DEBUG, RELEASE, or TESTING")
+    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are DEBUG, RELEASE, or RELWITHDEBINFO")
 ENDIF(BT STREQUAL "RELEASE")
 
 #########################################################
 # If the compiler flags have already been set, return now
 #########################################################
 
-IF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fortran_FLAGS_DEBUG)
+IF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND CMAKE_Fortran_FLAGS_DEBUG AND SET_FORTRAN_FLAGS)
     RETURN ()
-ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fortran_FLAGS_DEBUG)
+ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND CMAKE_Fortran_FLAGS_DEBUG AND SET_FORTRAN_FLAGS)
 
+SET(SET_FORTRAN_FLAGS ON CACHE BOOL "If set, Fortran flags are already configured." FORCE)
+message(STATUS "Setting Fortran flags")
 ########################################################################
 # Determine the appropriate flags for this compiler for each build type.
 # For each option type, a list of possible flags is given that work
@@ -52,7 +54,7 @@ ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_TESTING AND CMAKE_Fort
 #####################
 
 #TODO: This is strongly discouraged and cfftnd.f90 should be fixed
-#TODO: to avoid the use of this flag
+#      to avoid the use of this flag
 # Allow argument mismatch
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-fallow-argument-mismatch"    # GNU
@@ -97,11 +99,20 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-assume byterecl"  # Intel
                 )
+
 ###################
 ### DEBUG FLAGS ###
 ###################
 
 # NOTE: debugging symbols (-g or /debug:full) are already on by default
+
+# Traceback
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+                 Fortran "-traceback"   # Intel/Portland Group
+                         "/traceback"   # Intel Windows
+                         "-fbacktrace"  # GNU (gfortran)
+                         "-ftrace=full" # GNU (g95)
+                )
 
 # Disable optimizations
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
@@ -115,14 +126,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                          "/warn:all" # Intel Windows
                          "-Wall"     # GNU
                                      # Portland Group (on by default)
-                )
-
-# Traceback
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran "-traceback"   # Intel/Portland Group
-                         "/traceback"   # Intel Windows
-                         "-fbacktrace"  # GNU (gfortran)
-                         "-ftrace=full" # GNU (g95)
                 )
 
 # Check array bounds
@@ -149,16 +152,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-fpe0"              # Intel
 	            	         "-mno-fp-exceptions" # GNU
-                )
-
-#####################
-### TESTING FLAGS ###
-#####################
-
-# Optimizations
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_TESTING "${CMAKE_Fortran_FLAGS_TESTING}"
-                 Fortran "-O2" # All compilers not on Windows
-                         "/O2" # Intel Windows
                 )
 
 #####################
@@ -204,3 +197,14 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 #                         "-Mvect"        # Portland Group
 #                )
 
+############################
+### RELWITHDEBINFO FLAGS ###
+############################
+
+# Traceback
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}"
+                 Fortran "-traceback"   # Intel/Portland Group
+                         "/traceback"   # Intel Windows
+                         "-fbacktrace"  # GNU (gfortran)
+                         "-ftrace=full" # GNU (g95)
+                )
