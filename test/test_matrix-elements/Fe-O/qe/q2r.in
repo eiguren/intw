@@ -1,6 +1,0 @@
-&input
- fildyn='fe-o.dyn',
- zasr='simple',
- flfrc='fe-o.fc'
-
- /
