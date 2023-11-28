@@ -13,6 +13,7 @@ add_library(test_modules STATIC module/test_module.f90)
 target_include_directories( test_modules INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(test_modules PUBLIC intw_modules)
 
+set(DISABLED_TESTS "" CACHE INTERNAL "")
 
 add_subdirectory(test_dummy)
 
@@ -23,4 +24,3 @@ add_subdirectory(test_mmn)
 add_subdirectory(test_matrix-elements)
 
 add_subdirectory(test_w902intw)
-

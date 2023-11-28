@@ -23,7 +23,7 @@ project(intw
 include(GNUInstallDirs)
 
 if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-    message(FATAL_ERROR "Fortran compiler does not support F90")
+  message(FATAL_ERROR "Fortran compiler does not support F90")
 endif(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
@@ -54,7 +54,7 @@ set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>"
 # v adds verbose output.
 # And I don't know how works u, and I'm getting a warning also...
 
-include(${CMAKE_MODULE_PATH}/SetFortranFlags.cmake)
+include(SetFortranFlags)
 
 # Find MPI if needed
 if(USE_MPI)
@@ -84,28 +84,40 @@ find_package(LAPACK REQUIRED)
 
 
 # Quantum Espresso
-# NOTE: At the moment only QE v6.7.0 is supported
+option(USE_QE "Use Quantum Espresso" OFF)
 if(DEFINED ENV{QE_HOME})
-  set(QE_HOME $ENV{QE_HOME} CACHE PATH "Path to the QE v6.7.0 home directory." FORCE)
+  set(QE_HOME $ENV{QE_HOME} CACHE PATH "Path to the Quantum Espresso home directory." FORCE)
+  set(USE_QE ON CACHE BOOL "Use Quantum Espresso" FORCE)
 endif()
-include(SetQuantumEspresso)
+if (USE_QE)
+  include(SetQuantumEspresso)
+endif()
 
 # Wannier90
+option(USE_WANNIER "Use Wannier90" OFF)
 if(DEFINED ENV{W_HOME})
-  set(W_HOME $ENV{W_HOME} CACHE PATH "Path to the Wanniet90 home directory." FORCE)
+  set(W_HOME $ENV{W_HOME} CACHE PATH "Path to the Wannier90 home directory." FORCE)
+  set(USE_WANNIER ON CACHE BOOL "Use Wannier90" FORCE)
 endif()
-include(SetWannier)
+if (USE_WANNIER)
+  include(SetWannier)
+endif()
 
 
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
-add_subdirectory(src/QEtoINTW)
+if (USE_QE)
+  add_subdirectory(src/QEtoINTW)
+endif()
+
 
 # Find python3 for test scripts
-find_package (Python3 COMPONENTS Interpreter)
+find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
   enable_testing()
   add_subdirectory(test)
+else()
+  set(DISABLED_TESTS "all")
 endif()
 
 
@@ -152,6 +164,15 @@ if(Python3_Interpreter_FOUND)
 else()
   message("-- Python3: NOT-FOUND (test suite disabled)")
 endif()
-message("-- QE_HOME: ${QE_HOME}")
-message("-- W_HOME: ${W_HOME}")
+if (USE_QE)
+  message("-- QE_HOME: ${QE_HOME}")
+  message("-- QE_VERSION: ${QE_VERSION}")
+endif()
+if (USE_WANNIER)
+  message("-- W_HOME: ${W_HOME}")
+  message("-- W_VERSION: ${W_VERSION}")
+endif()
+if(DISABLED_TESTS)
+  message("-- Disabled tests: ${DISABLED_TESTS}")
+endif()
 message("")
