@@ -13,7 +13,7 @@ if (NOT W_VERSION)
 
 
   # Find Wannier90 build dir
-  set(W_BUILD_DIR "${W_HOME}")
+  set(W_BUILD_DIR "${W_HOME}" CACHE PATH "Wannier90 build directory.")
 
 
   # Some checks

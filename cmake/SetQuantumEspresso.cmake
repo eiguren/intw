@@ -30,6 +30,7 @@ if (NOT QE_VERSION)
     message("-- QE built with CMake.")
     get_filename_component(QE_BUILD_DIR ${QE_CMAKE} DIRECTORY)
   endif()
+  set(QE_BUILD_DIR "${QE_BUILD_DIR}" CACHE PATH "Quantum Espresso build directory.")
   message("-- Found QE_BUILD_DIR: ${QE_BUILD_DIR}")
 
 
