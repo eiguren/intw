@@ -1,0 +1,9 @@
+&inputpp
+  outdir="./"
+  prefix="si"
+  nsym=48
+  symfile="sym.dat"
+  nk1=8, nk2=8, nk3=8
+  cutoff=80.0
+  nbnd_final=4
+/
