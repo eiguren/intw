@@ -102,7 +102,8 @@ intw_si.wout: $(INTW_FILES)
 
 
 clean:
-	rm -rf si.scf.out si.xml si.wfc* si.save
+	rm -rf si.scf.out si.xml si.wfc* si.save si.nscf.out
+	rm -rf si.pw2wannier.out qe_si.mmn qe_si.wout
 	rm -rf pw2intw.out si.save.intw
-	rm -rf intw.out si.mmn si.amn si.eig
-	rm -rf si.wout si_band.* si.chk
+	rm -rf intw.out si.eig nnkp.test intw_si.mmn intw_si.wout
+	rm -rf si.amn si.mmn si.wout si_band.* si.chk si.nnkp
