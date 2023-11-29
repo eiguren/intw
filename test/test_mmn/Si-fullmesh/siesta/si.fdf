@@ -1,5 +1,5 @@
 
-SystemName          bulk silicon 
+SystemName          bulk silicon
 SystemLabel         si
 
 NumberOfAtoms       2
@@ -19,8 +19,9 @@ PAO.EnergyShift     300 meV
 
 MeshCutoff          200.0 Ry
 
-DM.MixingWeight      0.3 
-DM.NumberPulay       3  
+DM.UseSaveDM true
+DM.MixingWeight      0.3
+DM.NumberPulay       3
 DM.Tolerance         1.d-4
 
 TimeReversalSymmetryForKpoints false
@@ -28,13 +29,13 @@ TimeReversalSymmetryForKpoints false
    8   0    0    0.
    0   8    0    0.
    0   0    8    0.
-%endblock kgrid_Monkhorst_Pack 
+%endblock kgrid_Monkhorst_Pack
 
 M.UseSaveDM true
 
-SolutionMethod       diagon    
+SolutionMethod       diagon
 NumberOfEigenStates 10
-ElectronicTemperature  25 meV  
+ElectronicTemperature  25 meV
 
 Siesta2Wannier90.WriteMmn true
 Siesta2Wannier90.WriteAmn true
@@ -568,35 +569,3 @@ WaveFuncKPointsScale ReciprocalLatticeVectors
   0.87500000  0.87500000  0.75000000
   0.87500000  0.87500000  0.87500000
 %endblock WaveFuncKPoints
-#%block WaveFuncKPoints
-#    0.000000    0.000000    0.000000
-#    0.000000    0.000000    0.125000
-#    0.000000    0.000000    0.250000
-#    0.000000    0.000000    0.375000
-#    0.000000    0.000000    0.500000
-#    0.000000    0.125000    0.125000
-#    0.000000    0.125000    0.250000
-#    0.000000    0.125000    0.375000
-#    0.000000    0.125000    0.500000
-#    0.000000    0.125000    0.625000
-#    0.000000    0.125000    0.750000
-#    0.000000    0.125000    0.875000
-#    0.000000    0.250000    0.250000
-#    0.000000    0.250000    0.375000
-#    0.000000    0.250000    0.500000
-#    0.000000    0.250000    0.625000
-#    0.000000    0.250000    0.750000
-#    0.000000    0.375000    0.375000
-#    0.000000    0.375000    0.500000
-#    0.000000    0.375000    0.625000
-#    0.000000    0.500000    0.500000
-#    0.125000    0.250000    0.375000
-#    0.125000    0.250000    0.500000
-#    0.125000    0.250000    0.625000
-#    0.125000    0.375000    0.500000
-#    0.125000    0.375000    0.625000
-#    0.125000    0.375000    0.750000
-#    0.125000    0.500000    0.625000
-#    0.250000    0.500000    0.750000
-#%endblock WaveFuncKPoints
-

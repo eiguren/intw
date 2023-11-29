@@ -27,8 +27,6 @@ for ik in range(nk):
         ep=e
         j=j+1
 
-# print(degen)
-# sys.exit()
 # Read INTW generated file
 out_file = "intw_si.mmn"
 #
@@ -83,21 +81,17 @@ if intw_nprojs != siesta_nprojs:
     sys.exit(1)
 
 ierr = 0
-itot = 0
 for i in range(len(siesta)):
     siesta_kpt = siesta[i][0]
     intw_kpt = intw[i][0]
     if intw_kpt != siesta_kpt:
         print("ERROR: wrong kpt")
         sys.exit(1)
-    # print(siesta_kpt)
     for j, (siesta_mmn, intw_mmn) in enumerate(zip(siesta[i][1], intw[i][1])):
-        iband = int(j%(siesta_nbands**2)/siesta_nbands)
-        jband = j%siesta_nbands
+        iband = j%siesta_nbands
+        jband = int(j%(siesta_nbands**2)/siesta_nbands)
         # Only compare non-degenerate nk-s
-        # if True:
         if (not degen[intw_kpt[0]-1, iband]) and (not degen[intw_kpt[1]-1, jband]):
-            itot += 1
             siesta_modmmn = np.abs(siesta_mmn[0] + 1j*siesta_mmn[1])
             intw_modmmn = np.abs(intw_mmn[0] + 1j*intw_mmn[1])
             if (np.abs(intw_modmmn - siesta_modmmn) > acc):
@@ -106,7 +100,9 @@ for i in range(len(siesta)):
                 print(degen[intw_kpt[1]-1])
                 print('SIESTA value:', siesta_mmn[0],'+ i', siesta_mmn[1], siesta_modmmn)
                 print('INTW value:', intw_mmn[0],'+ i', intw_mmn[1], intw_modmmn)
-                ierr += 1
                 print('Error in mmn element:', i, j)
+                ierr = 1
                 sys.exit(1)
-print(ierr/itot*100)
+                break
+
+print(ierr)
