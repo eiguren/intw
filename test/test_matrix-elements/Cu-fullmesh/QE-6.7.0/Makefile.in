@@ -1,7 +1,5 @@
 
-QE_HOME=@QE_BUILD_DIR@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
-BUILD_DIR=@CMAKE_BINARY_DIR@
+QE_BUILD_DIR=@QE_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -14,17 +12,17 @@ calculation: all
 
 
 run_scf:
-	$(MPI_CMD) $(QE_HOME)/bin/pw.x < cu.scf.in | tee cu.scf.out
+	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw.x < cu.scf.in | tee cu.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph:
 	cp -r cu.save qq1/
-	( cd qq1 ; $(MPI_CMD) $(QE_HOME)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(MPI_CMD) $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH
 	cp qq1/cu.dyn ./cu.dyn1
-	$(QE_HOME)/bin/q2r.x < q2r.in | tee q2r.out
+	$(QE_BUILD_DIR)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
