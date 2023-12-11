@@ -1,0 +1,683 @@
+!-----------------------------------------------------------------------
+PROGRAM pw2intw
+  !-----------------------------------------------------------------------
+  !
+  USE Kinds
+  USE mp_global, ONLY: mp_startup
+  USE mp_pools, ONLY: npool
+  USE mp, ONLY: mp_bcast
+  USE mp_world, ONLY: world_comm
+  USE mp_images, ONLY: intra_image_comm
+
+  USE cell_base, ONLY: at, bg
+  USE lsda_mod, ONLY: nspin, isk
+  USE klist, ONLY: nkstot
+  USE io_files, ONLY: prefix, tmp_dir
+  USE noncollin_module, ONLY: noncolin
+  USE control_flags, ONLY: gamma_only
+  USE environment, ONLY: environment_start, environment_end
+!  USE wannier
+  USE basis, ONLY: natomwfc, starting_wfc
+  USE uspp_param, ONLY: upf
+  USE lsda_mod, ONLY: lsda
+
+  IMPLICIT NONE
+  !
+  CHARACTER(LEN=256), EXTERNAL :: trimcheck
+  !
+  INTEGER :: iostat
+
+  CHARACTER(len=256) :: mesh_dir = "./"
+  CHARACTER(len=256) :: data_dir = "./"
+  CHARACTER(len=256) :: rho_dir = "./"
+  LOGICAL :: phonons = .false.
+  CHARACTER(len=256) :: qlist_file = "qlist.txt"
+  CHARACTER(len=256) :: ph_dir = "./"
+  CHARACTER(len=256) :: dvscf_dir = "./"
+  integer :: nqirr = 0
+  logical :: dynxml = .false.
+
+  CHARACTER(len=256) :: intwdir
+  INTEGER :: kunittmp, strlen, file_exists
+
+  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir
+
+  starting_wfc = "file"
+  prefix = " "
+
+
+#if defined(__MPI)
+  CALL mp_startup ( )
+#endif
+
+  CALL environment_start ( 'pw2intw' )
+
+  CALL start_clock( 'init_pw2intw' )
+
+
+  READ (5, inputpp, iostat=iostat)
+  if (iostat /= 0) stop "ERROR: pw2intw: error reading inputpp"
+
+  strlen = len_trim(mesh_dir)
+  if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(data_dir)
+  if ( data_dir(strlen:strlen+1) .ne. "/" ) data_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(dvscf_dir)
+  if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(rho_dir)
+  if ( rho_dir(strlen:strlen+1) .ne. "/" ) rho_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(ph_dir)
+  if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
+
+  intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
+
+  call system("mkdir -p "//intwdir)
+
+  WRITE(*,*)
+  WRITE(*,*) ' Reading nscf_save data'
+  CALL read_file()
+  WRITE(*,*)
+
+  call write_pp_intw()
+
+  CALL wfcinit()
+
+  call write_crystal_info_and_bands ()
+
+  call scf_v_and_rho()
+
+  call write_FFT_information ()
+
+  call write_wfc()
+
+  if (phonons) call write_phonon_info()
+!
+contains
+
+
+
+  SUBROUTINE write_pp_intw()
+
+    USE ions_base, ONLY: nsp
+
+    implicit none
+
+    integer :: io_unit, ios
+    integer :: is, ir, nb, nb1
+    integer, external :: find_free_unit
+    character(len=256) :: pp_file, datafile
+
+    100 format(i1"-KBPP.txt")
+    200 format(i2"-KBPP.txt")
+
+    do is=1,nsp
+
+      if (is<9) then
+        write(pp_file,100) is
+      else if ((is>9).and.(is<19) ) then
+        write(pp_file,200) is
+      else
+        print*, "ERROR: The num. of species is bigger than 19"
+      end if
+      io_unit= find_free_unit()
+      datafile = trim(intwdir)//trim(pp_file)
+      open(unit=io_unit, file=datafile, status="unknown", iostat= ios)
+      if (ios /= 0) stop "ERROR: write_pp_intw: error opening pp_file"
+
+      write(unit=io_unit,fmt="(a)")"ATOM LABEL"
+      write(unit=io_unit,fmt=*) upf(is)%psd
+
+      !TODO: Hau zuzendu, batzuetan ez du idazten
+      write(unit=io_unit,fmt="(a)")"IS RELAT."
+      write(unit=io_unit,fmt=*) upf(is)%has_so
+
+      write(unit=io_unit,fmt="(a)")"HAS SO COUPLING"
+      write(unit=io_unit,fmt=*) upf(is)%has_so
+
+      write(unit=io_unit,fmt="(a)")"NLCC"
+      write(unit=io_unit,fmt=*) upf(is)%nlcc
+
+      write(unit=io_unit,fmt="(a)")"Z VALENCE"
+      write(unit=io_unit,fmt=*) upf(is)%zp
+
+      write(unit=io_unit,fmt="(a)")"ECUT WFC"
+      write(unit=io_unit,fmt=*) upf(is)%ecutwfc
+
+      write(unit=io_unit,fmt="(a)")"L LOC"
+      write(unit=io_unit,fmt=*) upf(is)%lloc
+
+      write(unit=io_unit,fmt="(a)")"LMAX"
+      write(unit=io_unit,fmt=*) upf(is)%lmax
+
+      write(unit=io_unit,fmt="(a)")"NBETA"
+      write(unit=io_unit,fmt=*) upf(is)%nbeta
+
+      write(unit=io_unit,fmt="(a)")"NUMBER of GRID POINTS FOR EACH BETA"
+      write(unit=io_unit,fmt=*) upf(is)%kbeta(1:upf(is)%nbeta)
+
+      write(unit=io_unit,fmt="(a)")"L FOR EACH BETA"
+      write(unit=io_unit,fmt="(100i4)") upf(is)%lll(1:upf(is)%nbeta)
+
+      write(unit=io_unit,fmt="(a)")"J FOR EACH BETA (IF SO COUPLING)"
+      if (upf(is)%has_so) then
+        write(unit=io_unit,fmt="(100f6.2)") upf(is)%jjj(1:upf(is)%nbeta)
+      else
+        write(unit=io_unit,fmt=*)"NOTHING"
+      end if
+      write(unit=io_unit,fmt="(a)")"N OF MESH POINTS"
+      write(unit=io_unit,fmt=*) upf(is)%mesh
+
+      write(unit=io_unit,fmt="(a)")"RC_LOC"
+      write(unit=io_unit,fmt=*) upf(is)%rcloc
+
+      write(unit=io_unit,fmt="(a)")"KB D{ij}"
+      do nb=1,upf(is)%nbeta
+      write(unit=io_unit,fmt="(100es18.8)") (upf(is)%dion(nb,nb1),nb1=1,upf(is)%nbeta)
+      end do
+
+      write(unit=io_unit,fmt="(a)")"    R                 RAB              VLOC"//&
+                                  "              BETA1              BETA2             .."
+      do ir=1,upf(is)%mesh
+        write(unit=io_unit,fmt="(100es18.8)") &
+      upf(is)%r(ir), upf(is)%rab(ir), upf(is)%vloc(ir),(upf(is)%beta(ir,nb), nb=1,upf(is)%nbeta)
+      end do
+
+    end do
+
+  end SUBROUTINE write_pp_intw
+
+
+  SUBROUTINE scf_v_and_rho()
+    !ASIER: 22/02/2022
+    !Here we asume that:
+    ! nspin=1 (no magnetism at all)
+    ! nspin=2 (collinear)
+    ! nspin=4 (non-collinear)
+    ! It is clear that we must fix this, because
+    ! in many places we asume that npol=2 is non-collinear.
+
+    USE lsda_mod, ONLY: nspin
+    USE scf, ONLY: rho, v
+
+    implicit none
+
+    integer :: io_unit, ios
+    integer :: ispin
+    integer, external :: find_free_unit
+
+    character(len=256) :: datafile
+    integer :: record_length
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"scf_vr.dat"
+    inquire(iolength=record_length) v%of_r(:,1)
+    open(unit=io_unit, file=datafile, iostat=ios, &
+        status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
+    if (ios /= 0) stop "ERROR: scf_v_and_rho: error opening scf_vr.dat"
+    !
+    do ispin=1, nspin
+      write (unit=io_unit, rec=ispin) v%of_r(:,ispin)
+    end do
+    !
+    close(unit=io_unit)
+
+    !
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"scf_rhor.dat"
+    inquire(iolength=record_length) rho%of_r(:,1)
+    open(unit=io_unit, file=datafile, iostat=ios, &
+        status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
+    if (ios /= 0) stop "ERROR: scf_v_and_rho: error opening scf_rhor.dat"
+    !
+    do ispin=1, nspin
+      write (unit=io_unit,rec=ispin) rho%of_r(:,ispin)
+    end do
+    !
+    close(unit=io_unit)
+
+  END SUBROUTINE scf_v_and_rho
+
+
+  SUBROUTINE write_phonon_info()
+
+    USE xmltools, ONLY: xml_openfile, xml_closefile, &
+                        xmlr_opentag, xmlr_readtag, xmlr_closetag, i2c
+    USE ions_base, ONLY: nat
+
+    implicit none
+
+    logical :: existitu
+    integer :: iq
+    character(len=256) :: numq_str
+    character(len=1) :: nn
+    character(len=4) :: num
+
+    integer :: nirr, ipert, imode0, irr, imode, jmode
+    integer, dimension(48) :: npert=-1
+    complex(kind=dp) :: u_irr(1:3*nat,1:3*nat,nqirr)
+    integer, external :: find_free_unit
+    character(len=256) :: datafile, q_dir, dv_file, rho_file, dyn_file
+    integer :: io_unit, ios
+
+
+    inquire(file=qlist_file, exist=existitu)
+
+
+    do iq=1,nqirr
+
+      call write_tag("qq", iq, q_dir)
+      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
+      inquire(file=datafile, exist=existitu)
+      if (.not. existitu) stop "ERROR: write_phonon_info: patterns.1.xml not found"
+
+      io_unit = xml_openfile( datafile )
+
+      CALL xmlr_opentag( "IRREPS_INFO" )
+      CALL xmlr_readtag( "NUMBER_IRR_REP", nirr )
+      imode0 = 0
+      DO irr = 1, nirr
+        !
+        CALL xmlr_opentag( "REPRESENTION."//i2c(irr) )
+        CALL xmlr_readtag( "NUMBER_OF_PERTURBATIONS", npert(irr) )
+        DO ipert = 1, npert(irr)
+          imode = imode0 + ipert
+          CALL xmlr_opentag( "PERTURBATION."// i2c(ipert) )
+          CALL xmlr_readtag( "DISPLACEMENT_PATTERN", u_irr(:,imode,iq) )
+          CALL xmlr_closetag( )
+        ENDDO
+        imode0 = imode0 + npert(irr)
+        CALL xmlr_closetag( )
+        !
+        END DO !irr
+
+      CALL xmlr_closetag("IRREPS_INFO")
+      CALL xml_closefile ( )
+
+    enddo !iq
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"/irrq_patterns.dat"
+    open(unit=io_unit, file=datafile, status="replace", form="formatted", iostat=ios)
+    if ( ios /= 0 ) stop "ERROR: write_phonon_info: error opening irrq_patterns.dat"
+    !
+    do iq=1,nqirr
+      write(io_unit,"(a,i4)") "q", iq
+      !
+      do imode=1,3*nat
+        write(io_unit,"(10000(a,f16.10,a,f16.10,a))") &
+          ("(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ") ", jmode=1,3*nat)
+      enddo
+      !
+    enddo
+    !
+    close(unit=io_unit)
+
+
+    do iq=1,nqirr
+      call write_tag("qq", iq, q_dir)
+      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".dvscf1"
+      inquire(file=datafile, exist=existitu)
+      if (.not. existitu) stop "ERROR: write_phonon_info: prefix.dvscf1 not found"
+
+      call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
+      call system("cp " // &
+                  trim(datafile)//" " // &
+                  trim(intwdir)//trim(dv_file) )
+
+      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
+      inquire(file=datafile, exist=existitu)
+      if (existitu) then
+        call write_tag(trim(prefix)//".rho_q", iq, rho_file)
+        call system("cp " // &
+                    trim(datafile)//" " // &
+                    trim(intwdir)//trim(rho_file) )
+      end if
+    enddo
+    !
+    do iq=1,nqirr
+      call write_tag("qq", iq, q_dir)
+      if (dynxml) then
+      ! call system("cp " // &
+      !             trim(ph_dir)//"qq"//trim(adjustl(numq_str))//"/"//trim(prefix)//".dyn.xml " // &
+      !             trim(prefix)//".dyn"//trim(adjustl(numq_str))//".xml" )
+      else
+        datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(prefix)//".dyn"
+        inquire(file=datafile, exist=existitu)
+        if (.not. existitu) stop "ERROR: write_phonon_info: prefix.dyn not found"
+        call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
+        call system("cp " // &
+                    trim(datafile)//" " // &
+                    trim(intwdir)//trim(dyn_file) )
+      end if
+    enddo
+
+  end SUBROUTINE write_phonon_info
+
+
+  SUBROUTINE write_fft_information ()
+
+    USE gvect, ONLY: ngm, g
+    USE wvfct, ONLY: npwx
+    USE klist, ONLY: nks, xk, igk_k, ngk
+
+    IMPLICIT NONE
+
+    INTEGER, EXTERNAL :: find_free_unit
+
+    integer :: io_unit, ios
+    integer :: ig
+    CHARACTER(LEN=256) :: datafile
+    integer :: ik, i
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"gvectors.dat"
+    open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
+    if (ios /= 0) stop "ERROR: write_fft_information: error opening gvectors.dat"
+    !
+    write(unit=io_unit) ngm
+    do ig=1,ngm
+       write(unit=io_unit) ( nint(sum(at(:,i)*g(:,ig))), i=1,3 )
+    end do
+    !
+    close(unit=io_unit)
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"iGlist.dat"
+    open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
+    if (ios /= 0) stop "ERROR: write_fft_information: error opening iGlist.dat"
+    !
+    write(unit=io_unit) npwx
+    do ik=1,nks
+       write(unit=io_unit) ngk(ik)
+       write(unit=io_unit) igk_k(1:ngk(ik),ik)
+    end do
+    !
+    close(unit=io_unit)
+
+  end SUBROUTINE  write_fft_information
+
+
+  subroutine write_wfc()
+
+    USE wvfct, ONLY: nbnd, npwx
+    USE wavefunctions, ONLY: evc
+    USE io_files, ONLY: nwordwfc, iunwfc
+    USE klist, ONLY: nks
+    USE klist, ONLY: nkstot, xk, igk_k, ngk
+    USE noncollin_module, ONLY: noncolin
+    USE wvfct, ONLY: nbnd, et
+    USE constants, ONLY: rytoev
+
+    implicit none
+
+    integer :: ik, ibnd, is, npol, ig
+    character(256) :: wfc_file, datafile
+    integer :: io_unit, ios
+    integer, external :: find_free_unit
+    !
+    complex(dp), allocatable :: evc_down(:, :) !JLB
+
+    100 format('wfc'I5.5'.dat')
+
+    io_unit = find_free_unit()
+
+    npol = 1
+    if (noncolin) npol=2
+
+    ! JLB
+    ! Special case: Collinear spin-polarized calculation
+    if (lsda) then
+      !
+      ! The number of k-points is artificially doubled in QE for this case,
+      ! and the spin-up and down bands separated
+      allocate(evc_down(npwx*npol,nbnd))
+      write(*,*) nbnd, nks, nks/2
+      do ik=1,nks/2
+
+        write(wfc_file,100) ik
+        datafile = trim(intwdir)//trim(wfc_file)
+        open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
+        if (ios /= 0) stop "ERROR: write_wfc: error opening wfc_file"
+        !
+        ! Read spin-up wf contained in ik
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
+        ! Read spin-down wf contained in nks/2+ik
+        CALL davcio (evc_down, 2*nwordwfc, iunwfc, nks/2+ik, -1 )
+        ! Write both up and down wfcs as spinors
+        write(unit=io_unit) ngk(ik)
+        write(unit=io_unit) igk_k(1:ngk(ik), ik)
+        write(unit=io_unit) ( et(ibnd,ik)*rytoev, et(ibnd,nks/2+ik)*rytoev, ibnd=1,nbnd )
+        do ibnd=1, nbnd
+          write(unit=io_unit) evc(1:ngk(ik), ibnd), 0.0*evc(1:ngk(ik), ibnd)
+          write(unit=io_unit) 0.d0*evc_down(1:ngk(ik), ibnd), evc_down(1:ngk(ik), ibnd)
+        enddo
+        write(*,'(4ES18.6)') evc(1, nbnd), evc(npwx+1, nbnd)
+        write(*,'(4ES18.6)') evc_down(1, nbnd), evc_down(npwx+1, nbnd)
+        !
+        close(unit=io_unit)
+
+      end do !ik
+      !
+      deallocate(evc_down)
+      !
+    !end JLB
+    else
+      !
+      do ik=1,nks
+
+        write(wfc_file,100) ik
+        datafile = trim(intwdir)//trim(wfc_file)
+        open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
+        if (ios /= 0) stop "ERROR: write_wfc: error opening wfc_file"
+        !
+        CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
+        write(unit=io_unit) ngk(ik)
+        write(unit=io_unit) igk_k(1:ngk(ik), ik)
+        write(unit=io_unit) ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
+        do ibnd=1,nbnd
+          ! MBR
+          !write(unit=io_unit)evc(1:npol*ngk(ik), ibnd)
+          write(unit=io_unit) evc(1:ngk(ik), ibnd), evc(npwx+1:npwx+ngk(ik), ibnd)
+        enddo
+        !
+        close(unit=io_unit)
+
+      end do !ik
+      !
+    end if
+
+  end subroutine write_wfc
+
+
+  SUBROUTINE write_crystal_info_and_bands
+
+    USE wvfct, ONLY: nbnd, et
+    USE klist, ONLY: nks
+    USE constants, ONLY: rytoev
+    USE klist, ONLY: xk, ngk, nks, nkstot
+    USE cell_base, ONLY: at, bg, alat, omega, tpiba2
+    USE spin_orb, ONLY: lspinorb, domag
+    USE symm_base, ONLY: nrot, nsym, invsym, s, ft, irt, &
+                         t_rev, sname, time_reversal, no_t_rev, ft
+    !USE symme, ONLY: nrot, nsym, invsym, s, ft, irt, &
+    !                 t_rev, sname, time_reversal, no_t_rev, ftau
+    USE fft_base, ONLY: dfftp
+    USE gvecw, ONLY: ecutwfc
+    USE gvect, ONLY: ecutrho
+    USE spin_orb, ONLY: lspinorb
+    USE ions_base, ONLY: nat, ityp, nsp, tau, atm, amass, tau_format
+    USE io_files, ONLY: psfile
+    USE wvfct, ONLY: npwx
+    USE ener, ONLY: ef
+
+    IMPLICIT NONE
+    !
+    INTEGER, EXTERNAL :: find_free_unit
+    !
+    INTEGER ik, ibnd, ibnd1, ikevc, i, j
+
+    REAL(DP), allocatable, dimension(:,:) :: eigval
+    INTEGER :: isym
+    CHARACTER(LEN=256) :: datafile
+    integer :: io_unit, ios
+
+    ! JLB new variables to support collinear spin-polarized calculation
+    LOGICAL :: noncolin_intw, domag_intw, lsda_intw
+    INTEGER :: nkstot_intw, nbnd_intw
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"crystal.dat"
+    open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
+    if (ios /= 0) stop "ERROR: write_crystal_info_and_bands: error opening crystal.dat"
+
+    ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
+    ! (see also subroutine write_wfc() below)
+    ! Here I define new variables to leave the ones read from QE modules unchanged
+    if (lsda) then
+      noncolin_intw = .true.
+      domag_intw = .true. ! not sure about this one
+      lsda_intw = .false.
+      nkstot_intw = nkstot / 2
+      nbnd_intw = nbnd * 2
+    else
+      ! Just leave as in QE
+      noncolin_intw = noncolin
+      domag_intw = domag
+      lsda_intw = lsda
+      nkstot_intw = nkstot
+      nbnd_intw = nbnd
+    end if
+    ! end JLB
+
+    write(unit=io_unit,fmt=*)"ALAT"
+    write(unit=io_unit,fmt="(f16.10)")alat
+
+    write(unit=io_unit,fmt=*)"AT"
+    do i=1,3
+       write(unit=io_unit, fmt="(3f12.6)")(at(i,j), j=1,3)
+    enddo
+
+    write(unit=io_unit,fmt=*)"BG"
+    do i=1,3
+       write(unit=io_unit, fmt="(3f12.6)")(bg(i,j), j=1,3)
+    enddo
+
+    write(unit=io_unit,fmt=*)"FFT GRID"
+    write(unit=io_unit,fmt=*)dfftp%nr1,dfftp%nr2, dfftp%nr3
+
+    write(unit=io_unit,fmt=*)"ECUTWFC"
+    write(unit=io_unit,fmt=*)ecutwfc
+
+    write(unit=io_unit,fmt=*)"ECUTRHO"
+    write(unit=io_unit,fmt=*)ecutrho
+
+    write(unit=io_unit,fmt=*)"LSDA"
+    write(unit=io_unit,fmt=*) lsda_intw !lsda
+
+    write(unit=io_unit,fmt=*)"NONCOLIN"
+    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
+
+    write(unit=io_unit,fmt=*)"LSPINORB"
+    write(unit=io_unit,fmt=*)lspinorb
+
+    write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
+    write(unit=io_unit,fmt=*)domag_intw !domag
+
+    write(unit=io_unit,fmt=*)"NAT"
+    write(unit=io_unit,fmt=*)nat
+
+    write(unit=io_unit,fmt=*)"NTYP"
+    write(unit=io_unit,fmt=*)nsp
+
+    write(unit=io_unit,fmt=*)"ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
+    do i=1,nsp
+       write(unit=io_unit,fmt="(a,f16.5,x,a)")atm(i), amass(i), trim(psfile(i))
+    enddo
+
+    write(unit=io_unit,fmt=*)"POSITIONS (1:NAT)"
+    do i=1,nat
+       write(unit=io_unit,fmt="(a,i4,3f16.8)")atm(ityp(i)),ityp(i), tau(:,i)
+    end do
+
+    write(unit=io_unit,fmt=*)"NSYM"
+    write(unit=io_unit,fmt=*)nsym
+
+    do isym=1,nsym
+       write(unit=io_unit,fmt="(i8)") isym
+       do i=1, 3
+          write(unit=io_unit, fmt="(3i8)") (s(i,j,isym), j=1,3)
+       enddo
+       write(unit=io_unit,fmt="(100f16.10)")  &
+            real(ft(1,isym),dp), real(ft(2,isym),dp), real(ft(3,isym),dp)
+       write(unit=io_unit,fmt="(48i3)")t_rev (isym)
+    enddo
+
+    write(unit=io_unit,fmt=*)"NKS"
+    write(unit=io_unit,fmt=*)nkstot_intw !nkstot
+
+    write(unit=io_unit,fmt=*)"GAMMA ONLY"
+    write(unit=io_unit,fmt=*) gamma_only
+
+    write(unit=io_unit,fmt=*)"NGMAX"
+    write(unit=io_unit,fmt=*)npwx
+
+    write(unit=io_unit,fmt=*)"NBAND"
+    write(unit=io_unit,fmt=*)nbnd_intw !nbnd
+
+    close(unit=io_unit)
+
+
+    io_unit = find_free_unit()
+    datafile = trim(intwdir)//"kpoints.dat"
+    open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
+    if (ios /= 0) stop "ERROR: write_crystal_info_and_bands: error openeing kpoints.dat"
+    !
+    DO ik=1,nkstot_intw !nkstot
+      write(unit=io_unit,fmt="(100f16.10)")( xk(i,ik), i = 1, 3 )
+      !write(unit=io_unit,fmt="(100f16.10)") ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
+    ENDDO
+    !
+    close(unit=io_unit)
+
+  END SUBROUTINE write_crystal_info_and_bands
+
+
+  subroutine write_tag(string,i,tag)
+    !-----------------------------------------------
+    ! This subroutine creates a character string of
+    ! the form "string"integer, where the integer
+    ! will be immediately after the end of "string",
+    ! without blank spaces.
+    !-----------------------------------------------
+    implicit none
+
+    integer :: i
+    character(*) :: string
+    character(256) :: integer_part, tag
+
+
+    if (i < 10) then
+      write(integer_part,100) i
+    elseif (i < 100 ) then
+      write(integer_part,200) i
+    elseif (i < 1000 ) then
+      write(integer_part,300) i
+    elseif (i < 10000 ) then
+      write(integer_part,400) i
+    elseif (i < 100000 ) then
+      write(integer_part,500) i
+    end if
+
+    tag = trim(string)//trim(integer_part)
+
+    100 format(I1)
+    200 format(I2)
+    300 format(I3)
+    400 format(I4)
+    500 format(I5)
+
+  end subroutine write_tag
+
+
+
+end PROGRAM pw2intw
