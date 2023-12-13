@@ -1,6 +1,5 @@
 
-QE_HOME=@QE_HOME@
-QE_VERSION=$(shell basename ${PWD} | sed 's/QE-//')
+QE_BUILD_DIR=@QE_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -14,33 +13,33 @@ calculation: all
 
 
 run_scf:
-	$(QE_HOME)/build/bin/pw.x < cu.scf.in | tee cu.scf.out
+	$(QE_BUILD_DIR)/bin/pw.x < cu.scf.in | tee cu.scf.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_ph1:
 	cp -r cu.save qq1/
-	( cd qq1 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq1 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph2:
 	cp -r cu.save qq2/
-	( cd qq2 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq2 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph3:
 	cp -r cu.save qq3/
-	( cd qq3 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq3 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph4:
 	cp -r cu.save qq4/
-	( cd qq4 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq4 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph5:
 	cp -r cu.save qq5/
-	( cd qq5 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq5 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph6:
 	cp -r cu.save qq6/
-	( cd qq6 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq6 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph7:
 	cp -r cu.save qq7/
-	( cd qq7 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq7 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 run_ph8:
 	cp -r cu.save qq8/
-	( cd qq8 ; $(QE_HOME)/build/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
+	( cd qq8 ; $(QE_BUILD_DIR)/bin/ph.x < cu.ph.in | tee cu.ph.out ; rm -rf cu.save ; test -f CRASH && exit 1 || echo "OK" )
 
 run_q2r:
 	rm -rf CRASH
@@ -52,7 +51,7 @@ run_q2r:
 	cp qq6/cu.dyn ./cu.dyn6
 	cp qq7/cu.dyn ./cu.dyn7
 	cp qq8/cu.dyn ./cu.dyn8
-	$(QE_HOME)/build/bin/q2r.x < q2r.in | tee q2r.out
+	$(QE_BUILD_DIR)/bin/q2r.x < q2r.in | tee q2r.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
@@ -169,4 +168,4 @@ clean:
 	rm -rf qq8/cu.dyn qq8/cu.ph.out qq8/cu.wfc* qq8/_ph0 qq1/cu.save
 	rm -rf q2r.out cu.fc cu.dyn1 cu.dyn2 cu.dyn3 cu.dyn4 cu.dyn5 cu.dyn6 cu.dyn7 cu.dyn8
 	rm -rf pw2intw.out cu.save.intw
-	rm -rf intw.out ep_mat.dat_1
+	rm -rf intw.out ep_mat.dat_*

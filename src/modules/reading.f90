@@ -196,7 +196,7 @@ module intw_reading
   real(dp) :: ecutrho
   ! cutoff energy for wfc (Hartree)
 
-  real(kind=dp):: tpiba != twopi/alat
+  real(kind=dp):: tpiba != tpi/alat
   real(kind=dp) :: tpiba2 != tpiba**2
 
   real(dp) :: dual
@@ -217,7 +217,7 @@ contains
     !------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix, TR_symmetry
     use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: twopi
+    use intw_useful_constants, only: tpi
 
     implicit none
 
@@ -296,7 +296,7 @@ contains
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)ecutrho
 
-    tpiba = twopi/alat
+    tpiba = tpi/alat
     tpiba2 = tpiba*tpiba
     dual = ecutrho/ecutwfc
     gcutm = dual * ecutwfc / tpiba2
@@ -421,6 +421,7 @@ contains
     !GAMMA_ONLY
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)gamma_only
+    if (gamma_only) stop "ERROR: intw does not support gamma_only calculations yet"
 
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nG_max

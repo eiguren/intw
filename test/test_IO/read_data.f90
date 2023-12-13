@@ -7,7 +7,6 @@ integer function read_data_test() result(r)
                           nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, ngm, &
                           noncolin, spinorb_mag, ecutwfc, ecutrho
   use intw_input_parameters, only: mesh_dir, prefix
-  use intw_useful_constants, only: twopi
 
   implicit none
 
