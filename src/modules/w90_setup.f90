@@ -699,7 +699,7 @@ contains
   !
   !----------------------------------------------------------------------------!
   !
-  use intw_useful_constants, only: cmplx_0, cmplx_i, twopi
+  use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
   use intw_reading, only: num_bands_intw, num_wann_intw
   !
   implicit none
@@ -721,7 +721,7 @@ contains
   !
   ham_pack_1k = cmplx_0
   do ir = 1,nrpts
-     cfac = exp(cmplx_i*twopi*dot_product(kpoint(:),irvec(:,ir)))/real(ndegen(ir),dp)
+     cfac = exp(cmplx_i*tpi*dot_product(kpoint(:),irvec(:,ir)))/real(ndegen(ir),dp)
      do j=1,num_wann_intw
        do i=1,j
           ham_pack_1k(i+((j-1)*j)/2) = ham_pack_1k(i+((j-1)*j)/2) + cfac * ham_r(i,j,ir)
@@ -767,7 +767,7 @@ contains
   !
   !----------------------------------------------------------------------------!
   !
-  use intw_useful_constants, only: cmplx_0, cmplx_i, twopi
+  use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
   use intw_reading, only: num_bands_intw, num_wann_intw
   !
   implicit none 
@@ -800,7 +800,7 @@ contains
         ener = eini + (ie-1)*estep
         do iw = 1,num_wann_intw
           lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
-          lorentz = lorentz * 0.5_dp*esmear/twopi 
+          lorentz = lorentz * 0.5_dp*esmear/tpi
           DOS(ie) = DOS(ie) + lorentz
           if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
         end do  

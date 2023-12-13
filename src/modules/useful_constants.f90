@@ -6,8 +6,8 @@ module intw_useful_constants
   implicit none
   !
   public :: ZERO, ONE, sqrt2, e2, cmplx_i, cmplx_1, cmplx_0, pi, sqrt_pi, &
-            twopi, tpi, fpi, eps_2, eps_5, eps_6, eps_7, eps_8, &
-            eps_10, eps_14, bohr, Ha_in_eV, boltzmann, direct_io_factor, &
+            tpi, fpi, eps_2, eps_5, eps_6, eps_7, eps_8, &
+            eps_10, eps_14, bohr, boltzmann, direct_io_factor, &
             direct_io_factor_cmplx, double_complex, double_real, &
             I2, sig_x, sig_y, sig_z
   !
@@ -25,7 +25,6 @@ module intw_useful_constants
   real(dp) :: pi        = dacos(-1.0_dp)
   real(dp), parameter :: sqrt_pi   = sqrt(dacos(-1.0_dp))
   real(dp), parameter :: sqrt2     = sqrt(2.0_dp)
-  real(dp) :: twopi     = 2_dp*dacos(-1.0_dp)
   real(dp) :: tpi       = 2.0_dp*dacos(-1.0_dp)
   real(dp), parameter :: fpi       = 4.0_dp*dacos(-1.0_dp)
   real(dp), parameter :: eps_2     = 1.0e-2_dp
@@ -36,9 +35,7 @@ module intw_useful_constants
   real(dp), parameter :: eps_10    = 1.0e-10_dp
   real(dp), parameter :: eps_14    = 1.0e-14_dp
   real(dp), parameter :: bohr      = 0.52917720859_dp
-  real(dp), parameter :: Ha_in_eV  = 27.211383860484776_dp
   real(dp), parameter :: boltzmann = 8.6173324*0.00001_dp
-  real(dp), parameter :: AUTOEV    = 27.211383860484776_dp
   !
   complex(dp) :: cmplx_i = (0.0_dp,1.0_dp)
   complex(dp) :: cmplx_1 = (1.0_dp,0.0_dp)
