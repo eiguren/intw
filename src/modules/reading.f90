@@ -421,6 +421,7 @@ contains
     !GAMMA_ONLY
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)gamma_only
+    if (gamma_only) stop "ERROR: intw does not support gamma_only calculations yet"
 
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nG_max
