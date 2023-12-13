@@ -9,7 +9,7 @@ module intw_useful_constants
             twopi, tpi, fpi, eps_2, eps_5, eps_6, eps_7, eps_8, &
             eps_10, eps_14, bohr, Ha_in_eV, boltzmann, direct_io_factor, &
             direct_io_factor_cmplx, double_complex, double_real, &
-            mpi_rank, mpi_nproc, mpi_err, I2, sig_x, sig_y, sig_z
+            I2, sig_x, sig_y, sig_z
   !
   private
   !
@@ -45,13 +45,6 @@ module intw_useful_constants
   complex(dp) :: cmplx_0 = (0.0_dp,0.0_dp)
   !-Pauli matrices
   complex(kind=dp) :: I2(2,2), sig_x(2,2), sig_y(2,2), sig_z(2,2)
-
-  !TODO: haritz 26/11/2021
-  ! I think that this is not the best place to store this MPI variables.
-  ! Maybe a separate module for MPI variables and routines will be the best.
-
-  ! MPI rank and procs
-  integer :: mpi_rank, mpi_nproc, mpi_err
 
   !TODO: haritz 26/11/2021
   ! As the following parameters could be compiler dependent they should be

@@ -49,7 +49,7 @@ module intw_input_parameters
             nfsh, num_modes, newton_iter1, newton_iter2, Emin, Emax
 
   ! subroutines
-  public :: read_input, broadcast_input
+  public :: read_input
   !
   private
 
@@ -693,72 +693,5 @@ contains
 
   end subroutine read_input
 
-  subroutine broadcast_input()
-    !---------------------------------------------------------------------------
-    ! This subroutine broadcasts all the read input to the other processors
-    !---------------------------------------------------------------------------
-    implicit none
-#ifdef _MPI
-    include 'mpif.h'
 
-    integer :: mpi_master_node
-
-
-    mpi_master_node = 0
-
-    !------------------- character strings ------------------
-    call MPI_BCAST(mesh_dir               ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(prefix                 ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(interpolation_scheme   ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(chi0_file_prefix       ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(broadening_method      ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(broadening_function    ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(real_part_chi0         ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(matrix_elements_method ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(output_format          ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(crossing_method        ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(bands_file             ,256,MPI_CHARACTER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-
-
-    !------------------- integers ------------------
-    call MPI_BCAST(nk1                ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(nk2                ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(nk3                ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(number_G_shells    ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(nk1s               ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(nk2s               ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(nk3s               ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(n_hw               ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(el_number_G_shells ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(bands_points       ,1,MPI_INTEGER,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-
-    !------------------- logicals ------------------
-    call MPI_BCAST(TR_symmetry           ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(use_symmetry          ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(magnon                ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(intw2W_fullzone       ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(intw2W_method         ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(el_test               ,1,MPI_BYTE,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-
-
-    !------------------- doubles ------------------
-    call MPI_BCAST(qpt1                 ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(qpt2                 ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(qpt3                 ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(max_ram              ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(chemical_potential   ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(hw_min               ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(hw_max               ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(delta_width          ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-    call MPI_BCAST(adaptive_width_coeff ,1,MPI_DOUBLE_PRECISION,mpi_master_node, MPI_COMM_WORLD,mpi_err)
-
-#endif
-
-  end subroutine broadcast_input
-
-
-!----------------------------------------------------------------------------!
-!
 END MODULE intw_input_parameters
-!
-!----------------------------------------------------------------------------!

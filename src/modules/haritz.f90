@@ -383,22 +383,3 @@ contains
 
 
 end module intw_haritz
-
-module intw_mpi_haritz
-  !
-  ! This module contains MPI variables that I use in many MPI programs.
-  !
-  implicit none
-  !
-  save
-  !
-  ! Declare public variables
-  public :: master, nNodes, myNode
-  !
-  private
-
-  integer, parameter :: master = 0      ! ID of the master node
-  integer            :: nNodes          ! Number of MPI nodes
-  integer            :: myNode          ! ID of each MPI node
-
-end module intw_mpi_haritz
