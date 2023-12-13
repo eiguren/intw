@@ -21,7 +21,6 @@ set(SOURCES
   init_pp.f90
   init_KB_projectors.f90
   kinds.f90
-  haritz.f90
   input_parameters.f90
   intw2wannier.f90
   intw_pseudo2.f90
