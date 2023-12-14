@@ -41,7 +41,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !       Read in the necessary information from standard input
 !================================================================================
     call read_input(read_status)
- 
+
     if (read_status ) then
            stop
     end if
@@ -50,11 +50,11 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 !       read the parameters from the SCF QE calculation
 !
-! From this, I only need seednames, actually, 
+! From this, I only need seednames, actually,
 ! until intw.in is modified to include postprocessing options
 !================================================================================
-    call read_parameters_data_file_xml()  
-   
+    call read_parameters_data_file_xml()
+
 !================================================================================
 ! Set the number of bands for the calculation
 !================================================================================
@@ -91,7 +91,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
        read(io_unit_k,*) kpoint
        call interpolate_1k (kpoint, eig_int, u_int)
        do iw = 1,num_wann_intw
-          weights = (abs(u_int(iw,:)))**2   
+          weights = (abs(u_int(iw,:)))**2
           write(io_unit_b,'(2i4,20e14.6)') ik, iw, eig_int(iw),weights
        end do
     end do

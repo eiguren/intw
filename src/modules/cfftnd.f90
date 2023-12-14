@@ -107,9 +107,9 @@ subroutine cfftmi ( n, wsave, lensav )
 !
 !  Discussion:
 !
-!    CFFTMI initializes array WSAVE for use in its companion routines 
-!    CFFTMB and CFFTMF.  CFFTMI must be called before the first call 
-!    to CFFTMB or CFFTMF, and after whenever the value of integer N changes. 
+!    CFFTMI initializes array WSAVE for use in its companion routines
+!    CFFTMB and CFFTMF.  CFFTMI must be called before the first call
+!    to CFFTMB or CFFTMF, and after whenever the value of integer N changes.
 !
 !  License:
 !
@@ -140,11 +140,11 @@ subroutine cfftmi ( n, wsave, lensav )
 !
 !  Parameters:
 !
-!    Input, integer N, the length of each sequence to be transformed. 
-!    The transform is most efficient when N is a product of small primes. 
+!    Input, integer N, the length of each sequence to be transformed.
+!    The transform is most efficient when N is a product of small primes.
 !
 !    Input, integer LENSAV, the dimension of the WSAVE array.  LENSAV must be
-!    at least 2*N + INT(LOG(REAL(N))) + 4. 
+!    at least 2*N + INT(LOG(REAL(N))) + 4.
 !
 !    Output, real WSAVE(LENSAV), containing the prime factors of N and
 !    also containing certain trigonometric values which will be used in
@@ -1860,7 +1860,7 @@ subroutine cmf5kf ( lot, ido, l1, na, cc, im1, in1, ch, im2, in2, wa )
   else if ( na == 1 ) then
 
     sn = 1.0E+00_prec / real ( 5 * l1, prec )
- 
+
     do k = 1, l1
       m2 = m2s
       do m1 = 1, m1d, im1
@@ -2231,7 +2231,7 @@ subroutine cmfgkf ( lot, ido, ip, l1, lid, na, cc, cc1, im1, in1, &
   integer im2
   integer ipp2
   integer ipph
-  integer j 
+  integer j
   integer jc
   integer k
   integer ki
@@ -2441,5 +2441,3 @@ subroutine cmfgkf ( lot, ido, ip, l1, lid, na, cc, cc1, im1, in1, &
 
   return
 end
-
-

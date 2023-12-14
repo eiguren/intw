@@ -61,7 +61,7 @@ SUBROUTINE gk_sort( k, ngm, g, ecut, ngk, igk)
       ENDIF
    ENDDO
    !
-   IF ( ng > ngm ) then 
+   IF ( ng > ngm ) then
       CALL infomsg( 'gk_sort', 'unexpected exit from do-loop')
    END IF
    !

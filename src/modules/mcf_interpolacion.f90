@@ -165,7 +165,7 @@ enddo
 
 END subroutine polint_dp
 
- 
+
 end module m_interpoli_dp
 
 module m_spline_sp
@@ -174,7 +174,7 @@ module m_spline_sp
 !
 use kinds
 
-public :: spline_MCF, splint_MCF 
+public :: spline_MCF, splint_MCF
 interface spline_MCF
         module procedure spline_sp
 end interface
@@ -215,7 +215,7 @@ real(kind=sp), dimension(n)  ::   U    ! Automatic array
 
 !--------------------------------------------------------
 do i = 1, N-1
-   if (x(i+1) - x(i) <= 0.0_sp) then 
+   if (x(i+1) - x(i) <= 0.0_sp) then
            STOP " X ha de estar en orden creciente en spline"
    end if
 enddo
@@ -300,7 +300,7 @@ module m_spline_dp
 !
 use kinds
 
-public :: spline_mcf, splint_mcf   
+public :: spline_mcf, splint_mcf
 
 interface spline_mcf
         module procedure spline_dp

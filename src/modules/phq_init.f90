@@ -14,8 +14,8 @@ SUBROUTINE phq_init( xq)
   !USE intw_atom,             ONLY :  msh, rgrid
   USE intw_ph,               ONLY :  eigqts
   USE kinds, ONLY : dp
-  USE intw_reading, ONLY : nat, tau, ntyp, tpiba2, ngm, volume0 
-  USE intw_useful_constants,      ONLY: tpi 
+  USE intw_reading, ONLY : nat, tau, ntyp, tpiba2, ngm, volume0
+  USE intw_useful_constants,      ONLY: tpi
   USE intw_pseudo, ONLY :  vlocq
   USE intw_pseudo,       ONLY : upf
   USE intw_fft, ONLY : gvec_cart
@@ -38,7 +38,7 @@ SUBROUTINE phq_init( xq)
     ! the argument of the phase
   COMPLEX(DP), EXTERNAL :: zdotc
   !
-   
+
   DO na = 1, nat
      !
      arg = ( xq(1) * tau(1,na) + &
@@ -52,7 +52,7 @@ SUBROUTINE phq_init( xq)
   !
   vlocq(:,:) = 0.D0
   !
- 
+
   DO nt = 1, ntyp
      !ASIER july 21
      !CALL setlocq( xq, rgrid(nt)%mesh, msh(nt), rgrid(nt)%rab, rgrid(nt)%r,&

@@ -44,14 +44,14 @@ subroutine deallocate_phq
 
   USE intw_pseudo, ONLY :  vlocq
 
-  USE intw_ph, ONLY : eigqts,dvloc  
+  USE intw_ph, ONLY : eigqts,dvloc
 
   implicit none
   INTEGER :: ipol
   !
   deallocate (eigqts)
   deallocate (vlocq )
-  deallocate (dvloc) 
+  deallocate (dvloc)
 
   return
 end subroutine deallocate_phq

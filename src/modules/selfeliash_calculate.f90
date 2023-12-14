@@ -31,7 +31,7 @@ subroutine realselfe_eliash_qe_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,elia
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e
   real(dp),intent(in) :: eliash_f(wpts)
@@ -121,7 +121,7 @@ subroutine imagselfe_eliash_qe_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,elia
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e
   real(dp),intent(in) :: eliash_f(wpts)
@@ -216,7 +216,7 @@ subroutine realselfe_eliash_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,el
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e
   real(dp),intent(in) :: eliash_fplus(wpts),eliash_fminus(wpts)
@@ -327,7 +327,7 @@ subroutine imagselfe_eliash_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,el
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e
   real(dp),intent(in) :: eliash_fplus(wpts),eliash_fminus(wpts)
@@ -423,7 +423,7 @@ subroutine imselfen_calculate_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e,ef
   real(dp),intent(in) :: eliash_fplus(wpts),eliash_fminus(wpts)
@@ -519,7 +519,7 @@ subroutine reselfen_calculate_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts,epts
   real(dp),intent(in) :: w_min,w_max,d_w,e_min,e_max,d_e,ef
   real(dp),intent(in) :: eliash_fplus(wpts),eliash_fminus(wpts)
@@ -587,4 +587,3 @@ subroutine reselfen_calculate_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,
 
 end subroutine reselfen_calculate_full_t0
 !------------------------------------------------------------------------------------------------------------------
-

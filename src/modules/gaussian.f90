@@ -16,7 +16,7 @@ subroutine gaussian(e0,e_min,e_max,n,sigma,gauss)
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: n
   real(dp),intent(in) :: e0,e_min,e_max,sigma
   real(dp),intent(inout) :: gauss(n)
