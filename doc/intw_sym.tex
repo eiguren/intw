@@ -584,59 +584,6 @@ We consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (1 or 0)
 \item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | \mathcal{T} R^{-1}  \mathcal{T} R_0 \varphi} = \dots = b^*$
 \end{itemize} 
 
-{\bf Third, with spinors, symmorphic.} 
-The TR operator is $\mathcal{T} = i\sigma_y \mathcal{K}$, where the Pauli matrix acts on the spin 
-component and $\mathcal{K}$ is the complex conjugation acting on the wavefunctions. Therefore, 
-\begin{align}
-\mathcal{T}^{-1} & = - \mathcal{T} \quad \mathcal{T}^2 = -1 \quad \mathcal{T}R = R\mathcal{T} \\
-\braket{ \mathcal{T} \psi | \mathcal{T} \varphi} & = \braket{\varphi | \psi}  \\
-\braket{ \mathcal{T} \psi | \varphi} & = \braket{ \mathcal{T} \varphi |  \mathcal{T}^2 \psi} = 
-   - \braket{ \mathcal{T} \varphi |  \psi} = - \braket{ \psi | \mathcal{T} \varphi }^*  \\
-\end{align}
-Again, we consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (1 or 0) in each:
-\begin{itemize}
-\item $[000] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} R_0 \varphi} = \braket{ \psi | R_1^{-1} R^{-1} R_0 \varphi} \equiv a$
-\item $[010] \rightarrow$ $ \braket{ R_1 \psi | (\mathcal{T}R)^{-1} R_0 \varphi} =
-   -\braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} \equiv -b$
-\item $[001] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = b$
-\item $[100] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} R_0 \varphi} =
-   -\braket{  R_1 \psi |  \mathcal{T} R^{-1} R_0 \varphi}^* = - b^* $
-\item $[011] \rightarrow$ $ \braket{ R_1 \psi | (\mathcal{T}R)^{-1} \mathcal{T} R_0 \varphi} = 
-    \braket{ \psi | R_1^{-1} R^{-1} \mathcal{T}^{-1} \mathcal{T} R_0 \varphi} = a $
-\item $[110]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | (\mathcal{T} R)^{-1} R_0 \varphi} = 
-    - \braket{  R_1 \psi |  \mathcal{T} \mathcal{T} R^{-1} R_0 \varphi}^* = - a^* $
-\item $[101]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = \dots = a^*$
-\item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | (\mathcal{T} R)^{-1}  \mathcal{T} R_0 \varphi} = \dots = - b^*$
-\end{itemize}
-
-
-\textcolor{red}{For sure this is the theorem of Evarestov's book page 77, but I 
-don't understand it...}
-
-
-{\bf Second, suppose TR is allowed in the elements of the trio, but still no spinor and only symmorphic.}
-We will use the antilinearity property of the TR operator:
-\begin{align}
-\mathcal{T}^{-1} & = \mathcal{T}, \quad \mathcal{T}^2 = I, \quad \mathcal{T}R = R\mathcal{T} \\
-\braket{ \mathcal{T} \psi | \mathcal{T} \varphi} & = \braket{\varphi | \psi}  \\
-\braket{ \mathcal{T} \psi | \varphi} & = \braket{ \mathcal{T} \varphi | \psi } = \braket{ \psi | \mathcal{T} \varphi }^* 
-\end{align}
-We consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (1 or 0) in each:
-\begin{itemize} 
-\item $[000] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} R_0 \varphi} = \braket{ \psi | R_1^{-1} R^{-1} R_0 \varphi} \equiv a$ 
-\item $[010] \rightarrow$ $ \braket{ R_1 \psi | \mathcal{T} R^{-1} R_0 \varphi} = 
-   \braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} \equiv b$ 
-\item $[001] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = 
-   \braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} = b$ 
-\item $[100] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} R_0 \varphi} = 
-   \braket{  R_1 \psi |  \mathcal{T} R^{-1} R_0 \varphi}^* = b^* $
-\item $[011] \rightarrow$ $ \braket{ R_1 \psi | \mathcal{T} R^{-1} \mathcal{T} R_0 \varphi} = 
-    \braket{ R_1 \psi | \mathcal{T}^2 R^{-1} R_0 \varphi} = a $
-\item $[110]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | \mathcal{T} R^{-1} R_0 \varphi} = 
-    \braket{  R_1 \psi |  \mathcal{T} \mathcal{T} R^{-1} R_0 \varphi}^* = a^* $
-\item $[101]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = \dots = a^*$
-\item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | \mathcal{T} R^{-1}  \mathcal{T} R_0 \varphi} = \dots = b^*$
-\end{itemize} 
 
 {\bf Third, with spinors, symmorphic.} 
 The TR operator is $\mathcal{T} = i\sigma_y \mathcal{K}$, where the Pauli matrix acts on the spin 
@@ -662,6 +609,8 @@ Again, we consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (
 \item $[101]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = \dots = a^*$
 \item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | (\mathcal{T} R)^{-1}  \mathcal{T} R_0 \varphi} = \dots = - b^*$
 \end{itemize}
+
+
 
 {\bf Fourth, we consider  non-symmorphic symmetries, but no TR and no spinors.} 
 This is like the first case, in principle, but it may happen that the 
