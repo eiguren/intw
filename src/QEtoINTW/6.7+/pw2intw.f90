@@ -56,7 +56,7 @@ PROGRAM pw2intw
 
 
   READ (5, inputpp, iostat=iostat)
-  if (iostat /= 0) stop "ERROR: pw2intw: error reading inputpp"
+  if (iostat /= 0) call errore( "pw2intw", "ERROR: pw2intw: error reading inputpp", iostat )
 
   strlen = len_trim(mesh_dir)
   if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
@@ -122,7 +122,7 @@ contains
       io_unit= find_free_unit()
       datafile = trim(intwdir)//trim(pp_file)
       open(unit=io_unit, file=datafile, status="unknown", iostat= ios)
-      if (ios /= 0) stop "ERROR: write_pp_intw: error opening pp_file"
+      if (ios /= 0) call errore( "pw2intw", "write_pp_intw: error opening pp_file", iostat )
 
       write(unit=io_unit,fmt="(a)")"ATOM LABEL"
       write(unit=io_unit,fmt=*) upf(is)%psd
@@ -213,7 +213,7 @@ contains
     inquire(iolength=record_length) v%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
         status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
-    if (ios /= 0) stop "ERROR: scf_v_and_rho: error opening scf_vr.dat"
+    if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_vr.dat", ios )
     !
     do ispin=1, nspin
       write (unit=io_unit, rec=ispin) v%of_r(:,ispin)
@@ -227,7 +227,7 @@ contains
     inquire(iolength=record_length) rho%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
         status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
-    if (ios /= 0) stop "ERROR: scf_v_and_rho: error opening scf_rhor.dat"
+    if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_rhor.dat", ios )
     !
     do ispin=1, nspin
       write (unit=io_unit,rec=ispin) rho%of_r(:,ispin)
@@ -268,7 +268,7 @@ contains
       call write_tag("qq", iq, q_dir)
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
       inquire(file=datafile, exist=existitu)
-      if (.not. existitu) stop "ERROR: write_phonon_info: patterns.1.xml not found"
+      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: patterns.1.xml not found", 1 )
 
       io_unit = xml_openfile( datafile )
 
@@ -298,7 +298,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"/irrq_patterns.dat"
     open(unit=io_unit, file=datafile, status="replace", form="formatted", iostat=ios)
-    if ( ios /= 0 ) stop "ERROR: write_phonon_info: error opening irrq_patterns.dat"
+    if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening irrq_patterns.dat", ios )
     !
     do iq=1,nqirr
       write(io_unit,"(a,i4)") "q", iq
@@ -317,7 +317,7 @@ contains
       call write_tag("qq", iq, q_dir)
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".dvscf1"
       inquire(file=datafile, exist=existitu)
-      if (.not. existitu) stop "ERROR: write_phonon_info: prefix.dvscf1 not found"
+      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.dvscf1 not found", 1 )
 
       call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
       call system("cp " // &
@@ -343,7 +343,7 @@ contains
       else
         datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(prefix)//".dyn"
         inquire(file=datafile, exist=existitu)
-        if (.not. existitu) stop "ERROR: write_phonon_info: prefix.dyn not found"
+        if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.dyn not found", 1 )
         call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
         call system("cp " // &
                     trim(datafile)//" " // &
@@ -372,7 +372,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"gvectors.dat"
     open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
-    if (ios /= 0) stop "ERROR: write_fft_information: error opening gvectors.dat"
+    if (ios /= 0) call errore( "pw2intw", "write_fft_information: error opening gvectors.dat", ios )
     !
     write(unit=io_unit) ngm
     do ig=1,ngm
@@ -384,7 +384,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"iGlist.dat"
     open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
-    if (ios /= 0) stop "ERROR: write_fft_information: error opening iGlist.dat"
+    if (ios /= 0) call errore( "pw2intw", "write_fft_information: error opening iGlist.dat", ios )
     !
     write(unit=io_unit) npwx
     do ik=1,nks
@@ -437,7 +437,7 @@ contains
         write(wfc_file,100) ik
         datafile = trim(intwdir)//trim(wfc_file)
         open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
-        if (ios /= 0) stop "ERROR: write_wfc: error opening wfc_file"
+        if (ios /= 0) call errore( "pw2intw", "write_wfc: error opening wfc_file", ios )
         !
         ! Read spin-up wf contained in ik
         CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
@@ -468,7 +468,7 @@ contains
         write(wfc_file,100) ik
         datafile = trim(intwdir)//trim(wfc_file)
         open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
-        if (ios /= 0) stop "ERROR: write_wfc: error opening wfc_file"
+        if (ios /= 0) call errore( "pw2intw", "write_wfc: error opening wfc_file", ios )
         !
         CALL davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
         write(unit=io_unit) ngk(ik)
@@ -528,7 +528,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"crystal.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
-    if (ios /= 0) stop "ERROR: write_crystal_info_and_bands: error opening crystal.dat"
+    if (ios /= 0) call errore( "pw2intw", "write_crystal_info_and_bands: error opening crystal.dat", ios )
 
     ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
     ! (see also subroutine write_wfc() below)
@@ -630,7 +630,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"kpoints.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
-    if (ios /= 0) stop "ERROR: write_crystal_info_and_bands: error openeing kpoints.dat"
+    if (ios /= 0) call errore( "pw2intw", "write_crystal_info_and_bands: error openeing kpoints.dat", ios )
     !
     DO ik=1,nkstot_intw !nkstot
       write(unit=io_unit,fmt="(100f16.10)")( xk(i,ik), i = 1, 3 )
