@@ -36,11 +36,12 @@ PROGRAM pw2intw
   CHARACTER(len=256) :: dvscf_dir = "./"
   integer :: nqirr = 0
   logical :: dynxml = .false.
+  CHARACTER(len=256) :: fildyn = "matdyn", fildvscf = "dvscf"
 
   CHARACTER(len=256) :: intwdir
   INTEGER :: kunittmp, strlen, file_exists
 
-  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir
+  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir, fildyn, fildvscf
 
   starting_wfc = "file"
   prefix = " "
@@ -315,9 +316,9 @@ contains
 
     do iq=1,nqirr
       call write_tag("qq", iq, q_dir)
-      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".dvscf1"
+      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
       inquire(file=datafile, exist=existitu)
-      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.dvscf1 not found", 1 )
+      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.fildvscf1 not found: check fildvscf input variable", 1 )
 
       call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
       call system("cp " // &
@@ -341,9 +342,9 @@ contains
       !             trim(ph_dir)//"qq"//trim(adjustl(numq_str))//"/"//trim(prefix)//".dyn.xml " // &
       !             trim(prefix)//".dyn"//trim(adjustl(numq_str))//".xml" )
       else
-        datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(prefix)//".dyn"
+        datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
         inquire(file=datafile, exist=existitu)
-        if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.dyn not found", 1 )
+        if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
         call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
         call system("cp " // &
                     trim(datafile)//" " // &

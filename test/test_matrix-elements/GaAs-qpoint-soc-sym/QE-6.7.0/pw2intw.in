@@ -5,5 +5,7 @@ proba
  phonons = .true.,
  nqirr = 3,
  dynxml = .false.,
+ fildvscf = "dvscf"
+ fildyn = "gaas.dyn"
 /
 
