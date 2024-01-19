@@ -458,7 +458,7 @@ contains
 
     external :: cfftnd
 
-    integer :: iG
+    integer :: i, iG
     integer :: list_iG(nG_max)
 
     complex(dp), intent(out) :: wfc_g(nG_max)
@@ -471,14 +471,18 @@ contains
     aux = wfc_r
     wfc_g(:) = cmplx_0
 
-
     call cfftnd(3,(/nr1,nr2,nr3/),-1,aux) !
                                ! this convention reproduces
                                ! the results of pw2wannier EXACTLY
 
-    do ig=1,ng_max
-      wfc_g(ig)=aux(nl(ig))
-    enddo
+  do i=1,nG_max
+    ! identify the G vector by its index, as stored in list_iG
+    iG = list_iG(i)
+    if (iG == 0) exit
+    ! use nl to identify which G_fft vector G corresponds to,
+    ! and assign the value of the wave function in the aux array
+    wfc_g(ig) = aux(nl(ig))
+  enddo
 
   end subroutine wfc_from_r_to_g
 
