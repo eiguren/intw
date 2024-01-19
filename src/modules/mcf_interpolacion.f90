@@ -4,10 +4,14 @@ module m_interpoli_sp
   !
   use kinds
 
+  implicit none
+
   public :: polint
+
   interface polint
      module procedure polint_sp
   end interface polint
+
   private :: polint_sp
 
   INTEGER, parameter, private  ::  NMAX = 30
@@ -21,6 +25,8 @@ CONTAINS  !==========================================================
     ! which passes through the (x(i),y(i)) points.
     ! This value is returned in y, and dy contains an error estimate.
     !
+    implicit none
+
     integer, intent(in)                       :: n
     real(kind=sp), intent(in), dimension(:)   :: xa, ya
     real(kind=sp), intent(in)                 :: X
@@ -89,10 +95,14 @@ module m_interpoli_dp
 !
 use kinds
 
+implicit none
+
 public :: polint
+
 interface polint
 	module procedure polint_dp
 end interface
+
 private :: polint_dp
 
 INTEGER, parameter, private  ::  NMAX = 30
@@ -106,6 +116,8 @@ SUBROUTINE POLINT_dp(XA,YA,N,X,Y,DY)
 ! which passes through the (x(i),y(i)) points.
 ! This value is returned in y, and dy contains an error estimate.
 !
+implicit none
+
 integer, intent(in)                       :: n
 real(kind=dp), intent(in), dimension(:)   :: xa, ya
 real(kind=dp), intent(in)                 :: X
@@ -174,13 +186,18 @@ module m_spline_sp
 !
 use kinds
 
+implicit none
+
 public :: spline_MCF, splint_MCF
+
 interface spline_MCF
         module procedure spline_sp
 end interface
+
 interface splint_MCF
         module procedure splint_sp
 end interface
+
 private :: spline_sp, splint_sp
 
 CONTAINS !==========================================================
@@ -196,6 +213,8 @@ SUBROUTINE SPLINE_sp(X,Y,N,Y2,YP1,YPN)
 ! The array y2 is needed to evaluate the spline, but it only needs
 ! to be computed once.
 !
+implicit none
+
 integer, intent(in)                          :: n
 real(kind=sp), dimension(:), intent(in)  :: x, y
 real(kind=sp), dimension(:), intent(out) :: y2
@@ -256,6 +275,8 @@ SUBROUTINE SPLINT_sp(XA,YA,Y2A,N,X,Y)
 ! previously by routine spline, this routine computes the value
 ! at x of the interpolating spline. The value is returned in y.
 !
+implicit none
+
 integer, intent(in)                          :: n
 real(kind=sp), dimension(:), intent(in)  :: xa, ya, y2a
 real(kind=sp), intent(in)                :: x
@@ -300,14 +321,18 @@ module m_spline_dp
 !
 use kinds
 
+implicit none
+
 public :: spline_mcf, splint_mcf
 
 interface spline_mcf
         module procedure spline_dp
 end interface
+
 interface splint_mcf
         module procedure splint_dp
 end interface
+
 private :: spline_dp, splint_dp
 
 CONTAINS !==========================================================
@@ -323,6 +348,8 @@ SUBROUTINE SPLINE_dp(X,Y,N,Y2,YP1,YPN)
 ! The array y2 is needed to evaluate the spline, but it only needs
 ! to be computed once.
 !
+implicit none
+
 integer, intent(in)                          :: n
 real(kind=dp), dimension(:), intent(in)  :: x, y
 real(kind=dp), dimension(:), intent(out) :: y2
@@ -383,6 +410,8 @@ SUBROUTINE SPLINT_dp(XA,YA,Y2A,N,X,Y)
 ! previously by routine spline, this routine computes the value
 ! at x of the interpolating spline. The value is returned in y.
 !
+implicit none
+
 integer, intent(in)                          :: n
 real(kind=dp), dimension(:), intent(in)  :: xa, ya, y2a
 real(kind=dp), intent(in)                :: x
@@ -428,9 +457,12 @@ module mcf_interpoli
 use m_interpoli_sp
 use m_interpoli_dp
 
+implicit none
+
 public
 
 end module mcf_interpoli
+
 module mcf_spline
 !
 ! Spline interpolation
@@ -438,6 +470,8 @@ module mcf_spline
 
 use m_spline_sp
 use m_spline_dp
+
+implicit none
 
 public
 

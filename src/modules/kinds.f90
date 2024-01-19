@@ -1,5 +1,7 @@
 module kinds
 
+  implicit none
+
   INTEGER, PARAMETER :: DP = selected_real_kind(14,200)
   INTEGER, PARAMETER :: sgl = selected_real_kind(6,30)
   INTEGER, PARAMETER :: SP = sgl

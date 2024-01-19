@@ -10,6 +10,8 @@ subroutine intw_complex_ylmr2 (lmax, ng, g, gg, ylm)
   use intw_useful_constants, only: pi,tpi,fpi
   use intw_utility, only: errore
 
+  implicit none
+
   integer, intent(in) :: lmax, ng
   real(DP), intent(in) :: g (3, ng), gg (ng)
   complex(DP), intent(out) :: ylm (:,:) ! dimensions must be, (ng, (lmax+1)**2 )

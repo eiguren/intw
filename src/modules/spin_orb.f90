@@ -3,6 +3,8 @@ MODULE intw_spin_orb
   USE kinds, ONLY: DP
   USE intw_pseudo, ONLY : lmaxx
 
+  implicit none
+
   SAVE
   !
   ! variables
