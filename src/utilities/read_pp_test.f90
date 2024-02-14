@@ -17,7 +17,7 @@ program ep_melements
 
   logical                  :: read_status
   character(256)           :: method
- 
+
   integer :: is, ir
   !================================================================================
   !       Talk to the user
@@ -41,7 +41,7 @@ program ep_melements
   endif
 
   call read_parameters_data_file_xml()
- 
+
   call read_all_pseudo ()
 
 20 format(A)

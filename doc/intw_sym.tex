@@ -1,4 +1,3 @@
-
 \documentclass[aps,prb,preprint,superscriptaddress,showpacs,showkeys]{revtex4-2}  
 %\documentclass[aps,prb,twocolumn,superscriptaddress,showpacs,showkeys]{revtex4-2}  
 \bibliographystyle{apsrev4-2}
@@ -26,7 +25,7 @@
 %\preprint{}
 
 %Title of paper
-\title{Summary of symmetries in INTW}
+\title{Summary of symmetries in INTW matrix elements}
 
 
 
@@ -76,10 +75,14 @@ Paseo Manuel de Lardiz\'abal 5, 20018 Donostia-San Sebasti\'an, Spain}}
 We consider $\mathbf{k} \in \mathcal{M}_f$ to be the wavevectors in the full mesh of the 1BZ and 
 $\mathbf{k}_s \in \mathcal{M}_i$ to be the wavevectors in the irreducible wedge of the 1BZ.
 
-The symmetry elements are $\mathcal{S} = \{R | \mathbf{\tau} \}$ without time reversal (TR)
-or $\mathcal{S} = \mathcal{T} \{R| \mathbf{\tau} \}$ with 
+The symmetry elements are $\mathcal{S} = \{R | \mathbf{\tau} \} = \mathcal{R} $ without time reversal (TR)
+or $\mathcal{S} = \mathcal{T} \{R| \mathbf{\tau} \} = \mathcal{TR} $ with 
 time reversal, where $\{R|\tau \}$ is an element of the space group of the crystal such that it 
-transforms positions as $\mathbf{r}' = R \mathbf{r} - \mathbf{\tau} $. 
+transforms positions as:
+\begin{itemize}
+\item $\mathbf{r}' = R \mathbf{r} - \mathbf{\tau} $ (conventional notation)
+\item $\mathbf{r}' = R (\mathbf{r} + \mathbf{\tau} )$ (QE notation)
+\end{itemize}
 
 The $\mathbf{k} \in \mathcal{M}_f$ are linked to the $\mathbf{k}_s \in \mathcal{M}_i$ vectors 
 by symmetry operations. We say they are ``symlinked'' by an operation $\mathcal{S}$ when 
@@ -87,21 +90,34 @@ we can write $R \mathbf{k_s} = \mathbf{k} + \mathbf{G}_s$ with TR or
 $-R \mathbf{k_s} = \mathbf{k} + \mathbf{G}_s$ without TR, 
 where $\mathbf{G}_s$ is a vector of the crystal reciprocal lattice. 
 
-The choice of an $\mathcal{S}$ operation to connect a $k$ and a $k_s$ may not be unique. 
+The choice of an $\mathcal{S}$ operation to connect a $\mathbf{k}$ and a $\mathbf{k}_s$ may not be unique. 
 In the INTW implementation we nevertheless set a given symlink, which will fix the 
 wavefunction phase.
 
 Transformation by $\mathcal{S}=\{ R|\tau \}$ of a real-space vector, a wavefunction and 
-an operator:
+an operator 
+\begin{itemize}
+\item in the conventional notation:
 \begin{align}
-\mathbf{r}' & = \mathcal{S}^{-1} \mathbf{r} \mathcal{S} \equiv \mathcal{S}\mathbf{r} 
+\mathbf{r}' & = \mathcal{S}^{-1} \mathbf{r} \mathcal{S} \equiv \mathcal{S}\mathbf{r}
 = \{ R|\tau \}  \mathbf{r} = R  \mathbf{r} - \tau \\
-  \psi'( \mathbf{r} ) & = \psi ( \mathcal{S}^{-1} \mathbf{r} ) = \psi ( \{ R^{-1}| -R^{-1}\tau \}  \mathbf{r} ) = 
+  \psi'( \mathbf{r} ) & = \psi ( \mathcal{S}^{-1} \mathbf{r} ) = \psi ( \{ R^{-1}| -R^{-1}\tau \}  \mathbf{r} ) =
   \psi (R^{-1}(\mathbf{r}+\tau))  \\
-\mathcal{O}'( \mathbf{r} ) &= \mathcal{S}^{-1} \mathcal{O}( \mathbf{r} ) \mathcal{S} = 
-\mathcal{O}( \mathcal{S}^{-1} \mathbf{r} \mathcal{S} ) \equiv 
+\mathcal{O}'( \mathbf{r} ) &= \mathcal{S}^{-1} \mathcal{O}( \mathbf{r} ) \mathcal{S} =
+\mathcal{O}( \mathcal{S}^{-1} \mathbf{r} \mathcal{S} ) \equiv
 \mathcal{O}( \mathcal{S}\mathbf{r}) = \mathcal{O}(R  \mathbf{r} - \tau)
 \end{align}
+\item in the QE notation:
+\begin{align}
+\mathbf{r}' & = \mathcal{S}^{-1} \mathbf{r} \mathcal{S} \equiv \mathcal{S}\mathbf{r} 
+= \{ R|\tau \}  \mathbf{r} = R (\mathbf{r} + \tau) \\
+  \psi'( \mathbf{r} ) & = \psi ( \mathcal{S}^{-1} \mathbf{r} ) = \psi ( \{ R^{-1}| -R\tau \}  \mathbf{r} ) = 
+  \psi (R^{-1}\mathbf{r} - \tau)  \\
+\mathcal{O}'( \mathbf{r} ) &= \mathcal{S}^{-1} \mathcal{O}( \mathbf{r} ) \mathcal{S} = 
+\mathcal{O}( \mathcal{S}^{-1} \mathbf{r} \mathcal{S} ) \equiv 
+\mathcal{O}( \mathcal{S}\mathbf{r}) = \mathcal{O}(R (\mathbf{r} + \tau))
+\end{align}
+\end{itemize}
 
 %======================================================
 
@@ -115,57 +131,64 @@ u_{n\mathbf{k}} (\mathbf{r}) & = \sum_{\mathbf{G}} e^{i\mathbf{G}\cdot\mathbf{r}
 \end{align}
 where the sum runs over reciprocal lattice vectors.
 
-Without TR, we have $R \mathbf{k_s} = \mathbf{k} + \mathbf{G}_s$:
+Without TR, we have $R \mathbf{k_s} = \mathbf{k} + \mathbf{G}_s$. Following the QE notation:
 \begin{align}
-\{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) & = \psi_{n \mathbf{k_s}}(R^{-1}(\mathbf{r}+\mathbf{\tau}))  = \\
-& = e^{i\mathbf{k}_s \cdot R^{-1}(\mathbf{r}+\mathbf{\tau})} u_{n\mathbf{k}_s} (R^{-1}(\mathbf{r}+\mathbf{\tau})) = \\
-& = e^{i\mathbf{k}_s \cdot R^{-1}(\mathbf{r}+\mathbf{\tau})} \sum_{\mathbf{G}}  e^{i\mathbf{G}\cdot R^{-1}(\mathbf{r}+\mathbf{\tau})} 
+\{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) & = \psi_{n \mathbf{k_s}}(R^{-1}\mathbf{r}-\mathbf{\tau})  = \\
+& = e^{i\mathbf{k}_s \cdot (R^{-1}\mathbf{r}-\mathbf{\tau})} u_{n\mathbf{k}_s} (R^{-1}\mathbf{r}-\mathbf{\tau}) = \\
+& = e^{i\mathbf{k}_s \cdot (R^{-1}\mathbf{r}-\mathbf{\tau})} 
+   \sum_{\mathbf{G}} e^{i\mathbf{G}\cdot (R^{-1}\mathbf{r}-\mathbf{\tau})} 
    \tilde u_{n\mathbf{k}_s} (\mathbf{G}) = \\
-& = e^{i R \mathbf{k}_s \cdot (\mathbf{r}+\mathbf{\tau})} \sum_{\mathbf{G}}  e^{i R \mathbf{G}\cdot (\mathbf{r}+\mathbf{\tau}) }
+& = e^{i R \mathbf{k}_s \cdot \mathbf{r}} e^{-i \mathbf{k}_s \cdot \tau} 
+   \sum_{\mathbf{G}}  e^{i R \mathbf{G}\cdot \mathbf{r}} e^{-i \mathbf{G}\cdot\mathbf{\tau} }
    \tilde u_{n\mathbf{k}_s} (\mathbf{G}) = \\
-& = e^{i \mathbf{k} \cdot (\mathbf{r}+\mathbf{\tau})} \sum_{\mathbf{G}} 
-    e^{i ( R \mathbf{G} + {\mathbf{G}_s} ) \cdot (\mathbf{r}+\mathbf{\tau})} \tilde u_{n\mathbf{k}_s} (\mathbf{G}) = \\
+& = e^{i \mathbf{k} \cdot \mathbf{r} } e^{-i\mathbf{k}_s \cdot \mathbf{\tau}}
+   \sum_{\mathbf{G}} e^{i ( R \mathbf{G} + {\mathbf{G}_s} ) \cdot \mathbf{r} }
+   e^{-i \mathbf{G}\cdot\mathbf{\tau} } \tilde u_{n\mathbf{k}_s} (\mathbf{G}) = \\
 & = e^{i \mathbf{k} \cdot \mathbf{r} } u_{n\mathbf{k}} (\mathbf{r}) = \psi_{n\mathbf{k}} (\mathbf{r}) 
 \label{eq:rot_noTR1}
 \end{align}
 where
 \begin{align}
-u_{n\mathbf{k}} (\mathbf{r}) & =  \sum_{\mathbf{G}} e^{i\mathbf{G}\cdot\mathbf{r}} \tilde u_{n\mathbf{k}} (\mathbf{G}) \\
-\tilde u_{n\mathbf{k}} (\mathbf{G}) & = e^{i(k + \mathbf{G}) \cdot \mathbf{\tau}} 
-  \tilde u_{n\mathbf{k}_s} ( R^{-1}( \mathbf{G} - \mathbf{G}_s) )
+u_{n\mathbf{k}} (\mathbf{r}) & =  \sum_{\mathbf{G}'} e^{i\mathbf{G}' \cdot \mathbf{r}} \tilde u_{n\mathbf{k}} (\mathbf{G'}) \\
+\tilde u_{n\mathbf{k}} (\mathbf{G}') & = e^{- i \mathbf{k}_s \cdot \mathbf{\tau}} 
+   e^{-i R^{-1}( \mathbf{G}' - \mathbf{G}_s) \cdot \mathbf{\tau}}
+  \tilde u_{n\mathbf{k}_s} ( R^{-1}( \mathbf{G}' - \mathbf{G}_s) ) 
+%\tilde u_{n\mathbf{k}} (R \mathbf{G} + {\mathbf{G}_s} ) & = e^{- i \mathbf{k}_s \cdot \mathbf{\tau}}  
+%   e^{-i \mathbf{G} \cdot \mathbf{\tau}} \tilde u_{n\mathbf{k}_s} (\mathbf{G}) 
 \label{eq:rot_noTR2}
 \end{align}
-
 
 With TR, we have $-R \mathbf{k_s} = \mathbf{k} + \mathbf{G}_s$:
 \begin{align}
 \mathcal{T} \{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) & =  \Big[ \{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) \Big]^* = \\
-& = \Big[ e^{i R \mathbf{k}_s \cdot (\mathbf{r}+\mathbf{\tau})} \sum_{\mathbf{G}}  
-    e^{i R \mathbf{G}\cdot (\mathbf{r}+\mathbf{\tau}) } \tilde u_{n\mathbf{k}_s} (\mathbf{G})  \Big]^* = \\
-& = e^{ (\mathbf{k} + \mathbf{G}_s) \cdot (\mathbf{r}+\mathbf{\tau}) } \sum_{\mathbf{G}}  
-    e^{ - i R \mathbf{G}\cdot (\mathbf{r}+\mathbf{\tau}) } \tilde u_{n\mathbf{k}_s}^* (\mathbf{G}) = \\
+& = \Big[  e^{i R \mathbf{k}_s \cdot \mathbf{r}} e^{-i \mathbf{k}_s \cdot \tau}
+   \sum_{\mathbf{G}}  e^{i R \mathbf{G}\cdot \mathbf{r}} e^{-i \mathbf{G}\cdot\mathbf{\tau} }
+   \tilde u_{n\mathbf{k}_s} (\mathbf{G}) \Big]^* = \\
+& = e^{i (\mathbf{k} + \mathbf{G}_s) \cdot \mathbf{r}} e^{i \mathbf{k}_s \cdot \mathbf{\tau} } \sum_{\mathbf{G}}  
+    e^{ - i R \mathbf{G}\cdot \mathbf{r}}  e^{i \mathbf{G} \cdot \mathbf{\tau} } \tilde u_{n\mathbf{k}_s}^* (\mathbf{G}) = \\
 & = e^{i \mathbf{k} \cdot \mathbf{r} } u_{n\mathbf{k}} (\mathbf{r}) = \psi_{n\mathbf{k}} (\mathbf{r}) 
 \end{align}
-where
+where 
 \begin{align}
-u_{n\mathbf{k}} (\mathbf{r}) & =  \sum_{\mathbf{G}} e^{i\mathbf{G}\cdot\mathbf{r}} \tilde u_{n\mathbf{k}} (\mathbf{G}) \\
-\tilde u_{n\mathbf{k}} (\mathbf{G}) & = e^{i(k + \mathbf{G}) \cdot \mathbf{\tau}}  
-  \tilde u_{n\mathbf{k}_s}^* ( R^{-1}( \mathbf{G}_s - \mathbf{G}) )
+u_{n\mathbf{k}} (\mathbf{r}) & =  \sum_{\mathbf{G'}} e^{i\mathbf{G'}\cdot\mathbf{r}} \tilde u_{n\mathbf{k}} (\mathbf{G'}) \\
+\tilde u_{n\mathbf{k}} (\mathbf{G'}) & = e^{i \mathbf{k}_s \cdot \mathbf{\tau} } 
+   e^{i R^{-1}( \mathbf{G}_s - \mathbf{G}') \cdot \mathbf{\tau} }  
+  \tilde u_{n\mathbf{k}_s}^* ( R^{-1}( \mathbf{G}_s - \mathbf{G}') )
 \end{align}
 
-\textcolor{red}{rotate\_wfc\_test is implemented with $-\tau$, I think, but none of the tests 
-seems to pick up on the difference. With my version of rotate\_wfc I get wrong $M_{mn}$ for the 
-Si test, but I suspect that the error is a different one...}
+{\it Note}: the original routine rotate\_wfc\_test is implemented without 
+the global phase factor $e^{- i \mathbf{k}_s \cdot \mathbf{\tau}}$.
 
 
 As Lax states on page 293, the TR and point (or space) group operations commute. 
-Indeed, in the equation above, we see that 
+Indeed, in the equations above, we see that 
 \begin{align}
 \mathcal{T} \{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) =  
     \Big[ \{R| \mathbf{\tau} \} \psi_{n \mathbf{k_s}}(\mathbf{r}) \Big]^* = 
 \{R| \mathbf{\tau} \} \psi^*_{n \mathbf{k_s}}(\mathbf{r}) = 
     \{R| \mathbf{\tau} \} \mathcal{T} \psi_{n \mathbf{k_s}}(\mathbf{r})
 \end{align}
+
 
 \subsection{Spinor rotation}
 
@@ -181,41 +204,209 @@ the case of spinors. We write the spinor wavefunction as
 \end{align}
 Here, the transformations apply independently on the $\mathbf{r}$-dependent coordinates 
 and spin-$\frac{1}{2}$ states. On the latter, the improper part and the fractional translation of
-$\{R| \mathbf{\tau} \}$ have no effect. If we call $R_0$ to the pure rotation component of that 
+$\{R| \mathbf{\tau} \}$ have no effect. If we call $R^{(0)}$ to the pure rotation component of that 
 transformation, consisting of a counterclockwise rotation of an $\alpha$ angle around direction 
 $\hat n = (n_x, n_y, n_z)$, the rotated spin states will be given by the $2 \times 2$ matrix
 \begin{align}
-D_{1/2}(R_0) & = \cos\frac{\alpha}{2} \sigma_0 - i \sin\frac{\alpha}{2} \mathbf{\sigma}\cdot\hat{n} = \\
+D_{1/2}(R^{(0)}) & = \cos\frac{\alpha}{2} \sigma_0 - i \sin\frac{\alpha}{2} \mathbf{\sigma}\cdot\hat{n} = \\
 & = \begin{pmatrix}
-\cos\frac{\alpha}{2} -i n_z \sin\frac{\alpha}{2}   &   -i\sin\frac{\alpha}{2} (n_z -i n_y ) \\
--i\sin\frac{\alpha}{2} (n_z +i n_y )  &  \cos\frac{\alpha}{2} +i n_z \sin\frac{\alpha}{2} \\
+\cos\frac{\alpha}{2} -i n_z \sin\frac{\alpha}{2}   &   -\sin\frac{\alpha}{2} (n_y + i n_x ) \\
+-\sin\frac{\alpha}{2} (n_y -i n_x )  &  \cos\frac{\alpha}{2} +i n_z \sin\frac{\alpha}{2} \\
 \end{pmatrix}
+\label{eq:Srot}
 \end{align}
 applied on $\ket{\uparrow}=\binom{1}{0}$ and $\ket{\downarrow}=\binom{0}{1}$, where
 $\sigma_0$ is the $2 \times 2$ unit matrix and $\sigma_{x,y,z}$ are the Pauli matrices.
 
-\textcolor{red}{This transformation of the spinor is like multiplying this matrix on the 
-vector column of spinor components, not the proper part of the inverse $\{R| \mathbf{\tau} \}^{-1}$, 
-which is implemented in INTW now and seems to work...}
+\textcolor{red}{NOTE: I am writing above the transformation of the spinor by multiplying this matrix on the 
+vector column of spinor components. Instead, in INTW it is implemented with 
+the proper part of the inverse $\{R| \mathbf{\tau} \}^{-1}$, and that seems to work.
+As Asier says, the spin is like another variable, 
+so it should go with the inverse $(R^{(0)})^{-1}$.}
+
+
+\textcolor{red}{HOWEVER, I have a big DOUBT with this... when spinors are introduced, the suitable 
+symmetries are those of the {\bf double group} (DG), i.e. we have to include rotations by $2\pi$ which will invert the spin.
+In practice, this adds a global phase $e^{i\pi}$ to the wavefunction, so it will not have an effect on most
+applications, but it may have an effect on the rotation of matrix elements, I think. 
+In addition, there is another issue with a broader effect on INTW: the use of the inverse\_indices array, 
+which is constructed without considering the spin rotation. 
+Asier rotates the spins by calculating the angle $\alpha$ and axis $\hat n$ of the symmetry element, with 
+the convention that the rotation is anti-clockwise and the angle lies in $[-\pi,\pi]$. 
+I have observed for the cases with $\alpha=\pi$ (and so far not with other rotations), 
+where the rotation element is idempotent on the $\mathbf{r}$ degree
+of freedom, the property $R^{(0)}(R^{(0)})^{-1}=E$ ($E$ is the identity) is not meet for the spin part. 
+This needs to be taken into account when rotating matrix elements for spinors, but I am not sure how.
+I am also worried about the effect of the DG symmetry in other parts of the code.
+}
+
 
 With both point or space group element and TR, the spinor transforms as 
 \begin{align}
 \mathcal{T} \{R| \mathbf{\tau} \} \psi_{n\mathbf{k}}(\mathbf{r}) & = 
 \{R| \mathbf{\tau} \} \mathcal{T} \psi_{n\mathbf{k}}(\mathbf{r}) =  \\
-&= D_{1/2}(R_0) (i\sigma_y) 
-   \Big( [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^*  \ket{\uparrow} +
-         [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^* \ket{\downarrow}  \Big) = \\
-&= [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^*  
-   D_{1/2}(R_0) (i\sigma_y) \ket{\uparrow} +
-   [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^* 
-   D_{1/2}(R_0) (i\sigma_y) \ket{\downarrow} = \\
-&= - [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^*  
-   D_{1/2}(R_0) \ket{\downarrow} +
-   [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}(\mathbf{r}+\mathbf{\tau})) ]^* 
-   D_{1/2}(R_0) \ket{\uparrow} 
+&= D_{1/2}(R^{(0)}) (i\sigma_y) 
+   \Big( [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^*  \ket{\uparrow} +
+         [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^* \ket{\downarrow}  \Big) = \\
+&= [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^*  
+   D_{1/2}(R^{(0)}) (i\sigma_y) \ket{\uparrow} +
+   [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^* 
+   D_{1/2}(R^{(0)}) (i\sigma_y) \ket{\downarrow} = \\
+&= - [ \psi^\uparrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^*  
+   D_{1/2}(R^{(0)}) \ket{\downarrow} +
+   [ \psi^\downarrow_{n\mathbf{k}}(R^{-1}\mathbf{r}-\mathbf{\tau})) ]^* 
+   D_{1/2}(R^{(0)}) \ket{\uparrow} 
 \end{align}
 where $i\sigma_y$ is the TR operator for the spin degree of freedom.
 
+
+
+
+%======================================================
+
+\section{Rotation of $M_{mn}$}
+
+This is supposed to serve as a test for phase fixing in transformation of matrix elements, as only
+the overlap of wavefunctions is involved. We start from the usual definition
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) \equiv \braket{u_{m\mathbf{k}}|u_{n\mathbf{k}+\mathbf{b}}}
+\end{align}
+at $\mathbf{k} \in \mathcal{M}_f$. We want to write these overlaps by transformation of
+$M_{mn}(\mathbf{k}_s,\mathbf{b})$ with $\mathbf{k}_s \in \mathcal{M}_i$, such that
+$\mathbf{k}$ and $\mathbf{k}^s$ are symlinked by $\mathcal{S}$ as
+\begin{align}
+\mathcal{S} \psi_{m \mathbf{k}_s} (\mathbf{r}) & = \psi_{m \mathbf{k}} (\mathbf{r})
+\end{align}
+
+We start without TR, taking $\mathcal{S} = \{R|\tau\}$. Therefore,
+\begin{align}
+R \mathbf{k}_s & = \mathbf{k} + \mathbf{G}_s \\
+R^{-1} (\mathbf{k}+\mathbf{b}) & = \mathbf{k}_s + R^{-1} \mathbf{b} - R^{-1} \mathbf{G}_s
+\end{align}
+which will be useful later.
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) & = \braket{e^{-i\mathbf{k}\cdot\mathbf{r}} \psi_{m\mathbf{k}} |
+    e^{-i(\mathbf{k}+\mathbf{b})\cdot\mathbf{r}} \psi_{n\mathbf{k}+\mathbf{b}}} = \\
+&=  \braket{\psi_{m\mathbf{k}} | e^{-i\mathbf{b}\cdot\mathbf{r}}|\psi_{n\mathbf{k}+\mathbf{b}}} = \\
+&=  \braket{\mathcal{S} \psi_{m\mathbf{k}_s} |  e^{-i\mathbf{b}\cdot\mathbf{r}}| 
+            \mathcal{S} \mathcal{S}^{-1} \psi_{n\mathbf{k}+\mathbf{b}}} = \\
+&= \braket{\mathcal{S} \psi_{m\mathbf{k}_s} |  e^{-i\mathbf{b}\cdot\mathbf{r}}| 
+            \mathcal{S} \phi_{n\mathbf{k}_s+R^{-1}\mathbf{b}}}
+\end{align}
+Here we have defined the inverse transformation of $\psi_{n \mathbf{k}+\mathbf{b}}$
+using the $\phi$ notation to distinguish it from the wavefunctions $\psi$ obtained by {\it symlink}
+with the same wavevector. They are related by 
+\begin{align}
+\ket{ \mathcal{S}^{-1} \psi_{n \mathbf{k} + \mathbf{b}} }  & \equiv \ket { \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }  = \\
+&= \sum_{n_1} \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+      \ket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } }
+\end{align}
+This would be Evarestov eq. 3.8.12 and Lax eq. 3.7.1 for the particular case of the wavevector left 
+invariant by the rotation.
+In the case of spinors, each component transforms as
+\begin{align}
+\ket { \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}}^\sigma }  & = 
+   \sum_{n_1} \big( 
+      \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }^\uparrow | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}}^\uparrow } 
+    + \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }^\downarrow | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}}^\downarrow }  
+    \big)
+    \ket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }^\sigma  } = \\
+ &=  \sum_{n_1} \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+    \ket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }^\sigma  }
+,\quad \sigma = \uparrow, \downarrow
+\end{align}
+\textcolor{red}{Creo que esto es así, pero no estoy del todo segura.}
+
+We will deal with the calculation of the coefficients later.
+We continue:
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) & = \sum_{n_1} 
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} } 
+  \braket{\mathcal{S} \psi_{m\mathbf{k}_s} |  e^{-i\mathbf{b}\cdot\mathbf{r}} | \mathcal{S} \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } } = \\
+&= \sum_{n_1} 
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+  \int \mathrm{d}^3 \mathbf{r} \psi_{m\mathbf{k}_s}^* (R^{-1} \mathbf{r} - \tau) 
+       e^{-i\mathbf{b}\cdot\mathbf{r}} 
+       \psi_{n_1 \mathbf{k}_s +R^{-1}\mathbf{b}} (R^{-1} \mathbf{r} - \tau) = \\
+&= e^{-iR^{-1}\mathbf{b} \cdot \tau} e^{i(k_s + R^{-1}\mathbf{b}) \cdot \mathbf{L}} \sum_{n_1}
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+  \int \mathrm{d}^3 \mathbf{r}' \psi_{m\mathbf{k}_s}^* ( \mathbf{r}' )  e^{-iR^{-1}\mathbf{b}\cdot\mathbf{r}'} 
+       \psi_{n_1 \mathbf{k}_s +R^{-1}\mathbf{b}} ( \mathbf{r}' ) =  \\
+&= e^{-iR^{-1}\mathbf{b} \cdot \tau} e^{i(k_s + R^{-1}\mathbf{b}) \cdot \mathbf{L}}  \sum_{n_1}
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+  M_{mn_1} (\mathbf{k}_s, R^{-1}\mathbf{b} )
+\label{eq:Mmnrot}
+\end{align}
+where $\mathbf{L}$ is a lattice vector that accounts for the difference between the fractional 
+translations of $\mathcal{S}$ and  $\mathcal{S}^{-1}$ elements:
+\begin{align}
+\mathcal{S} & = \{ R | \tau \}  \quad \rightarrow \quad \mathcal{S}^{-1} = \{ R^{-1} | -R\tau \} \equiv \{ R^{-1} | \tau^i \} \\
+ \mathbf{L} & = \tau^i + R\tau
+\label{eq:Sinv_tau} 
+\end{align} 
+
+Now, the case with TR, where $\mathcal{S} = \mathcal{T} \{ R|\tau \}$. Therefore
+\begin{align}
+-R \mathbf{k}_s & = \mathbf{k} + \mathbf{G}_s \\
+-R^{-1}(\mathbf{k} + \mathbf{b}) & = \mathbf{k}_s - R^{-1}\mathbf{b} + R^{-1} \mathbf{G}_s \\
+\ket{\mathcal{S} \psi_{n \mathbf{k}+\mathbf{b}}} & = \ket{\phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} }
+\end{align}
+When applying $\mathcal{S}$, we must conjugate the wavefunctions in the integral:
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) & = 
+  \sum_{n_1}
+  \Big( \braket{ \psi_{n_1 \mathbf{k}_s-R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} } \Big)^*
+  \int \mathrm{d}^3 \mathbf{r} \psi_{m\mathbf{k}_s} (R^{-1} \mathbf{r} - \tau)
+       e^{-i\mathbf{b}\cdot\mathbf{r}}
+       \psi_{n_1 \mathbf{k}_s -R^{-1}\mathbf{b}}^* (R^{-1} \mathbf{r} - \tau) = \\
+&= e^{-iR^{-1}\mathbf{b} \cdot \tau} e^{i(k_s + R^{-1}\mathbf{b}) \cdot \mathbf{L}} \sum_{n_1}
+   \Big( \braket{ \psi_{n_1 \mathbf{k}_s-R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} } \Big)^*  \nonumber\\
+  & \int \mathrm{d}^3 \mathbf{r}' \psi_{m\mathbf{k}_s} (\mathbf{r}')
+       e^{-iR^{-1}\mathbf{b}\cdot\mathbf{r}'}
+       \psi_{n_1 \mathbf{k}_s -R^{-1}\mathbf{b}}^* ( \mathbf{r}' ) =  \\
+&= e^{-iR^{-1}\mathbf{b} \cdot \tau}  e^{i(k_s + R^{-1}\mathbf{b}) \cdot \mathbf{L}}  \sum_{n_1}
+   \Big( \braket{ \psi_{n_1 \mathbf{k}_s-R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} } 
+    M_{mn_1} (\mathbf{k}_s, -R^{-1}\mathbf{b} ) \Big)^* 
+\label{eq:Mmnrot_tr}
+\end{align}
+
+
+With spinors, the $M_{mn}$ elements are
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) & = \sum_{\sigma=\uparrow,\downarrow}  
+     \braket{u_{m\mathbf{k}^\sigma}|u_{n\mathbf{k}+\mathbf{b}}^\sigma} = \\
+& = \sum_{\sigma} \sum_{n_1} 
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+  \braket{ \big( \mathcal{S} \psi_{m\mathbf{k}_s} \big)^\sigma |  e^{-i\mathbf{b}\cdot\mathbf{r}} | 
+           \big( \mathcal{S} \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }\big)^\sigma  } 
+\end{align} 
+where
+\begin{align}
+\ket{ \big( \mathcal{S} \psi_{m\mathbf{k}_s} \big)^\sigma } & = \sum_{\sigma'} d^{\sigma\sigma'} 
+ \ket{ \mathcal{S} \psi_{m\mathbf{k}_s}^{\sigma'}} \ket{\sigma'}
+\end{align}
+Here, $d^{\sigma\sigma'}$ are the elements of the spin rotation matrix $D_{1/2}(R^{(0)})$ (Eq.~\ref{eq:Srot}).
+Substituting:
+\begin{align}
+M_{mn}(\mathbf{k},\mathbf{b}) & =  \sum_{\sigma} \sum_{n_1}
+  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }
+  \sum_{\sigma'\sigma''} (d^{\sigma\sigma'})^* \bra{\sigma'} 
+  \braket{ \mathcal{S} \psi_{m\mathbf{k}_s}^{\sigma'} |  e^{-i\mathbf{b}\cdot\mathbf{r}} |
+           \mathcal{S} \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} }^{\sigma''} } \ket{\sigma''} d^{\sigma\sigma''} 
+\end{align}
+Since 
+\begin{align}
+\sum_{\sigma} (d^{\sigma\sigma'})^* d^{\sigma\sigma''} = \delta_{\sigma'\sigma''}
+\end{align}
+we retrieve the same expression as Eq.~\ref{eq:Mmnrot} for the rotation of elements.
+
+In the case of TR in $\mathcal{S}$, the $d^{\sigma\sigma'}$ coefficients are those of 
+the $D_{1/2}(R^{(0)} i \sigma_y$ matrix.
+As this unitarity property is kept with this matrix, we get the same as  Eq.~\ref{eq:Mmnrot_tr}.
+
+\textcolor{red}{All of the above seems to work for all the tests I have tried except for SOC (Bi and GaAs).
+The cases that work, they work also with the coefficients pre-calculated as explained in the last section.
+Maybe the problem is in the double group issue mentioned above?.}
 
 
 %======================================================
@@ -243,7 +434,6 @@ part of the matrix elements in the analysis.
 Take a $\mathbf{q} \in \mathcal{M}_f^q$ such that it is ``symlinked'' to 
 $\mathbf{q}_s \in \mathcal{M}_i^q$ by $\mathcal{S}= \{ R|\tau \}$. Therefore, 
 $R \mathbf{q}_s = \mathbf{q} + \mathbf{G}_q$, with $\mathbf{G}_q$ a reciprocal lattice vector.
-The inverse symmetry element is $\mathcal{S}^{-1} = \{ R^{-1} | -R^{-1}\tau \}$.
 The local contribution matrix elements are
 \begin{align}
 M_{\alpha s \mathbf{q}}^{nm}(\mathbf{k}) & = \bra{ \mathcal{SS}^{-1} \psi_{n \mathbf{k}+\mathbf{q}}}   
@@ -260,6 +450,12 @@ where we have used $\mathcal{S}^\dagger = \mathcal{S}^{-1}$ and (see Haritz's Eq
 Here we see that we need to check the effect of $\mathcal{S}$ on the wavefunctions and 
 on the potential derivative.
 
+\textcolor{red}{NOTE: I think the steps above may be wrong if $\mathcal{S}$ has TR, because it would be antilinear. 
+If we have spinors, the $\mathcal{S}$ has to be applied to the spins rotation in the potential derivative components, too.
+On top of that, there is the double group issue.}
+
+
+
 \subsection{Effect of wavefunction rotation}
 
 We consider the transformed wavefunctions by $\mathcal{S}^{-1}$. 
@@ -274,22 +470,9 @@ R^{-1}(\mathbf{k}+\mathbf{q}) & = R^{-1}\mathbf{k}+R^{-1}\mathbf{q}  =
 \end{align}
 where $\mathbf{k}_1 \in \mathcal{M}_f^k$ and
 \begin{align}
-\phi_{n \mathbf{k}_1} (\mathbf{r}) & \equiv \mathcal{S}^{-1} \psi_{n \mathbf{k}} (\mathbf{r}) =  \\
-&= e^{i \mathbf{k}_1 \cdot \mathbf{r} }
-   \sum_\mathbf{G} e^{i \mathbf{G} \cdot \mathbf{r} } \tilde v_{n \mathbf{k}_1} (\mathbf{G}) \\
-\tilde v_{n \mathbf{k}_1}+(\mathbf{G}) & =
-   e^{-i(\mathbf{k}_1 \mathbf{G}) \cdot R^{-1}\tau }
-   \tilde u_{n \mathbf{k}} ( R(\mathbf{G}-\mathbf{G}_1))
-\end{align}
-and
-\begin{align}
+\phi_{n \mathbf{k}_1} (\mathbf{r}) & \equiv \mathcal{S}^{-1} \psi_{n \mathbf{k}} (\mathbf{r})  \\
 \phi_{n \mathbf{k}_1 + \mathbf{q}_s} (\mathbf{r}) & \equiv 
-   \mathcal{S}^{-1} \psi_{n \mathbf{k}+\mathbf{q}} (\mathbf{r}) = \\ 
-&= e^{i (\mathbf{k}_1 + \mathbf{q}_s) \cdot \mathbf{r} }
-   \sum_\mathbf{G} e^{i \mathbf{G} \cdot \mathbf{r} } \tilde v_{n \mathbf{k}_1 + \mathbf{q}_s} (\mathbf{G}) \\
-\tilde v_{n \mathbf{k}_1 + \mathbf{q}_s} (\mathbf{G}) & = 
-   e^{-i(\mathbf{k}_1 + \mathbf{q}_s +  \mathbf{G}) \cdot R^{-1}\tau }
-   \tilde u_{n \mathbf{k} + \mathbf{q}} ( R(\mathbf{G}-\mathbf{G}_1+R^{-1}\mathbf{G}_q))  
+   \mathcal{S}^{-1} \psi_{n \mathbf{k}+\mathbf{q}} (\mathbf{r}) 
 \end{align}
 The Bloch wavefunctions corresponding to states with wavevectors $\mathbf{k}_1$ and $\mathbf{k}_1+\mathbf{q}_s$
 can be calculated via symlink to states with $\mathbf{k}_1^s$ and $\mathbf{k}_2^s$, respectively, 
@@ -311,26 +494,8 @@ Therefore, we can write
 \label{eq:unitaryrot}
 \end{align}
 The ``known'' and ``sought'' e-ph matrix elements are those calculated with $\psi$ functions, 
-but by $\mathcal{S}^{-1}$ transformation we get the $\phi$ ones. Therefore, we have to undo the 
-unitary transformation Eq.~\ref{eq:unitaryrot}.
-
-\subsubsection{Undoing the unitary transformation}
-
-Note that $\mathbf{k}, \mathbf{k}_1, \mathbf{k}_1^s$ belong to the same star and thus the
-additional symlinks can be established (also for the $k+q$ side of the brakets):
-\begin{align}
-\mathcal{S}_0 \psi_{n \mathbf{k}_1^s} (\mathbf{r}) & = \psi_{n \mathbf{k}} (\mathbf{r}) \\
-\mathcal{S}'_0 \psi_{n \mathbf{k}_2^s} (\mathbf{r}) & = \psi_{n \mathbf{k} + \mathbf{q}} (\mathbf{r}) 
-\end{align}
-Therefore, the unitary transformation coefficients are
-\begin{align}
-\braket{ \psi_{n_1 \mathbf{k}_1} | \phi_{n  \mathbf{k}_1} } &= 
-   \braket{ \mathcal{S}_1 \psi_{n_1 \mathbf{k}_1^s} | \mathcal{S}^{-1} \psi_{n  \mathbf{k}} }  = \\
-&=  \braket{ \mathcal{S}_1 \psi_{n_1 \mathbf{k}_1^s} | \mathcal{S}^{-1} \mathcal{S}_0  \psi_{n_1 \mathbf{k}_1^s} } = \\
-&=  \bra{ \psi_{n_1 \mathbf{k}_1^s} }   \mathcal{S}_1^{-1} \mathcal{S}^{-1} \mathcal{S}_0 \ket{\psi_{n \mathbf{k}_1^s} }  \\
-\braket{ \psi_{n_2 \mathbf{k}_2} | \phi_{n  \mathbf{k}_2} } &= 
-  \bra{ \psi_{n_2 \mathbf{k}_2^s} }   \mathcal{S}_2^{-1} \mathcal{S}^{-1} \mathcal{S}'_0 \ket{\psi_{n \mathbf{k}_2^s} }
-\end{align}
+but by $\mathcal{S}^{-1}$ transformation we get the $\phi$ ones. Therefore, we have to ``undo'' the 
+unitary transformation Eq.~\ref{eq:unitaryrot} (see section~\ref{sec:trios}).
 
 
 \subsection{Effect of potential derivative rotation}
@@ -343,10 +508,10 @@ Since  $R\mathbf{q_s} = \mathbf{q} + \mathbf{G}_q$, the rotated local potential 
    \tilde v_s (\mathbf{q}+\mathbf{G}) e^{ i(\mathbf{q}+\mathbf{G}) \cdot (R\mathbf{r}-\tau) } = \\
 &= -i\sum_{\mathbf{G}} (R\mathbf{q_s} + \mathbf{G} - \mathbf{G}_q)_\alpha 
    \tilde v_s (R\mathbf{q_s} + \mathbf{G} - \mathbf{G}_q) 
-   e^{ i( R\mathbf{q_s} + \mathbf{G} - \mathbf{G}_q ) \cdot (R\mathbf{r}-\tau) } = \\
+   e^{ i( R\mathbf{q_s} + \mathbf{G} - \mathbf{G}_q ) \cdot R(\mathbf{r}+\tau) } = \\
 &= -i\sum_{\mathbf{G}} (R\mathbf{q_s} + \mathbf{G})_\alpha 
    \tilde v_s (R\mathbf{q_s} + \mathbf{G}) 
-   e^{ i( R \mathbf{q_s} + \mathbf{G}) \cdot (R\mathbf{r}-\tau) } 
+   e^{ i( R \mathbf{q_s} + \mathbf{G}) \cdot R(\mathbf{r}+\tau) } 
 \end{align}
 where we have changed the sum over $G$ to $G-G_q$, and now we are going to change it to a sum over $R^{-1}G$.
 We also write explicitly the Fourier components for the $s$-th atom, which is at position $\tau_s$ in the unit cell, 
@@ -357,13 +522,13 @@ according to Haritz's Eq.~(40) (square brakets):
    e^{ i(\mathbf{q_s} + R^{-1}\mathbf{G}) \cdot ( \mathbf{r}-R^{-1}\tau)}  = \\
 &= -i \sum_{\mathbf{G}} ( R(\mathbf{q_s} + \mathbf{G}) )_\alpha 
    \tilde v_s ( R(\mathbf{q_s} + \mathbf{G}) ) 
-   e^{ i(\mathbf{q_s} + \mathbf{G}) \cdot ( \mathbf{r}-R^{-1}\tau)}  = \\
+   e^{ i(\mathbf{q_s} + \mathbf{G}) \cdot ( \mathbf{r}+\tau)}  = \\
 &= -i \sum_{\mathbf{G}} \sum_\beta R^{cart}_{\alpha\beta}(\mathbf{q_s} + \mathbf{G})_\beta 
    \Big[ e^{-i R(\mathbf{q_s} + \mathbf{G}) \cdot \tau_s } \frac{1}{\Omega}
    \int \mathrm{d}^3 \mathbf{r}' v_s(\mathbf{r}') e^{-i R(\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{r}'}  \Big]
-   e^{i (\mathbf{q_s} + \mathbf{G}) \cdot ( \mathbf{r}-R^{-1}\tau)}  = \\
+   e^{i (\mathbf{q_s} + \mathbf{G}) \cdot ( \mathbf{r}+\tau)}  = \\
 &= -i \sum_\beta \sum_{\mathbf{G}} R^{cart}_{\alpha\beta}(\mathbf{q_s} + \mathbf{G})_\beta 
-   e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot R^{-1}( \tau_s + \tau) } 
+   e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot (R^{-1} \tau_s - \tau) } 
    \Big[ \frac{1}{\Omega}
    \int \mathrm{d}^3 \mathbf{r}' v_s (\mathbf{r}') e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot R^{-1}\mathbf{r}' }  \Big]
    e^{i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{r} }
@@ -371,123 +536,249 @@ according to Haritz's Eq.~(40) (square brakets):
 Since $v_s$ is the isolated atom pseudopotential, it is rotationally invariant, so doing the change 
 $\mathbf{r}'' = R^{-1} \mathbf{r}'$ the integral term becomes
 \begin{align}
- \frac{|R|}{\Omega} \int \mathrm{d}^3 \mathbf{r}''  v_s (\mathbf{r}'') e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{r}'' } 
+ \frac{1}{\Omega} \int \mathrm{d}^3 \mathbf{r}''  v_s (\mathbf{r}'') e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{r}'' } 
 \end{align}
-We take the $s'$-th related to $s$ by the symmetry operation $\mathcal{S}^{-1}$ as 
+We take the $s'$-th atom related to $s$ by the symmetry operation $\mathcal{S}^{-1}$ as 
 \begin{align}
-\tau_{s'} = R^{-1}(\tau_s + \tau) + \mathbf{L}
+\tau_{s'} = R^{-1} \tau_s - \tau + \mathbf{L}
 \end{align} 
 where $\mathbf{L}$ is a direct lattice vector. Since they are the same species, $v_s(\mathbf{r}) = v_{s'}(\mathbf{r})$.
 Substituting above, we obtain $\tilde v_{s'} (\mathbf{q_s} + \mathbf{G})$ 
 coefficients multiplied by the extra phase factor 
-$e^{-i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{L} } = e^{-i \mathbf{q_s} \cdot \mathbf{L} }$. Finally
+$e^{i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{L} } = e^{i \mathbf{q_s} \cdot \mathbf{L} }$. Finally
 \begin{align}
 \mathcal{S}^{-1} & \partial^\alpha_{s \mathbf{q}} V^{loc}(\mathbf{r})\mathcal{S} = \\
- &= -i |R| \sum_\beta \sum_{\mathbf{G}} R^{cart}_{\alpha\beta}(\mathbf{q_s} + \mathbf{G})_\beta
-   e^{-i \mathbf{q_s} \cdot \mathbf{L} }  \tilde v_{s'} (\mathbf{q_s} + \mathbf{G}) 
+ &= -i  \sum_\beta \sum_{\mathbf{G}} R^{cart}_{\alpha\beta}(\mathbf{q_s} + \mathbf{G})_\beta
+   e^{i \mathbf{q_s} \cdot \mathbf{L} }  \tilde v_{s'} (\mathbf{q_s} + \mathbf{G}) 
    e^{i (\mathbf{q_s} + \mathbf{G}) \cdot \mathbf{r} } = \\
- &=  -i |R| e^{-i \mathbf{q_s} \cdot \mathbf{L} }   \sum_\beta R^{cart}_{\alpha\beta}  
+ &=    e^{i \mathbf{q_s} \cdot \mathbf{L} }   \sum_\beta R^{cart}_{\alpha\beta}  
     \partial^\beta_{s' \mathbf{q}_s} V^{loc}(\mathbf{r})
 \end{align}
+
+\textcolor{red}{It remains to see what happens if $\mathcal{S}$ involves TR and non-local terms. 
+For the non-local term, I do not think any new factor will appear (the $e^{i \mathbf{q_s} \cdot \mathbf{L} }$
+phase is associated to each atom, not each $\mathbf{r}$ or $\mathbf{r}'$ variable). 
+For the TR case, since the potential derivative is a real operator, I do not think anything different will occur, 
+at least in the no-spinor case.
+Is that true?. }
 
 
 \subsection{Full transformation}
 
 Putting together the wavefunction and operator transformations we get
 \begin{align}
-\mathcal{S}^{-1} & \partial^\alpha_{s \mathbf{q}} V^{loc}(\mathbf{r})\mathcal{S} = 
-   \partial^\alpha_{s \mathbf{q}} V^{loc}(\{R|\tau\} \mathbf{r})  = \\
-&= -i|R|  e^{-i \mathbf{q_s} \cdot \mathbf{L} }  
-   \sum_{n_1m_1}  
-\bra{ \psi_{n \mathbf{k}_2^s} }  \mathcal{S'}_0^{-1} \mathcal{S} \mathcal{S}_2 \ket{\psi_{n_1 \mathbf{k}_2^s} }
-\bra{ \psi_{m_1 \mathbf{k}_1^s} }  \mathcal{S}_1^{-1} \mathcal{S}^{-1} \mathcal{S}_0 \ket{\psi_{m \mathbf{k}_1^s} }
-   \sum_\beta R^{cart}_{\alpha\beta}  \nonumber\\
-&   \bra{\psi_{n_1 \mathbf{k}_1 + \mathbf{q}_s}}
-       \partial^\beta_{s' \mathbf{q}_s} V^{loc}(\mathbf{r})
-   \ket{\psi_{m_1 \mathbf{k}_1}}
+M_{\alpha s \mathbf{q}}^{nm}(\mathbf{k}) & = 
+  \braket{ \phi_{n \mathbf{k}_1+\mathbf{q}_s} 
+   | \mathcal{S}^{-1} \partial^\alpha_{s \mathbf{q}} V^{loc} \mathcal{S} |
+     \phi_{m \mathbf{k}_1} } = \\ 
+&=  e^{i \mathbf{q_s} \cdot \mathbf{L} }  \sum_{n_1m_1} 
+ \braket{ \phi_{n \mathbf{k}_1+\mathbf{q}_s} | \psi_{n_1 \mathbf{k}_1+\mathbf{q}_s} }
+ \braket{ \psi_{m_1 \mathbf{k}_1} | \phi_{m \mathbf{k}_1} }
+ \sum_\beta R^{cart}_{\alpha\beta} 
+ \braket{ \psi_{n_1 \mathbf{k}_1+\mathbf{q}_s} 
+         |  \partial^\beta_{s' \mathbf{q}_s} V^{loc}(\mathbf{r})  |
+          \psi_{m_1 \mathbf{k}_1 } } 
+\label{eq:ep_rotate}
 \end{align}
-where $\mathbf{q}$ is symlinked to $\mathbf{q}_s$ by $\mathcal{S} = \{R | \tau \}$,
-$\mathbf{k} + \mathbf{q}$ is symlinked to $\mathbf{k}_2^s$ by $\mathcal{S'}_0$,
-$\mathbf{k}$ is symlinked to $\mathbf{k}_1^s$ by $\mathcal{S}_0$, 
-$\mathbf{k}_1 + \mathbf{q}_1$ is symlinked to $\mathbf{k}_2^s$ by $\mathcal{S}_2$,
-$\mathbf{k}_1$ is symlinked to $\mathbf{k}_1^s$ by $\mathcal{S}_1$,
-and the atoms are transformed as $\tau_s'=\mathcal{S}^{-1}\tau_s$.
+where $\mathbf{q}$ is symlinked to $\mathbf{q}_s$ by $\mathcal{S} = \{R | \tau \}$ and 
+the atoms are transformed as $\tau_s'=\mathcal{S}^{-1}\tau_s$.
 
-
-
-\textcolor{blue}{TODO See what happens if $\mathcal{S}$ involves TR, spinors and non-local terms.}
-
-%======================================================
-
-\section{Rotation of $M_{mn}$}
-
-This is supposed to serve as a test for phase fixing in transformation of matrix elements, as only
-the overlap of wavefunctions is involved. We start from the usual definition
+In the case with spinors, we have to rotate the spin indices of the operator, too, as follows:
 \begin{align}
-M_{mn}(\mathbf{k},\mathbf{b}) \equiv \braket{u_{m\mathbf{k}}|u_{n\mathbf{k}+\mathbf{b}}}
+\psi_{m\mathbf{k}}(\mathbf{r}) & = \mathcal{S} \phi_{m\mathbf{k}_1}(\mathbf{r}) = \\
+&= D_{1/2}(\mathcal{S}) \Big( \phi_{m\mathbf{k}_1}(\mathcal{S}^{-1}\mathbf{r})^\uparrow \ket{\uparrow} + 
+  \phi_{m\mathbf{k}_1}(\mathcal{S}^{-1}\mathbf{r})^\downarrow \ket{\downarrow}  \Big) \\
+\psi_{m\mathbf{k}}(\mathbf{r})^\sigma &= \sum_{\sigma_1} D_{1/2}^{\sigma\sigma_1}(\mathcal{S}) i
+  \phi_{m\mathbf{k}_1}^{\sigma_1}(\mathcal{S}^{-1}\mathbf{r})
+\label{eq:ep_elem_full}
 \end{align}
-at $\mathbf{k} \in \mathcal{M}_f$. We want to write these overlaps by transformation of 
-$M_{mn}(\mathbf{k}^s,\mathbf{b})$ with $\mathbf{k}^s \in \mathcal{M}_i$, such that 
-$\mathbf{k}$ and $\mathbf{k}^s$ are symlinked by $\mathcal{S}$ as
+Thefore, the rotated matrix element for spins $\sigma,\pi$ is (already generalized for non-local):
 \begin{align}
-\mathcal{S} \psi_{m \mathbf{k}^s} (\mathbf{r}) & = \psi_{m \mathbf{k}} (\mathbf{r})
+M_{\alpha s \mathbf{q}}^{nm,\sigma\pi}(\mathbf{k}) & = 
+  \braket{ \phi_{n \mathbf{k}_1+\mathbf{q}_s}^\sigma
+   | \mathcal{S}^{-1} \partial^\alpha_{s \mathbf{q}} V \mathcal{S} |
+     \phi_{m \mathbf{k}_1}^\pi } = \\
+& = \sum_{\sigma_1\pi_1} \Big( D_{1/2}^{\sigma\sigma_1}(\mathcal{S}) \Big)^* D_{1/2}^{\pi\pi_1}(\mathcal{S}) 
+  \int \int \mathrm{d}^3\mathbf{r} \mathrm{d}^3\mathbf{r}' 
+  \Big( \phi_{n \mathbf{k}_1+\mathbf{q}_s}^{\sigma_1} (\mathcal{S}^{-1}\mathbf{r} )  \Big)^*  
+  \partial^\alpha_{s \mathbf{q}} V (\mathbf{r},\mathbf{r}') 
+  \phi_{m \mathbf{k}_1}^{\pi_1} (\mathcal{S}^{-1}\mathbf{r}' ) = \\
+& = \sum_{\sigma_1\pi_1} \Big( D_{1/2}^{\sigma\sigma_1}(\mathcal{S}) \Big)^* D_{1/2}^{\pi\pi_1}(\mathcal{S})   
+M_{\alpha s \mathbf{q}}^{nm,\sigma_1\pi_1}(\mathbf{k}) 
 \end{align}
-
-We start without TR, taking $\mathcal{S} = \{R|\tau\}$. Therefore, 
-\begin{align}
-R \mathbf{k}_s & = \mathbf{k} + \mathbf{G}_s \\
-R^{-1} (\mathbf{k}+\mathbf{b}) & = \mathbf{k}_s + R^{-1} \mathbf{b} - R^{-1} \mathbf{G}_s 
-\end{align}
-which will be useful later.
-\begin{align}
-M_{mn}(\mathbf{k},\mathbf{b}) & = \braket{e^{-i\mathbf{k}\cdot\mathbf{r}} \psi_{m\mathbf{k}} | 
-    e^{-i(\mathbf{k}+\mathbf{b})\cdot\mathbf{r}} \psi_{n\mathbf{k}+\mathbf{b}}} = \\
-&=  \braket{\psi_{m\mathbf{k}} | e^{-i\mathbf{b}\cdot\mathbf{r}}|\psi_{n\mathbf{k}+\mathbf{b}}} = \\
-&=  \braket{\mathcal{S} \psi_{m\mathbf{k}_s} |  e^{-i\mathbf{b}\cdot\mathbf{r}}|\psi_{n\mathbf{k}+\mathbf{b}}} = \\
-&=  \braket{ \psi_{m\mathbf{k}_s} | \mathcal{S}^{-1} e^{-i\mathbf{b}\cdot\mathbf{r}} \mathcal{S} 
-            \mathcal{S}^{-1} | \psi_{n\mathbf{k}+\mathbf{b}}} = \\
-&=  \braket{ \psi_{m\mathbf{k}_s} | e^{-i\mathbf{b}\cdot\mathcal{S}\mathbf{r}} | 
-            \mathcal{S}^{-1} \psi_{n\mathbf{k}+\mathbf{b}}} = \\
-&=  \braket{ \psi_{m\mathbf{k}_s} | e^{-i\mathbf{b}\cdot(R\mathbf{r}-\tau)} | \phi_{n\mathbf{k}_s+R^{-1}\mathbf{b}}} = \\
-&=  e^{i\mathbf{b}\cdot\tau} \braket{ \psi_{m\mathbf{k}_s} | e^{-iR^{-1}\mathbf{b}\cdot\mathbf{r}} | 
-           \phi_{n\mathbf{k}_s+R^{-1}\mathbf{b}}} 
-\end{align}
-Here we have defined the inverse transformation of $\psi_{n \mathbf{k}+\mathbf{b}}$ 
-(using the $\phi$ notation because it is not a symlink) as
-\begin{align}
-\ket{ \mathcal{S}^{-1} \psi_{n \mathbf{k} + \mathbf{b}} }  & \equiv \ket { \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} }  = \\
-&= \sum_{n_1} \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} } 
-      \ket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } } = \\
-&= \sum_{n_1} \braket{ \psi_{n_1 \mathbf{k}_1^s} | \mathcal{S}_1^{-1} \mathcal{S}^{-1} \mathcal{S}_0 | \psi_{n \mathbf{k}_1^s} } 
-      \ket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } }
-\end{align}
-where we have used the symlinks $\mathcal{S}_1$ and $\mathcal{S}_0$, respectively, 
-of wavevectors $\mathbf{k}_s+R^{-1}\mathbf{b}$ and $\mathbf{k}+\mathbf{b}$, 
-which belong to the same start, to the wavevector $\mathbf{k}_1^s \in \mathcal{M}_i$. Therefore,
-\begin{align}
-M_{mn}(\mathbf{k},\mathbf{b}) & = e^{i\mathbf{b}\cdot\tau} \sum_{n_1} 
-  \braket{ \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s+R^{-1}\mathbf{b}} } 
-  \braket{ \psi_{m\mathbf{k}_s} | e^{-iR^{-1}\mathbf{b}\cdot\mathbf{r}} | \psi_{n_1 \mathbf{k}_s+R^{-1}\mathbf{b} } } = \\
-&= e^{i\mathbf{b}\cdot\tau} \sum_{n_1}
-  \braket{ \psi_{n_1 \mathbf{k}_1^s} | \mathcal{S}_1^{-1} \mathcal{S}^{-1} \mathcal{S}_0 | \psi_{n \mathbf{k}_1^s} }
-  M_{m n_1}(\mathbf{k}_s, R^{-1}\mathbf{b})
-\end{align}
-
-With TR we apply $\mathcal{S} = \mathcal{T} \{ R|\tau \}$. Therefore 
-\begin{align}
--R \mathbf{k}_s & = \mathbf{k} + \mathbf{G}_s \\
--R^{-1}(\mathbf{k} + \mathbf{b}) & = \mathbf{k}_s - R^{-1}\mathbf{b} + R^{-1} \mathbf{G}_s \\
-\mathcal{S}^{-1} e^{-i \mathbf{b} \cdot \mathbf{r}} \mathcal{S} & = 
- \Big( e^{-i \mathbf{b} \cdot \{R|\tau\} \mathbf{r}} \Big)^* = 
-  e^{i \mathbf{b} \cdot \{R|\tau\} \mathbf{r}}  \\
-\ket{ \mathcal{S}^{-1} \psi_{n \mathbf{k} + \mathbf{b}} }  & = \ket { \phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} } \\
-M_{mn}(\mathbf{k},\mathbf{b}) & = e^{-i\mathbf{b}\cdot\tau} \sum_{n_1}
-  \braket{ \psi_{n_1 \mathbf{k}_s-R^{-1}\mathbf{b} } | \phi_{n \mathbf{k}_s-R^{-1}\mathbf{b}} }
-  M_{m n_1}(\mathbf{k}_s, -R^{-1}\mathbf{b})
-\end{align}
+where the last matrix element is Eq.~\ref{eq:ep_elem_full} evaluated for spin components $\sigma_1\pi_1$. 
+If the $\mathcal{S}$ element contains TR, then we will need to multiply these $D_{1/2}$ rotation matrices by $i\sigma_y$.
 
 
-\textcolor{blue}{TODO see what happens for spinors}
+%=====================================
+
+\section{The unitary transformation}
+\label{sec:trios}
+
+In this section we calculate coefficients of type
+\begin{align}
+\braket{ \psi_{n \mathbf{k} } | \phi_{m \mathbf{k}} } = 
+\braket{ \mathcal{S}_1 \psi_{n \mathbf{k}_s} | \mathcal{S}^{-1} \mathcal{S}_0 \psi_{m \mathbf{k}_s} } 
+\label{eq:star_braket}
+\end{align}
+where $\psi$ and $\phi$ notations indicate wavefunctions obtained by symlink from a $k$-vector of 
+the irreducible list $\mathcal{M}_i$ and wavefunctions obtained by a given symmetry $\mathcal{S}$.
+By orthogonality of the wavefunctions, both sides of the braket belong to the same star, given 
+by an irreducible $k$-vector $\mathbf{k}_s$. 
+
+In the previous sections we have seen how to rotate matrix elements using this type of 
+coefficients. However, if we use expressions such as Eq.~\ref{eq:ep_rotate}, we would need 
+to calculate the coefficients for every $ \mathbf{k},  \mathbf{q}$ pair. 
+Alternatively, we can use the property Eq.~\ref{eq:star_braket}, which implies that 
+we need to calculate values only for the $\mathcal{M}_i$ list and only for the symmetry operations
+that meet some invariance properties.
+
+
+{\bf First, the basic case: no TR, no spinor, and only symmorphic symmetry elements.}
+\begin{align}
+\braket{ \psi_{n \mathbf{k} } | \phi_{m \mathbf{k}} } = 
+\braket{ \psi_{n \mathbf{k}_s} | R_1^{-1} R^{-1} R_0 \psi_{m \mathbf{k}_s} }
+\end{align}
+The coefficients define a unitary rotation of the wavefunctions at point $\mathbf{k}_s$.
+This will be non-zero for the trio of rotations $\tilde R = R_1^{-1} R^{-1} R_0$ such that 
+$\tilde R \mathbf{k}_s = \mathbf{k}_s + \mathbf{G}_s$, i.e. $\tilde R \in G_{\mathbf{k}_s}$.
+If $\tilde R = E$ (identity operator), the coefficients will be $e^{i\alpha} \delta_{nm}$ for 
+some global phase $\alpha$. 
+If $\tilde R \neq E$, band off-diagonal non-zero elements can appear. 
+Therefore, we only need to evaluate
+\begin{align}
+\braket{ \psi_{n \mathbf{k}_s} | \tilde R \psi_{m \mathbf{k}_s} }, \quad \tilde R \in G_{\mathbf{k}_s}
+\label{eq:sSs}
+\end{align}
+at the beginning of the calculation once and forall.
+
+\textcolor{red}{For sure this is the theorem of Evarestov's book page 77, but I 
+am a bit lost with their indices...}
+
+
+{\bf Second, suppose TR is allowed in the elements of the trio, but still no spinor and only symmorphic.}
+We will use the antilinearity property of the TR operator:
+\begin{align}
+\mathcal{T}^{-1} & = \mathcal{T}, \quad \mathcal{T}^2 = I, \quad \mathcal{T}R = R\mathcal{T} \\
+\braket{ \mathcal{T} \psi | \mathcal{T} \varphi} & = \braket{\varphi | \psi}  \\
+\braket{ \mathcal{T} \psi | \varphi} & = \braket{ \mathcal{T} \varphi | \psi } = \braket{ \psi | \mathcal{T} \varphi }^* 
+\end{align}
+We consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (1 or 0) in each:
+\begin{itemize} 
+\item $[000] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} R_0 \varphi} = \braket{ \psi | R_1^{-1} R^{-1} R_0 \varphi} \equiv a$ 
+\item $[010] \rightarrow$ $ \braket{ R_1 \psi | \mathcal{T} R^{-1} R_0 \varphi} = 
+   \braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} \equiv b$ 
+\item $[001] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = 
+   \braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} = b$ 
+\item $[100] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} R_0 \varphi} = 
+   \braket{  R_1 \psi |  \mathcal{T} R^{-1} R_0 \varphi}^* = b^* $
+\item $[011] \rightarrow$ $ \braket{ R_1 \psi | \mathcal{T} R^{-1} \mathcal{T} R_0 \varphi} = 
+    \braket{ R_1 \psi | \mathcal{T}^2 R^{-1} R_0 \varphi} = a $
+\item $[110]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | \mathcal{T} R^{-1} R_0 \varphi} = 
+    \braket{  R_1 \psi |  \mathcal{T} \mathcal{T} R^{-1} R_0 \varphi}^* = a^* $
+\item $[101]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = \dots = a^*$
+\item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | \mathcal{T} R^{-1}  \mathcal{T} R_0 \varphi} = \dots = b^*$
+\end{itemize} 
+
+
+{\bf Third, with spinors, symmorphic.} 
+The TR operator is $\mathcal{T} = i\sigma_y \mathcal{K}$, where the Pauli matrix acts on the spin 
+component and $\mathcal{K}$ is the complex conjugation acting on the wavefunctions. Therefore, 
+\begin{align}
+\mathcal{T}^{-1} & = - \mathcal{T} \quad \mathcal{T}^2 = -1 \quad \mathcal{T}R = R\mathcal{T} \\
+\braket{ \mathcal{T} \psi | \mathcal{T} \varphi} & = \braket{\varphi | \psi}  \\
+\braket{ \mathcal{T} \psi | \varphi} & = \braket{ \mathcal{T} \varphi |  \mathcal{T}^2 \psi} = 
+   - \braket{ \mathcal{T} \varphi |  \psi} = - \braket{ \psi | \mathcal{T} \varphi }^*  \\
+\end{align}
+Again, we consider the trios $[ S_1 S S_0 ]$  and whether TR is present or not (1 or 0) in each:
+\begin{itemize}
+\item $[000] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} R_0 \varphi} = \braket{ \psi | R_1^{-1} R^{-1} R_0 \varphi} \equiv a$
+\item $[010] \rightarrow$ $ \braket{ R_1 \psi | (\mathcal{T}R)^{-1} R_0 \varphi} =
+   -\braket{ \psi | \mathcal{T} R_1^{-1} R^{-1} R_0 \varphi} \equiv -b$
+\item $[001] \rightarrow$ $ \braket{ R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = b$
+\item $[100] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} R_0 \varphi} =
+   -\braket{  R_1 \psi |  \mathcal{T} R^{-1} R_0 \varphi}^* = - b^* $
+\item $[011] \rightarrow$ $ \braket{ R_1 \psi | (\mathcal{T}R)^{-1} \mathcal{T} R_0 \varphi} = 
+    \braket{ \psi | R_1^{-1} R^{-1} \mathcal{T}^{-1} \mathcal{T} R_0 \varphi} = a $
+\item $[110]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | (\mathcal{T} R)^{-1} R_0 \varphi} = 
+    - \braket{  R_1 \psi |  \mathcal{T} \mathcal{T}^{-1} R^{-1} R_0 \varphi}^* = - a^* $
+\item $[101]  \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | R^{-1} \mathcal{T} R_0 \varphi} = \dots = a^*$
+\item $[111] \rightarrow$ $ \braket{ \mathcal{T} R_1 \psi | (\mathcal{T} R)^{-1}  \mathcal{T} R_0 \varphi} = \dots = - b^*$
+\end{itemize}
+
+\textcolor{red}{NOTE here I have not explicitely mentioned the double group issue in the inverse elements, 
+which should be considered somehow...}
+
+
+{\bf Fourth, we consider  non-symmorphic symmetries, but no TR and no spinors.} 
+This is like the first case, in principle, but it may happen that the 
+accumulated fractional translations  in the trio of elements, $\{R_1 | \tau_1\}, \{R^{-1} | \tau^i\}, \{R_0 | \tau_0\}$, 
+differs by a lattice vector $\mathbf{L}$ from the translation in the total $\{ \tilde R | \tilde \tau \}$ from 
+the list of group symmetry elements. This is discussed in Dresselhaus and Jorio, page 220. 
+It gives rise to a phase $e^{i \mathbf{k}_s \cdot \mathbf{L} }$ to be added to the Eq.~\ref{eq:sSs} coefficients:
+\begin{align}
+\mathbf{L} = \tilde \tau + {\tilde R}^{-1} \tau_1 - R_0^{-1} \tau^i - \tau_0 
+\end{align}
+\textcolor{red}{TODO repasar notas... parece que funciona para Si, pero hay que tener cuidado con las transpuestas 
+en los vectores del espacio real. Lo mejor es rotar siempre el $k$ y dejar las $\tau$ como están al calcular la fase.}
+
+\textcolor{red}{DUDA hay algo que no entiendo: si añado la corrección Eq.~\ref{eq:Sinv_tau} para 
+la operación "central" $\mathcal{S}^{-1}$ esto ya no funciona. 
+No entiendo por qué hace falta en los $M_{mn}$ y no en e-ph...}
+
+
+\section{Sakuma's dmn files}
+
+The $D$ and $\tilde d$ matrices of Sakuma's paper, eqs. 15 and 17, respectively, are stored in the
+Wannier90 .dmn file. They are written in blocks for all symmetry elements and
+vectors $\mathbf{k}_s \in \mathcal{M}_{i}$.
+Note, the method is not implemented yet in W90 for the spinor case. It does neither consider TR symmetry.
+
+By definition, the $\tilde d$ matrices have elements
+\begin{equation}
+\tilde d_{mm'}(\mathcal{S},\mathbf{k}_s) = 
+   \braket{\mathcal{S} \psi_{m\mathbf{k}_s} | \mathcal{S} \psi_{m'\mathbf{k}_s} }
+\end{equation}
+with the wavefunctions in the Bloch gauge,
+for all $\mathcal{S}$ elements, not just the ones that leave $\mathbf{k}_s$ invariant.
+
+On the other hand, $D$ is for wavefunctions in the Wannier gauge. They can be calculated for the
+first iteration in W90 or the first trial, which is equivalent to using the wavefunctions
+obtained from the $A_{mn}$ projections:
+\begin{equation}
+A_{mn}(\mathbf{k}_s) = \braket{\psi_{m\mathbf{k}_s} | g_n}
+\end{equation}
+where $g_n$ is a projection function. The trial function in the Wannier gauge is obtained from
+\begin{equation}
+\ket{\phi_{n\mathbf{k}_s}} = \sum_m A_{mn}(\mathbf{k}_s) \ket{\psi_{m\mathbf{k}_s}}
+\end{equation}
+where L\"owdin orthogonalization is applied as explained in Souza {\it et al}, PRB 65, 0350109:
+\begin{equation}
+\ket{\psi_{m\mathbf{k}_s}^{(0)} } = \sum_m (S^{-1/2})_{mn} \ket{\phi_{n\mathbf{k}_s}} = 
+  \sum_m (AS^{-1/2})_{mn} \ket{\psi_{m\mathbf{k}_s}}
+\end{equation}
+Here, $AS^{-1/2}$, which is antiunitary, is obtained with SVD (zgesvd):
+\begin{equation}
+A = U \Sigma V^\dagger \quad \rightarrow \quad AS^{-1/2} = U 1 V^\dagger
+\end{equation}
+$A$ has dimensions $M \times N$, where $M$ is num\_bands\_intw and $N$ is num\_wann\_intw
+(equal to the number of projections).
+The $\psi_{m\mathbf{k}_s}^{(0)} (\mathbf{r})$ are used to calculate the $D$ matrix elements:
+\begin{align}
+D_{n'n}(\mathcal{S},\mathbf{k}_s) & =
+  \braket{ \psi_{n'\mathbf{k}_s}^{(0)} | \mathcal{S} \psi_{n\mathbf{k}_s}^{(0)} } = \\
+  & = \sum_{mm'} (U 1 V^\dagger)^*_{m'n'} (\mathcal{S} \mathbf{k}_s) (U 1 V^\dagger)_{mn} (\mathbf{k}_s)
+   \braket{ \psi_{m'\mathcal{S} \mathbf{k}_s} | \mathcal{S}  \psi_{m  \mathbf{k}_s} }
+\end{align}
+The pw2w90 implementation calculates this integral explicitely with the $g_n$ functions.
+Our method uses the $A_{mn}$ coefficients calculated previously in intw2w90.
+
+
+
+\bibliography{intw_sym}
+
+\end{document}
+
 
 
 \bibliography{intw_sym}

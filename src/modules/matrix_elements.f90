@@ -11,18 +11,18 @@ module intw_matrix_elements
 !----------------------------------------------------------------------------!
 
   use kinds, only: dp
+
+  implicit none
+
   !
   ! subroutines
-  public :: get_elec_phon_matrix_element_convolution, &
-            get_plane_wave_matrix_element_convolution, &
+  public :: get_plane_wave_matrix_element_convolution, &
             get_plane_wave_matrix_element_convolution_map, &
-            get_spin_component_convolution, &
             get_plane_wave_matrix_element_convolution_orig, &
-            get_plane_wave_matrix_element_convolution_alt, &
-            get_plane_wave_matrix_element_convolution_alt_orig, &
             get_plane_wave_matrix_element_FFT, &
             get_plane_wave_matrix_element_FFT_orig, &
             compute_index_interpolation_mesh, &
+            get_spin_component, &
             write_matrix_elements, &
             wfc_G_from_1D_to_3D
   !

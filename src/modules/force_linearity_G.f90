@@ -28,8 +28,8 @@ subroutine force_linearity_G(nqf1,nqf2,nqf3,qfmesh,omega)
   integer :: iq,nqfmesh,i,j,k
   real(dp) :: kpoint_in_1bz(3)
   integer :: GKQ_bz(3)
- 
- 
+
+
   nqfmesh=nqf1*nqf2*nqf3
   !
   ! We look for the minimum value of phonon modes

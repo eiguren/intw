@@ -42,6 +42,7 @@ _deps
 # Fortran module files
 *.mod
 *.smod
+*__genmod.f90
 
 # Compiled Static libraries
 *.lai

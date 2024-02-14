@@ -1,7 +1,7 @@
 !
 subroutine intw_complex_ylmr2 (lmax, ng, g, gg, ylm)
   !-----------------------------------------------------------------------
-  !     INTW project 
+  !     INTW project
   !     Complex spherical harmonics ylm(G) up to l=lmax
   !     lmax2 = (lmax+1)^2 is the total number of spherical harmonics
   !-----------------------------------------------------------------------
@@ -9,6 +9,8 @@ subroutine intw_complex_ylmr2 (lmax, ng, g, gg, ylm)
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
   use intw_utility, only: errore
+
+  implicit none
 
   integer, intent(in) :: lmax, ng
   real(DP), intent(in) :: g (3, ng), gg (ng)
@@ -19,7 +21,7 @@ subroutine intw_complex_ylmr2 (lmax, ng, g, gg, ylm)
   integer :: lmax2
 
   lmax2 =(lmax+1)**2
-  
+
   ylm=(0.0_dp,0.0_dp)
 
 end subroutine intw_complex_ylmr2
@@ -30,8 +32,8 @@ subroutine intw_real_ylmr2 (lmax2, ng, g, gg, ylm)
   !
   !     Real spherical harmonics ylm(G) up to l=lmax
   !     lmax2 = (lmax+1)^2 is the total number of spherical harmonics
-  !     Numerical recursive algorithm based on the one given in Numerical 
-  !     Recipes but avoiding the calculation of factorials that generate 
+  !     Numerical recursive algorithm based on the one given in Numerical
+  !     Recipes but avoiding the calculation of factorials that generate
   !     overflow for lmax > 11
   !
 !haritz
@@ -131,7 +133,7 @@ subroutine intw_real_ylmr2 (lmax2, ng, g, gg, ylm)
         end do
 !$omp do
         do ig = 1, ng
-           Q(ig,l,l)   = - sqrt(DBLE(2*l-1))/sqrt(DBLE(2*l))*sent(ig)*Q(ig,l-1,l-1) 
+           Q(ig,l,l)   = - sqrt(DBLE(2*l-1))/sqrt(DBLE(2*l))*sent(ig)*Q(ig,l-1,l-1)
         end do
      end if
      !
@@ -169,4 +171,3 @@ subroutine intw_real_ylmr2 (lmax2, ng, g, gg, ylm)
   !
   return
 end subroutine intw_real_ylmr2
-

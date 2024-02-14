@@ -53,14 +53,14 @@ real(kind=dp),parameter :: onesqrt3=0.57735026919_dp
 integer :: i
 
 
-call SPLINE_MCF (xdata, ydata,  size(xdata), ys2) 
+call SPLINE_MCF (xdata, ydata,  size(xdata), ys2)
 
 batura=0.0_dp
 do i=1,size(xdata)-1
- 
+
  x1=(xdata(i+1)+xdata(i))/2.0_dp - (xdata(i+1)-xdata(i))/2.0_dp/onesqrt3
  x2=(xdata(i+1)+xdata(i))/2.0_dp + (xdata(i+1)-xdata(i))/2.0_dp/onesqrt3
-  
+
  call splint_MCF (xdata, ydata, ys2, size(xdata), x1, y1)
  call splint_MCF (xdata, ydata, ys2, size(xdata), x2, y2)
 

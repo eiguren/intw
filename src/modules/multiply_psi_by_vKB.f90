@@ -1,7 +1,7 @@
 
 SUBROUTINe multiply_psi_by_vKB( k_point, npol, nbands, ng_max, list_iGk, psi, dvnl_psi)
   !INTW project: KB projection by wave functions.
-  ! 
+  !
 
   USE intw_useful_constants, only: pi,tpi,fpi, cmplx_0, cmplx_i
   USE intw_reading, only : tpiba, alat,  bg, nat, lspinorb

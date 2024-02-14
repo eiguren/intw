@@ -36,7 +36,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !       Read in the necessary information from standard input
 !================================================================================
     call read_input(read_status)
- 
+
     if (read_status ) then
            stop
     end if
@@ -46,7 +46,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !       read the parameters from the SCF QE calculation
 !================================================================================
     call read_parameters_data_file_xml()
-   
+
     ! Set the number of bands for the calculation
     call set_num_bands()
 
@@ -65,8 +65,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
     call read_eig(eigenval)
 
     ! MBR Note: when read_eig is called, eigenvalues are stored in eigenval_intw
-    ! of w90_setup. This eigenval array is a "copy" to be used OPTIONALLY 
-    ! inside the utility if needed. 
+    ! of w90_setup. This eigenval array is a "copy" to be used OPTIONALLY
+    ! inside the utility if needed.
     ! The next u_mesh, ham_k, ham_r builds use the internal eigenval_intw.
 
     call allocate_and_build_u_mesh()

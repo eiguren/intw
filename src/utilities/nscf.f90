@@ -1,4 +1,4 @@
-program nscf 
+program nscf
 
   use kinds, only: dp
   use intw_input_parameters, only: intw2W_method, read_input
@@ -127,7 +127,7 @@ program nscf
   write(*,20) '|           ---------------------------------       |'
   !
   allocate (list_igk(nG_max,nkpoints_QE))
-  allocate (ngk(nkpoints_QE)) 
+  allocate (ngk(nkpoints_QE))
   !
   allocate (wfc_k(nG_max,nbands,nspin,nkpoints_QE))
   !
@@ -153,7 +153,7 @@ program nscf
 
   write(*,*)maxval(list_iGk(:,:))
 
-  !call allocate_and_get_all_irreducible_wfc() 
+  !call allocate_and_get_all_irreducible_wfc()
   !
   !call deallocate_upfeak ()
   !================================================================================
@@ -177,12 +177,12 @@ contains
     !	Given two wavefunctions wfc_1  and wfc_2, this subroutine computes
     !              the convolution of them as:
     !
-    !	          pw_mat_el_ij (G)    \sum_GP  wfc_1_i(G-GP) * wfc_2_j(GP) 
+    !	          pw_mat_el_ij (G)    \sum_GP  wfc_1_i(G-GP) * wfc_2_j(GP)
     !
     !     The G-vectors are referenced by their indices in list_iG1, list_iG2,
     !     which refer to the global list gvec(3,ngm), which should be defined
     !     BEFORE using this subroutine....ç
-    !    
+    !
     !
     !--------------------------------------------------------------------------------
     use intw_useful_constants, only: zero, one, cmplx_0
@@ -190,7 +190,7 @@ contains
 
     implicit none
 
-    !I/O variables in (F fortran style). For example, 
+    !I/O variables in (F fortran style). For example,
     !Input list_iG_1(:), instead of list_iG_1(nG_max).
 
     integer,intent(in)      :: list_iG_1(:),ngk1,list_iG_2(:),ngk2

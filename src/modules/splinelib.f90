@@ -32,7 +32,7 @@ MODULE splinelib
       !
       IMPLICIT NONE
       !
-      REAL(DP), INTENT(IN)  :: xdata(:), ydata(:), startu, startd 
+      REAL(DP), INTENT(IN)  :: xdata(:), ydata(:), startu, startd
       REAL(DP), INTENT(OUT) :: d2y(:)
       !
       INTEGER               :: i, k, ydim
@@ -49,21 +49,21 @@ MODULE splinelib
       !
       DO  i = 2, ydim - 1
          !
-         sig    = ( xdata(i) - xdata(i-1) ) / ( xdata(i+1) - xdata(i-1) ) 
-         p      = sig * d2y(i- 1) + 2.0_DP 
-         d2y(i) = ( sig - 1.0_DP ) / p 
+         sig    = ( xdata(i) - xdata(i-1) ) / ( xdata(i+1) - xdata(i-1) )
+         p      = sig * d2y(i- 1) + 2.0_DP
+         d2y(i) = ( sig - 1.0_DP ) / p
          u(i)   = ( 6.0_DP * ( ( ydata(i+1) - ydata(i) ) / &
                     ( xdata(i+1) - xdata(i) ) - ( ydata(i) - ydata(i-1) ) / &
                     ( xdata(i) - xdata(i-1) ) ) / &
-                    ( xdata(i+1) - xdata(i-1) ) - sig * u(i-1) ) / p 
-         !       
+                    ( xdata(i+1) - xdata(i-1) ) - sig * u(i-1) ) / p
+         !
       END DO
       !
-      d2y(ydim) = 0  
+      d2y(ydim) = 0
       !
-      DO  k = ydim - 1, 1, -1 
+      DO  k = ydim - 1, 1, -1
          !
-         d2y(k) = d2y(k) * d2y(k+1) + u(k) 
+         d2y(k) = d2y(k) * d2y(k+1) + u(k)
          !
       END DO
       !
@@ -165,7 +165,7 @@ MODULE splinelib
            main_loop: DO
               !
               IF ( ( ju - jl ) <= 1 ) EXIT main_loop
-              ! 
+              !
               jm = ( ju + jl ) / 2
               !
               IF ( ascnd .EQV. ( x >= xx(jm) ) ) THEN
@@ -188,13 +188,13 @@ MODULE splinelib
               !
               locate = n - 1
               !
-           ELSE 
+           ELSE
               !
               locate = jl
               !
            END IF
            !
-         END FUNCTION locate      
+         END FUNCTION locate
          !
     !
     !------------------------------------------------------------------------
@@ -217,17 +217,17 @@ MODULE splinelib
       !
       IF ( old_dim /= SIZE( old_mesh ) ) &
          CALL errore( 'dosplineint', &
-                      'dimensions of old_mesh and old_vec do not match', 1 )         
+                      'dimensions of old_mesh and old_vec do not match', 1 )
       !
       IF ( new_dim /= SIZE( new_mesh ) ) &
          CALL errore( 'dosplineint', &
-                      'dimensions of new_mesh and new_vec do not match', 1 ) 
+                      'dimensions of new_mesh and new_vec do not match', 1 )
       !
       ALLOCATE( d2y( old_dim ) )
       !
       d2y = 0
       !
-      CALL spline( old_mesh , old_vec(:), 0.0_DP, 0.0_DP, d2y  ) 
+      CALL spline( old_mesh , old_vec(:), 0.0_DP, 0.0_DP, d2y  )
       !
       DO i = 1, new_dim
          !
@@ -238,7 +238,7 @@ MODULE splinelib
       DEALLOCATE( d2y )
       !
     END SUBROUTINE dosplineint_1D
-    !    
+    !
     !------------------------------------------------------------------------
     SUBROUTINE dosplineint_2D( old_mesh, old_vec, new_mesh, new_vec )
       !------------------------------------------------------------------------
@@ -265,19 +265,19 @@ MODULE splinelib
       !
       IF ( old_dim /= SIZE( old_mesh, 1 ) ) &
          CALL errore( 'dosplineint', &
-                      'dimensions of old_mesh and old_vec do not match', 1 )         
+                      'dimensions of old_mesh and old_vec do not match', 1 )
       !
       IF ( new_dim /= SIZE( new_mesh, 1 ) ) &
          CALL errore( 'dosplineint', &
-                      'dimensions of new_mesh and new_vec do not match', 1 ) 
+                      'dimensions of new_mesh and new_vec do not match', 1 )
       !
       ALLOCATE( d2y( old_dim ) )
       !
       DO i = 1, dim
-         ! 
+         !
          d2y = 0
          !
-         CALL spline( old_mesh , old_vec(i,:), 0.0_DP, 0.0_DP, d2y  ) 
+         CALL spline( old_mesh , old_vec(i,:), 0.0_DP, 0.0_DP, d2y  )
          !
          DO j = 1, new_dim
             !

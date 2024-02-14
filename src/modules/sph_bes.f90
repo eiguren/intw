@@ -36,7 +36,7 @@ subroutine sph_bes (msh, r, q, l, jl)
 #if defined (__MASS)
   real(DP) :: qr(msh), sin_qr(msh), cos_qr(msh)
 #endif
- 
+
   !  case q=0
 
   if (abs (q) < eps_14) then
@@ -48,7 +48,7 @@ subroutine sph_bes (msh, r, q, l, jl)
         jl(:) = 0.d0
      endif
      return
-  end if 
+  end if
 
   !  case l=-1
 
@@ -167,4 +167,3 @@ integer function semifact(n)
   end do
   return
 end function semifact
-

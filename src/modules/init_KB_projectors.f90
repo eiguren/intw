@@ -185,4 +185,3 @@ subroutine init_KB_projectors (npw_, npwx_, igk_, qpoint_, vkb_)
   return
 
 end subroutine init_KB_projectors
-

@@ -24,8 +24,8 @@
 
       eps=0.00001d0
 
-      I3(:,:)=0.d0 
-      I3(1,1)=1.d0 
+      I3(:,:)=0.d0
+      I3(1,1)=1.d0
       I3(2,2)=1.d0
       I3(3,3)=1.d0
       Inv=I3*(-1.d0)
@@ -36,10 +36,10 @@
 
       vst(1,:)=v(:) ; vs(:,1)=v(:)
 
-      Su(:,:)=0.d0 
+      Su(:,:)=0.d0
       Su(1,2)=-v(3) ; Su(2,1)= v(3)
-      Su(1,3)= v(2) ; Su(3,1)=-v(2) 
-      Su(2,3)=-v(1) ; Su(3,2)= v(1) 
+      Su(1,3)= v(2) ; Su(3,1)=-v(2)
+      Su(2,3)=-v(1) ; Su(3,2)= v(1)
 
       !Reconstruct the symmetry matrix. with the unit vector u and the angle=ang.
       S=dcos(ang)*I3+(1.d0-dcos(ang))*matmul(vs,vst)+ Su*sin(ang)
@@ -59,13 +59,13 @@
 
        vst(1,:)=v(:) ; vs(:,1)=v(:)
 
-       Su(:,:)=0.d0 
+       Su(:,:)=0.d0
 
        Su(1,2)=-v(3) ; Su(2,1)= v(3)
-       Su(1,3)= v(2) ; Su(3,1)=-v(2) 
-       Su(2,3)=-v(1) ; Su(3,2)= v(1) 
+       Su(1,3)= v(2) ; Su(3,1)=-v(2)
+       Su(2,3)=-v(1) ; Su(3,2)= v(1)
 
-       S=dcos(ang)*I3+(1.d0-dcos(ang))*matmul(vs,vst)+ Su*sin(ang) 
+       S=dcos(ang)*I3+(1.d0-dcos(ang))*matmul(vs,vst)+ Su*sin(ang)
 
        if (det(a).lt.0) S=-S
 
@@ -75,10 +75,10 @@
          diff=diff+abs(A(i,j)-S(i,j))
         enddo
        enddo
-      endif 
+      endif
 
       if (diff.gt.0.01) then
-        write(*,*)'ERROR rotaxis.f90: I am not able to reproduce' 
+        write(*,*)'ERROR rotaxis.f90: I am not able to reproduce'
         write(*,*)'the S matrix.', diff
 
         do i=1,3
@@ -89,7 +89,7 @@
          write(*,'(100f12.6)')(S(i,j),j=1,3)
         enddo
 
-        stop 
+        stop
       endif
 
       inv_used=.false.
@@ -99,7 +99,7 @@
       end
 
       Subroutine diagreal(A,eig,ang,axis)
-      implicit none 
+      implicit none
       INTEGER          NIN, NOUT
       PARAMETER        (NIN=3,NOUT=3)
       INTEGER          NB, NMAX
@@ -120,9 +120,9 @@
 !     .. Executable Statements ..
       COMPLEX(8)       EIG(3)
       REAL(8)          det,Tr, Ar(3,3),ang, I3(3,3), Inv(3,3), axis(3),deter
-      
-      I3(:,:)= 0.d0 
-      I3(1,1)=1.d0 
+
+      I3(:,:)= 0.d0
+      I3(1,1)=1.d0
       I3(2,2)=1.d0
       I3(3,3)=1.d0
       Inv=I3*(-1.d0)
@@ -130,7 +130,7 @@
       Ar(:,:)=A(:,:)
 
       deter=det(A)
-      if (det(A).lt.0.) Ar=matmul(Inv,A) 
+      if (det(A).lt.0.) Ar=matmul(Inv,A)
 
       tr=Ar(1,1)+Ar(2,2)+Ar(3,3)
       ang = acos((tr-1.d0)/2.d0)!/(2.*acos(-1.d0))*360.
@@ -140,7 +140,7 @@
          CALL DGEES('Vectors (Schur)','Sort',SELECT,N,Ar,LDA,SDIM,WR,WI, &
                    VS,LDVS,WORK,LWORK,BWORK,INFO)
          LWKOPT = WORK(1)
-     
+
       axis(:)=Vs(:,1)
 
       do i=1,3
@@ -158,7 +158,7 @@
       LOGICAL                 D
       COMPLEX(8)              C
 
-      C=cmplx(ar,ai) 
+      C=cmplx(ar,ai)
 !     .. Executable Statements ..
       IF (abs(c-(1.d0,0.d0)).lt.0.0001) THEN
          D = .TRUE.
@@ -173,9 +173,8 @@
 
       function det(A)
       real(8) :: A(3,3), det
-      
+
       det = A(1,1) *A(2,2) *A(3,3) +  A(1,2) *A(2,3) *A(3,1) + A(1,3) *A(2,1) *A(3,2) &
           - A(1,3) *A(2,2) *A(3,1) -  A(1,1) *A(2,3) *A(3,2) - A(1,2) *A(2,1) *A(3,3)
 
       end
-

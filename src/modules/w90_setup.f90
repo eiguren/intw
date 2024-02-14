@@ -31,7 +31,7 @@ module intw_w90_setup
   public :: n_wss, n_ws_search     !!! search space for WS vectors
   public :: irvec, nrpts, ndegen   !!! these will substitute w90_hamiltonian: irvec, nrpts, ndegen
   public :: ham_k, ham_r           !!! ham_k, ham_r
-  public :: ndimwin, lwindow   !!! DUDA ... probably we do not need these outside the module 
+  public :: ndimwin, lwindow   !!! DUDA ... probably we do not need these outside the module
                                  !!! if the information is contained in u_mesh...
   public :: u_mesh
   public :: eigenval_intw          !!! coarse-mesh eigenvalues used in wannier (read from .eig)
@@ -70,7 +70,7 @@ contains
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
-                               nnkp_num_kpoints, nnkp_kpoints  
+                               nnkp_num_kpoints, nnkp_kpoints
   implicit none
 
   character(20) :: checkpoint
@@ -87,7 +87,7 @@ contains
   open(unit=io_unit_chk,file=filename,status='old',form='unformatted')
 
   ! TODO add comments in consistency check with existing data from nnkp
-  ! (I think that full-zone k-list should be read from there, since 
+  ! (I think that full-zone k-list should be read from there, since
   ! in the intw2wannier step it was checked that both lists coincide)
 
   ! .nnkp file should be read before calling this subroutine
@@ -106,7 +106,7 @@ contains
   if ( nnkp_exclude_bands .ne. nexc) stop
   read (io_unit_chk) exc_bands(1:nexc)  ! excluded bands
   !! TODO check if ( nnkp_excluded_bands .ne. exc_bands ) stop
-  
+
   ! lattice
   read (io_unit_chk) ((dir_latt(i,j), i=1,3), j=1,3)  ! direct
   read (io_unit_chk) ((rec_latt(i,j), i=1,3), j=1,3)  ! reciprocal
@@ -135,7 +135,7 @@ contains
   read (io_unit_chk) use_disentanglement
 
   ! u_matrix_opt
-  
+
   allocate (lwindow(num_bands_intw,nnkp_num_kpoints), ndimwin(nnkp_num_kpoints))
   allocate (u_matrix_opt(num_bands_intw,num_wann_intw,nnkp_num_kpoints))
 
@@ -144,7 +144,7 @@ contains
        read (io_unit_chk) ((lwindow(ib,ik),ib=1,num_bands_intw),ik=1,nnkp_num_kpoints)
        read (io_unit_chk) (ndimwin(ik), ik=1,nnkp_num_kpoints)
        read (io_unit_chk) (((u_matrix_opt(ib,iw,ik),ib=1,num_bands_intw),iw=1,num_wann_intw),ik=1,nnkp_num_kpoints)
-  end if     
+  end if
 
   ! u_matrix
   allocate (u_matrix(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
@@ -213,27 +213,27 @@ contains
   !----------------------------------------------------------------------------!
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands  
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands
   implicit none
-  
+
   integer :: i, ik, n1, n2, nb1
-  
+
   call read_w90_chk ()       ! allocate and read use_disentanglement, lwindow, u_matrix_opt, u_matrix
-  
-  allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  !fullzone k-points 
+
+  allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  !fullzone k-points
   u_mesh = cmplx_0
-  
+
   if (use_disentanglement) then
 
     do ik=1, nnkp_num_kpoints
        n1 = 0
        do nb1=1, num_bands_intw
-          
+
           ! MBR-JBL: decided to use lwindow as in w90, instead of exclude_bands as in previus INTW version
-          if (.not. lwindow(nb1, ik)) cycle 
-    
-          ! At each k, bands are reordered so that 
-          ! u_matrix_opt for bands within the disentanglement window are filled first 
+          if (.not. lwindow(nb1, ik)) cycle
+
+          ! At each k, bands are reordered so that
+          ! u_matrix_opt for bands within the disentanglement window are filled first
           ! and the rest are just padded with zeros
           n1 = n1 + 1
           do n2=1,num_wann_intw
@@ -266,7 +266,7 @@ contains
   use intw_input_parameters, only: mesh_dir, prefix
   use intw_utility, only: find_free_unit
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
-                               nnkp_num_kpoints, nnkp_kpoints 
+                               nnkp_num_kpoints, nnkp_kpoints
   implicit none
 
   character(256) :: filename
@@ -320,14 +320,14 @@ contains
   !
   use intw_reading, only: alat, at
   use intw_useful_constants, only: eps_6
-  use intw_utility, only: generate_kmesh, cryst_to_cart, HPSORT_real 
+  use intw_utility, only: generate_kmesh, cryst_to_cart, HPSORT_real
   !
   implicit none
   !
   integer, intent(in) :: nk1,nk2,nk3
   !
   integer :: ik, nws, i,j,k,l
-  integer :: permu(n_wss), rdeg_ws_max(nk1*nk2*nk3) 
+  integer :: permu(n_wss), rdeg_ws_max(nk1*nk2*nk3)
   integer :: r_ws_max(3,n_wss,nk1*nk2*nk3)
   real(kind=dp) :: kmesh(3,nk1*nk2*nk3)
   real(kind=dp) :: r_cryst(3,n_wss), r_length(n_wss), r_cart(3)
@@ -350,9 +350,9 @@ contains
          call cryst_to_cart (1, r_cart, at, 1)
          r_cart = r_cart * alat  ! bohr units
          r_length(l) = sqrt ( sum(r_cart*r_cart) )
-     end do   
-     end do   
-     end do   
+     end do
+     end do
+     end do
      ! order by ascending length
      call HPSORT_real(n_wss,r_length,permu)
      ! store first vector (shortest)
@@ -368,7 +368,7 @@ contains
         else
            exit
         end if
-     end do  
+     end do
   end do
   !
   ! Data for Wannier
@@ -382,7 +382,7 @@ contains
   do ik = 1,nk1*nk2*nk3
      do l = 1, rdeg_ws_max(ik)
          i = i + 1
-         irvec(:,i) = r_ws_max(:,l,ik) 
+         irvec(:,i) = r_ws_max(:,l,ik)
          ndegen(i) = rdeg_ws_max(ik)
      end do
   end do
@@ -405,20 +405,20 @@ contains
   !
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints  
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
   !
   implicit none
   !
   !
   integer :: ik, iw, jw, nwin
   complex(kind=dp) :: cterm
-  ! 
+  !
   allocate (ham_k(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
   ham_k = cmplx_0
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
      do jw = 1,num_wann_intw
-       do iw = 1,jw 
+       do iw = 1,jw
            ! JLB: Needs to be checked. I think lwindow has been incorporated in u_mesh building so here just multiply.
            if (use_disentanglement) then
                    !  DUDA ver mi comentario sobre lwindow en allocate_and_build_u_mesh...
@@ -442,9 +442,9 @@ contains
   return
   end subroutine allocate_and_build_ham_k
 
-  !!TODO we may need another routine allocate_and_build_ham_k_for1k_only. 
+  !!TODO we may need another routine allocate_and_build_ham_k_for1k_only.
   ! Will need to find the k in the list first
-  
+
   !
   !----------------------------------------------------------------------------!
   subroutine allocate_and_build_ham_r()
@@ -454,7 +454,7 @@ contains
   !
   use intw_reading, only: alat, bg, num_bands_intw, num_wann_intw
   use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints  
+  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
   !
   implicit none
   !
@@ -466,14 +466,14 @@ contains
   do i = 1,nrpts
      do ik = 1,nnkp_num_kpoints
        do ib = 1, num_wann_intw
-         do jb = 1, num_wann_intw 
+         do jb = 1, num_wann_intw
            phasefac = exp( -cmplx_i*tpi*sum( nnkp_kpoints(:,ik)*irvec(:,i) ) )
            ham_r(ib,jb,i) = ham_r(ib,jb,i) + phasefac*ham_k(ib,jb,ik)
          end do
        end do
      enddo
   enddo
-  ham_r = ham_r/real(nnkp_num_kpoints,dp) 
+  ham_r = ham_r/real(nnkp_num_kpoints,dp)
 
   return
   end subroutine allocate_and_build_ham_r
@@ -517,16 +517,16 @@ contains
   !
 
   ! MBR new routines 28/08/23:
-  ! allocate_and_read_u_mesh and _ham_r: reads previously generated and 
+  ! allocate_and_read_u_mesh and _ham_r: reads previously generated and
   ! printed u_mesh and _ham_r by utility W902intw.
-   
+
   !
   !----------------------------------------------------------------------------!
   subroutine allocate_and_read_ham_r()
   !
   !----------------------------------------------------------------------------!
   !  MBR:
-  !  This reads: nrpts, ndegen, irvec, ham_r 
+  !  This reads: nrpts, ndegen, irvec, ham_r
   !  (num_bands_intw, num_wann_intw have been read previously from nnkp using set_numbands)
   !  from formatted file mesh_dir/prefix_hr_intw.dat
   !----------------------------------------------------------------------------!
@@ -545,7 +545,7 @@ contains
   !
   io_unit = find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
-  open (io_unit, file=filename, form='formatted', status='old') 
+  open (io_unit, file=filename, form='formatted', status='old')
   read (io_unit, *) header
   read (io_unit, *) ir
   if (ir .ne. num_wann_intw) then
@@ -554,11 +554,11 @@ contains
   end if
   read (io_unit, *) nrpts
   !
-  ! allocate arrays 
+  ! allocate arrays
   ! careful, in case they had been allocated by previous call to build ham_r
   !
   if (.not. allocated(ndegen)) &
-     allocate (ndegen(nrpts))  
+     allocate (ndegen(nrpts))
   if (.not. allocated(irvec)) &
      allocate (irvec(3,nrpts) )
   if (.not. allocated(ham_r)) &
@@ -567,7 +567,7 @@ contains
   irvec = 0
   ham_r = cmplx_0
   !
-  ! read irvec, ham_r 
+  ! read irvec, ham_r
   !
   read (io_unit, '(15I5)') (ndegen(ir), ir=1, nrpts)
   do ir = 1, nrpts
@@ -588,12 +588,12 @@ contains
   !
   !----------------------------------------------------------------------------!
   !  MBR:
-  !  This reads all dimensions in the W90 problem 
-  !  (except for nbands, num_bands_intw, num_wann_intw have been read previously 
+  !  This reads all dimensions in the W90 problem
+  !  (except for nbands, num_bands_intw, num_wann_intw have been read previously
   !  from nnkp using set_numbands)
-  !  which include: nnkp_num_kpoints, nnkp_exclude_bands, 
+  !  which include: nnkp_num_kpoints, nnkp_exclude_bands,
   !  and quantities use_disentanglement, nnkp_excluded_bands, &
-  !  nnkp_kpoints, eigenval, lwindow, u_mesh, etc. 
+  !  nnkp_kpoints, eigenval, lwindow, u_mesh, etc.
   !  from formatted file mesh_dir/prefix_u_mesh.dat
   !
   !----------------------------------------------------------------------------!
@@ -617,7 +617,7 @@ contains
   if (ib .ne. nbands) then
      write(*,*) 'nbands in ', filename,' does not coincide with value in QE. Stopping.'
      stop
-  end if     
+  end if
   read(io_unit_u,*) varname !'EXCLUDED_BANDS'
   read(io_unit_u,*) nnkp_exclude_bands
   if (.not. allocated(nnkp_excluded_bands)) &
@@ -636,7 +636,7 @@ contains
   read(io_unit_u,*) varname ! 'USE_DISENTANGLEMENT'
   read(io_unit_u,*) use_disentanglement
   !
-  ! allocate quantities  
+  ! allocate quantities
   ! (careful in case allocate_and_build had been called first)
   !
   if (.not. allocated(nnkp_kpoints)) &
@@ -646,7 +646,7 @@ contains
   if (.not. allocated(eigenval_intw)) &
      allocate (eigenval_intw(num_bands_intw,nnkp_num_kpoints))
   if (.not. allocated(u_mesh)) &
-     allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))  
+     allocate (u_mesh(num_bands_intw,num_wann_intw,nnkp_num_kpoints))
   if (use_disentanglement) then
      if (.not. allocated(u_matrix_opt)) &
         allocate (u_matrix_opt(num_bands_intw,num_wann_intw,nnkp_num_kpoints))
@@ -677,7 +677,7 @@ contains
           read(io_unit_u,"(5es18.8,/)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
        end do
      end if
-     ! 
+     !
   end do
   !
   close(io_unit_u)
@@ -726,7 +726,7 @@ contains
        do i=1,j
           ham_pack_1k(i+((j-1)*j)/2) = ham_pack_1k(i+((j-1)*j)/2) + cfac * ham_r(i,j,ir)
        end do
-     end do  
+     end do
   end do
   !
   ! diagonalize
@@ -737,16 +737,16 @@ contains
               0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
               neig_found, eig_int, u_pass, num_wann_intw, &
               cwork, rwork, iwork, ifail, info)
-  ! 
+  !
   if (info < 0) then
      write(*,*) 'Wrong argument in ZHPEVX. Stopping.'
      stop
   else if (info > 0) then
      write(*,*) 'ZHPEVX failed. Stopping.'
      stop
-  end if 
+  end if
   !
-  ! Interpolation matrix each eigenergy on the WFs 
+  ! Interpolation matrix each eigenergy on the WFs
   !
   if (present(u_interp)) then
      u_interp = conjg(transpose(u_pass))
@@ -763,14 +763,14 @@ contains
   !
   !  Calculate DOS using a fine grid nik1 x nik2 x nik3
   !  and a lorentzian smearing.
-  !  Optionally, write PDOS using weights from u_interp  
+  !  Optionally, write PDOS using weights from u_interp
   !
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
   use intw_reading, only: num_bands_intw, num_wann_intw
   !
-  implicit none 
+  implicit none
   !
   integer :: ik, ik1, ik2, ik3, ie, iw
   integer, intent(in) :: nik1, nik2, nik3, ne
@@ -785,7 +785,7 @@ contains
   DOS = 0.0_dp
   if (present(PDOS)) PDOS = 0.0_dp
 
-  ! construct fine grid of kpoints, interpolate 1 by 1 and add 
+  ! construct fine grid of kpoints, interpolate 1 by 1 and add
   ! contribution to DOS(e)
 
   do ik1 = 1,nik1
@@ -803,17 +803,15 @@ contains
           lorentz = lorentz * 0.5_dp*esmear/tpi
           DOS(ie) = DOS(ie) + lorentz
           if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
-        end do  
+        end do
      end do
      !
   end do
   end do
   end do
   !
-  end subroutine interpolated_DOS        
+  end subroutine interpolated_DOS
 
 !----------------------------------------------------------------------------!
 end module intw_w90_setup
 !----------------------------------------------------------------------------!
-
-

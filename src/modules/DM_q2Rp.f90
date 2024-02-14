@@ -52,7 +52,7 @@ subroutine DM_q2Rp(nrr_q,irr_q,dyn_r)
   enddo !iq
   !
   write(*,*)' '
-  !  
+  !
   ! 2) Fourier transform of the Reciprocal Dynamical Matrix to
   ! to the Real Representation
   ! + check of the spatial decay of Dynamical Matrix in Real space

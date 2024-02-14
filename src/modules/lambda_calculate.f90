@@ -35,7 +35,7 @@ subroutine lambda_calculate_qe_t0_so(wpts,w_min,w_max,d_w,eliash_f_so,lambda_so)
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
   real(dp),intent(in) :: eliash_f_so(wpts,nspin,nspin)
@@ -58,7 +58,7 @@ subroutine lambda_calculate_qe_t0_so(wpts,w_min,w_max,d_w,eliash_f_so,lambda_so)
      elseif (ifs==2) then
         !
         eli(:)=eliash_f_so(:,1,2)
-        ! 
+        !
      elseif (ifs==3) then
         !
         eli(:)=eliash_f_so(:,2,1)
@@ -143,7 +143,7 @@ subroutine lambda_calculate_qe_t0(wpts,w_min,w_max,d_w,eliash_f,lambda)
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
   real(dp),intent(in) :: eliash_f(wpts)
@@ -230,7 +230,7 @@ subroutine lambda_calculate_full_t0_so(wpts,w_min,w_max,d_w,eliash_fplus_so,elia
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
   real(dp),intent(in) :: eliash_fplus_so(wpts,npol,npol)
@@ -256,7 +256,7 @@ subroutine lambda_calculate_full_t0_so(wpts,w_min,w_max,d_w,eliash_fplus_so,elia
         !
         eliplus_so(:)=eliash_fplus_so(:,1,2)
         eliminus_so(:)=eliash_fminus_so(:,1,2)
-        ! 
+        !
      elseif (ifs==3) then
         !
         eliplus_so(:)=eliash_fplus_so(:,2,1)
@@ -343,7 +343,7 @@ subroutine lambda_calculate_full_t0(wpts,w_min,w_max,d_w,eliash_fplus,eliash_fmi
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
   real(dp),intent(in) :: eliash_fplus(wpts)
@@ -355,7 +355,7 @@ subroutine lambda_calculate_full_t0(wpts,w_min,w_max,d_w,eliash_fplus,eliash_fmi
   real(dp) :: eliplus(wpts),eliminus(wpts)
   integer :: ifs,i,ipts,nfs
   real(dp) :: omega
-  
+
   eliplus(:)=eliash_fplus(:)
   eliminus(:)=eliash_fminus(:)
   !
@@ -431,7 +431,7 @@ subroutine hlambda_calculate_full_t0(wpts,w_min,w_max,d_w,eliash_fplus,lambda)
   implicit none
 
   !I/O variables
-  
+
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
   real(dp),intent(in) :: eliash_fplus(wpts)
@@ -442,7 +442,7 @@ subroutine hlambda_calculate_full_t0(wpts,w_min,w_max,d_w,eliash_fplus,lambda)
   real(dp) :: eliplus(wpts)
   integer :: ifs,i,ipts,nfs
   real(dp) :: omega
-  
+
   eliplus(:)=eliash_fplus(:)
   !
   i=0
