@@ -491,8 +491,7 @@ contains
   !----------------------------------------------------------------------------!
   USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
   use intw_utility, only: find_free_unit
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_reading, only: num_bands_intw
   use intw_symmetries, only:  QE_folder_sym
@@ -580,8 +579,6 @@ contains
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
                         ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
-          !call get_plane_wave_matrix_element_convolution      &
-          !(G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 
 
       else if ( trim(method) == 'FFT' ) then
