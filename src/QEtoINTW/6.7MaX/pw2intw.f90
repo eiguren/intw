@@ -244,35 +244,45 @@ contains
     USE xmltools, ONLY: xml_openfile, xml_closefile, &
                         xmlr_opentag, xmlr_readtag, xmlr_closetag, i2c
     USE ions_base, ONLY: nat
+    USE fft_base, ONLY: dfftp
+    USE spin_orb, ONLY: domag
+    USE noncollin_module, ONLY: noncolin
 
     implicit none
 
-    logical :: existitu
-    integer :: iq
-    character(len=256) :: numq_str
-    character(len=1) :: nn
-    character(len=4) :: num
-
-    integer :: nirr, ipert, imode0, irr, imode, jmode
+    ! loop variables
+    integer :: imode, jmode, ispin, iq
+    ! irreducible patterns variables
+    complex(kind=dp) :: u_irr(1:3*nat,1:3*nat)
+    integer :: nirr, ipert, imode0, irr
     integer, dimension(48) :: npert=-1
-    complex(kind=dp) :: u_irr(1:3*nat,1:3*nat,nqirr)
-    integer, external :: find_free_unit
+    ! induced potential variables
+    complex(kind=dp), allocatable :: dvq(:, :)
+    ! i/o variables
     character(len=256) :: datafile, q_dir, dv_file, rho_file, dyn_file
-    integer :: io_unit, ios
+    integer :: rl, io_unit_write, io_unit_read, ios
+    logical :: existitu
+    integer, external :: find_free_unit
 
 
-    inquire(file=qlist_file, exist=existitu)
-
-
+    !
+    ! Irreducible patterns
+    io_unit_write = find_free_unit()
+    datafile = trim(intwdir)//"/irrq_patterns.dat"
+    open(unit=io_unit_write, file=datafile, status="replace", form="formatted", iostat=ios)
+    if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening irrq_patterns.dat", ios )
+    !
     do iq=1,nqirr
-
+      !
       call write_tag("qq", iq, q_dir)
+      !
+      ! Read irreducible patterns
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
       inquire(file=datafile, exist=existitu)
       if (.not. existitu) call errore( "pw2intw", "write_phonon_info: patterns.1.xml not found", 1 )
-
-      io_unit = xml_openfile( datafile )
-
+      !
+      io_unit_read = xml_openfile( datafile )
+      !
       CALL xmlr_opentag( "IRREPS_INFO" )
       CALL xmlr_readtag( "NUMBER_IRR_REP", nirr )
       imode0 = 0
@@ -283,48 +293,84 @@ contains
         DO ipert = 1, npert(irr)
           imode = imode0 + ipert
           CALL xmlr_opentag( "PERTURBATION."// i2c(ipert) )
-          CALL xmlr_readtag( "DISPLACEMENT_PATTERN", u_irr(:,imode,iq) )
+          CALL xmlr_readtag( "DISPLACEMENT_PATTERN", u_irr(:,imode) )
           CALL xmlr_closetag( )
         ENDDO
         imode0 = imode0 + npert(irr)
         CALL xmlr_closetag( )
         !
         END DO !irr
-
+        !
       CALL xmlr_closetag("IRREPS_INFO")
       CALL xml_closefile ( )
-
-    enddo !iq
-
-    io_unit = find_free_unit()
-    datafile = trim(intwdir)//"/irrq_patterns.dat"
-    open(unit=io_unit, file=datafile, status="replace", form="formatted", iostat=ios)
-    if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening irrq_patterns.dat", ios )
-    !
-    do iq=1,nqirr
-      write(io_unit,"(a,i4)") "q", iq
       !
+      ! Write irreducible patterns
+      write(io_unit_write,"(a,i4)") "q", iq
       do imode=1,3*nat
-        write(io_unit,"(10000(a,f16.10,a,f16.10,a))") &
-          ("(", real(u_irr(jmode,imode,iq),dp), ",", aimag(u_irr(jmode,imode,iq)), ") ", jmode=1,3*nat)
+        write(io_unit_write,"(10000(a,f16.10,a,f16.10,a))") &
+          ("(", real(u_irr(jmode,imode),dp), ",", aimag(u_irr(jmode,imode)), ") ", jmode=1,3*nat)
       enddo
       !
-    enddo
+    enddo !iq
     !
-    close(unit=io_unit)
+    close(unit=io_unit_write)
 
-
+    !
+    ! Induced potentials
+    if (lsda) then
+      allocate(dvq(dfftp%nr1*dfftp%nr2*dfftp%nr3, 2))
+    else
+      if (noncolin .and. domag) then
+        allocate(dvq(dfftp%nr1*dfftp%nr2*dfftp%nr3, 4))
+      else
+        allocate(dvq(dfftp%nr1*dfftp%nr2*dfftp%nr3, 1))
+      endif
+    endif
+    dvq = (0.0_dp, 0.0_dp)
+    inquire(iolength=rl) dvq(:, :)
+    !
     do iq=1,nqirr
+      !
       call write_tag("qq", iq, q_dir)
+      !
+      io_unit_read = find_free_unit()
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
-      inquire(file=datafile, exist=existitu)
-      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: prefix.fildvscf1 not found: check fildvscf input variable", 1 )
-
+      open( unit=io_unit_read, file=trim(datafile), iostat=ios, &
+            form='unformatted', status='old', action='read', access='direct', recl=rl )
+      if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to read", ios )
+      !
+      io_unit_write = find_free_unit()
       call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
-      call system("cp " // &
-                  trim(datafile)//" " // &
-                  trim(intwdir)//trim(dv_file) )
+      datafile = trim(intwdir)//trim(dv_file)
+      open( unit=io_unit_write, file=trim(datafile), iostat=ios, &
+            form='unformatted', status='replace', action='write', access='direct', recl=rl )
+      if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to write", ios )
+      !
+      do imode=1,3*nat
+        !
+        read(unit=io_unit_read, rec=imode, iostat=ios) dvq(:, :)
+        !
+        if (lsda) then
+          ! Transform the colinear potential (rho_up, rho_down) into a 2x2 non-colinear potential (rho, m_x, m_y, m_z) for compatibility with intw
+          write(unit=io_unit_write, rec=2*(imode-1)+1, iostat=ios) (dvq(:, 1)+dvq(:, 2))/2.0_dp, 0.0_dp*dvq(:, 1)
+          write(unit=io_unit_write, rec=2*(imode-1)+2, iostat=ios) 0.0_dp*dvq(:, 2), (dvq(:, 1)-dvq(:, 2))/2.0_dp
+        else
+          write(unit=io_unit_write, rec=imode, iostat=ios) dvq(:, :)
+        endif
+        !
+      enddo
+      !
+      close(unit=io_unit_read)
+      close(unit=io_unit_write)
+      !
+    enddo
 
+    !
+    ! Induced charge density
+    do iq=1,nqirr
+      !
+      call write_tag("qq", iq, q_dir)
+      !
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
       inquire(file=datafile, exist=existitu)
       if (existitu) then
@@ -333,23 +379,35 @@ contains
                     trim(datafile)//" " // &
                     trim(intwdir)//trim(rho_file) )
       end if
+      !
     enddo
+
     !
+    ! Dynamical matrices
     do iq=1,nqirr
+      !
       call write_tag("qq", iq, q_dir)
+      !
       if (dynxml) then
-      ! call system("cp " // &
-      !             trim(ph_dir)//"qq"//trim(adjustl(numq_str))//"/"//trim(prefix)//".dyn.xml " // &
-      !             trim(prefix)//".dyn"//trim(adjustl(numq_str))//".xml" )
+        !
+        call errore( "pw2intw", "write_phonon_info: dynxml not implemented yet", 1 )
+        ! call system("cp " // &
+        !             trim(ph_dir)//"qq"//trim(adjustl(numq_str))//"/"//trim(prefix)//".dyn.xml " // &
+        !             trim(prefix)//".dyn"//trim(adjustl(numq_str))//".xml" )
+        !
       else
+        !
         datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
         inquire(file=datafile, exist=existitu)
         if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
+        !
         call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
         call system("cp " // &
                     trim(datafile)//" " // &
                     trim(intwdir)//trim(dyn_file) )
+        !
       end if
+      !
     enddo
 
   end SUBROUTINE write_phonon_info
