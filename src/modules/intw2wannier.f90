@@ -677,8 +677,6 @@ contains
   do ikpt = 1, nnkp_num_kpoints
 
     ! fetch the data
-    !call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
-!     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , nspin,list_iG, wfc, QE_eig, G_plus)
     call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig)
 
     !loop on all bands and all trial functions

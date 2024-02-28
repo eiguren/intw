@@ -25,7 +25,7 @@ contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands,get_K_folder_data, &
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands, &
                             num_bands_intw
     use intw_useful_constants, only: cmplx_0
 

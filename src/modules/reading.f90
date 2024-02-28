@@ -26,19 +26,18 @@ module intw_reading
   !
   ! variables
   public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, kpoints_QE, &
-            s, can_use_TR, ftau, nrot, nsym, atom_pfile, atom_labels, &
+            s, can_use_TR, ftau, nsym, atom_pfile, atom_labels, &
             at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
-            ngm, gvec, QE_ngk, QE_igk, lsda, noncolin, spinorb_mag, ecutwfc, ecutrho, &
-            tpiba, tpiba2, dual, gcutm, gamma_only, &
+            ngm, gvec, lsda, noncolin, spinorb_mag, ecutwfc, ecutrho, &
+            tpiba, tpiba2, gamma_only, &
             num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw
   !
   ! subroutines
   public :: read_parameters_data_file_xml, &
             read_kpoints_data_file_xml, &
-            get_ngm, &
-            get_ngmax, &
             get_gvec, &
-            get_K_folder_data, get_K_folder_data_with_nG,&
+            get_K_folder_data, &
+            get_K_folder_data_with_nG, &
             write_tag, &
             deallocate_reading_variables, &
             set_num_bands, &
@@ -125,9 +124,6 @@ module intw_reading
   real(dp), allocatable :: ftau(:,:)
   ! fractional translations, in crystal coordinates.
 
-  integer :: nrot
-  ! number of bravais lattice symmetries
-
   integer :: nsym
   ! number of crystal symmetries
 
@@ -177,16 +173,10 @@ module intw_reading
   integer, allocatable :: gvec(:,:)
   ! The global g vectors (to which indices refer).
 
-  integer, allocatable :: QE_ngk(:)
-  ! nG for all ks
-
-  integer, allocatable :: QE_igk(:,:)
-  ! iG_list for all ks
-
   logical :: noncolin
   ! if a noncolinear calculation noncolin=T
 
-  logical :: spinorb_mag
+  logical :: spinorb_mag ! TODO: I think that we should change the name of this variable, as at this moments only indicates if the induced potential is a 2x2 matrix or not.
   ! if spinorb_mag=T It is a situation with TR broken and spinor calculation.
   ! if spinorb_mag=F TR sym. is present!
 
@@ -198,9 +188,6 @@ module intw_reading
 
   real(kind=dp):: tpiba != tpi/alat
   real(kind=dp) :: tpiba2 != tpiba**2
-
-  real(dp) :: dual
-  real(dp) :: gcutm
 
   logical :: gamma_only
 
@@ -298,8 +285,6 @@ contains
 
     tpiba = tpi/alat
     tpiba2 = tpiba*tpiba
-    dual = ecutrho/ecutwfc
-    gcutm = dual * ecutwfc / tpiba2
 
     !LSDA
     read(unit=io_unit,fmt=*)dummy
@@ -483,52 +468,8 @@ contains
 
   end subroutine read_kpoints_data_file_xml
 
-  subroutine get_ngm ()
 
-    use intw_input_parameters, only: mesh_dir, prefix
-    use intw_utility, only: find_free_unit
-
-    implicit none
-
-    integer :: io_unit
-
-    !output:
-    ! 'ngm', the real max num. of g vectors in the global list.
-    !local :
-    character(256) :: datafile
-
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
-    io_unit = find_free_unit()
-    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)ngm
-    close(unit=io_unit)
-
-  end subroutine get_ngm
-
-  subroutine get_ngmax ()
-
-    use intw_input_parameters, only: mesh_dir, prefix
-    use intw_utility, only: find_free_unit
-
-    implicit none
-
-    integer :: io_unit
-
-    !output:
-    ! 'ngm', the real max num. of g vectors in the global list.
-    !local :
-    character(256) :: datafile
-
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
-    io_unit = find_free_unit()
-    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG_max
-    close(unit=io_unit)
-
-  end subroutine get_ngmax
-
-
-  subroutine get_gvec ()
+  subroutine get_gvec()
 
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
@@ -548,25 +489,11 @@ contains
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
     read(unit=io_unit)ngm
-    !allocate(gvec(1:2,ngm))
+
+    allocate(gvec(3, ngm))
 
     do ig=1,ngm
       read(unit=io_unit)gvec(1:3,ig)
-    end do
-
-    close(unit=io_unit)
-
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"iGlist.dat")
-    io_unit = find_free_unit()
-    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG_max
-
-    allocate(QE_igk(nG_max,nkpoints_QE))
-    allocate(QE_ngk(nkpoints_QE))
-    QE_igk = 0
-    do ik=1,nkpoints_QE
-      read(unit=io_unit)QE_ngk(ik)
-      read(unit=io_unit)QE_igk(1:QE_ngk(ik),ik)
     end do
 
     close(unit=io_unit)

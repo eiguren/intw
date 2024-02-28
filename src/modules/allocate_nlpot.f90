@@ -10,7 +10,7 @@ subroutine allocate_nlpot ()
   !
   !
   use kinds
-  use intw_reading, only: nat,ntyp,ityp,ecutwfc,ecutrho,dual,gcutm,tpiba2,bg,ngm,nspin
+  use intw_reading, only: nat,ntyp,ityp,ecutwfc,ecutrho,tpiba2,bg,ngm,nspin
   use intw_reading, only: noncolin,lspinorb,ng_max
   USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq
   use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,vkb,vkqb
@@ -92,10 +92,9 @@ end subroutine allocate_nlpot
 subroutine set_nqxq (qpoint)
   !
   USE kinds
-  USE intw_reading, ONLY:gcutm
   USE intw_pseudo,  ONLY: dq,nqx,nqxq
 
-  USE intw_reading, ONLY: nat,ntyp,ityp,ecutwfc,ecutrho,dual,gcutm,tpiba2,bg
+  USE intw_reading, ONLY: nat,ntyp,ityp,ecutwfc,ecutrho,tpiba2,bg
   USE intw_reading, ONLY: ngm,nspin,noncolin,ng_max
   USE intw_pseudo, ONLY: tab,tab_d2y,dq,nqx,nqxq
   USE intw_pseudo, ONLY: indv,nhtol,nhtolm,ijtoh, &
@@ -118,7 +117,7 @@ subroutine set_nqxq (qpoint)
   ! This routine is called also by the phonon code, in which case it should
   ! allocate an array that includes q+G vectors up to |q+G|_max <= |Gmax|+|q|
   !
-  nqxq = INT( (( (sqrt(2*gcutm) + qnorm ) / dq + 4.0_dp) )) ! x2 zeren Ry -> Hartree egin behar
+  nqxq = INT( (( (sqrt(2*ecutrho/tpiba2) + qnorm ) / dq + 4.0_dp) )) ! x2 zeren Ry -> Hartree egin behar
   !
   !
   return

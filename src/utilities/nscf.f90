@@ -2,12 +2,13 @@ program nscf
 
   use kinds, only: dp
   use intw_input_parameters, only: intw2W_method, read_input
-  use intw_reading, only: nspin, noncolin, gvec, ngm, nsym, &
+  use intw_reading, only: nspin, noncolin, ngm, nsym, &
        spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
-       ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
-       get_ngm, get_gvec,nbands,&
-       read_parameters_data_file_xml, nkpoints_QE,&
-       read_kpoints_data_file_xml, get_K_folder_data_with_nG
+       ntyp, amass, npol, tau, bg, nr1, nr2, nr3, nbands, nkpoints_QE, &
+       get_gvec, &
+       read_parameters_data_file_xml, &
+       read_kpoints_data_file_xml, &
+       get_K_folder_data_with_nG
   use intw_pseudo, only: vkb, read_all_pseudo
   use intw_utility, only: get_timing, find_free_unit, switch_indices
 
@@ -81,9 +82,6 @@ program nscf
   !
   call read_parameters_data_file_xml()
   !
-  call get_ngm()
-  allocate(gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
-
   !
   call get_gvec()
   !

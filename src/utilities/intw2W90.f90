@@ -34,8 +34,8 @@ program intw2W90_2
   use intw_input_parameters, only: mesh_dir, prefix, intw2W_fullzone, intw2W_method, tr_symmetry, &
                                    nk1, nk2, nk3, tr_symmetry, compute_mmn, compute_amn, &
                                    read_input
-  use intw_reading, only: gvec, ngm, nbands, kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
-                          read_parameters_data_file_xml, get_ngm, get_ngmax, get_gvec, &
+  use intw_reading, only: ngm, nbands, kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
+                          read_parameters_data_file_xml, get_gvec, &
                           read_kpoints_data_file_xml, deallocate_reading_variables, &
                           num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw, &
                           set_num_bands
@@ -107,10 +107,6 @@ call set_num_bands()
 !      generate g_fft_map, which in turn is necessary in the
 !      wavefunction rotation code!
 !================================================================================
-
-call get_ngm ()
-call get_nGmax
-allocate (gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
 
 call get_gvec ()
 
@@ -384,7 +380,6 @@ call deallocate_spin_symmetry_matrices()
 
 deallocate(kpoints_QE)
 
-deallocate (gvec)
 deallocate(kmesh)
 !================================================================================
 !       Finish

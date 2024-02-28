@@ -5,10 +5,10 @@ program ep_melements
                                    nq1, nq2, nq3, nqirr, mesh_dir, ph_dir, fc_mat, &
                                    calc_epmat, ep_mat_file, TR_symmetry, &
                                    read_input
-  use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, gvec, ngm, nsym, &
+  use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
                           spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
                           ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
-                          read_parameters_data_file_xml, get_ngm, get_gvec, &
+                          read_parameters_data_file_xml, get_gvec, &
                           read_kpoints_data_file_xml, &
                           num_bands_intw, set_num_bands
   use intw_pseudo, only: vkb, vkqb, read_all_pseudo
@@ -149,10 +149,6 @@ program ep_melements
   !      generate g_fft_map, which in turn is necessary in the
   !      wavefunction rotation code!
   !================================================================================
-  !
-  !haritz: ngm irakurri da read_parameters_data_file_xml()-en, eztao get_ngm() erabili beharrik
-  call get_ngm()
-  allocate(gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
   !
   call get_gvec()
   !
