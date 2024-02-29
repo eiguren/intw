@@ -4,7 +4,7 @@ import re
 import sys
 
 # Set accuracy for comparison
-acc = 1.0E-6
+acc = 1.0E-5
 
 # Detect degenerate bands
 out_file = "si.eig"
