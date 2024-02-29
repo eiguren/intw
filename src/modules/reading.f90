@@ -27,7 +27,7 @@ module intw_reading
   ! variables
   public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, kpoints_QE, &
             s, can_use_TR, ftau, nsym, atom_pfile, atom_labels, &
-            at, bg, alat, volume0, nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, &
+            at, bg, alat, volume0, nat, ntyp, ityp, tau, tau_cryst, amass, nr1, nr2, nr3, &
             ngm, gvec, lsda, noncolin, spinorb_mag, ecutwfc, ecutrho, &
             tpiba, tpiba2, gamma_only, &
             num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw
@@ -139,10 +139,10 @@ module intw_reading
   ! atom_label( j )  = name of the j-th atomic type (or species)
 
   real(dp) :: at(3,3)
-  ! The a1 a2 and a3 lattice vectors
+  ! The a1 a2 and a3 lattice vectors column wise
 
   real(dp) :: bg(3,3)
-  ! The reciprocal lattice vectors
+  ! The reciprocal lattice vectors column wise
 
   real(dp) :: alat
   ! The lattice parameter
@@ -160,6 +160,8 @@ module intw_reading
 
   real(dp), allocatable :: tau(:,:)
   ! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
+  real(dp), allocatable :: tau_cryst(:,:)
+  ! tau( 1:3, i ) = position of the i-th atom (in Crystal units)
 
   real(dp), allocatable :: amass(:)
   ! amass(1:nat)  = atomic masses
@@ -203,7 +205,7 @@ contains
     ! for details regarding the iotk subroutines.
     !------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix, TR_symmetry
-    use intw_utility, only: find_free_unit
+    use intw_utility, only: find_free_unit, ainv
     use intw_useful_constants, only: tpi
 
     implicit none
@@ -315,6 +317,7 @@ contains
     allocate(atom_pfile(ntyp))
     allocate(ityp(nat))
     allocate(tau(3,nat))
+    allocate(tau_cryst(3,nat))
     allocate(amass(ntyp))
     !ATOM LABELS and PP files
     read(unit=io_unit,fmt=*)dummy
@@ -326,6 +329,7 @@ contains
     read(unit=io_unit,fmt=*)dummy
     do i=1,nat
       read(unit=io_unit,fmt=*)dummy,ityp(i), tau(:,i)
+      tau_cryst(:, i) = matmul(ainv(at), tau(:, i))
     end do
 
     !NSYM

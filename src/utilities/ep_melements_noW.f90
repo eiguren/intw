@@ -23,7 +23,7 @@ program ep_melements
                           find_k_1BZ_and_G
   use intw_useful_constants, only: cmplx_0, cmplx_1
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, &
-                             symtable, rtau_index, rtau, tau_cryst, rtau_cryst, &
+                             symtable, rtau_index, rtau, rtau_cryst, &
                              rot_atoms, &
                              find_size_of_irreducible_k_set, &
                              find_the_irreducible_k_set, &
@@ -176,7 +176,6 @@ program ep_melements
   ! Set the rotation table for each atom and symmetry
   allocate(rtau_index(nat,nsym))
   allocate(rtau(3,nsym,nat))
-  allocate(tau_cryst(3,nat))
   allocate(rtau_cryst(3,nsym,nat))
   !
   call rot_atoms(nat,nsym,tau)

@@ -28,7 +28,7 @@ module intw_symmetries
   ! variables
   public :: symlink, sym_G, nosym_G, QE_folder_sym, QE_folder_nosym, inverse_indices, &
             identity_matrix_index, spin_symmetry_matrices, full_mesh, IBZ, rtau_index, &
-            tau_cryst, rtau, rtau_cryst, symtable
+            rtau, rtau_cryst, symtable
   !
   ! subroutines
   public :: allocate_symmetry_related_k, deallocate_spin_symmetry_matrices, &
@@ -69,7 +69,6 @@ module intw_symmetries
   !Asier && Idoia 17 07 2014
   !Identy of atoms under symmetry operation
   integer, allocatable :: rtau_index(:,:)
-  real(kind=dp), allocatable :: tau_cryst(:,:)
   real(kind=dp), allocatable :: rtau(:,:,:)
   real(kind=dp), allocatable :: rtau_cryst(:,:,:)
 
@@ -1817,17 +1816,16 @@ contains
   end subroutine echo_symmetry_1BZ
 
   subroutine rot_atoms(nat,nsym,tau)
-    use intw_utility, only: ainv
-    use intw_reading, only: nr1, nr2, nr3
-    use intw_reading, only: s, ftau, at, bg
+
+    use intw_reading, only: nr1, nr2, nr3, s, ftau, at, bg, tau_cryst
 
     implicit none
+
     integer, intent(in) :: nat, nsym
     real(kind=dp), intent(in) :: tau(3,nat)
     !out global
     !    integer, intent(out) :: rtau_index(nat,nsym)
     !    real(kind=dp), intent(out) :: rtau(3,nsym,nat)
-    !    real(kind=dp), intent(out) :: tau_cryst(3,nat)
     !    real(kind=dp), intent(out) :: rtau_cryst(3,nsym,nat)
 
     integer :: i, j, h
@@ -1858,10 +1856,6 @@ contains
     nr = (/nr1,nr2,nr3/)
 
     rtau_index = -11
-
-    do i=1,nat
-      tau_cryst(:,i) = matmul(ainv(at), tau(:,i))
-    enddo
 
     do i=1,nat
       do isym=1,nsym
