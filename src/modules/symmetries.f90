@@ -136,7 +136,6 @@ contains
 
     nkmesh = nk1*nk2*nk3
     !
-    allocate(inverse_indices(nsym))
     allocate(QE_folder_sym(nkmesh))
     allocate(sym_G(3,nkmesh))
     allocate(symlink(nkmesh,2))
@@ -213,6 +212,8 @@ contains
 
     ! Find the rotation matrices in cartesian coordinates
     !
+
+    allocate(inverse_indices(nsym))
 
     rot_cart = zero
     !
