@@ -573,7 +573,7 @@ contains
       write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
-      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig)
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2)
 
       ngk2= ngk_all(QE_folder_sym(ikpt_2))
       ! Compute the matrix elements
@@ -646,8 +646,6 @@ contains
 
   complex(dp)    :: guiding_function(ngm,nspin)
 
-  real(dp)       :: QE_eig(num_bands_intw)
-
   complex(dp)    :: amn(num_bands_intw)
 
   character(256) :: header
@@ -677,7 +675,7 @@ contains
   do ikpt = 1, nnkp_num_kpoints
 
     ! fetch the data
-    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig)
+    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc)
 
     !loop on all bands and all trial functions
     do n_proj = 1,nnkp_n_proj

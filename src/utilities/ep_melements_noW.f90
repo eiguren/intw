@@ -72,9 +72,7 @@ program ep_melements
   integer                  :: ep_unit
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:,:,:), ep_mat_el(:,:,:,:,:,:)
 
-  !wave function realted variables information
-  real(dp), allocatable    :: QE_eig_k(:)
-  real(dp), allocatable    :: QE_eig_kq(:)
+  !wave function realted variables
   integer, allocatable     :: list_igk(:)
   integer, allocatable     :: list_igkq(:)
   integer, allocatable     :: list_igk_aux (:)
@@ -422,9 +420,6 @@ program ep_melements
   !
   allocate(wfc_k_r(nr1*nr2*nr3))
   !
-  allocate(QE_eig_k(num_bands_intw))
-  allocate(QE_eig_kq(num_bands_intw))
-  !
   !
   !================================================================================
   !       Read all the information about phonons and pseudopotentials
@@ -602,8 +597,8 @@ program ep_melements
         !
         !-uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta. (k+q)
         !
-        call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k , QE_eig_k )
-        call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq, QE_eig_kq)
+        call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k )
+        call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq)
         !
         !-k eta k+q puntuen indizeak topatu. ikpt_1 ik-aldagaiaren berdina izan
         ! behar da, baina hurrengo eran segurtasuna irabazten dugu.

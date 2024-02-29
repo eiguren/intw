@@ -94,6 +94,7 @@ contains
 
   end subroutine allocate_and_get_all_irreducible_wfc
 
+
   subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
 
     use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3, num_bands_intw
@@ -110,10 +111,10 @@ contains
     !I/O variables
     real(dp), intent(in) :: kpoint(3)
     integer, intent(out) :: list_iG(nG_max)
-    real(dp), intent(out) :: QE_eig(num_bands_intw)
     complex(dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
-    !local variables
+    real(dp), intent(out), optional :: QE_eig(num_bands_intw)
 
+    !local variables
     integer :: ikpt, i_folder
     integer :: i_sym, TR
     integer :: i_1bz, j_1bz, k_1bz
@@ -122,6 +123,7 @@ contains
     real(dp) :: kpoint_1BZ(3), k_QE(3), ktest(3)
     integer :: list_iG_irr(nG_max)
     complex(dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
+
 
     call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz,k_1bz,kpoint_1bz,G_plus)
     !
@@ -136,7 +138,7 @@ contains
       !
       wfc_k(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
       list_iG_irr(:) = list_iG_all(ikpt,:)
-      QE_eig(:) = QE_eig_irr_all(ikpt,:)
+      if (present(QE_eig)) QE_eig(:) = QE_eig_irr_all(ikpt,:)
       !
       G_sym = kpoint - k_QE
       !
@@ -153,15 +155,15 @@ contains
       !
       ! The symmetry which takes kpoints_QE(:,i_folder) into aimed kpoint.
       ! sym * kpoints_QE =  kpoint
-      i_sym    = symlink(ikpt,1)
-      TR       = symlink(ikpt,2)
+      i_sym = symlink(ikpt,1)
+      TR = symlink(ikpt,2)
       ftau_sym = ftau(:,(i_sym))
-      sym      = s(:,:,(i_sym))
+      sym = s(:,:,(i_sym))
       !
       ! Load the corresponding irreducible wfcs in kpoints_QE
       wfc_k_irr(:,:,:) = wfc_k_irr_all(i_folder,:,:,:)
-      list_iG_irr(:)   = list_iG_all(i_folder,:)
-      QE_eig(:)        = QE_eig_irr_all(i_folder,:)
+      list_iG_irr(:) = list_iG_all(i_folder,:)
+      if (present(QE_eig)) QE_eig(:) = QE_eig_irr_all(i_folder,:)
       !
       ktest = matmul(sym ,k_QE)
       !
@@ -176,8 +178,7 @@ contains
         G_sym = nint(kpoint - ktest)
       end if
       !
-      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym, &
-                                                      sym,ftau_sym,(/0,0,0/))
+      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k,list_iG,i_sym,sym,ftau_sym,(/0,0,0/))
       !
       ! If time-reversal is present, the wavefunction currently stored
       ! in wfc_k is actually for (-k). Complex conjugation must now
@@ -201,10 +202,8 @@ contains
       call wfc_by_expigr(kpoint,num_bands_intw,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
       !
     endif
-    !
-    return
 
-  end subroutine  get_psi_general_k_all_wfc
+  end subroutine get_psi_general_k_all_wfc
 
 !---------------------------------------------
 end module intw_allwfcs
