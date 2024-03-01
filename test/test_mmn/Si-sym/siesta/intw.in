@@ -5,10 +5,6 @@
     nk2 = 8
     nk3 = 8
     TR_symmetry = .false.
-    nk1s = 8
-    nk2s = 8
-    nk3s = 8
-    number_G_shells = 1
 /
 
 &intw2W

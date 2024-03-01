@@ -5,13 +5,12 @@
     nk2 = 4
     nk3 = 4
     TR_symmetry = .true.
-    nk1s = 4
-    nk2s = 4
-    nk3s = 4
-    number_G_shells = 1
 /
 
 &intw2W
     intw2W_fullzone = .false.
     intw2W_method = 'CONVOLUTION'
+/
+
+&ph
 /
