@@ -15,6 +15,3 @@
     intw2W_fullzone = .true.
     intw2W_method = 'CONVOLUTION'
 /
-
-&ph
-/
