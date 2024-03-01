@@ -5,13 +5,12 @@
     nk2 = 8
     nk3 = 8
     TR_symmetry = .true.
-    nk1s = 8
-    nk2s = 8
-    nk3s = 8
-    number_G_shells = 1
 /
 
 &intw2W
     intw2W_fullzone = .false.
     intw2W_method = 'CONVOLUTION'
+/
+
+&ph
 /
