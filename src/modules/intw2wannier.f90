@@ -14,8 +14,6 @@ module intw_intw2wannier
 !       using only the wavefunctions in the IBZ, rotating them appropriately.
 !----------------------------------------------------------------------------!
   use kinds, only: dp
-  use intw_reading, only: nbands, nG_max, ngm, nspin
-  use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
   !
@@ -121,8 +119,9 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, noncolin, scan_file_to
+  use intw_reading, only: alat, noncolin, scan_file_to, nbands
   use intw_utility, only: find_free_unit
+  use intw_useful_constants, only: bohr, tpi, eps_8
 
   implicit none
 
@@ -401,6 +400,7 @@ contains
 ! This subroutine checks that the irreducible kpoints and the mesh
 ! read from the nnkp file are related.
 !--------------------------------------------------------------------!
+  use intw_useful_constants, only: eps_8
 
   implicit none
 
@@ -464,10 +464,10 @@ contains
 ! header to provide a time stamp in our files
 !-----------------------------------------------------------
 
-  character(256) :: header
+  character(*), intent(in)   :: method
+  character(256), intent(out) :: header
   character(8)   :: cdate
   character(10)  :: ctime
-  character(*)   :: method
 
   call date_and_time(DATE=cdate,TIME=ctime)
   !
@@ -491,17 +491,16 @@ contains
   !----------------------------------------------------------------------------!
   USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
   use intw_utility, only: find_free_unit
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use intw_reading, only: num_bands_intw
+  use intw_reading, only: num_bands_intw, nG_max, nbands, nspin
   use intw_symmetries, only:  QE_folder_sym
-
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, &
+                                  get_plane_wave_matrix_element_convolution_map
 
   implicit none
 
-  logical        :: intw2W_fullzone
-  character(*)   :: method
+  logical, intent(in)        :: intw2W_fullzone
+  character(*), intent(in)   :: method
 
 
   integer        :: io_unit_mmn, io_unit_eig
@@ -513,7 +512,7 @@ contains
 
   integer        :: ikpt_1, ikpt_2
   integer        :: nb1, nb2, nb
-  integer        :: G(3), G_plus(3)
+  integer        :: G(3)
 
   integer        :: ngk1, ngk2
 
@@ -580,10 +579,6 @@ contains
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
                         ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
-          !call get_plane_wave_matrix_element_convolution      &
-          !(G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
-
-
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
                         ((/0, 0, 0/),list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
@@ -622,14 +617,14 @@ contains
   !----------------------------------------------------------------------------!
    USE intw_allwfcs, only: get_psi_general_k_all_wfc
    use intw_utility, only: find_free_unit
-   use intw_useful_constants, only: cmplx_0
-   use intw_reading, only : noncolin, num_bands_intw
+   use intw_reading, only : noncolin, num_bands_intw, nbands, ngm, nG_max, nspin
    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+   use intw_useful_constants, only: cmplx_0
 
   implicit none
 
-  logical        :: intw2W_fullzone
-  character(256) :: method
+  logical, intent(in)      :: intw2W_fullzone
+  character(*), intent(in) :: method
 
   integer        :: io_unit_amn
   integer        :: nkmesh
@@ -650,13 +645,6 @@ contains
 
   character(256) :: header
 
-  integer :: G_plus(3)
-
-!!Peio
-!!The variable we use instead of num_bands
-!  integer :: nbands_loc
-!!Peio
-!nbands_loc=num_bands
 
   nkmesh = nk1*nk2*nk3
 
@@ -740,6 +728,7 @@ contains
 !---------------------------------------------------------------------------
 
   use intw_reading, only: gvec, ngm, alat
+  use intw_useful_constants, only: tpi, fpi, ZERO, cmplx_0, cmplx_i
 
   implicit none
 
@@ -757,7 +746,7 @@ contains
   real(dp) :: zona, zaxis(3), xaxis(3), ylm(ngm)
   real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
   real(dp) :: k_plus_G_cart(3,ngm)
-  real(dp) :: norm2, x, y
+  real(dp) :: norm2
   real(dp) :: radial_l(ngm, 0:lmax), coef(lmmax)
   complex(dp) :: four_pi_i_l
 
@@ -869,9 +858,10 @@ contains
 !  The computation is done over all bands using FFT.
 !------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw
+  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw, nspin
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
                       wfc_from_g_to_r
+  use intw_useful_constants, only: cmplx_0
 
   implicit none
 
@@ -955,7 +945,8 @@ contains
 !
 !--------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, num_bands_intw
+  use intw_reading, only: ngm, nG_max, num_bands_intw, nspin
+  use intw_useful_constants, only: cmplx_0
 
   implicit none
 
@@ -1054,7 +1045,7 @@ contains
    !local variables
 
    integer :: iG, l
-   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
+   real(dp) :: z, z2, z4, z6, z52, sqrt_z
    real(dp) :: p(ngm)
 
    ! from pw2wannier
@@ -1319,6 +1310,7 @@ contains
 ! If ordering in wannier90 code is changed or extended this should be the
 ! only place to be modified accordingly
 !--------------------------------------------------------------------------
+   use intw_useful_constants, only: pi, eps_8
 
    implicit none
 
