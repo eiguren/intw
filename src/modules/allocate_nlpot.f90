@@ -9,24 +9,21 @@ subroutine allocate_nlpot ()
   !     nqxq          !  as above, for q-function interpolation table
   !
   !
-  use kinds
-  use intw_reading, only: nat,ntyp,ityp,ecutwfc,ecutrho,tpiba2,bg,ngm,nspin
-  use intw_reading, only: noncolin,lspinorb,ng_max
-  USE intw_pseudo, only: tab,tab_d2y,dq,nqx,nqxq
-  use intw_pseudo, only: indv,nhtol,nhtolm,ijtoh,vkb,vkqb
-  use intw_pseudo, only: nkb,nhtoj,DKB
-  use intw_pseudo, only: upf,lmaxkb,nh,nhm,nbetam
+  use kinds, only: dp
+  use intw_reading, only: nat, ntyp, ityp, ecutwfc, nspin, lspinorb, ng_max
+  USE intw_pseudo, only: tab, tab_d2y, dq, nqx, indv, nhtol, nhtolm, &
+                         ijtoh, vkb, vkqb, nkb, nhtoj, DKB, upf, &
+                         lmaxkb, nh, nhm, nbetam
   use intw_spin_orb, only: fcoef
 
   implicit none
 
   !local variables
 
-  integer :: nwfcm,npwx, nt, nb, na
+  integer :: nt, nb, na
 
   real(dp),parameter :: cell_factor=1.0_dp
 
-  real(dp) :: qnorm
 
   lmaxkb = - 1
   DO nt = 1, ntyp
@@ -91,17 +88,9 @@ end subroutine allocate_nlpot
 !-------------------------------------------------------------------------
 subroutine set_nqxq (qpoint)
   !
-  USE kinds
-  USE intw_pseudo,  ONLY: dq,nqx,nqxq
-
-  USE intw_reading, ONLY: nat,ntyp,ityp,ecutwfc,ecutrho,tpiba2,bg
-  USE intw_reading, ONLY: ngm,nspin,noncolin,ng_max
-  USE intw_pseudo, ONLY: tab,tab_d2y,dq,nqx,nqxq
-  USE intw_pseudo, ONLY: indv,nhtol,nhtolm,ijtoh, &
-                       nkb,nhtoj
-  USE intw_pseudo, ONLY: upf,lmaxkb,nh,nhm,nbetam
-  USE intw_spin_orb, ONLY: fcoef
-  !USE intw_pseudo
+  USE kinds, only: dp
+  USE intw_pseudo,  ONLY: dq, nqxq
+  USE intw_reading, ONLY: ecutrho, tpiba2, bg
 
   implicit none
 
