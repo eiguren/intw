@@ -884,7 +884,7 @@ contains
 
   !local variables
 
-  integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
+  integer :: ibnd, ir, ispin, iG0, iG0_fft, G0(3)
   complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3,nspin)
   complex(dp) :: frr(nr1*nr2*nr3,nspin)
   complex(dp) :: fg(ngm,nspin)
@@ -909,24 +909,24 @@ contains
      !call func_from_g_to_r (1,ngm,guiding_function,fr)
      call func_from_g_to_r (1,ngm,guiding_function,frr)
      !
-     do is=1,nspin
+     do ispin=1,nspin
         !
-        call wfc_from_g_to_r (list_iG,wfc(:,ibnd,is),wfc_r)
+        call wfc_from_g_to_r (list_iG,wfc(:,ibnd,ispin),wfc_r)
         !
         do ir=1,nr1*nr2*nr3
            !
            ! MBR
            !fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
-           fr(ir,is)=fr(ir,is) + conjg(wfc_r(ir))*frr(ir,is)
+           fr(ir,ispin)=fr(ir,ispin) + conjg(wfc_r(ir))*frr(ir,ispin)
            !
         enddo !ir
-     enddo !is
+     enddo !ispin
      !
      call func_from_r_to_g (1,ngm,fr,fg)
      !
      ! JLB: Sum both spin components
-     do is=1, nspin
-      amn(ibnd)=amn(ibnd)+fg(iG0_fft, is)
+     do ispin=1, nspin
+      amn(ibnd)=amn(ibnd)+fg(iG0_fft, ispin)
      end do
      !amn(ibnd)=fg(iG0_fft)
      !
@@ -968,7 +968,7 @@ contains
 
   !local variables
 
-  integer :: i, ibnd, is, iG, nG_max_non_zero
+  integer :: i, ibnd, ispin, iG, nG_max_non_zero
   integer        :: list_iG1(nG_max)
   complex(dp) :: amn_local(num_bands_intw)
 !  real(dp)       :: wrong_norm2
@@ -994,7 +994,7 @@ contains
   !$omp parallel default(none)                          &
   !$omp shared(nG_max_non_zero,nG_max,list_iG,list_iG1,cmplx_0)  &
   !$omp shared(nbands,num_bands_intw,nspin,wfc,amn,guiding_function)   &
-  !$omp private(i,iG,ibnd,is,amn_local)
+  !$omp private(i,iG,ibnd,ispin,amn_local)
   !
   amn_local = cmplx_0
   !
@@ -1009,11 +1009,11 @@ contains
      ! it is thus properly indexed by iG, not i.
      !
      do ibnd=1,num_bands_intw
-        do is=1,nspin
+        do ispin=1,nspin
            !
-           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG,is)
+           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,ispin))*guiding_function(iG,ispin)
            !
-        enddo !is
+        enddo !ispin
      enddo !ibnd
      !
   enddo !i loop

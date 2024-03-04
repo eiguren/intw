@@ -5,53 +5,31 @@ subroutine allocate_phq
   !     Many variables are declared and not used, I don't understand why.
   !     Discuss with Haritz/Asier, and then remove and clean up.
   !
-  USE kinds, only : DP
-  USE intw_reading, only : nat, ntyp, nbands, nr1,nr2,nr3
+  USE intw_reading, only : nat, ntyp, nr1, nr2, nr3
   USE intw_reading, ONLY : ngm
-  USE intw_pseudo, ONLY: nkb
-  USE intw_pseudo, ONLY: nhm
-
-  USE intw_pseudo, ONLY :  vlocq
-
-  USE intw_ph, ONLY : eigqts,dvloc
-!haritz
-  use intw_input_parameters, only: nk1, nk2, nk3
-!haritz
+  USE intw_pseudo, ONLY : vlocq
+  USE intw_ph, ONLY : eigqts, dvloc
 
   implicit none
-  INTEGER :: ipol, ik
 
-  !integer :: nbands_loc
+  allocate(eigqts(nat))
+  allocate(vlocq (ngm, ntyp))
+  allocate(dvloc(nr1*nr2*nr3))
 
-  !
-  !nbands_loc=num_bands
-  allocate (eigqts(nat))
-  allocate (vlocq ( ngm , ntyp))
-  allocate (dvloc(nr1*nr2*nr3))
-
-  return
 end subroutine allocate_phq
 
 !-----------------------------------------------------------------------
 subroutine deallocate_phq
   !-----------------------------------------------------------------------
   !
-  USE kinds, only : DP
-  USE intw_reading, only : nat, ntyp, nbands, ngm
-
-  USE intw_pseudo, ONLY: nkb
-  USE intw_pseudo, ONLY: nhm
-
-  USE intw_pseudo, ONLY :  vlocq
-
-  USE intw_ph, ONLY : eigqts,dvloc
+  USE intw_pseudo, ONLY : vlocq
+  USE intw_ph, ONLY : eigqts, dvloc
 
   implicit none
-  INTEGER :: ipol
   !
-  deallocate (eigqts)
-  deallocate (vlocq )
-  deallocate (dvloc)
+  deallocate(eigqts)
+  deallocate(vlocq)
+  deallocate(dvloc)
 
   return
 end subroutine deallocate_phq

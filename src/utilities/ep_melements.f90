@@ -6,7 +6,7 @@ program ep_melements
                                    ep_mat_file, TR_symmetry, &
                                    read_input
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
-                          s, nbands, nG_max, nat, npol, tau, bg, &
+                          s, nbands, nG_max, nat, nspin, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
                           read_parameters_data_file_xml, &
                           get_gvec, &
@@ -82,7 +82,7 @@ program ep_melements
   !local/aux variables
   integer                  :: npw, npwq
 
-  integer                  :: ig, ibnd, jbnd, ipol, jpol
+  integer                  :: ig, ibnd, jbnd, ispin, jspin
   logical                  :: read_status
   character(len=4)         :: iq_loc
 
@@ -399,8 +399,8 @@ program ep_melements
   allocate(wfc_kq(nG_max,num_bands_intw,nspin))
   !
   ! Allocate induced potential related variables (hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz)
-  allocate(dvq_local(nr1*nr2*nr3,3*nat,npol,npol))
-  allocate(dvpsi(nG_max,num_bands_intw,npol,npol,3*nat))
+  allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
+  allocate(dvpsi(nG_max,num_bands_intw,nspin,nspin,3*nat))
   !
   ! Allocate matrix elements variable
   allocate(ep_mat_el(nk1*nk2*nk3,num_bands_intw,num_bands_intw,nspin,nspin,3*nat))
@@ -427,11 +427,11 @@ program ep_melements
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
     dvq_local = cmplx_0
-    call get_dv(iq,qpoint,3*nat,npol,dvq_local)
+    call get_dv(iq,qpoint,3*nat,nspin,dvq_local)
     !
     ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
     call phq_init(matmul(bg,qpoint))
-    call calculate_local_part_dv(qpoint,nat,npol,dvq_local)
+    call calculate_local_part_dv(qpoint,nat,nspin,dvq_local)
     !
     ! Bi subroutina hauek (goikoak), biak batera joan behar dira beti).
     do ik=1,nkmesh
@@ -468,23 +468,23 @@ program ep_melements
       !
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
       ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-      call dvqpsi_local(3*nat, nG_max, num_bands_intw, npol, list_iGk, list_iGkq, wfc_k, dvq_local, &
-                                              dvpsi(1:nG_max,1:num_bands_intw,1:npol,1:npol,1:3*nat))
+      call dvqpsi_local(3*nat, nG_max, num_bands_intw, nspin, list_iGk, list_iGkq, wfc_k, dvq_local, &
+                                              dvpsi(1:nG_max,1:num_bands_intw,1:nspin,1:nspin,1:3*nat))
       !
       ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
-      call multiply_psi_by_dvKB( kpoint, qpoint, npol, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
+      call multiply_psi_by_dvKB( kpoint, qpoint, nspin, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
       !
       do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz
         !
         ! Matrize elementuak kalkulatu
-        do jpol=1,nspin
-          do ipol=1,nspin
+        do jspin=1,nspin
+          do ispin=1,nspin
             do jbnd=1,num_bands_intw
               do ibnd=1,num_bands_intw
                 !
-                ep_mat_el(ik,ibnd,jbnd,ipol,jpol,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ipol), 1, dvpsi(:,jbnd,ipol,jpol,imode), 1 )
+                ep_mat_el(ik,ibnd,jbnd,ispin,jspin,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ispin), 1, dvpsi(:,jbnd,ispin,jspin,imode), 1 )
                 !
               enddo !ibnd
             enddo !jbnd
@@ -533,20 +533,20 @@ program ep_melements
 
 contains
 
-  subroutine dvqpsi_local(nmode,nG_max,nbands,npol,list_iGk,list_iGkq,wfc_k,dvq_local,dvpsi_local)
+  subroutine dvqpsi_local(nmode,nG_max,nbands,nspin,list_iGk,list_iGkq,wfc_k,dvq_local,dvpsi_local)
 
     implicit none
 
     !I/O variables
 
-    integer,intent(in) :: nmode,nG_max,nbands,npol,list_iGk(nG_max),list_iGkq(nG_max)
-    complex(kind=dp),intent(in) :: dvq_local(nr1*nr2*nr3,nmode,npol,npol),wfc_k(nG_max,nbands,npol)
-    complex(kind=dp),intent(inout) :: dvpsi_local(nG_max,nbands,npol,npol,nmode)
+    integer,intent(in) :: nmode,nG_max,nbands,nspin,list_iGk(nG_max),list_iGkq(nG_max)
+    complex(kind=dp),intent(in) :: dvq_local(nr1*nr2*nr3,nmode,nspin,nspin),wfc_k(nG_max,nbands,nspin)
+    complex(kind=dp),intent(inout) :: dvpsi_local(nG_max,nbands,nspin,nspin,nmode)
 
     !local variables
 
-    integer :: ibnd,ipol,ig,imode,ir
-    complex(kind=dp) :: wfc_r(nr1*nr2*nr3,npol,npol),wfc_r1(nr1*nr2*nr3,npol)
+    integer :: ibnd,ispin,ig,imode,ir
+    complex(kind=dp) :: wfc_r(nr1*nr2*nr3,nspin,nspin),wfc_r1(nr1*nr2*nr3,nspin)
 
     dvpsi_local(:,:,:,:,:)=cmplx_0
     !
@@ -556,34 +556,34 @@ contains
         wfc_r1(:,:)=cmplx_0
         wfc_r(:,:,:)=cmplx_0
         !
-        do ipol=1,npol !elektroi uhin funtzioak espazio errelarela pasatu. SO kasuan ipol osagaiz osagai.
+        do ispin=1,nspin !elektroi uhin funtzioak espazio errelarela pasatu. SO kasuan ispin osagaiz osagai.
           do ig=1,nG_max
             !
             if (list_iGk(ig)==0) exit
-            wfc_r1(nl(list_iGk(ig)),ipol)=wfc_k(ig,ibnd,ipol)
+            wfc_r1(nl(list_iGk(ig)),ispin)=wfc_k(ig,ibnd,ispin)
             !
           enddo !ig
           !
-          call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r1(:,ipol))
+          call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r1(:,ispin))
           !
-        enddo !ipol
+        enddo !ispin
 
         !
-        if (npol==2) then
+        if (nspin==2) then
           !
           do ir=1,nr1*nr2*nr3
             !
-            do ipol=1,npol
-              do jpol=1,npol
+            do ispin=1,nspin
+              do jspin=1,nspin
                 !
-                wfc_r(ir,ipol,jpol)=dvq_local(ir,imode,ipol,jpol)*wfc_r1(ir,jpol)
+                wfc_r(ir,ispin,jspin)=dvq_local(ir,imode,ispin,jspin)*wfc_r1(ir,jspin)
                 !
-              enddo !jpol
-            enddo !ipol
+              enddo !jspin
+            enddo !ispin
             !
           enddo !ir
           !
-        else !npol
+        else !nspin
           !
           do ir=1,nr1*nr2*nr3
             !
@@ -591,23 +591,23 @@ contains
             !
           enddo !ir
           !
-        endif !npol
+        endif !nspin
         !
-        do ipol=1,npol
-          do jpol=1,npol
+        do ispin=1,nspin
+          do jspin=1,nspin
             !
-            call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r(:,ipol,jpol))
+            call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r(:,ispin,jspin))
             !
             do ig=1,nG_max
               !
               if (list_iGkq(ig)==0) exit
               !
-              ! dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(ig),ipol,jpol)
-              dvpsi_local(ig,ibnd,ipol,jpol,imode)=wfc_r(nl(list_iGkq(ig)),ipol,jpol)
+              ! dvpsi_local(ig,ibnd,ispin,jspin,imode)=wfc_r(nl(ig),ispin,jspin)
+              dvpsi_local(ig,ibnd,ispin,jspin,imode)=wfc_r(nl(list_iGkq(ig)),ispin,jspin)
               !
             enddo !ig
-          enddo !jpol
-        enddo !ipol
+          enddo !jspin
+        enddo !ispin
         !
       enddo !ibnd
       !

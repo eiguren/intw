@@ -233,9 +233,9 @@ subroutine lambda_calculate_full_t0_so(wpts,w_min,w_max,d_w,eliash_fplus_so,elia
 
   integer,intent(in) :: wpts
   real(dp),intent(in) :: w_min,w_max,d_w
-  real(dp),intent(in) :: eliash_fplus_so(wpts,npol,npol)
-  real(dp),intent(in) :: eliash_fminus_so(wpts,npol,npol)
-  real(dp),intent(inout) :: lambda_so(npol*npol)
+  real(dp),intent(in) :: eliash_fplus_so(wpts,nspin,nspin)
+  real(dp),intent(in) :: eliash_fminus_so(wpts,nspin,nspin)
+  real(dp),intent(inout) :: lambda_so(nspin*nspin)
 
   !local variables
 
