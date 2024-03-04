@@ -1975,7 +1975,7 @@ contains
     integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
-    integer :: ibnd, is, js
+    integer :: ibnd, ispin, jspin
     integer :: nG  ! counter on the number of G vectors in the array
     complex(kind=dp) :: phases(nG_max)
 
@@ -2019,11 +2019,11 @@ contains
       p_i = permutations(i)
       !
       do ibnd=1,num_bands_intw
-        do is=1,nspin
+        do ispin=1,nspin
           !
-          wfc_k(i,ibnd,is) = wfc_k_irr(p_i,ibnd,is) * phases(p_i)
+          wfc_k(i,ibnd,ispin) = wfc_k_irr(p_i,ibnd,ispin) * phases(p_i)
           !
-        enddo !is
+        enddo !ispin
       enddo !ibnd
       !
     enddo !i
@@ -2031,25 +2031,20 @@ contains
     !
     if (nspin==2) then
       !
-      !print*, "spin matrix--------------------", i_sym
-      !do is=1,nspin
-      !  write(*,"(100f6.2)") (spin_symmetry_matrices(is,js,i_sym), js=1,nspin)
-      !end do
-      !
       wfc_k_aux = wfc_k
       wfc_k     = cmplx_0
       !
       do i=1,nG
         do ibnd=1,num_bands_intw
-          do is=1,nspin
-            do js=1,nspin
+          do ispin=1,nspin
+            do jspin=1,nspin
               !
               ! JLB, MBR 29/06/2023
-              !wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,i_sym) * wfc_k_aux(i,ibnd,js)
-              wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,js)
+              ! wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,i_sym) * wfc_k_aux(i,ibnd,jspin)
+              wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,jspin)
               !
-            enddo !js
-          enddo !is
+            enddo !jspin
+          enddo !ispin
         enddo !ibnd
       enddo !i
       !
@@ -2080,7 +2075,7 @@ contains
     !----------------------------------------------------------------------------!
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_reading, only: get_K_folder_data
-    use intw_reading, only: s, ftau, nG_max, npol, nspin, num_bands_intw
+    use intw_reading, only: s, ftau, nG_max, nspin, num_bands_intw
     use intw_useful_constants, only: ZERO
     use intw_fft, only: wfc_by_expigr
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
@@ -2182,10 +2177,7 @@ contains
 
     list_iG_irr = list_iG
 
-    call wfc_by_expigr(kpoint, num_bands_intw, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-
-    !    call wfc_by_expigr(kpoint, nbands, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-    !(list_iG_irr, list_iG, G_plus)
+    call wfc_by_expigr(kpoint, num_bands_intw, nspin, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
 
   end subroutine get_psi_general_k
   !---------------------------------------------------------------------------

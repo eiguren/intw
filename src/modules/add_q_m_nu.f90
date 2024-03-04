@@ -31,7 +31,7 @@ subroutine add_q_m_nu_term_qe_so(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon
 
   !local variables
 
-  integer :: imode, ipts, is, js
+  integer :: imode, ipts, ispin, jspin
   real(dp) :: wqv, delta_omega(wpts), g2
 
   do imode=1,3*nat-4
@@ -43,8 +43,8 @@ subroutine add_q_m_nu_term_qe_so(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon
      !
      ! We finaly add the (q,m,nu) term to the eliashber function: a^2F(k,n,w)
      !
-     do is=1,nspin
-        do js=1,nspin
+     do ispin=1,nspin
+        do jspin=1,nspin
            !
            if (abs(wqv).lt.0.00001) then
               !
@@ -52,18 +52,18 @@ subroutine add_q_m_nu_term_qe_so(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon
               !
            else
               !
-              g2=(abs(g_me(is,js,imode))**2.d0)/(2.d0*abs(wqv))
+              g2=(abs(g_me(ispin,jspin,imode))**2.d0)/(2.d0*abs(wqv))
               !
            endif
            !
            do ipts=1,wpts
               !
-              eliash_f_so(ipts,is,js)=eliash_f_so(ipts,is,js)+g2*delta_omega(ipts)*delta_energ
+              eliash_f_so(ipts,ispin,jspin)=eliash_f_so(ipts,ispin,jspin)+g2*delta_omega(ipts)*delta_energ
               !
            enddo !ipts
            !
-        enddo !js
-     enddo !is
+        enddo !jspin
+     enddo !ispin
      !
   enddo !imode
   !
@@ -187,7 +187,7 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
 
   !local variables
 
-  integer :: imode,ipts,is,js
+  integer :: imode,ipts,ispin,jspin
   real(dp) :: wqv,delta_omega(wpts),g2
   real(dp) :: delta_eplus(wpts),delta_eminus(wpts)
 
@@ -204,8 +204,8 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
      !
      ! We finaly add the (q,m,nu) term to the eliashber function: a^2F+/-(k,n,w)
      !
-     do is=1,nspin
-        do js=1,nspin
+     do ispin=1,nspin
+        do jspin=1,nspin
            !
            if (wqv.lt.eps_5) then
               !
@@ -213,22 +213,22 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
               !
            else
               !
-              g2=weight_ph(wqv)*(abs(g_me(is,js,imode))**2.d0)/(2.d0*abs(wqv))
+              g2=weight_ph(wqv)*(abs(g_me(ispin,jspin,imode))**2.d0)/(2.d0*abs(wqv))
               !
            endif
            !
            do ipts=1,wpts
               !
-              eliash_fplus_so(ipts,is,js)=eliash_fplus_so(ipts,is,js)+ &
+              eliash_fplus_so(ipts,ispin,jspin)=eliash_fplus_so(ipts,ispin,jspin)+ &
                                           g2*delta_omega(ipts)*delta_eplus(ipts)
               !
-              eliash_fminus_so(ipts,is,js)=eliash_fminus_so(ipts,is,js)+ &
+              eliash_fminus_so(ipts,ispin,jspin)=eliash_fminus_so(ipts,ispin,jspin)+ &
                                            g2*delta_omega(ipts)*delta_eminus(ipts)
               !
            enddo !ipts
            !
-        enddo !js
-     enddo !is
+        enddo !jspin
+     enddo !ispin
      !
   enddo !imode
   !

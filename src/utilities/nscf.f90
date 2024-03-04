@@ -4,7 +4,7 @@ program nscf
   use intw_input_parameters, only: intw2W_method, read_input
   use intw_reading, only: nspin, noncolin, ngm, nsym, &
        spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
-       ntyp, amass, npol, tau, bg, nr1, nr2, nr3, nbands, nkpoints_QE, &
+       ntyp, amass, nspin, tau, bg, nr1, nr2, nr3, nbands, nkpoints_QE, &
        get_gvec, &
        read_parameters_data_file_xml, &
        read_kpoints_data_file_xml, &
@@ -201,17 +201,17 @@ contains
     !local variables
     integer :: nbnd_l
     integer :: nG_max_l
-    integer :: npol_l
+    integer :: nspin_l
 
     integer :: G2pG1(3)
-    integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2, iG
+    integer :: i,j,ibnd,jbnd,iG_1,iG_2, iG
     integer :: nG_max_non_zero
     !complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
     logical :: found
 
     nG_max_l  = size(wfc_1,1) !
     nbnd_l    = size(wfc_1,2)
-    npol_l    = size(wfc_1,3)
+    nspin_l    = size(wfc_1,3)
 
     product_wfc =  (0.d0,0.0d0)
 
@@ -223,8 +223,8 @@ contains
 
           do ibnd=1, nbnd_l
              do jbnd=1, nbnd_l
-                do ipol=1,npol_l
-                   do jpol=1,npol_l
+                do ipol=1,nspin_l
+                   do jpol=1,nspin_l
 
                       product_wfc (ibnd,jbnd,ipol,jpol,iG) = product_wfc (ibnd,jbnd,ipol,jpol,iG) + &
                            conjg(wfc_2 (iG_2,jbnd,jpol)) * wfc_1 (iG_1,ibnd,ipol)

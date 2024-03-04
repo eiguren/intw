@@ -9,25 +9,15 @@
 subroutine init_pp
   !----------------------------------------------------------------------
   !
-  USE kinds,        ONLY : DP
-  USE intw_pseudo,   ONLY : lmaxx
-  USE intw_useful_constants,    ONLY : fpi, sqrt2
-  !  ASIER
-  !  USE intw_atom,         ONLY : rgrid
-  USE intw_reading,    ONLY : ntyp, volume0, lspinorb, tpiba
-
-  !haritz
-
-  USE intw_pseudo,           ONLY : nqxq, dq, nqx, tab, tab_d2y, qrad
-  USE splinelib
-  USE intw_pseudo,         ONLY : nhtol, nhtoj, nhtolm, ijtoh, indv, DKB
-  USE intw_pseudo,   ONLY : upf, nbetam, nh, nhm, lmaxkb
-
-  USE intw_fft,        ONLY : gvec_cart, gg
-  USE intw_spin_orb,     ONLY : rot_ylm, fcoef
-  USE mcf_spline
-
-  !  ASIER
+  USE kinds, ONLY : DP
+  USE intw_useful_constants, ONLY : fpi, sqrt2
+  USE intw_reading, ONLY : ntyp, volume0, lspinorb, tpiba
+  USE intw_pseudo, ONLY : lmaxx, nqxq, dq, nqx, tab, tab_d2y, qrad, &
+                          nhtol, nhtoj, nhtolm, ijtoh, indv, DKB, &
+                          upf, nbetam, nh, nhm, lmaxkb
+  USE intw_fft, ONLY : gvec_cart, gg
+  USE intw_spin_orb, ONLY : rot_ylm, fcoef
+  USE mcf_spline, only: spline_mcf
   USE intw_utility, ONLY: intgr_spline_gaussq, simpson
   !
   implicit none
@@ -48,7 +38,7 @@ subroutine init_pp
   real(DP) ::  vqint, j
   ! interpolated value
   ! J=L+S (noninteger!)
-  integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, is1, is2, &
+  integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, &
        lk, mk, vk, kh, lh
   integer, external :: sph_ind
   complex(DP) :: coeff, qgm(1)
@@ -151,16 +141,16 @@ subroutine init_pp
               mk = nhtolm(kh, nt)-lk*lk
               vk = indv (kh, nt)
               if (li == lk .and. abs(ji-jk) < 1.d-7) then
-                 do is1=1,2
-                    do is2=1,2
+                 do ispin=1,2
+                    do jspin=1,2
                        coeff = (0.d0, 0.d0)
                        do m=-li-1, li
-                          m0= sph_ind(li,ji,m,is1) + lmaxx + 1
-                          m1= sph_ind(lk,jk,m,is2) + lmaxx + 1
-                          coeff=coeff + rot_ylm(m0,mi)*spinor(li,ji,m,is1)* &
-                               CONJG(rot_ylm(m1,mk))*spinor(lk,jk,m,is2)
+                          m0= sph_ind(li,ji,m,ispin) + lmaxx + 1
+                          m1= sph_ind(lk,jk,m,jspin) + lmaxx + 1
+                          coeff=coeff + rot_ylm(m0,mi)*spinor(li,ji,m,ispin)* &
+                               CONJG(rot_ylm(m1,mk))*spinor(lk,jk,m,jspin)
                        enddo
-                       fcoef(ih,kh,is1,is2,nt)=coeff
+                       fcoef(ih,kh,ispin,jspin,nt)=coeff
                     enddo
                  enddo
               endif
@@ -174,12 +164,12 @@ subroutine init_pp
            do jh = 1, nh (nt)
               vj = indv (jh, nt)
               ijs=0
-              do is1=1,2
-                 do is2=1,2
+              do ispin=1,2
+                 do jspin=1,2
                     ijs=ijs+1
-                    DKB (ih, jh,is1,is2,nt ) =  upf(nt)%dion(vi,vj) * &
-                         fcoef(ih,jh,is1,is2,nt)
-                    if (vi.ne.vj) fcoef(ih,jh,is1,is2,nt)=(0.d0,0.d0)
+                    DKB (ih, jh,ispin,jspin,nt ) =  upf(nt)%dion(vi,vj) * &
+                         fcoef(ih,jh,ispin,jspin,nt)
+                    if (vi.ne.vj) fcoef(ih,jh,ispin,jspin,nt)=(0.d0,0.d0)
                  enddo
               enddo
            enddo

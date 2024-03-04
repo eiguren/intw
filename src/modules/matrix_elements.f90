@@ -67,7 +67,7 @@ use intw_fft, only : find_iG
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3), jd (1)
-  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
+  integer :: i,j,ibnd,jbnd,ispin,jspin,iG_1,iG_2
   integer :: nG_max_non_zero
   complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
   logical :: found
@@ -78,7 +78,7 @@ use intw_fft, only : find_iG
   !$omp shared(list_iG_1,list_iG_2,ngk1,ngk2) &
   !$omp shared(num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nG_max)  &
   !$omp shared(cmplx_0)         			   &
-  !$omp private(i,jd,ibnd,jbnd,is,js)    &
+  !$omp private(i,jd,ibnd,jbnd,ispin,jspin)    &
   !$omp private( pw_mat_el_local)
   !
   ! First, build the pw_mat_el_local arrays, on each thread.
@@ -106,18 +106,18 @@ use intw_fft, only : find_iG
 
      if (jd(1)==0) cycle
      !
-           do js=1,nspin
-              do is=1,nspin
+           do jspin=1,nspin
+              do ispin=1,nspin
                  do jbnd=1,num_bands_intw
                     do ibnd=1,num_bands_intw
                        !
-                       pw_mat_el_local(ibnd,jbnd,is,js)=pw_mat_el_local(ibnd,jbnd,is,js)+ &
-                                                   conjg(wfc_1(i,ibnd,is))*wfc_2(jd(1),jbnd,js)
+                       pw_mat_el_local(ibnd,jbnd,ispin,jspin)=pw_mat_el_local(ibnd,jbnd,ispin,jspin)+ &
+                                                   conjg(wfc_1(i,ibnd,ispin))*wfc_2(jd(1),jbnd,jspin)
                        !
                     enddo !ibnd
                  enddo !jbnd
-              enddo !is
-           enddo !js
+              enddo !ispin
+           enddo !jspin
            !
   enddo ! i loop
 
@@ -130,21 +130,21 @@ use intw_fft, only : find_iG
   ! "parallel" environment, however, or else pw_mat_el_local becomes
   ! undefined
   !
-  do js=1,nspin
-     do is=1,nspin
+  do jspin=1,nspin
+     do ispin=1,nspin
         do jbnd=1,num_bands_intw
            do ibnd=1,num_bands_intw
               !
               ! make sure the update is atomic!
               !$omp atomic
               !
-              pw_mat_el(ibnd,jbnd,is,js)=pw_mat_el(ibnd,jbnd,is,js)+ &
-                                      pw_mat_el_local(ibnd,jbnd,is,js)
+              pw_mat_el(ibnd,jbnd,ispin,jspin)=pw_mat_el(ibnd,jbnd,ispin,jspin)+ &
+                                      pw_mat_el_local(ibnd,jbnd,ispin,jspin)
               !
            enddo !ibnd
         enddo !jbnd
-     enddo !is
-  enddo !js
+     enddo !ispin
+  enddo !jspin
   !
   !$omp end parallel
   !
@@ -191,7 +191,7 @@ use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
   !local variables
 
   integer :: G1(3),G2(3),Gprime(3)
-  integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
+  integer :: i,j,ibnd,jbnd,ispin,jspin,iG_1,iG_2
   integer :: nG_max_non_zero
   complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
   logical :: found
@@ -214,7 +214,7 @@ use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
   !$omp shared(list_iG_1,list_iG_2,gvec,G) &
   !$omp shared(nG_max_non_zero,nbands,num_bands_intw,nspin,wfc_1,wfc_2,pw_mat_el,nG_max)  &
   !$omp shared(cmplx_0)         			   &
-  !$omp private(i,iG_1,iG_2,G1,G2,Gprime,found,j,ibnd,jbnd,is,js)    &
+  !$omp private(i,iG_1,iG_2,G1,G2,Gprime,found,j,ibnd,jbnd,ispin,jspin)    &
   !$omp private( pw_mat_el_local)
   !
   ! First, build the pw_mat_el_local arrays, on each thread.
@@ -250,18 +250,18 @@ use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
         !
         if (found) then
            !
-           do js=1,nspin
-              do is=1,nspin
+           do jspin=1,nspin
+              do ispin=1,nspin
                  do jbnd=1,num_bands_intw
                     do ibnd=1,num_bands_intw
                        !
-                       pw_mat_el_local(ibnd,jbnd,is,js)=pw_mat_el_local(ibnd,jbnd,is,js)+ &
-                                                   conjg(wfc_1(i,ibnd,is))*wfc_2(j,jbnd,js)
+                       pw_mat_el_local(ibnd,jbnd,ispin,jspin)=pw_mat_el_local(ibnd,jbnd,ispin,jspin)+ &
+                                                   conjg(wfc_1(i,ibnd,ispin))*wfc_2(j,jbnd,jspin)
                        !
                     enddo !ibnd
                  enddo !jbnd
-              enddo !is
-           enddo !js
+              enddo !ispin
+           enddo !jspin
            !
            exit ! If the G vector has been found, get out of the j-loop
            !
@@ -278,21 +278,21 @@ use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
   ! "parallel" environment, however, or else pw_mat_el_local becomes
   ! undefined
   !
-  do js=1,nspin
-     do is=1,nspin
+  do jspin=1,nspin
+     do ispin=1,nspin
         do jbnd=1,num_bands_intw
            do ibnd=1,num_bands_intw
               !
               ! make sure the update is atomic!
               !$omp atomic
               !
-              pw_mat_el(ibnd,jbnd,is,js)=pw_mat_el(ibnd,jbnd,is,js)+ &
-                                      pw_mat_el_local(ibnd,jbnd,is,js)
+              pw_mat_el(ibnd,jbnd,ispin,jspin)=pw_mat_el(ibnd,jbnd,ispin,jspin)+ &
+                                      pw_mat_el_local(ibnd,jbnd,ispin,jspin)
               !
            enddo !ibnd
         enddo !jbnd
-     enddo !is
-  enddo !js
+     enddo !ispin
+  enddo !jspin
   !
   !$omp end parallel
   !
@@ -334,7 +334,7 @@ subroutine get_spin_component(list_iG,wfc,spin)
 
   !local variables
 
-  integer :: ibnd,is,js,iG,ipol
+  integer :: ibnd,ispin,jspin,iG,ipol
 
   spin(:,:)=cmplx_0
   !
@@ -342,25 +342,25 @@ subroutine get_spin_component(list_iG,wfc,spin)
      !
      do ipol=1,3
         do ibnd=1,num_bands_intw
-           do is=1,nspin
-              do js=1,nspin
+           do ispin=1,nspin
+              do jspin=1,nspin
                  !
                  if (ipol==1) then
                     !
-                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,is))*sig_x(is,js)*wfc(iG,ibnd,js)
+                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,ispin))*sig_x(ispin,jspin)*wfc(iG,ibnd,jspin)
                     !
                  elseif (ipol==2) then
                     !
-                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,is))*sig_y(is,js)*wfc(iG,ibnd,js)
+                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,ispin))*sig_y(ispin,jspin)*wfc(iG,ibnd,jspin)
                     !
                  elseif (ipol==3) then
                     !
-                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,is))*sig_z(is,js)*wfc(iG,ibnd,js)
+                    spin(ibnd,ipol)=spin(ibnd,ipol)+0.5d0*conjg(wfc(iG,ibnd,ispin))*sig_z(ispin,jspin)*wfc(iG,ibnd,jspin)
                     !
                  endif
                  !
-              enddo !js
-           enddo !is
+              enddo !jspin
+           enddo !ispin
         enddo !ibnd
      enddo !ipol
      !
@@ -398,7 +398,7 @@ end subroutine get_spin_component
   implicit none
 
   integer        :: G(3),    G1(3),  G2(3),  Gprime(3)
-  integer        :: i,      j,   nb1,  nb2, ipol, jpol
+  integer        :: i,      j,   nb1,  nb2, ispin, jspin
 
   integer        :: iG_1,      iG_2
 
@@ -462,13 +462,13 @@ end subroutine get_spin_component
 
         if ( found ) then
 
-          do jpol=1,nspin
-            do ipol=1,nspin
+          do jspin=1,nspin
+            do ispin=1,nspin
               do nb2 = 1,nbands
                 do nb1 = 1,nbands
-                   pw_mat_el_local(nb1,nb2,ipol,jpol)  =                     &
-                   pw_mat_el_local(nb1,nb2,ipol,jpol)+      &
-                                    CONJG(wfc_1(i,nb1,ipol))*wfc_2(j,nb2,jpol)
+                   pw_mat_el_local(nb1,nb2,ispin,jspin)  =                     &
+                   pw_mat_el_local(nb1,nb2,ispin,jspin)+      &
+                                    CONJG(wfc_1(i,nb1,ispin))*wfc_2(j,nb2,jspin)
                 enddo
               enddo
             end do
@@ -488,14 +488,14 @@ end subroutine get_spin_component
   ! parallelize over the loop variables! We must still be in the
   ! "parallel" environment, however, or else pw_mat_el_local becomes
   ! undefined
-  do jpol=1,nspin
-    do ipol=1,nspin
+  do jspin=1,nspin
+    do ispin=1,nspin
       do nb2 = 1,nbands
         do nb1 = 1,nbands
 	  ! make sure the update is atomic!
           !$omp atomic
-          pw_mat_el(nb1,nb2,ipol,jpol)  =  pw_mat_el(nb1,nb2,ipol,jpol)+        &
-                                           pw_mat_el_local(nb1,nb2,ipol,jpol)
+          pw_mat_el(nb1,nb2,ispin,jspin)  =  pw_mat_el(nb1,nb2,ispin,jspin)+        &
+                                           pw_mat_el_local(nb1,nb2,ispin,jspin)
         enddo
       enddo
     end do
@@ -549,7 +549,7 @@ end subroutine get_spin_component
   !local variables
 
   integer        :: iG,iG_fft,ir
-  integer        :: ibnd,jbnd,is,js
+  integer        :: ibnd,jbnd,ispin,jspin
   complex(dp)    :: wfc_r1(nr1*nr2*nr3),wfc_r2(nr1*nr2*nr3)
   complex(dp)    :: uu(nr1*nr2*nr3)
 
@@ -563,10 +563,10 @@ end subroutine get_spin_component
   !
   iG_fft = nl(iG)
   !
-  !loop on spin (diagonal is, js)
+  !loop on spin (diagonal ispin, jspin)
   !
-  do is=1,nspin
-     do js=1,nspin
+  do ispin=1,nspin
+     do jspin=1,nspin
         !
         ! loop on bands
         !
@@ -574,13 +574,13 @@ end subroutine get_spin_component
            !
            ! fourier- transform the 1st wavefunction
            !
-           call wfc_from_g_to_r(list_iG_1,wfc_1(:,ibnd,is),wfc_r1)
+           call wfc_from_g_to_r(list_iG_1,wfc_1(:,ibnd,ispin),wfc_r1)
            !
            do jbnd=1,num_bands_intw
               !
               ! fourier- transform the 2nd wavefunction
               !
-              call wfc_from_g_to_r(list_iG_2,wfc_2(:,jbnd,js),wfc_r2)
+              call wfc_from_g_to_r(list_iG_2,wfc_2(:,jbnd,jspin),wfc_r2)
               !
               ! compute the product in real space
               !
@@ -599,12 +599,12 @@ end subroutine get_spin_component
               !
               ! extract the desired component
               !
-              pw_mat_el(ibnd,jbnd,is,js)=pw_mat_el(ibnd,jbnd,is,js)+uu(iG_fft) ! Sum is over the spin.
+              pw_mat_el(ibnd,jbnd,ispin,jspin)=pw_mat_el(ibnd,jbnd,ispin,jspin)+uu(iG_fft) ! Sum ispin over the spin.
               !
            enddo !jbnd
         enddo !ibnd
-     enddo !js
-  enddo !is
+     enddo !jspin
+  enddo !ispin
   !
   return
 
@@ -647,7 +647,7 @@ end subroutine get_spin_component
 
   integer        :: ir
 
-  integer        :: nb1,  nb2, ipol, jpol
+  integer        :: nb1,  nb2, ispin, jspin
 
   integer        :: list_iG_1(nG_max),           list_iG_2(nG_max)
 
@@ -665,17 +665,17 @@ end subroutine get_spin_component
   ! find its scalar FFT index
   iG_fft = nl(iG)
 
- !loop on spin (diagonal ipol, jpol)
-  do ipol=1,nspin
-   do jpol=1,nspin
+ !loop on spin (diagonal ispin, jspin)
+  do ispin=1,nspin
+   do jspin=1,nspin
   ! loop on bands
    do nb1 = 1,nbands
       ! fourier- transform the 1st wavefunction
-    call wfc_from_g_to_r (list_iG_1,wfc_1(:,nb1,ipol), wfc_r1)
+    call wfc_from_g_to_r (list_iG_1,wfc_1(:,nb1,ispin), wfc_r1)
 
     do nb2 = 1,nbands
       ! fourier- transform the 2nd wavefunction
-      call wfc_from_g_to_r (list_iG_2,wfc_2(:,nb2,jpol), wfc_r2)
+      call wfc_from_g_to_r (list_iG_2,wfc_2(:,nb2,jspin), wfc_r2)
 
       ! compute the product in real space
       do ir=1, nr1*nr2*nr3
@@ -689,12 +689,12 @@ end subroutine get_spin_component
                                  ! the results of pw2wannier EXACTLY
 
       ! extract the desired component
-       pw_mat_el(nb1,nb2,ipol,jpol)  = pw_mat_el(nb1,nb2,ipol,jpol) + uu(iG_fft) ! Sum is over the spin.
+       pw_mat_el(nb1,nb2,ispin,jspin)  = pw_mat_el(nb1,nb2,ispin,jspin) + uu(iG_fft) ! Sum is over the spin.
 
     end do  !nb2
    end do  !nb1
-   end do ! jpol
-  end do !ipol
+   end do ! jspin
+  end do !ispin
 
   end subroutine get_plane_wave_matrix_element_FFT_orig
 

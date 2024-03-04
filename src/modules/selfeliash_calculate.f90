@@ -39,7 +39,7 @@ subroutine realselfe_eliash_qe_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,elia
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,rel
 
   realse(:)=0.0d0
@@ -129,7 +129,7 @@ subroutine imagselfe_eliash_qe_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,elia
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,iml
 
   imagse(:)=0.0d0
@@ -224,7 +224,7 @@ subroutine realselfe_eliash_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,el
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,relminus,relplus,relminust,relplust
 
   realse(:)=0.0d0
@@ -335,7 +335,7 @@ subroutine imagselfe_eliash_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,el
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,imlplus,imlminus
 
   imagse(:)=0.0d0
@@ -431,7 +431,7 @@ subroutine imselfen_calculate_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,imlplus,imlminus
 
   imagse(:)=0.0d0
@@ -527,7 +527,7 @@ subroutine reselfen_calculate_full_t0(wpts,w_min,w_max,d_w,epts,e_min,e_max,d_e,
 
   !local variables
 
-  integer :: ifs,i,j,ipts,jpts,ipol,jpol
+  integer :: ifs,i,j,ipts,jpts
   real(dp) :: omega,eps,sigma_e,relminus,relplus,relminust,relplust
 
   realse(:)=0.0d0

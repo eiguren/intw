@@ -25,7 +25,7 @@ module intw_reading
   !
   !
   ! variables
-  public :: nG_max, nbands, lspinorb, nspin, npol, nkpoints_QE, kpoints_QE, &
+  public :: nG_max, nbands, lspinorb, nspin, nkpoints_QE, kpoints_QE, &
             s, can_use_TR, ftau, nsym, atom_pfile, atom_labels, &
             at, bg, alat, volume0, nat, ntyp, ityp, tau, tau_cryst, amass, nr1, nr2, nr3, &
             ngm, gvec, lsda, noncolin, spinorb_mag, ecutwfc, ecutrho, &
@@ -85,18 +85,11 @@ module intw_reading
   ! if true, spin-orbit non-collinear calculation.
 
   integer :: nspin
-  ! spinor dimension. If nspin=2 non-collinear spin.
-  ! warning: only lspinor is read from file.
-  ! if lspinor=T > nspin=2, else nspin=1.
-
-  integer :: npol
-  ! how many spin polarizations are there in arrays
-  ! that are not wavefunctions.
-  ! we have npol = nspin, except for magnon = .true.,
-  ! in which case nspin = 2 and npol = 1.
+  ! nspin=1 for non-polarized calculations, nspin=2 for spin-polarized ones.
+  ! NOTE: Colinear spin-polarized calculations are transformed to a non-colinear
+  !       spinor format by pw2intw or siesta2intw.
 
   integer :: nkpoints_QE
-  !ASIER
   real(kind=dp), allocatable :: kpoints_QE(:,:)
   ! the number of kpoints in the QE folders
 
@@ -403,7 +396,6 @@ contains
     end if !nspin
 
     !-KONTUZ
-    npol=nspin
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)nkpoints_QE
 
@@ -554,7 +546,7 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    integer :: io_unit,is,i,n_yes,ibnd
+    integer :: io_unit,ispin,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
     complex(dp) :: wfc_all(nG_max,nbands,nspin)
@@ -587,7 +579,7 @@ contains
     read(unit=io_unit)QE_eig_all(1:nbands)
 
     do ibnd=1,nbands
-      read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd,is),is=1,nspin)
+      read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd,ispin),ispin=1,nspin)
     enddo
 
     n_yes = 0
@@ -658,7 +650,7 @@ contains
     !logical variables
 
     character(256) :: wfc_file, datafile
-    integer :: io_unit,is,i,n_yes,ibnd
+    integer :: io_unit,ispin,i,n_yes,ibnd
     integer :: nexclude
     real(dp), parameter :: ha_to_ev = 27.211383860484784
     complex(dp) :: wfc_all(nG_max*nspin,nbands)
@@ -689,7 +681,7 @@ contains
     read(unit=io_unit)QE_eig_all(1:nbands)
 
     do ibnd=1,nbands
-            read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd),is=1,nspin)
+            read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd),ispin=1,nspin)
     enddo
 
     n_yes = 0
@@ -699,11 +691,11 @@ contains
       if (band_excluded_intw(ibnd)) cycle
       !
       n_yes=n_yes+1
-      do is=1,nspin
+      do ispin=1,nspin
         do iG=1,nG
-          wfc(iG,n_yes,is) = wfc_all((is-1)*nG+iG,ibnd)
+          wfc(iG,n_yes,ispin) = wfc_all((ispin-1)*nG+iG,ibnd)
         end do !iG
-      end do!is
+      end do!ispin
       QE_eig(n_yes) = QE_eig_all(ibnd)
       !
     enddo

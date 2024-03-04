@@ -10,14 +10,12 @@
 SUBROUTINE phq_init( xq)
   !----------------------------------------------------------------------------
   !
-  !ASIER july 21
-  !USE intw_atom,             ONLY :  msh, rgrid
-  USE intw_ph,               ONLY :  eigqts
+  USE intw_ph, ONLY : eigqts
   USE kinds, ONLY : dp
   USE intw_reading, ONLY : nat, tau, ntyp, tpiba2, ngm, volume0
-  USE intw_useful_constants,      ONLY: tpi
-  USE intw_pseudo, ONLY :  vlocq
-  USE intw_pseudo,       ONLY : upf
+  USE intw_useful_constants, ONLY: tpi
+  USE intw_pseudo, ONLY : vlocq
+  USE intw_pseudo, ONLY : upf
   USE intw_fft, ONLY : gvec_cart
 
   IMPLICIT NONE
@@ -25,15 +23,9 @@ SUBROUTINE phq_init( xq)
   !
   ! ... local variables
   !
-  INTEGER :: nt, ik, ikq, ipol, ibnd, ikk, na, ig, irr, imode0
+  INTEGER :: nt, na
     ! counter on atom types
-    ! counter on k points
-    ! counter on k+q points
-    ! counter on polarizations
-    ! counter on bands
-    ! index for wavefunctions at k
     ! counter on atoms
-    ! counter on G vectors
   REAL(DP) :: arg
     ! the argument of the phase
   COMPLEX(DP), EXTERNAL :: zdotc

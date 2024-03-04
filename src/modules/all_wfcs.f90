@@ -34,7 +34,7 @@ contains
     integer, allocatable :: list_iG(:)
     real(dp), allocatable :: QE_eig(:)
     complex(dp), allocatable :: wfc_g(:,:,:)
-    integer :: i_folder, ipol, iG, ibnd,  ngk
+    integer :: i_folder, ispin, iG, ibnd,  ngk
 
 
     ! allocate what is useful
@@ -78,14 +78,14 @@ contains
       list_iG_all(i_folder,1:ngk_all(i_folder)  )=list_iG(1:ngk_all(i_folder))
       !
       do iG=1,ngk_all(i_folder)
-        do ipol=1,nspin
+        do ispin=1,nspin
           !do ibnd=1,nbands
           do ibnd=1, num_bands_intw
             !
-            wfc_k_irr_all(i_folder,iG,ibnd,ipol)=wfc_g(iG,ibnd,ipol)
+            wfc_k_irr_all(i_folder,iG,ibnd,ispin)=wfc_g(iG,ibnd,ispin)
             !
           enddo ! ibnd
-        enddo !ipol
+        enddo !ispin
       enddo !iG
       !
     enddo ! i_folder

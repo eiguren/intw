@@ -9,7 +9,7 @@ module intw_ph
   use intw_utility, only: find_free_unit, cmplx_trace, cmplx_ainv_2, find_k_1BZ_and_G, &
                           switch_indices, switch_indices_zyx
   use intw_reading, only: at, bg, s, ftau, nr1, nr2, nr3, nat, tau, amass, ityp, &
-                          npol, spinorb_mag, tpiba, write_tag
+                          nspin, spinorb_mag, tpiba, write_tag
   use intw_useful_constants, only: i2, sig_x, sig_y, sig_z
   use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, tpi
   use intw_input_parameters, only: mesh_dir, prefix, ph_dir, dvscf_name, qlist, fc_mat
@@ -77,14 +77,14 @@ module intw_ph
   !
 contains
 
-  subroutine rot_gep(  s_index, imq, qpoint_irr, nbnd, npol, nat, g_matin, g_matout  )
+  subroutine rot_gep(  s_index, imq, qpoint_irr, nbnd, nspin, nat, g_matin, g_matout  )
     implicit none
     !input
     real(kind=dp), intent(in) :: qpoint_irr(3)
-    integer      , intent(in) :: imq, nbnd, npol, nat
+    integer      , intent(in) :: imq, nbnd, nspin, nat
 
-    complex(kind=dp), intent(in)  :: g_matin ( nbnd, nbnd, npol, npol, 3*nat)
-    complex(kind=dp), intent(out) :: g_matout( nbnd, nbnd, npol, npol, 3*nat)
+    complex(kind=dp), intent(in)  :: g_matin ( nbnd, nbnd, nspin, nspin, 3*nat)
+    complex(kind=dp), intent(out) :: g_matout( nbnd, nbnd, nspin, nspin, 3*nat)
     !loca
     integer :: s_index, s_inv_index, na
     integer :: rna
@@ -134,9 +134,9 @@ contains
              do jbnd=1, nbnd
                 do ipol=1,3
                    do jpol=1,3
-                     g_matout ( ibnd, jbnd, 1:npol, 1:npol, (rna-1)*3 + ipol) =  &
-                     g_matout ( ibnd, jbnd, 1:npol, 1:npol, (rna-1)*3 + ipol)    &
-                           + s_cart(ipol,jpol)* g_matin ( ibnd, jbnd, 1:npol, 1:npol, (na-1)*3 + jpol) * phase(rna)
+                     g_matout ( ibnd, jbnd, 1:nspin, 1:nspin, (rna-1)*3 + ipol) =  &
+                     g_matout ( ibnd, jbnd, 1:nspin, 1:nspin, (rna-1)*3 + ipol)    &
+                           + s_cart(ipol,jpol)* g_matin ( ibnd, jbnd, 1:nspin, 1:nspin, (na-1)*3 + jpol) * phase(rna)
                    enddo !jpol
                 enddo !ipol
              enddo
@@ -478,9 +478,9 @@ contains
 
     !local variables
 
-    integer :: iq, record_length, mode, ios, is, js
+    integer :: iq, record_length, mode, ios, jspin
     character(len=4) ::  num
-    integer :: nr(3), io_unit, ir, ipol, imode, jmode
+    integer :: nr(3), io_unit, ir, ispin, imode, jmode
     character(len=256) :: dv_name
 
 
@@ -493,13 +493,13 @@ contains
     nr(2)=nr2
     nr(3)=nr3
     !
-    allocate(dvscf_irr(nr1*nr2*nr3,nqirr,3*nat,1:npol**2),dvscf_cart(nr1*nr2*nr3,nqirr,3*nat,1:npol,1:npol))
+    allocate(dvscf_irr(nr1*nr2*nr3,nqirr,3*nat,1:nspin**2),dvscf_cart(nr1*nr2*nr3,nqirr,3*nat,1:nspin,1:nspin))
     !
     dvscf_irr=cmplx_0
     dvscf_cart=cmplx_0
     !
     if (spinorb_mag) then
-      inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:npol**2)
+      inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:nspin**2)
     else
       inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1)
     endif
@@ -528,7 +528,7 @@ contains
             trim(dv_name),",ios: ",ios
        do mode=1, 3*nat
           if (spinorb_mag) then
-             read (io_unit, rec = mode, iostat = ios) (dvscf_irr(1:nr1*nr2*nr3, iq, mode,ipol),ipol=1,npol**2)
+             read (io_unit, rec = mode, iostat = ios) (dvscf_irr(1:nr1*nr2*nr3, iq, mode,ispin),ispin=1,nspin**2)
           else
              read (io_unit, rec = mode, iostat = ios) dvscf_irr(1:nr1*nr2*nr3, iq, mode,1) ! beste guztiak 0
           endif
@@ -537,23 +537,23 @@ contains
        ! Below not "transpose(conjg(u_irr(:,:,iq))", instead only "conjg(u_irr(:,:,iq))" because u_irr is already transpose !!
        !
 
-       if (npol==2) then
+       if (nspin==2) then
           !
           if (spinorb_mag) then
              !
              do ir=1,nr1*nr2*nr3
                 do imode=1,3*nat
                    do jmode=1,3*nat
-                      do is=1,npol
-                         do js=1,npol
+                      do ispin=1,nspin
+                         do jspin=1,nspin
                            !
-                            dvscf_cart(ir,iq,imode,is,js)=dvscf_cart(ir,iq,imode,is,js) + &
-                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,1)*I2(is,js) + &
-                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,2)*sig_x(is,js) + &
-                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,3)*sig_y(is,js) + &
-                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,4)*sig_z(is,js)
-                         enddo !js
-                      enddo !is
+                            dvscf_cart(ir,iq,imode,ispin,jspin)=dvscf_cart(ir,iq,imode,ispin,jspin) + &
+                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,1)*I2(ispin,jspin) + &
+                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,2)*sig_x(ispin,jspin) + &
+                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,3)*sig_y(ispin,jspin) + &
+                               conjg(u_irr(imode,jmode,iq))*dvscf_irr(ir,iq,jmode,4)*sig_z(ispin,jspin)
+                         enddo !jspin
+                      enddo !ispin
                    enddo !jmode
                 enddo !imode
              enddo !ir
@@ -587,7 +587,7 @@ contains
              enddo !imode
           enddo !ir
           !
-       end if !npol==2
+       end if !nspin==2
        !
        close(io_unit)
        !
@@ -599,7 +599,7 @@ contains
   end subroutine read_allq_dvr
 !*********************************************************************************
 !---------------------------------------------------------------------------------
-  subroutine calculate_local_part_dv(qpoint, nat, npol, dvq_local )
+  subroutine calculate_local_part_dv(qpoint, nat, nspin, dvq_local )
 !---------------------------------------------------------------------------------
 !
 !======================================================================
@@ -617,12 +617,12 @@ contains
     !I/O variables
 
     real(dp),intent(in) :: qpoint(1:3) ! crystal coord.
-    integer,intent(in) :: nat,npol
-    complex(dp),intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,npol,npol) ! spin idependentea da baina koherentzia mantenduko dugu.
+    integer,intent(in) :: nat,nspin
+    complex(dp),intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin) ! spin idependentea da baina koherentzia mantenduko dugu.
 
     !local variables
 
-    integer :: imode,na,ipol,ig,nt,is,ir
+    integer :: imode,na,ipol,ig,nt,ispin,ir
     complex(dp) :: aux (nr1*nr2*nr3), fact, gtau
     real(dp) :: qcart(3) ! qpoint in cart.
 
@@ -648,11 +648,11 @@ contains
        call cfftnd(3,(/nr1,nr2,nr3/),1,aux)
        !
        do ir=1,nr1*nr2*nr3
-          do is=1,npol
+          do ispin=1,nspin
              !
-             dvq_local(ir,imode,is,is)=dvq_local(ir,imode,is,is)+aux(ir)
+             dvq_local(ir,imode,ispin,ispin)=dvq_local(ir,imode,ispin,ispin)+aux(ir)
              !
-          enddo !is
+          enddo !ispin
        enddo !ir
        !
     enddo !imode osagai kanonikoetan zehar goaz hemen ..!
@@ -662,20 +662,20 @@ contains
   end subroutine calculate_local_part_dv
 !*******************************************************************
 !-------------------------------------------------------------------
-  subroutine get_dv(iq,qpoint,nmode,npol,dvq_local)
+  subroutine get_dv(iq,qpoint,nmode,nspin,dvq_local)
 !-------------------------------------------------------------------
 
     implicit none
 
     !I/O variables
-    integer, intent(in) :: iq, nmode, npol
+    integer, intent(in) :: iq, nmode, nspin
     real(dp), intent(in) :: qpoint(1:3) ! in crystal
-    complex(dp), intent(out) :: dvq_local(nr1*nr2*nr3,nmode,npol,npol)
+    complex(dp), intent(out) :: dvq_local(nr1*nr2*nr3,nmode,nspin,nspin)
 
     !local variables
-    complex(dp) :: dvr(nr1*nr2*nr3,nmode,npol,npol)
-    complex(dp) :: vr(npol,npol)
-    complex(dp) :: mrx(npol,npol),mry(npol,npol),mrz(npol,npol)
+    complex(dp) :: dvr(nr1*nr2*nr3,nmode,nspin,nspin)
+    complex(dp) :: vr(nspin,nspin)
+    complex(dp) :: mrx(nspin,nspin),mry(nspin,nspin),mrz(nspin,nspin)
     integer :: i, j, k
     real(dp) :: qpoint_1bz(1:3), qpoint_rot(1:3)
     integer :: q_index, q_index_irr, s_index, imq, ir, imode
@@ -713,17 +713,17 @@ contains
     ! We rotate dV_cart of q_irr for finding dV_cart of q_rot
     !
     call rot_dvq(qpoint,q_irr_cryst(1:3,q_index_irr),nr1,nr2,nr3,nmode,s_index, &
-         (/0,0,0/),dvscf_cart(1:nr1*nr2*nr3,q_index_irr,1:nmode,1:npol,1:npol),dvr)
+         (/0,0,0/),dvscf_cart(1:nr1*nr2*nr3,q_index_irr,1:nmode,1:nspin,1:nspin),dvr)
     !
     dvq_local = dvr
     !
     if (imq.eq.1) then !TR YES
        !
-       if (npol==1) then !SOC NO
+       if (nspin==1) then !SOC NO
           !
           dvq_local=conjg(dvr)
           !
-       else if (npol==2) then !SOC YES
+       else if (nspin==2) then !SOC YES
           !
           do ir=1,nr1*nr2*nr3
              do imode=1,nmode
@@ -759,17 +759,17 @@ contains
 
     real(dp), intent(in) :: q_point_crys(3), q_point_crys_irr(3) ! crystal
     integer, intent(in) :: nr1, nr2, nr3, nmode, s_index ,GKQ(3)
-    complex(dp), intent(in) :: dv_in(nr1*nr2*nr3,nmode,npol,npol)
-    complex(dp), intent(out) :: dv_out(nr1*nr2*nr3,nmode,npol,npol)
+    complex(dp), intent(in) :: dv_in(nr1*nr2*nr3,nmode,nspin,nspin)
+    complex(dp), intent(out) :: dv_out(nr1*nr2*nr3,nmode,nspin,nspin)
 
     !local variables
 
-    integer :: ir, is, js, i, j, k, ri, rj, rk, rri, rrj, rrk
+    integer :: ir, ispin, jspin, i, j, k, ri, rj, rk, rri, rrj, rrk
     integer :: ipol, jpol, lpol, kpol, na, rna
     integer :: r_index, rr_index, imode
     real(dp) :: s_cart(3,3), s_crys(3,3)
     real(dp) :: q_point(3), q_point_r(3) ! cart
-    complex(dp) :: dv_aux(nr1*nr2*nr3,nmode,npol,npol), phase(nat)
+    complex(dp) :: dv_aux(nr1*nr2*nr3,nmode,nspin,nspin), phase(nat)
 
     ! q irr cryst -> cart
     !
@@ -816,8 +816,8 @@ contains
     ! dV_Sq(r,na,alpha)=dV_q(Sr,Sna,Salpha)
     !
     dv_out = (0.d0, 0.d0)
-    do is=1,npol
-       do js=1,npol
+    do ispin=1,nspin
+       do jspin=1,nspin
           !
           do k = 1, nr3
              do j = 1, nr2
@@ -850,8 +850,8 @@ contains
                       do ipol=1,3
                          do jpol=1,3
                             !
-                            dv_out(r_index,(na-1)*3+ipol,is,js)=dv_out(r_index,(na-1)*3+ipol,is,js)    &
-                                                               +s_cart(jpol,ipol)*dv_in(rr_index,(rna-1)*3+jpol,is,js)*phase(rna)
+                            dv_out(r_index,(na-1)*3+ipol,ispin,jspin)=dv_out(r_index,(na-1)*3+ipol,ispin,jspin)    &
+                                                               +s_cart(jpol,ipol)*dv_in(rr_index,(rna-1)*3+jpol,ispin,jspin)*phase(rna)
                             !
                          enddo !jpol
                       enddo !ipol
@@ -860,32 +860,32 @@ contains
              enddo !j
           enddo !k
           !
-       enddo !js
-    enddo !is
+       enddo !jspin
+    enddo !ispin
     !
     do na=1,nat
        phase(na)=exp(-cmplx_i*(q_point_r(1)*tau(1,na)+q_point_r(2)*tau(2,na)+q_point_r(3)*tau(3,na))*tpi)
     enddo !na
     !
     do ir=1,nr1*nr2*nr3
-       do is=1,npol
-          do js=1,npol
+       do ispin=1,nspin
+          do jspin=1,nspin
              !
              do na=1,nat
                 do ipol=1,3
                    !
-                   dv_out(ir,(na-1)*3+ipol,is,js)=dv_out(ir,(na-1)*3+ipol,is,js)*phase(na)
+                   dv_out(ir,(na-1)*3+ipol,ispin,jspin)=dv_out(ir,(na-1)*3+ipol,ispin,jspin)*phase(na)
                    !
                 enddo !ipol
              enddo !na
              !
-          enddo !js
-       enddo !is
+          enddo !jspin
+       enddo !ispin
     enddo !ir
     !
     ! Spinarekin errotatu behar da. Hemen spin matrizeen bidez egina, egin daiteke quaternioi propietateak erabiliz ere.
     !
-    if (npol==2.and.spinorb_mag) then
+    if (nspin==2.and.spinorb_mag) then
        !
        dv_aux=dv_out
        dv_out=cmplx_0
@@ -899,7 +899,7 @@ contains
           enddo !imode
        enddo !ir
        !
-    endif !npol=2
+    endif !nspin=2
     !
     return
 
@@ -914,12 +914,12 @@ contains
     !I/O variables
 
     integer,intent(in) :: nr1,nr2,nr3,nmode
-    complex(dp),intent(inout) :: dvr(nr1*nr2*nr3,nmode,npol,npol)
+    complex(dp),intent(inout) :: dvr(nr1*nr2*nr3,nmode,nspin,nspin)
     real(dp),intent(in) :: q(3)
 
     !local variables
 
-    integer :: ir, i, j, k, is, js, imode
+    integer :: ir, i, j, k, ispin, jspin, imode
     real(dp) :: phase
 
     do ir=1,nr1*nr2*nr3
@@ -929,13 +929,13 @@ contains
        phase=tpi*(q(1)*real(i-1,dp)/nr1 + q(2)*real(j-1,dp)/nr2 + q(3)*real(k-1,dp)/nr3)
        !
        do imode=1,nmode
-          do is=1,npol
-             do js=1,npol
+          do ispin=1,nspin
+             do jspin=1,nspin
                 !
-                dvr(ir,imode,is,js)=dvr(ir,imode,is,js)*exp(cmplx_i*phase)
+                dvr(ir,imode,ispin,jspin)=dvr(ir,imode,ispin,jspin)*exp(cmplx_i*phase)
                 !
-             enddo !js
-          enddo !is
+             enddo !jspin
+          enddo !ispin
        enddo !imode
        !
     enddo !ir
