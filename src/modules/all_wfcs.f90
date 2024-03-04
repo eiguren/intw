@@ -25,8 +25,7 @@ contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, nbands, &
-                            num_bands_intw
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, num_bands_intw
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -34,7 +33,7 @@ contains
     integer, allocatable :: list_iG(:)
     real(dp), allocatable :: QE_eig(:)
     complex(dp), allocatable :: wfc_g(:,:,:)
-    integer :: i_folder, ispin, iG, ibnd,  ngk
+    integer :: i_folder, ispin, iG, ibnd
 
 
     ! allocate what is useful
@@ -97,11 +96,10 @@ contains
 
   subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
 
-    use intw_reading, only: s, ftau, nG_max, nspin, nkpoints_QE, kpoints_QE, nr1, nr2, nr3, num_bands_intw
+    use intw_reading, only: s, ftau, nG_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
-    use intw_symmetries, only: sym_G, full_mesh, inverse_indices, symlink, &
-                               QE_folder_sym, QE_folder_nosym, apply_TR_to_wfc, rotate_wfc_test, &
-                               identity_matrix_index, nosym_G
+    use intw_symmetries, only: full_mesh, symlink, QE_folder_sym, QE_folder_nosym, &
+                               apply_TR_to_wfc, rotate_wfc_test
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_fft, only: wfc_by_expigr
     use intw_useful_constants, only : eps_5, ZERO
