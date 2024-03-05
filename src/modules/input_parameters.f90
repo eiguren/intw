@@ -64,12 +64,6 @@ module intw_input_parameters
   ! What method should be used to compute matrix elements;
   ! CONVOLUTION or FFT?
 
-  logical :: use_KK = .true.
-  logical :: skip_KK = .false.
-  ! Should the "real part" (not necessarily real) be computed
-  ! directly, using the Kramers-Kronig relations, or not at all?
-  ! (not at all is useful for testing purposes)
-
   logical :: calc_epmat = .false.
   !Indicates if we want to calculate ep matrix elements
 
@@ -159,14 +153,6 @@ contains
       write(*,*) 'MISSING nk3'
     end if
 
-    !---------------------------------------------------------------------------
-    ! If use_KK = true, compute the imaginary part
-    ! If use_KK = false, compute the imaginary part and real part directly
-    !
-    ! If skip_KK = true, do not perform the kramers-kronig integral
-    ! If use_KK = false, perform the kramers-kronig integral
-    !---------------------------------------------------------------------------
-    !
 
     if ( read_status ) then
       write(*,*) "PROBLEM!: the input should be of the form:"
