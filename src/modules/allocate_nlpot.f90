@@ -14,7 +14,6 @@ subroutine allocate_nlpot ()
   USE intw_pseudo, only: tab, tab_d2y, dq, nqx, indv, nhtol, nhtolm, &
                          ijtoh, vkb, vkqb, nkb, nhtoj, DKB, upf, &
                          lmaxkb, nh, nhm, nbetam
-  use intw_spin_orb, only: fcoef
 
   implicit none
 
@@ -57,7 +56,6 @@ subroutine allocate_nlpot ()
   allocate (ijtoh(nhm, nhm, ntyp))
   if (lspinorb) then
     allocate (DKB(nhm,nhm,nspin,nspin,ntyp))
-    allocate (fcoef(nhm,nhm,2,2,ntyp))
   else
     allocate (DKB(nhm,nhm,1,1,ntyp))
   endif

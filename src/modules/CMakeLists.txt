@@ -30,7 +30,6 @@ set(SOURCES
   set_asr.f90
   sph_bes.f90
   sort.f90
-  spin_orb.f90
   symmetries.f90
   useful_constants.f90
   utility.f90

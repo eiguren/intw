@@ -8,11 +8,10 @@ subroutine allocate_phq
   USE intw_reading, only : nat, ntyp, nr1, nr2, nr3
   USE intw_reading, ONLY : ngm
   USE intw_pseudo, ONLY : vlocq
-  USE intw_ph, ONLY : eigqts, dvloc
+  USE intw_ph, ONLY : dvloc
 
   implicit none
 
-  allocate(eigqts(nat))
   allocate(vlocq (ngm, ntyp))
   allocate(dvloc(nr1*nr2*nr3))
 
@@ -23,11 +22,10 @@ subroutine deallocate_phq
   !-----------------------------------------------------------------------
   !
   USE intw_pseudo, ONLY : vlocq
-  USE intw_ph, ONLY : eigqts, dvloc
+  USE intw_ph, ONLY : dvloc
 
   implicit none
   !
-  deallocate(eigqts)
   deallocate(vlocq)
   deallocate(dvloc)
 

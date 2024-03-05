@@ -385,7 +385,6 @@ contains
     USE kinds, only: dp
     USE intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
     USE intw_reading, only: ntyp, volume0, lspinorb
-    USE intw_spin_orb, only: rot_ylm, fcoef
     USE mcf_spline, only: spline_mcf
     USE intw_utility, only: intgr_spline_gaussq !, simpson
     !
@@ -411,6 +410,9 @@ contains
     real(dp) :: xdata(nqx)
     real(dp) :: d1, ji, jk
     !
+    COMPLEX (DP), ALLOCATABLE :: fcoef(:,:,:,:,:) ! function needed to account for spinors.
+    COMPLEX (DP) :: rot_ylm(2*lmaxx+1,2*lmaxx+1)  ! transform real spherical harmonics into complex ones
+    !
     real(dp), external :: spinor
     integer, external :: sph_ind
     !
@@ -422,6 +424,8 @@ contains
     allocate(aux1(ndm))
     allocate(besr(ndm))
     allocate(qtot(ndm, nbetam*(nbetam+1)/2))
+    if (lspinorb) allocate(fcoef(nhm,nhm,2,2,ntyp))
+
     !
     ! the following prevents an out-of-bound error: upf(nt)%nqlc=2*lmax+1
     ! but in some versions of the PP files lmax is not set to the maximum
@@ -607,7 +611,6 @@ contains
     !----------------------------------------------------------------------------
     !
     use kinds, only: dp
-    use intw_ph, only: eigqts
     use intw_reading, only: nat, tau, ntyp, tpiba2, ngm, volume0
     use intw_useful_constants, only: tpi
     use intw_fft, only: gvec_cart
@@ -617,19 +620,9 @@ contains
     real(dp), intent(in) :: q_cart(3)
     !
     ! local variables
-    real(dp) :: arg ! the argument of the phase
     integer :: nt, na
 
 
-    DO na = 1, nat
-      !
-      arg = (  q_cart(1) * tau(1,na) &
-             + q_cart(2) * tau(2,na) &
-             + q_cart(3) * tau(3,na) ) * tpi
-      !
-      eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
-      !
-    END DO
     !
     vlocq(:,:) = 0.D0
     !

@@ -20,7 +20,7 @@ module intw_ph
   ! variables
   public :: nmodes, q_irr, u_irr, fcmat, dvscf_cart, dvscf_irr, amass_ph, frc, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
-            symlink_q, eigqts, dvloc, dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
+            symlink_q, dvloc, dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -50,8 +50,6 @@ module intw_ph
   integer, allocatable ::  nosym_G_q      (:,:)
   integer, allocatable ::  sym_G_q      (:,:)
   integer, allocatable ::  symlink_q      (:,:)
-
-  complex(dp), allocatable :: eigqts(:)
 
   complex(dp), allocatable :: dvloc (:)
 
@@ -580,10 +578,10 @@ contains
 ! We have dV_scf as input and we add to it the derivative of the PP   !
 !======================================================================
 
-    USE intw_reading, ONLY : nr1, nr2, nr3, ngm, tpiba, ityp, bg
+    USE intw_reading, ONLY : nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
     USE intw_fft, ONLY : eigts1, eigts2, eigts3, nl, mill, gvec_cart
     USE intw_pseudo, ONLY : vlocq
-    use intw_useful_constants, only: cmplx_i, cmplx_0
+    use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
     implicit none
 
@@ -596,12 +594,24 @@ contains
     complex(dp),intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin) ! spin idependentea da baina koherentzia mantenduko dugu.
 
     !local variables
-
+    complex(dp) :: eigqts(nat)
     integer :: imode,na,ipol,ig,nt,ispin,ir
     complex(dp) :: aux (nr1*nr2*nr3), fact, gtau
     real(dp) :: qcart(3) ! qpoint in cart.
+    real(dp) :: arg
 
     qcart=matmul(bg,qpoint)
+
+    DO na = 1, nat
+      !
+      arg = (  qcart(1) * tau(1,na) &
+             + qcart(2) * tau(2,na) &
+             + qcart(3) * tau(3,na) ) * tpi
+      !
+      eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
+      !
+    END DO
+
     !
     do imode=1,3*nat
        !
