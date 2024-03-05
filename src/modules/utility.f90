@@ -11,20 +11,14 @@ module intw_utility
 !       especially to insure CONSISTENCY.
 !
 !----------------------------------------------------------------------------!
-!haritz
 use kinds, only: dp
-!haritz
-use intw_useful_constants
-use mcf_spline
-
-
 
   implicit none
   !
   ! subroutines
   public :: get_timing, switch_indices, switch_indices_zyx, generate_kmesh, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
-            find_k_1BZ_and_G, HPSORT, create_or_append_to_file, cryst_to_cart, &
+            find_k_1BZ_and_G, HPSORT, cryst_to_cart, &
             HPSORT_real, find_r_in_WS_cell, errore, simpson
   !
   ! functions
@@ -43,11 +37,13 @@ function intgr_spline_gaussq(xdata,ydata) result(batura)
 ! this is so because 2nd order gauss cuadrature
 ! is exact of pol. of order 3.
 
+use mcf_spline, only: spline_mcf, splint_mcf
+
 real(kind=dp),intent(in) :: xdata(:),ydata(:)
-real(kind=dp), dimension(size(xdata)) :: ys2
 !out
 real(kind=dp):: batura
 !local
+real(kind=dp), dimension(size(xdata)) :: ys2
 real(kind=dp) :: x1, x2, y1, y2
 real(kind=dp),parameter :: onesqrt3=0.57735026919_dp
 integer :: i
@@ -263,16 +259,15 @@ end function intgr_spline_gaussq
     !----------------------------------------------------------------------------!
     implicit none
 
-    integer :: i, j, k
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    integer, intent(inout) :: ikpt
+    integer, intent(inout) :: i, j, k
+    integer, intent(in) :: switch
+
     integer :: i_m_1, j_m_1
-
-    integer :: nk_1, nk_2, nk_3
-
-    integer :: switch
-
-    integer :: ikpt, ikpt_m_1
-
+    integer :: ikpt_m_1
     integer :: n2n3
+
 
     if (switch .eq. 1) then
 
@@ -342,16 +337,15 @@ end function intgr_spline_gaussq
     !----------------------------------------------------------------------------!
     implicit none
 
-    integer :: i, j, k
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    integer, intent(inout) :: ikpt
+    integer, intent(inout) :: i, j, k
+    integer, intent(in) :: switch
+
     integer :: j_m_1, k_m_1
-
-    integer :: nk_1, nk_2, nk_3
-
-    integer :: switch
-
-    integer :: ikpt, ikpt_m_1
-
+    integer :: ikpt_m_1
     integer :: n1n2
+
 
     if (switch .eq. 1) then
 
@@ -389,10 +383,10 @@ end function intgr_spline_gaussq
     !----------------------------------------------------------------------------!
     implicit none
 
-    real(dp) :: kmesh(3,nk_1*nk_2*nk_3)
-    integer :: nk_1, nk_2, nk_3
-    integer :: i, j, k
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    real(dp), intent(out) :: kmesh(3,nk_1*nk_2*nk_3)
 
+    integer :: i, j, k
     integer :: ikpt, nkmesh
     integer :: switch
 
@@ -424,10 +418,10 @@ end function intgr_spline_gaussq
     !----------------------------------------------------------------------------!
     implicit none
 
-    real(dp) :: kpoint(3)
-    integer :: nk_1, nk_2, nk_3
+    real(dp), intent(in) :: kpoint(3)
+    integer, intent(in) :: nk_1, nk_2, nk_3
 
-    integer :: i_k, j_k, k_k
+    integer, intent(out) :: i_k, j_k, k_k
 
     i_k = 1 + nint(kpoint(1)*nk_1)
     j_k = 1 + nint(kpoint(2)*nk_2)
@@ -442,9 +436,10 @@ end function intgr_spline_gaussq
     !----------------------------------------------------------------------------!
     implicit none
 
-    integer :: sze, maximum, array(sze)
+    integer, intent(in) :: sze, array(sze)
+    integer, intent(out) :: i_max
 
-    integer :: i, i_max
+    integer :: i, maximum
 
     i_max   = 1
     maximum = array(1)
@@ -480,20 +475,17 @@ end function intgr_spline_gaussq
     implicit none
 
     ! input
-    integer :: nk1s, nk2s, nk3s       ! the fine mesh parameters
-    real(dp) :: qpt(3)                 ! the q-point
+    integer, intent(in) :: nk1s, nk2s, nk3s ! the fine mesh parameters
+    real(dp), intent(in) :: qpt(3) ! the q-point
 
     ! output
-    logical :: test_qpt		   ! is the q-point on the fine mesh?
-    integer :: i_qpt1,i_qpt2,i_qpt3
-
-    real(dp) :: nqpt_1,nqpt_2,nqpt_3
-
+    logical, intent(out):: test_qpt ! is the q-point on the fine mesh?
+    integer, intent(out):: i_qpt1, i_qpt2, i_qpt3
 
     ! internal variables
-    real(dp) :: err_1, err_2, err_3   ! the q-point
+    real(dp) :: nqpt_1, nqpt_2, nqpt_3
+    real(dp) :: err_1, err_2, err_3 ! the q-point
 
-    ! assume qpt = (i-1)/n + I + err,    0<= err < 1
 
     ! find err
     nqpt_1 = dble(nk1s)*qpt(1)
@@ -628,11 +620,11 @@ end function intgr_spline_gaussq
     !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
     !*   University Press, 1986".                        *
     !*****************************************************
-    integer N
-    integer RA(N)
-    integer P(N)
+    integer, intent(in) :: N
+    integer, intent(inout) :: RA(N)
+    integer, intent(out) :: P(N)
 
-    integer i, L, IR, RRA, PP, J
+    integer :: i, L, IR, RRA, PP, J
 
     do i=1,N
       P(i) = i
@@ -718,30 +710,6 @@ end function intgr_spline_gaussq
     !
   end function find_free_unit
 
-
-  subroutine create_or_append_to_file(io_unit,filename)
-    !-----------------------------------------------------------------------
-    !
-    !     This routine tests whether the file with name filename
-    !     exists, and opens it for appending or creates it correspondingly
-    !     on unit io_unit.
-    !-----------------------------------------------------------------------
-
-    implicit none
-
-    integer :: io_unit
-    logical :: file_exists
-    character(*) :: filename
-
-    inquire(file=filename, exist=file_exists)
-
-    if (file_exists) then
-      open(unit=io_unit,file=filename,access='append',status='old')
-    else
-      open(unit=io_unit,file=filename,status='new')
-    end if
-
-  end subroutine create_or_append_to_file
 
   subroutine cryst_to_cart (nvec, vec, trmat, iflag)
     !-----------------------------------------------------------------------
@@ -836,11 +804,11 @@ end function intgr_spline_gaussq
     !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
     !*   University Press, 1986".                        *
     !*****************************************************
-    integer  N
-    real(dp) RA(N)
-    integer  P(N)
+    integer, intent(in) :: N
+    real(dp), intent(inout) :: RA(N)
+    integer, intent(out) :: P(N)
 
-    integer i, L, IR, RRA, PP, J
+    integer :: i, L, IR, RRA, PP, J
 
     do i=1,N
       P(i) = i
@@ -910,12 +878,12 @@ end function intgr_spline_gaussq
     implicit none
 
     ! input
-    real(dp) :: at(3,3)                   ! the real space basis vectors
-    real(dp) :: rvec_cryst(3)             ! the real space vector
-    integer :: nr1, nr2, nr3             ! the real mesh parameters
+    real(dp), intent(in) :: at(3,3)                   ! the real space basis vectors
+    real(dp), intent(in) :: rvec_cryst(3)             ! the real space vector
+    integer, intent(in) :: nr1, nr2, nr3             ! the real mesh parameters
 
     ! output
-    real(dp) :: rvec_WS_cryst(3)   	      ! vector in the WS cell
+    real(dp), intent(out) :: rvec_WS_cryst(3)   	      ! vector in the WS cell
 
     ! internal variables
     integer :: i, j, k                   ! the triplet coordinates of k_1BZ
@@ -937,7 +905,6 @@ end function intgr_spline_gaussq
     ! space, but the relevant algorithm is the same.
     call find_k_1BZ_and_G(rvec_cryst,nr1,nr2,nr3,i,j,k,r_UC,Rlat)
 
-    ! a_i^alpha = at(i,alpha), i: basis index, alpha: space index
     ai_dot_aj = matmul(at(:,:),transpose(at(:,:)))
 
     list_T(:) = (/ -one, zero, one /)
@@ -980,7 +947,8 @@ end function intgr_spline_gaussq
 
     implicit none
 
-    complex(kind=dp) :: mat(:,:), cmplx_trace
+    complex(kind=dp), intent(in) :: mat(:,:)
+    complex(kind=dp) :: cmplx_trace
     integer :: d1, d2, i
 
     d1 = size(mat(:,1))
@@ -1002,7 +970,8 @@ end function intgr_spline_gaussq
 
     implicit none
 
-    real(dp) :: x,weight_ph
+    real(dp), intent(in) :: x
+    real(dp) :: weight_ph
     real(dp),parameter :: x0=0.002d0 !x0=0.0001d0 !x0=0.0004d0 !x0=0.0006d0 !x0=0.003
     real(dp),parameter :: sigma=0.00001d0 !sigma=0.000001d0 !sigma=0.0001d0 !sigma=0.00002d0 !sigma=0.0003
 
