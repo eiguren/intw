@@ -2,13 +2,11 @@
 SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, nspin, nbands,ng_max, list_iGk, list_iGkq,psi, dvnl_psi)
 
   USE intw_useful_constants, only: pi,tpi,fpi, cmplx_0, cmplx_i
-  USE intw_reading, only : tpiba, alat, bg, nat, lspinorb
-  USE intw_reading,    ONLY : ntyp, volume0, ityp
+  USE intw_reading, only : tpiba, bg, nat, lspinorb, ntyp, ityp
   USE intw_fft, ONLY : gvec_cart
   USE kinds, only : dp
-  USE intw_pseudo, ONLY : upf, lmaxkb, nhm, nh
-  USE intw_pseudo,       ONLY : nkb, vkqb, vkb, DKB
-  USE intw_reading, ONLY : noncolin
+  USE intw_pseudo, ONLY : upf, nh, nkb, vkqb, vkb, DKB
+
   implicit none
 
   integer, intent(in)        :: nspin, nG_max, list_iGk(nG_max), list_iGkq(nG_max), nbands
@@ -21,7 +19,7 @@ SUBROUTINe multiply_psi_by_dvKB( k_point, q_point, nspin, nbands,ng_max, list_iG
   complex(dp)                :: Dij_projec_1(nkb,3,nspin,nspin), Dij_projec_2(nkb,3,nspin,nspin)
 
   real(dp)                   :: k_(3), q_(3)
-  integer                    :: nt, ntj, na, naj, ih, jh, ikb, jkb, ispin, jspin, ipol, jpol, ig
+  integer                    :: nt, ntj, na, naj, ih, jh, ikb, jkb, ispin, jspin, ipol, ig
   integer                    :: mode, ibnd, iGk, iGkq
 
 
