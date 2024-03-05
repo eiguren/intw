@@ -32,7 +32,6 @@ set(SOURCES
   selfen_add_terms.f90
   set_asr.f90
   sph_bes.f90
-  setlocq.f90
   sort.f90
   spin_orb.f90
   symmetries.f90
