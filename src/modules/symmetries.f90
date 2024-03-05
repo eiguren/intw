@@ -199,7 +199,7 @@ contains
     ! (This extra layer of complication is QE's fault, not mine)
     !------------------------------------------------------------------
 
-    use intw_useful_constants, only: ZERO, eps_8, eps_5
+    use intw_useful_constants, only: ZERO, eps_5
     use intw_reading, only: nsym, s, at, bg
 
     implicit none
@@ -270,10 +270,7 @@ contains
         !
         norm = sqrt(norm)
         !
-        ! IGG -- Sim hexagonalean bestela ez du topatzen
-        ! if (norm<eps_8*100 ) then
         if (norm<eps_5) then
-          !End IGG
           !
           inverse_indices(isym) = jsym
           found = .true.
@@ -324,7 +321,7 @@ contains
     ! Some elementary testing is also implemented.
     !
     !------------------------------------------------------------------
-    use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5, pi
+    use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
     use intw_reading, only: s, at, bg
 
     implicit none
@@ -339,9 +336,8 @@ contains
     integer :: sym(3,3)
     real(kind=dp) :: sym_cart(3,3) !symmetry matrix in crystal coordinates
     complex(kind=dp) :: S_u(2,2) !the 2x2 spin rotation matrix
-    real(kind=dp) :: axis(3), angle, norm !axis and angle of a given rotation matrix
-    real(kind=dp) :: axis_cryst(3), det, I3(3,3)
-    integer :: is,js
+    real(kind=dp) :: axis(3), angle !axis and angle of a given rotation matrix
+    real(kind=dp) :: det, I3(3,3)
     real(kind=dp) :: bgtrans(3,3)
     integer :: i,j,k,h
 
@@ -924,14 +920,11 @@ contains
       !
       if (possible_full_mesh) then
         !
-        ! if (sqrt(G(1)**2.0+G(2)**2+G(3)**2) < eps_8) then
-        !   !
           call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           kpoint_is_found_nosym(ikpt) = .true.
           QE_folder_nosym_(ikpt)       = i_folder
           nosym_G_(:,ikpt)             = G
-        ! endif
         !
       endif !possible_full_mesh
       !
@@ -1004,7 +997,6 @@ contains
             kpoint_is_found_sym(ikpt) = .true.
             QE_folder_sym_(ikpt)       = i_folder
             sym_G_(:,ikpt)             = -G
-            !ASIER, same as above
             symlink_(ikpt,1)           = isym
             !symlink(ikpt,1)           = inverse_indices(isym)
             symlink_(ikpt,2)           = 1
@@ -1043,15 +1035,15 @@ contains
 
     !input
 
-    integer :: nspt
+    integer, intent(in) :: nspt
 
-    real(kind=dp) :: k_entire(3,nspt)
+    real(kind=dp), intent(in) :: k_entire(3,nspt)
 
     ! output
     integer :: nk_irr
     real(kind=dp) :: k_irr(3,nspt)
     integer :: equiv(nspt) ! which is the equivalent point
-    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
+    integer, intent(out) :: sym_G(1:3,nspt), symlink(nspt,1:2)
 
     !local variables
     real(kind=dp) :: k_rot(3), dist1, dist2
@@ -1165,17 +1157,17 @@ contains
 
     !input
 
-    integer  :: nspt
+    integer, intent(in):: nspt
 
-    real(kind=dp) :: k_entire(3,nspt)
+    real(kind=dp), intent(in) :: k_entire(3,nspt)
 
     ! output
-    integer  :: nk_irr
+    integer, intent(out):: nk_irr
     real(kind=dp) :: k_irr(3,nspt)
     integer :: equiv(nspt) ! which is the equivalent point
-    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
 
     !local variables
+    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
     real(kind=dp):: k_rot(3), dist1, dist2
 
     integer :: i, j ! triplet indices
@@ -1300,7 +1292,7 @@ contains
     ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
 
-    integer :: nk_irr
+    integer, intent(out) :: nk_irr
     ! How many points were found?
 
     !local variables
@@ -1585,18 +1577,18 @@ contains
     implicit none
 
     !input
-    integer :: nk_1, nk_2, nk_3
+    integer, intent(in) :: nk_1, nk_2, nk_3
 
-    integer :: nk_irr                  ! N. of irreducible k points
+    integer, intent(in) :: nk_irr                  ! N. of irreducible k points
 
-    integer :: k_irr(3,nk_irr)         ! triplet indices of the irreducible k-points
+    integer, intent(in) :: k_irr(3,nk_irr)         ! triplet indices of the irreducible k-points
 
     !output
     integer :: equiv_l(nk_1* nk_2* nk_3)   ! For a given k point in the entire BZ,
     ! gives the symmetry related
     ! k point index in the irreducible k set
 
-    integer :: symlink_l(nk_1* nk_2* nk_3,2) ! Symmetry link .
+    integer, intent(out) :: symlink_l(nk_1* nk_2* nk_3,2) ! Symmetry link .
 
 
     !local
@@ -1715,6 +1707,7 @@ contains
     real(kind=dp), intent(in) :: v(3)
     real(kind=dp), intent(out) :: vstar(3,48)
     integer, intent(out) :: nstar, symop(48)
+
     integer :: isym, i
     real(kind=dp) :: vrot(3)
 
@@ -1788,12 +1781,12 @@ contains
 
     implicit none
 
-    integer :: nk_1, nk_2, nk_3, nkr, nk_irr
-    integer :: io_unit
-    integer :: i
+    integer, intent(in) :: nk_1, nk_2, nk_3, nk_irr
+    integer, intent(in) :: equiv(nk_1*nk_2*nk_3)
+    integer, intent(in) :: symlink(nk_1*nk_2*nk_3,2)
 
-    integer :: equiv(nk_1*nk_2*nk_3)
-    integer :: symlink(nk_1*nk_2*nk_3,2)
+    integer :: io_unit
+    integer :: i, nkr
 
     nkr = nk_1*nk_2*nk_3
 
@@ -1951,7 +1944,7 @@ contains
     !--------------------------------------------------------------------------------------------------------
     use intw_fft, only: find_iG
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-    use intw_utility, only: HPSORT, cmplx_ainv_2
+    use intw_utility, only: HPSORT
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
     implicit none
@@ -1970,7 +1963,7 @@ contains
     !local variables
 
     complex(kind=dp) :: wfc_k_aux(nG_max,num_bands_intw,nspin)
-    integer :: p_i, i, alpha, iGk, iG_k
+    integer :: p_i, i, iGk, iG_k
     integer :: Gk(3) ! a vector for k in the IBZ
     integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
@@ -2085,15 +2078,11 @@ contains
     real(kind=dp), intent(in) :: kpoint(3)
     logical, intent(in) :: use_IBZ
 
-
     complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
-    ! complex(kind=dp), intent(out) :: wfc_k(nG_max,nbands,nspin)
     integer, intent(out) :: list_iG(nG_max)
     real(kind=dp), intent(out) :: QE_eig(num_bands_intw)
-    ! real(kind=dp), intent(out) :: QE_eig(nbands)
 
     complex(kind=dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
-    ! complex(kind=dp) :: wfc_k_irr(nG_max,nbands,nspin)
     integer :: list_iG_irr(nG_max)
 
 
@@ -2109,12 +2098,6 @@ contains
 
     real(kind=dp) :: kpoint_1BZ(3)
 
-
-    !!Peio
-    !!The variable we use instead of num_bands
-    !integer :: nbands_loc
-    !!Peio
-    !nbands_loc = num_bands_intw
 
     if (.not. use_IBZ .and. .not. full_mesh) then
       ! the parameters are not consistent
@@ -2159,10 +2142,6 @@ contains
       ftau_sym = ftau(:,i_sym)
       sym      = s(:,:,inverse_indices(i_sym))
 
-      ! debugging test
-      ! call rotate_wfc(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
-      !                  inverse_indices(i_sym), sym, ftau_sym, G_sym)
-
       call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
                            i_sym, sym, ftau_sym, G_sym)
 
@@ -2183,7 +2162,7 @@ contains
   !---------------------------------------------------------------------------
   !***************************************************************************
   !---------------------------------------------------------------------------
-  subroutine intw_check_mesh(nk_1,nk_2,nk_3,kmesh,k_irr,nk_irr,kpoints_QE)
+  subroutine intw_check_mesh(nk_1,nk_2,nk_3,kmesh,nk_irr,k_irr,nkpoints_QE,kpoints_QE)
     !----------------------------------------------------------------------------!
     !     This subroutine compares the mesh points kmesh to the global array
     !     kpoints (which comes from the QE folders) in order to determine if
@@ -2192,20 +2171,18 @@ contains
     !             3) none of the above
     !----------------------------------------------------------------------------!
     use intw_useful_constants, only: eps_8
-    use intw_reading, only: nkpoints_QE
 
     implicit none
 
-    integer :: nk_1,nk_2,nk_3, nkmesh
-    real(kind=dp) :: kmesh(3,nk_1*nk_2*nk_3)
-
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    real(kind=dp), intent(in) :: kmesh(3,nk_1*nk_2*nk_3)
+    integer, intent(in) :: nk_irr
+    integer, intent(in) :: k_irr(3,nk_irr)
+    integer, intent(in) :: nkpoints_QE
     real(kind=dp), intent(in) :: kpoints_QE(3,nkpoints_QE)
 
-    integer :: nk_irr
-    integer :: k_irr(3,nk_irr)
-
     real(kind=dp) :: kpt(3)
-    integer :: ikpt
+    integer :: ikpt, nkmesh
     real(kind=dp) :: norm
 
     nkmesh = nk_1*nk_2*nk_3
@@ -2269,7 +2246,8 @@ contains
 
     implicit none
 
-    integer :: number_G_shells, nG_shell_max
+    integer, intent(in) :: number_G_shells
+    integer, intent(out) :: nG_shell_max
 
     integer :: nshell
     integer :: iG
@@ -2615,9 +2593,6 @@ contains
             list_ik_irr(ik_irr) = ikpt
             !
             kpoints_irr(:,ik_irr) = kmesh(:,ikpt)
-            !                kpoints_irr(1,ik_irr)=dble(i-1)/nk1
-            !                kpoints_irr(2,ik_irr)=dble(j-1)/nk2
-            !                kpoints_irr(3,ik_irr)=dble(k-1)/nk3
             !
             ! loop on all symmetry operations
             do isym=1,nsym
@@ -2702,10 +2677,10 @@ contains
     implicit none
 
     ! input
-    integer :: nG_shell_max
-    real(kind=dp) :: q_direction(3)
+    integer, intent(in) :: nG_shell_max
+    real(kind=dp), intent(in) :: q_direction(3)
     ! output
-    integer :: shells_table(nG_shell_max,nsym)
+    integer, intent(out) :: shells_table(nG_shell_max,nsym)
 
     ! local
     integer :: iG, iG2
@@ -2822,10 +2797,10 @@ contains
     implicit none
 
     ! input
-    integer :: nG_shell_max
-    real(kind=dp) :: q_direction(3)
+    integer, intent(in) :: nG_shell_max
+    real(kind=dp), intent(in) :: q_direction(3)
     ! output
-    integer :: shells_table(nG_shell_max,nsym)
+    integer, intent(out) :: shells_table(nG_shell_max,nsym)
 
     ! local
     integer :: io_unit
@@ -2901,7 +2876,7 @@ contains
     use kinds, only: dp
 
     implicit none
-    real(kind=dp) :: x(3), y(3), f(3)
+    real(kind=dp), intent(in) :: x(3), y(3), f(3)
     ! input: input vector
     ! input: second input vector
     ! input: fractionary translation
