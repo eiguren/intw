@@ -66,11 +66,10 @@ contains
   ! This subroutine assumes set_num_bands() and read_nnkp_file()
   ! have been called before
   !----------------------------------------------------------------------------!
-  use intw_reading, only: nbands, num_bands_intw, num_wann_intw
+  use intw_reading, only: num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
-  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
-                               nnkp_num_kpoints, nnkp_kpoints
+  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_num_kpoints
   implicit none
 
   character(20) :: checkpoint
@@ -213,7 +212,7 @@ contains
   !----------------------------------------------------------------------------!
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands
+  use intw_intw2wannier, only: nnkp_num_kpoints
   implicit none
 
   integer :: i, ik, n1, n2, nb1
@@ -387,13 +386,6 @@ contains
      end do
   end do
 
-  !!JLB test
-  !write (*, '(15I5)') (ndegen(i), i=1, nrpts)
-  !do i = 1, nrpts
-  !      write (*, '(3I6)') irvec(:, i)
-  !end do
-
-  return
   end subroutine allocate_and_build_ws_irvec
 
   !
@@ -404,8 +396,8 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0
-  use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
+  use intw_reading, only: num_wann_intw
+  use intw_intw2wannier, only: nnkp_num_kpoints
   !
   implicit none
   !
@@ -452,7 +444,7 @@ contains
   !  Construct ham_r by Fourier transform of ham_k, k in the fullzone k-mesh
   !----------------------------------------------------------------------------!
   !
-  use intw_reading, only: alat, bg, num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
   use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
   !
@@ -533,7 +525,7 @@ contains
   !
   use intw_useful_constants, only: cmplx_0
   use intw_utility, only: find_free_unit
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix
   !
   implicit none
@@ -700,17 +692,18 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   !
   implicit none
   !
-  integer :: ir,i,j
   real(kind=dp), intent(in) :: kpoint(3)
   real(kind=dp), intent(out) :: eig_int(num_wann_intw)
+  complex(kind=dp) , optional, intent(out) :: u_interp(num_wann_intw,num_wann_intw)
+
+  integer :: ir,i,j
   complex(kind=dp) :: cfac
   complex(kind=dp) :: ham_pack_1k((num_wann_intw*(num_wann_intw+1))/2)
   complex(kind=dp) :: u_pass(num_wann_intw,num_wann_intw)
-  complex(kind=dp) , optional, intent(out) :: u_interp(num_wann_intw,num_wann_intw)
   ! for ZHPEVX we use the same dimensions as W90 does
   integer :: neig_found, info
   integer :: iwork(5*num_wann_intw), ifail(num_wann_intw)
@@ -767,16 +760,17 @@ contains
   !
   !----------------------------------------------------------------------------!
   !
-  use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_useful_constants, only: tpi
+  use intw_reading, only: num_wann_intw
   !
   implicit none
   !
-  integer :: ik, ik1, ik2, ik3, ie, iw
   integer, intent(in) :: nik1, nik2, nik3, ne
   real(kind=dp), intent(in) :: eini, efin, esmear
   real(kind=dp), intent(out) :: DOS(ne)
   real(kind=dp), optional, intent(out) :: PDOS(ne,num_wann_intw)
+
+  integer :: ik1, ik2, ik3, ie, iw
   real(kind=dp) :: ener, estep, lorentz
   real(kind=dp) :: kpoint(3), eig_int(num_wann_intw)
   complex(kind=dp) :: u_interp(num_wann_intw,num_wann_intw)
