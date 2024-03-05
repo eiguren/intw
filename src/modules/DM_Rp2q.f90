@@ -27,8 +27,8 @@ subroutine DM_Rp2q(nrr_q,irr_q,ndegen_q,qpoint,dyn_r,P_diag,omega)
 !===========================================================================================
 
   use kinds, only: dp
-  use intw_reading
-  use intw_useful_constants
+  use intw_reading, only: nat, amass, ityp
+  use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
 
   implicit none
 

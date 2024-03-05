@@ -10,13 +10,11 @@ subroutine DM_q2Rp(nrr_q,irr_q,dyn_r)
 !                                                                                   !
 ! DM_r(m,n,R)=Sum_in_q_1BZ[DM_q(m,n,k)*Exp[-i*q*R]]/nqmesh                          !
 !====================================================================================
-!haritz
   use kinds, only: dp
   use intw_input_parameters, only: nq1, nq2, nq3
-!haritz
-  use intw_reading
-  use intw_useful_constants
-  use intw_ph
+  use intw_reading, only: nat
+  use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
+  use intw_ph, only: nqmesh, qmesh, frc
 
   implicit none
 
@@ -28,9 +26,9 @@ subroutine DM_q2Rp(nrr_q,irr_q,dyn_r)
 
   !local variables
 
-  integer :: iq,irq,imode,jmode
-  real(dp) :: qpoint(3),arg,term,rvec(3),len
-  complex(dp) :: dyn_q(3*nat,3*nat,nqmesh),dynm(3*nat,3*nat),fac
+  integer :: iq, irq
+  real(dp) :: qpoint(3), arg
+  complex(dp) :: dyn_q(3*nat,3*nat,nqmesh), dynm(3*nat,3*nat), fac
 
   nqmesh=nq1*nq2*nq3
   dyn_q(:,:,:)=cmplx_0
