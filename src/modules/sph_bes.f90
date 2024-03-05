@@ -19,7 +19,6 @@ subroutine sph_bes (msh, r, q, l, jl)
   ! ...   jl(1:msh) = j_l(q*r(i))  (j_l = spherical bessel function)
   !
   use kinds, only: DP
-  !USE constants, ONLY : eps14
   USE intw_useful_constants, ONLY : eps_14
   USE intw_utility, ONLY: errore
   !

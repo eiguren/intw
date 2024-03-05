@@ -36,12 +36,10 @@ subroutine intw_real_ylmr2 (lmax2, ng, g, gg, ylm)
   !     Recipes but avoiding the calculation of factorials that generate
   !     overflow for lmax > 11
   !
-!haritz
-!   use intw_useful_constants, only: pi,tpi,fpi,dp
   use kinds, only: dp
   use intw_useful_constants, only: pi,tpi,fpi
   use intw_utility, only: errore
-!haritz
+  !
   implicit none
   !
   integer, intent(in) :: lmax2, ng
