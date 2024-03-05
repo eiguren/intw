@@ -13,7 +13,7 @@ module intw_pseudo
             nhtoj, DKB, beta
   !
   ! subroutines
-  public :: read_all_pseudo, init_KB_projectors
+  public :: read_all_pseudo, init_KB_projectors, init_pp
   !
   private
   !
@@ -376,5 +376,230 @@ contains
     enddo !ntyp
 
   end subroutine init_KB_projectors
+
+
+  subroutine init_pp()
+    !----------------------------------------------------------------------
+    !
+    USE kinds, only: dp
+    USE intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
+    USE intw_reading, only: ntyp, volume0, lspinorb
+    USE intw_spin_orb, only: rot_ylm, fcoef
+    USE mcf_spline, only: spline_mcf
+    USE intw_utility, only: intgr_spline_gaussq !, simpson
+    !
+    implicit none
+    !
+    !     here a few local variables
+    !
+    integer :: nt, ih, jh, nb, ijv, l, m, ir, iq, is, ndm
+    ! various counters
+    real(dp), allocatable :: aux(:), aux1(:), besr(:), qtot(:,:)
+    ! various work space
+    real(dp) :: prefr, pref, qi
+    ! the prefactor of the q functions
+    ! the prefactor of the beta functions
+    ! the modulus of g for each shell
+    ! q-point grid for interpolation
+    ! the spherical harmonics
+    real(dp) ::  vqint, j
+    ! interpolated value
+    ! J=L+S (noninteger!)
+    integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, lk, mk, vk, kh
+    complex(dp) :: coeff
+    real(dp) :: xdata(nqx)
+    real(dp) :: d1, ji, jk
+    !
+    real(dp), external :: spinor
+    integer, external :: sph_ind
+    !
+    !
+    !    Initialization of the variables
+    !
+    ndm = MAXVAL( upf(:)%kkbeta )
+    allocate(aux(ndm))
+    allocate(aux1(ndm))
+    allocate(besr(ndm))
+    allocate(qtot(ndm, nbetam*(nbetam+1)/2))
+    !
+    ! the following prevents an out-of-bound error: upf(nt)%nqlc=2*lmax+1
+    ! but in some versions of the PP files lmax is not set to the maximum
+    ! l of the beta functions but includes the l of the local potential
+    !
+    prefr = fpi / volume0
+
+    DKB = cmplx_0
+
+    if (lspinorb) then
+      !
+      !  In the spin-orbit case we need the unitary matrix u which rotates the
+      !  real spherical harmonics and yields the complex ones.
+      !
+      rot_ylm = cmplx_0
+      l = lmaxx
+      rot_ylm(l+1, 1) = cmplx_1
+      do n1 = 2, 2*l+1, 2
+        m = n1/2
+        n = l + 1 - m
+        rot_ylm(n, n1) = cmplx_1/sqrt2 * (-1)**m
+        rot_ylm(n, n1+1) = -cmplx_i/sqrt2 * (-1)**m
+        n = l + 1 + m
+        rot_ylm(n, n1) = cmplx_1/sqrt2
+        rot_ylm(n, n1+1) = cmplx_i/sqrt2
+      enddo
+      fcoef = cmplx_0
+    endif
+    !
+    !   For each pseudopotential we initialize the indices nhtol, nhtolm,
+    !   nhtoj, indv, and if the pseudopotential is of KB type we initialize the
+    !   atomic D terms
+    !
+    do nt = 1, ntyp
+      ih = 1
+      do nb = 1, upf(nt)%nbeta
+        l = upf(nt)%lll(nb)
+        do m = 1, 2 * l + 1
+          nhtol(ih,nt) = l
+          nhtolm(ih,nt) = l*l+m
+          indv(ih,nt) = nb
+          ih = ih + 1
+        enddo
+      enddo
+      if ( upf(nt)%has_so ) then
+        ih = 1
+        do nb = 1, upf(nt)%nbeta
+          l = upf(nt)%lll(nb)
+          j = upf(nt)%jjj(nb)
+          do m = 1, 2 * l + 1
+            nhtoj(ih, nt) = j
+            ih = ih + 1
+          enddo
+        enddo
+      endif
+      ! ijtoh map augmentation channel indexes ih and jh to composite
+      ! "triangular" index ijh
+      ijtoh(:,:,nt) = -1
+      ijv = 0
+      do ih = 1, nh(nt)
+        do jh = ih, nh(nt)
+          ijv = ijv + 1
+          ijtoh(jh,ih,nt) = ijv
+        enddo
+      enddo
+      !
+      !    From now on the only difference between KB and US pseudopotentials
+      !    is in the presence of the q and Q functions.
+      !
+      !    Here we initialize the D of the solid
+      !
+      if (upf(nt)%has_so .and. lspinorb) then
+        !
+        !  first calculate the fcoef coefficients
+        !
+        do ih = 1, nh(nt)
+          li = nhtol(ih,nt)
+          ji = nhtoj(ih,nt)
+          mi = nhtolm(ih,nt) - li*li
+          vi = indv(ih,nt)
+          do kh=1,nh(nt)
+            lk = nhtol(kh,nt)
+            jk = nhtoj(kh,nt)
+            mk = nhtolm(kh,nt) - lk*lk
+            vk = indv(kh,nt)
+            if (li == lk .and. abs(ji-jk) < 1.d-7) then
+              do ispin=1,2
+                do jspin=1,2
+                  coeff = cmplx_0
+                  do m = -li-1, li
+                    m0 = sph_ind(li,ji,m,ispin) + lmaxx + 1
+                    m1 = sph_ind(lk,jk,m,jspin) + lmaxx + 1
+                    coeff = coeff + rot_ylm(m0,mi)*spinor(li,ji,m,ispin) &
+                                    * CONJG(rot_ylm(m1,mk))*spinor(lk,jk,m,jspin)
+                  enddo
+                  fcoef(ih,kh,ispin,jspin,nt) = coeff
+                enddo
+              enddo
+            endif
+          enddo
+        enddo
+        !
+        !   and calculate the bare coefficients
+        !
+        do ih = 1, nh(nt)
+          vi = indv(ih,nt)
+          do jh = 1, nh(nt)
+            vj = indv(jh,nt)
+            ijs = 0
+            do ispin=1,2
+              do jspin=1,2
+                ijs = ijs + 1
+                DKB(ih,jh,ispin,jspin,nt) = upf(nt)%dion(vi,vj) * fcoef(ih,jh,ispin,jspin,nt)
+                if (vi.ne.vj) fcoef(ih,jh,ispin,jspin,nt) = cmplx_0
+              enddo
+            enddo
+          enddo
+        enddo
+      else
+        do ih = 1, nh(nt)
+          do jh = 1, nh(nt)
+            if ( nhtol(ih,nt) == nhtol(jh,nt) .and. nhtolm(ih,nt) == nhtolm(jh,nt) ) then
+              ir = indv(ih,nt)
+              is = indv(jh,nt)
+              if (lspinorb) then
+                DKB(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
+                DKB(ih,jh,2,2,nt) = upf(nt)%dion(ir,is)
+              else
+                DKB(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
+              endif
+            endif
+          enddo
+        enddo
+      endif
+    enddo
+    !
+    !
+    !     fill the interpolation table tab
+    !
+    pref = fpi / sqrt(volume0)
+    tab(:,:,:) = 0.d0
+    do nt = 1, ntyp
+      do nb = 1, upf(nt)%nbeta
+        l = upf(nt)%lll(nb)
+        do iq = 1,nqx
+          qi = (iq - 1) * dq
+          call sph_bes(upf(nt)%kkbeta, upf(nt)%r, qi, l, besr)
+          do ir = 1, upf(nt)%kkbeta
+            aux(ir) = upf(nt)%beta(ir,nb) * besr(ir) * upf(nt)%r(ir)
+          enddo
+          !ASIER 29/07/2021
+          !call simpson (upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
+
+          !Integrating by spline + gauss 2. order
+          vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
+
+          tab(iq,nb,nt) = vqint * pref
+
+        enddo
+      enddo
+    enddo
+
+    ! initialize spline interpolation
+    do iq = 1, nqx
+      xdata(iq) = (iq - 1) * dq
+    enddo
+    do nt = 1, ntyp
+      do nb = 1, upf(nt)%nbeta
+        d1 = (tab(2,nb,nt) - tab(1,nb,nt)) / dq
+        call spline_mcf(xdata, tab(:,nb,nt), nqx, tab_d2y(:,nb,nt))
+      enddo
+    enddo
+
+    deallocate(qtot)
+    deallocate(besr)
+    deallocate(aux1)
+    deallocate(aux)
+
+  end subroutine init_pp
+
 
 end module intw_pseudo
