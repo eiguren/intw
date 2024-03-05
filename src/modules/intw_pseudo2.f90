@@ -13,7 +13,7 @@ module intw_pseudo
             nhtoj, DKB, beta
   !
   ! subroutines
-  public :: read_all_pseudo, init_KB_projectors, init_pp
+  public :: read_all_pseudo, init_KB_projectors, init_pp, phq_init
   !
   private
   !
@@ -601,5 +601,43 @@ contains
 
   end subroutine init_pp
 
+
+  SUBROUTINE phq_init(q_cart)
+    !----------------------------------------------------------------------------
+    !
+    use kinds, only: dp
+    use intw_ph, only: eigqts
+    use intw_reading, only: nat, tau, ntyp, tpiba2, ngm, volume0
+    use intw_useful_constants, only: tpi
+    use intw_fft, only: gvec_cart
+    !
+    implicit none
+    !
+    real(dp), intent(in) :: q_cart(3)
+    !
+    ! local variables
+    real(dp) :: arg ! the argument of the phase
+    integer :: nt, na
+
+
+    DO na = 1, nat
+      !
+      arg = (  q_cart(1) * tau(1,na) &
+             + q_cart(2) * tau(2,na) &
+             + q_cart(3) * tau(3,na) ) * tpi
+      !
+      eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
+      !
+    END DO
+    !
+    vlocq(:,:) = 0.D0
+    !
+    DO nt = 1, ntyp
+      CALL setlocq( q_cart, upf(nt)%mesh, upf(nt)%mesh, upf(nt)%rab, upf(nt)%r,&
+                    upf(nt)%vloc(1), upf(nt)%zp, tpiba2, ngm, gvec_cart, volume0, &
+                    vlocq(1,nt) )
+    END DO
+
+  END SUBROUTINE phq_init
 
 end module intw_pseudo

@@ -26,7 +26,6 @@ set(SOURCES
   lambda_calculate.f90
   matrix_elements.f90
   ph_module.f90
-  phq_init.f90
   reading.f90
   rotaxis.f90
   selfeliash_calculate.f90
