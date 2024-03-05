@@ -17,7 +17,6 @@ set(SOURCES
   force_linearity_G.f90
   gaussian.f90
   gk_sort.f90
-  imselfen2reselfen_t0.f90
   init_pp.f90
   kinds.f90
   input_parameters.f90
@@ -28,8 +27,6 @@ set(SOURCES
   ph_module.f90
   reading.f90
   rotaxis.f90
-  selfeliash_calculate.f90
-  selfen_add_terms.f90
   set_asr.f90
   sph_bes.f90
   sort.f90
@@ -42,6 +39,7 @@ set(SOURCES
   splinelib.f90
   mcf_interpolacion.f90
   w90_setup.f90
+  selfen.f90
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
