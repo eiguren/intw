@@ -22,7 +22,7 @@ set(SOURCES
   input_parameters.f90
   intw2wannier.f90
   intw_pseudo2.f90
-  lambda_calculate.f90
+  lambda.f90
   matrix_elements.f90
   ph_module.f90
   reading.f90
