@@ -14,7 +14,7 @@ module intw_pseudo
   !
   ! subroutines
   public :: read_all_pseudo, init_KB_projectors, init_pp, phq_init, setlocq, &
-            setlocq_coul, allocate_nlpot, set_nqxq
+            setlocq_coul, allocate_nlpot, set_nqxq, allocate_phq, deallocate_phq
   !
   private
   !
@@ -726,34 +726,34 @@ contains
 
 
   subroutine setlocq_coul(q_cart, zp, tpiba2, ngm, g, omega, vloc)
-  !----------------------------------------------------------------------
-  !
-  !    Fourier transform of the Coulomb potential - For all-electron
-  !    calculations, in specific cases only, for testing purposes
-  !
-  USE kinds, ONLY: DP
-  USE intw_useful_constants, ONLY : fpi, e2, eps_8
-  implicit none
-  !
-  integer, intent(in) :: ngm
-  real(DP), intent(in) :: q_cart(3), zp, tpiba2, omega, g(3,ngm)
-  real(DP), intent (out) :: vloc(ngm)
-  !
-  real(DP) :: g2a
-  integer :: ig
+    !----------------------------------------------------------------------
+    !
+    !    Fourier transform of the Coulomb potential - For all-electron
+    !    calculations, in specific cases only, for testing purposes
+    !
+    USE kinds, ONLY: DP
+    USE intw_useful_constants, ONLY : fpi, e2, eps_8
+    implicit none
+    !
+    integer, intent(in) :: ngm
+    real(DP), intent(in) :: q_cart(3), zp, tpiba2, omega, g(3,ngm)
+    real(DP), intent (out) :: vloc(ngm)
+    !
+    real(DP) :: g2a
+    integer :: ig
 
-  do ig = 1, ngm
-    g2a = (q_cart(1) + g(1,ig))**2 + (q_cart(2) + g(2,ig))**2 + (q_cart(3) + g(3,ig))**2
-    if (g2a < eps_8) then
-        vloc(ig) = 0.d0
-    else
-        vloc(ig) = - fpi * zp *e2 / omega / tpiba2 / g2a
-    endif
-  enddo
+    do ig = 1, ngm
+      g2a = (q_cart(1) + g(1,ig))**2 + (q_cart(2) + g(2,ig))**2 + (q_cart(3) + g(3,ig))**2
+      if (g2a < eps_8) then
+          vloc(ig) = 0.d0
+      else
+          vloc(ig) = - fpi * zp *e2 / omega / tpiba2 / g2a
+      endif
+    enddo
 
   end subroutine setlocq_coul
 
-    !-----------------------------------------------------------------------
+
   subroutine allocate_nlpot()
     !-----------------------------------------------------------------------
     ! Adapted from QEspresso4.3.2 Asier&&Idoia
@@ -832,8 +832,8 @@ contains
     return
 
   end subroutine allocate_nlpot
-  !*************************************************************************
-  !-------------------------------------------------------------------------
+
+
   subroutine set_nqxq(qpoint)
     !
     USE kinds, only: dp
@@ -859,5 +859,31 @@ contains
     return
 
   end subroutine set_nqxq
+
+
+  subroutine allocate_phq
+    !-----------------------------------------------------------------------
+    !JLB: Commented out all bands references, not used.
+    !     Many variables are declared and not used, I don't understand why.
+    !     Discuss with Haritz/Asier, and then remove and clean up.
+    !
+    USE intw_reading, only : nat, ntyp, nr1, nr2, nr3, ngm
+
+    implicit none
+
+    allocate(vlocq (ngm, ntyp))
+
+  end subroutine allocate_phq
+
+
+  subroutine deallocate_phq
+    !-----------------------------------------------------------------------
+    !
+    implicit none
+    !
+    deallocate(vlocq)
+
+    return
+  end subroutine deallocate_phq
 
 end module intw_pseudo
