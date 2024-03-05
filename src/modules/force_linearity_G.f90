@@ -3,11 +3,8 @@ subroutine force_linearity_G(nqf1,nqf2,nqf3,qfmesh,omega)
 !---------------------------------------------------------------------------------------------------------------------
 
   use kinds, only: dp
-!haritz
   use intw_utility, only: find_k_1bz_and_g
-!haritz
-  use intw_input_parameters
-  use intw_reading
+  use intw_reading, only: nat, bg
   use intw_useful_constants, only: eps_6
 
   implicit none
@@ -15,8 +12,9 @@ subroutine force_linearity_G(nqf1,nqf2,nqf3,qfmesh,omega)
   !I/O variables
 
   integer,intent(in) :: nqf1,nqf2,nqf3
-  real(dp),intent(inout) :: omega(3*nat,nqf1*nqf2*nqf3)
   real(dp),intent(in) :: qfmesh(3,nqf1*nqf2*nqf3)
+  real(dp),intent(inout) :: omega(3*nat,nqf1*nqf2*nqf3)
+
   !local variables
 
   real(dp) :: w_min,wqv,w_min_K,w_min_M,w_trshld_K,w_trshld_M
@@ -176,11 +174,6 @@ subroutine force_linearity_G(nqf1,nqf2,nqf3,qfmesh,omega)
      wqv=omega(1,iq)
      qpoint_cart=matmul(bg,qpoint)
      !
-!haritz
-!     mod_0=sqrt((qpoint_cart(1)-qcart_0(1))**2+(qpoint_cart(2)-qcart_0(2))**2+(qpoint_cart(3)-qcart_0(3))**2)
-!     mod_behera=sqrt((qpoint_cart(1)-qcart_behera(1))**2+(qpoint_cart(2)-qcart_behera(2))**2+(qpoint_cart(3)-qcart_behera(3))**2)
-!     mod_gora=sqrt((qpoint_cart(1)-qcart_gora(1))**2+(qpoint_cart(2)-qcart_gora(2))**2+(qpoint_cart(3)-qcart_gora(3))**2)
-!     mod_nqfmesh=sqrt((qpoint_cart(1)-qcart_nqfmesh(1))**2+(qpoint_cart(2)-qcart_nqfmesh(2))**2+(qpoint_cart(3)-qcart_nqfmesh(3))**2)
      mod_0 = (qpoint_cart(1)-qcart_0(1))**2 + &
              (qpoint_cart(2)-qcart_0(2))**2 + &
              (qpoint_cart(3)-qcart_0(3))**2
@@ -200,7 +193,6 @@ subroutine force_linearity_G(nqf1,nqf2,nqf3,qfmesh,omega)
                    (qpoint_cart(2)-qcart_nqfmesh(2))**2 + &
                    (qpoint_cart(3)-qcart_nqfmesh(3))**2
      mod_nqfmesh = sqrt( mod_nqfmesh )
-!haritz
      !
      if (mod_0.gt.10*mod_min.and.mod_gora.gt.10*mod_min.and.mod_behera.gt.10*mod_min.and.mod_nqfmesh.gt.10*mod_min) cycle
      !
