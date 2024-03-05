@@ -7,7 +7,6 @@ set(SOURCES
   multiply_psi_by_vKB.f90
   add_m_nu_lambda_text.f90
   add_q_m_nu.f90
-  allocate_nlpot.f90
   allocate_phq.f90
   all_wfcs.f90
   cfftnd.f90

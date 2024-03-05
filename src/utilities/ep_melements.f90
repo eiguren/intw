@@ -14,7 +14,8 @@ program ep_melements
                           set_num_bands
   use intw_pseudo, only: vkb, vkqb, &
                          read_all_pseudo, &
-                         init_KB_projectors, init_pp, phq_init
+                         init_KB_projectors, init_pp, phq_init, &
+                         allocate_nlpot, set_nqxq
   use intw_utility, only: get_timing, &
                           find_free_unit, &
                           switch_indices, &
