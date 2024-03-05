@@ -3,8 +3,8 @@ integer function read_data_test() result(r)
   use kinds, only: dp
   use intw_test_module, only: assert
   use intw_reading, only: read_parameters_data_file_xml
-  use intw_reading, only: lspinorb, nsym, atom_pfile, atom_labels, at, bg, alat, &
-                          nat, ntyp, ityp, tau, amass, nr1, nr2, nr3, ngm, &
+  use intw_reading, only: lspinorb, nsym, alat, &
+                          nat, ntyp, nr1, nr2, nr3, &
                           noncolin, spinorb_mag, ecutwfc, ecutrho
   use intw_input_parameters, only: mesh_dir, prefix
 
@@ -12,10 +12,7 @@ integer function read_data_test() result(r)
 
   real(kind=dp), parameter :: prec = 1e-6
 
-  integer :: ngm_test
   real(kind=dp) :: alat_test = 7.200000000
-  real(kind=dp), dimension(3,3) :: at_test
-  real(kind=dp), dimension(3,3) :: bg_test
   real(kind=dp) :: ecutwfc_test = 80.0000000000000
   real(kind=dp) :: ecutrho_test = 320.000000000000
   integer :: nr1_test = 30, nr2_test = 30, nr3_test = 30
@@ -24,11 +21,6 @@ integer function read_data_test() result(r)
   logical ::spinorb_mag_test = .false.
   integer, parameter :: nat_test=1
   integer, parameter :: ntyp_test=1
-  real(kind=dp), dimension(ntyp_test) :: amass_test = (/ 63.54600 /)
-  character(len=3), dimension(ntyp_test)  :: atom_labels_test = (/ "Cu" /)
-  character(len=80), dimension(ntyp_test) :: atom_pfile_test = (/ "Cu.RRKJ3.UPF" /)
-  integer,  dimension(nat_test) :: ityp_test
-  real(kind=dp), dimension(3,nat_test) :: tau_test
   integer :: nsym_test = 48
 
   r = 0
