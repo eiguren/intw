@@ -140,6 +140,12 @@ module intw_reading
   real(dp) :: alat
   ! The lattice parameter
 
+  real(kind=dp):: tpiba
+  != tpi/alat
+
+  real(kind=dp) :: tpiba2
+  != tpiba**2
+
   real(dp) :: volume0
 
   integer :: nat
@@ -168,6 +174,9 @@ module intw_reading
   integer, allocatable :: gvec(:,:)
   ! The global g vectors (to which indices refer).
 
+  logical :: lsda
+  ! if a colinear calculation lsda=T
+
   logical :: noncolin
   ! if a noncolinear calculation noncolin=T
 
@@ -181,12 +190,7 @@ module intw_reading
   real(dp) :: ecutrho
   ! cutoff energy for wfc (Hartree)
 
-  real(kind=dp):: tpiba != tpi/alat
-  real(kind=dp) :: tpiba2 != tpiba**2
-
   logical :: gamma_only
-
-  logical :: lsda
 
 contains
 
@@ -473,13 +477,10 @@ contains
     implicit none
 
     integer :: io_unit
-    !input
-    ! output
-    ! gvec  : is the real max num. of g vectors in the global list.
 
     !local
     character(256) :: datafile
-    integer :: ig, ik
+    integer :: ig
 
     datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
@@ -538,33 +539,20 @@ contains
 
     integer,intent(in) :: ik
     integer,intent(out) :: list_iG(nG_max)
-    real(dp),intent(out) :: QE_eig(nbands)
     complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
+    real(dp),intent(out) :: QE_eig(nbands)
 
-     integer :: nG
+    !local variables
 
-    !logical variables
-
+    integer :: nG
     character(256) :: wfc_file, datafile
-    integer :: io_unit,ispin,i,n_yes,ibnd
-    integer :: nexclude
-    real(dp), parameter :: ha_to_ev = 27.211383860484784
+    integer :: io_unit, ispin, n_yes, ibnd
     complex(dp) :: wfc_all(nG_max,nbands,nspin)
     real(dp) :: QE_eig_all(nbands)
 
 
+    100 format('wfc'I5.5'.dat')!
 
-    !band_excluded(:) = .false.
-    !!
-    !do i=1,num_exclude_bands_intw
-    !   !
-    !   nexclude = exclude_bands(i)
-    !   band_excluded(nexclude) = .true.
-    !   !
-    !enddo
-    !
-    ! initialize the arrays to zero (zero will be broadcasted)
-    !
     list_iG(:) = 0
     wfc_all(:,:,:) = cmplx_0
     wfc    (:,:,:) = cmplx_0
@@ -592,13 +580,8 @@ contains
       wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
       QE_eig(n_yes) = QE_eig_all(ibnd)
       !
-      !endif
-      !
     enddo
     close(io_unit)
-
-100 format('wfc'I5.5'.dat')!
-    return
 
   end subroutine get_K_folder_data
 
@@ -639,35 +622,24 @@ contains
 
     !I/O variables
 
-    integer,intent(in) :: ik
-    integer,intent(out) :: list_iG(nG_max)
-    !real(dp),intent(out) :: QE_eig(nbands)
-    real(dp),intent(out) :: QE_eig(num_bands_intw)
-    !complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
-    complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
+    integer, intent(in) :: ik
+    integer, intent(out) :: list_iG(nG_max)
+    complex(dp), intent(out) :: wfc(nG_max,num_bands_intw,nspin)
+    real(dp), intent(out) :: QE_eig(num_bands_intw)
     integer, intent(out) :: nG
 
-    !logical variables
+    !local variables
 
     character(256) :: wfc_file, datafile
-    integer :: io_unit,ispin,i,n_yes,ibnd
-    integer :: nexclude
-    real(dp), parameter :: ha_to_ev = 27.211383860484784
+    integer :: io_unit, ispin, n_yes, ibnd
     complex(dp) :: wfc_all(nG_max*nspin,nbands)
     real(dp) :: QE_eig_all(nbands)
     integer :: iG
 
-    !band_excluded(:) = .false.
-    !!
-    !do i=1,num_exclude_bands
-    !   !
-    !   nexclude = exclude_bands(i)
-    !   band_excluded(nexclude) = .true.
-    !   !
-    !enddo
-    !
+
+    100 format('wfc'I5.5'.dat')!
+
     ! initialize the arrays to zero (zero will be broadcasted)
-    !
     list_iG(:) = 0
     wfc_all(:,:  ) = cmplx_0
     wfc    (:,:,:) = cmplx_0
@@ -681,7 +653,7 @@ contains
     read(unit=io_unit)QE_eig_all(1:nbands)
 
     do ibnd=1,nbands
-            read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd),ispin=1,nspin)
+      read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd),ispin=1,nspin)
     enddo
 
     n_yes = 0
@@ -701,9 +673,6 @@ contains
     enddo
     close(io_unit)
 
-100 format('wfc'I5.5'.dat')!
-    return
-
   end subroutine get_K_folder_data_with_nG
 
 
@@ -716,10 +685,18 @@ contains
     !-----------------------------------------------
     implicit none
 
-    integer :: i
-    character(*) :: string
-    character(256) :: integer_part, tag
+    integer, intent(in) :: i
+    character(*), intent(in) :: string
+    character(256), intent(out) :: tag
 
+    character(256) :: integer_part
+
+
+    100 format(I1)
+    200 format(I2)
+    300 format(I3)
+    400 format(I4)
+    500 format(I5)
 
     if (i < 10) then
       write(integer_part,100) i
@@ -734,14 +711,6 @@ contains
     end if
 
     tag = trim(string)//trim(integer_part)
-
-100 format(I1)
-200 format(I2)
-300 format(I3)
-400 format(I4)
-500 format(I5)
-
-    return
 
   end subroutine write_tag
 
@@ -776,36 +745,36 @@ contains
     ! JLB 07/2023: Moved this subroutine here from intw2wannier.f90
     !-----------------------------------------------------------------------!
 
-      implicit none
+    implicit none
 
-      character(len=*)   :: keyword
-      character(len=256) :: word1, word2
-      logical            :: found, test
-      integer            :: ios,   nnkp_unit
+    integer, intent(in) :: nnkp_unit
+    character(len=*), intent(in) :: keyword
 
-      found=.false.
+    character(len=256) :: word1, word2
+    logical            :: found, test
+    integer            :: ios
+
+
+    found=.false.
+    !
+    do
       !
-      do
-         !
-         read(nnkp_unit,*,iostat=ios) word1, word2
-         !
-         test=(trim(word1).eq.'begin').and.(trim(word2).eq.keyword)
-         !
-         if (test) exit
-         !
-         if (ios.ne.0) then
-            !
-            write (*,*) keyword," data-block missing "
-            stop
-            !
-         endif
-         !
-      enddo
+      read(nnkp_unit,*,iostat=ios) word1, word2
       !
-      return
+      test=(trim(word1).eq.'begin').and.(trim(word2).eq.keyword)
+      !
+      if (test) exit
+      !
+      if (ios.ne.0) then
+        !
+        write (*,*) keyword," data-block missing "
+        stop
+        !
+      endif
+      !
+    enddo
 
-      end subroutine scan_file_to
-    !------------------------------------------
+  end subroutine scan_file_to
 
 
   subroutine set_num_bands()
