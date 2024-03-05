@@ -19,7 +19,6 @@ set(SOURCES
   gk_sort.f90
   imselfen2reselfen_t0.f90
   init_pp.f90
-  init_KB_projectors.f90
   kinds.f90
   input_parameters.f90
   intw2wannier.f90

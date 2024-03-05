@@ -13,7 +13,8 @@ program ep_melements
                           read_kpoints_data_file_xml, &
                           set_num_bands
   use intw_pseudo, only: vkb, vkqb, &
-                         read_all_pseudo
+                         read_all_pseudo, &
+                         init_KB_projectors
   use intw_utility, only: get_timing, &
                           find_free_unit, &
                           switch_indices, &

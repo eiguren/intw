@@ -10,10 +10,10 @@ module intw_pseudo
   public :: INTWPSEUDO, upf, vlocq
   public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
             nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
-             nhtoj, DKB, beta
+            nhtoj, DKB, beta
   !
   ! subroutines
-  public :: read_all_pseudo
+  public :: read_all_pseudo, init_KB_projectors
   !
   private
   !
@@ -225,5 +225,156 @@ contains
 30 format(A,F8.2,6X,A)
 
   END subroutine read_all_pseudo
+
+
+  subroutine init_KB_projectors(npw, npwx, igk, qpoint_cryst, vkb_)
+    !----------------------------------------------------------------------
+    !
+    !   Calculates beta functions (Kleinman-Bylander projectors), with
+    !   structure factor, for all atoms, in reciprocal space
+    !
+    USE kinds, ONLY: dp
+    USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, tpiba
+    USE intw_useful_constants, ONLY : tpi, cmplx_0, cmplx_i
+    USE intw_fft, ONLY: gvec_cart
+    USE mcf_spline, only: splint_mcf
+
+    implicit none
+
+    !I/O variables
+
+    integer, intent(in) :: npw, npwx !number of PW's
+    integer, intent(in) :: igk(npwx) !G list of q vector
+    real(dp), intent(in) :: qpoint_cryst(3) !q vector
+    complex(dp), intent(out) :: vkb_(npwx,nkb) !beta functions
+
+    !local variables
+
+    integer :: ig, l, lm, na, nt, nb, ih, jkb, iq
+    real(DP) :: arg, qpoint_cart(3), gk(3,npw), vkb1(npw,nhm), xdata(nqx), ylm(npw, (lmaxkb+1)**2)
+    real(DP), dimension(npw) :: qg(npw), vq(npw)
+    complex(DP) :: phase, pref, sk(npw)
+
+
+    vkb_ = cmplx_0
+    !
+    qpoint_cart = matmul(bg, qpoint_cryst)
+    !
+    if (lmaxkb.lt.0) return
+    !
+    do ig=1,npw
+      !
+      if (igk(ig)==0) exit
+      !
+      gk(1,ig) = qpoint_cart(1) + gvec_cart(1, igk(ig))
+      gk(2,ig) = qpoint_cart(2) + gvec_cart(2, igk(ig))
+      gk(3,ig) = qpoint_cart(3) + gvec_cart(3, igk(ig))
+      !
+      qg(ig) = gk(1,ig)**2 + gk(2,ig)**2 + gk(3,ig)**2
+      !
+    enddo
+    !
+    call intw_real_ylmr2((lmaxkb+1)**2, npw, gk, qg, ylm)
+    !
+    ! set now qg=|q+G| in atomic units
+    !
+    do ig=1,npw
+      !
+      if (igk(ig)==0) exit
+      !
+      qg(ig) = tpiba * sqrt(qg(ig))
+      !
+    enddo !ig
+    !
+    do iq=1,nqx
+          !
+      xdata(iq) = (iq - 1) * dq
+          !
+    enddo !ig
+    !
+    ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
+    !
+    jkb = 0
+    vq = 0.d0
+    !
+    do nt=1,ntyp
+      !
+      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
+      !
+      do nb=1,upf(nt)%nbeta
+          !
+          do ig=1,npw
+            !
+            if (igk(ig)==0) exit
+            !
+            call splint_mcf(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
+          enddo !ig
+          !
+          ! add spherical harmonic part  (Y_lm(q)*f_l(q))
+          !
+          do ih=1,nh(nt)
+            !
+            if (nb.eq.indv(ih, nt)) then
+                !
+                l  = nhtol(ih,nt)
+                lm = nhtolm(ih,nt)
+                !
+                do ig=1,npw
+                  !
+                  if (igk(ig)==0) exit
+                  !
+                  vkb1(ig,ih) = ylm(ig,lm) * vq(ig)
+                  !
+                enddo !ig
+            endif !nb
+          enddo !ih
+      enddo !nt
+      !
+      ! vkb1 contains all betas including angular part for type nt
+      ! now add the structure factor and factor (-i)^l
+      !
+      do na=1,nat
+          !
+          ! ordering: first all betas for atoms of type 1
+          !           then  all betas for atoms of type 2  and so on
+          !
+          if (ityp(na).eq.nt) then
+            !
+            ! qpoint_cart is cart. coordinates
+            !
+            arg = (  qpoint_cart(1) * tau(1,na) &
+                   + qpoint_cart(2) * tau(2,na) &
+                   + qpoint_cart(3) * tau(3,na) ) * tpi
+            !
+            phase = CMPLX(cos(arg), - sin(arg) ,kind=DP)
+            !
+            do ig=1,npw
+                !
+                if (igk(ig)==0) exit
+                !
+                sk (ig) = exp( -tpi*cmplx_i*(  gvec_cart(1,igk(ig))*tau(1,na) &
+                                             + gvec_cart(2,igk(ig))*tau(2,na) &
+                                             + gvec_cart(3,igk(ig))*tau(3,na) ) )
+                !
+            enddo !ig
+            !
+            do ih=1,nh(nt)
+                !
+                jkb = jkb + 1
+                pref = phase * (-cmplx_i)**nhtol(ih,nt)
+                !
+                do ig=1,npw
+                  !
+                  if (igk(ig)==0) exit
+                  !
+                  vkb_(ig, jkb) = vkb1(ig,ih) * sk(ig) * pref
+                  !
+                enddo
+            enddo
+          endif
+      enddo !n bet
+    enddo !ntyp
+
+  end subroutine init_KB_projectors
 
 end module intw_pseudo
