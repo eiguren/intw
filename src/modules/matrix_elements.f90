@@ -42,7 +42,7 @@ contains
     !
     !--------------------------------------------------------------------------------
     use intw_useful_constants, only: zero, one, cmplx_0
-    use intw_reading, only: nG_max, gvec, nspin, nbands, ngm, num_bands_intw
+    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
     use intw_fft, only : find_iG
 
     implicit none
@@ -56,11 +56,9 @@ contains
 
     !local variables
 
-    integer :: G1(3),G2(3),Gprime(3), jd (1)
-    integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2
-    integer :: nG_max_non_zero
+    integer :: jd(1)
+    integer :: i,ibnd,jbnd,ispin,jspin,iG_1,iG_2
     complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
-    logical :: found
 
     pw_mat_el=cmplx_0
 
@@ -165,7 +163,7 @@ contains
     !
     !--------------------------------------------------------------------------------
     use intw_useful_constants, only: zero, one, cmplx_0
-    use intw_reading, only: nG_max, gvec, nspin, nbands, num_bands_intw
+    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
     implicit none
 
