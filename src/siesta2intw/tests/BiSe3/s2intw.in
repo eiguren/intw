@@ -1,0 +1,6 @@
+&inputpp
+prefix="bi2se3_3ql"
+outdir="./"
+nk1=1, nk2=1, nk3=1,
+nbnd_final = 50
+/

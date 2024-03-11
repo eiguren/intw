@@ -1,0 +1,5 @@
+&inputpp
+prefix="Cu"
+outdir="./"
+nk1=8, nk2=8, nk3=8,
+/

@@ -1,0 +1,6 @@
+&inputpp
+prefix="fe"
+outdir="./"
+nk1=2, nk2=2, nk3=2
+nbnd_final=6
+/

@@ -1,5 +1,5 @@
 SIESTA_BUILD_DIR=@SIESTA_BUILD_DIR@
-SIESTA_HOME_DIR=@SIESTA_HOME@
+SIESTA2INTW_BUILD_DIR=@SIESTA2INTW_BUILD_DIR@
 W_BUILD_DIR=@W_BUILD_DIR@
 INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
 
@@ -35,7 +35,7 @@ run_w90_1:
 run_siesta2intw:
 	rm -rf si.save.intw
 	rm -rf fdf-*.log INPUT_TMP.*
-	$(SIESTA_HOME_DIR)/Util/Contrib/siesta2intw/Src/siesta2intw < si.fdf | tee siesta2intw.out
+	$(SIESTA2INTW_BUILD_DIR)/siesta2intw.x < si.fdf | tee siesta2intw.out
 	( test -f 0_NORMAL_EXIT && echo "OK" || exit 1 )
 
 run_intw:

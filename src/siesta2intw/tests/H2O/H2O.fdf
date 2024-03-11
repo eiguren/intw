@@ -1,0 +1,45 @@
+
+SystemName          Water molecule
+SystemLabel         h2o
+NumberOfAtoms       3
+NumberOfSpecies     2
+
+Spin P
+
+XC.Functional LDA
+XC.Authors PZ
+
+PAO.BasisSize DZP
+MeshCutoff  300 Ry
+DM.UseSaveDM true
+
+#WriteIonPlotFiles true
+WriteDenchar T
+
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+
+LatticeConstant 20.0 Bohr
+%block LatticeVectors
+   1.000000   0.000000   0.000000 
+   0.000000   1.000000   0.000000 
+   0.000000   0.000000   1.000000 
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat  Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.000  0.000  0.000  1
+ 0.757  0.586  0.000  2
+-0.757  0.586  0.000  2
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+
+WriteWaveFunctions T
+#WaveFuncKPointsScale ReciprocalLatticeVectors
+#%block WaveFuncKPoints
+#0.00  0.00  0.00
+#0.50  0.00  0.00
+#%endblock WaveFuncKPoints
+
