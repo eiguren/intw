@@ -1,0 +1,39 @@
+SystemLabel         h2o
+NumberOfSpecies     2
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+
+Denchar.TypeOfRun      2D
+
+Denchar.PlotCharge          F
+Denchar.PlotWaveFunctions   T
+
+Denchar.CoorUnits       bohr           # Format for coordinate of the points
+                                       # Bohr
+                                       # Ang
+
+Denchar.DensityUnits   Ele/bohr**3     # Units of Charge Density
+                                       # Ele/bohr**3
+                                       # Ele/Ang**3
+                                       # Ele/UnitCell
+
+Denchar.MinX             0.0  bohr      # Minimum coord of the window in X-dir
+Denchar.MaxX            20.0  bohr      # Maximum coord of the window in X-dir
+
+Denchar.MinY             0.0  bohr      # Minimum coord of the window in Y-dir
+Denchar.MaxY            20.0  bohr      # Maximum coord of the window in Y-dir
+
+Denchar.MinZ             0.0  bohr      # Minimum coord of the window in Z-dir
+Denchar.MaxZ            20.0  bohr      # Maximum coord of the window in Z-dir
+
+Denchar.NumberPointsX    120            # Number of points in X-axis
+Denchar.NumberPointsY    120            # Number of points in Y-axis
+Denchar.NumberPointsZ    120            # Number of points in Z-axis
+
+Denchar.PlaneGeneration  NormalVector            # Option to generate the plane
+                                                 # NormalVector
+                                                 # TwoLine
+                                                 # ThreePoints
+                                                 # ThreeAtomicIndices

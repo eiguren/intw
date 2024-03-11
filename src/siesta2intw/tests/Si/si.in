@@ -1,0 +1,89 @@
+# Thi is a trial input file.
+#
+# The computation done in "mesh_dir" is a simple scf + nscf computation,
+# where all the necessary data is saved in prefix.save. 
+#
+/
+&input
+mesh_dir 	=	'./'
+prefix 		= 	'si'
+nk1		=	8
+nk2		=	8
+nk3		=       8	
+magnon          =	.false. 
+TR_symmetry     =	.true.  
+nk1s		=       8
+nk2s		=       8
+nk3s		=       8
+number_G_shells =       4
+qpt1            =       0.00000
+qpt2            =       0.25000
+qpt3            =       0.00000
+chemical_potential =   6.63 
+/
+&intw2W
+intw2W_fullzone =       .false.
+intw2W_method   =       'CONVOLUTION'
+/
+&response
+interpolation_scheme =  'linear'
+hw_min               =  -64.0
+hw_max               =   64.0
+n_hw                 =   1001
+chi0_file_prefix     =  'chi0'
+broadening_function  =  'gaussian'
+broadening_method    =  'adaptive'
+real_part_chi0       =  'kramers-kronig'
+/
+
+&bands
+bands_points	     =  602
+crossing_method      =  'none'
+bands_file           =  'si_W_band.dat'
+/
+&fsh_input
+nfsh = 400
+fsh_symmetry =.false.
+fsh_sparse=.true.
+newton_iter1=0
+newton_iter2=0
+Emin=-0.01
+Emax=400.0
+/
+&ph
+nq1=6
+nq2=6
+nq3=6
+nqirr=16
+ph_dir        =   './'
+fc_mat        =   'si.fc'
+ph_bands_file =   'si_ph_band.dat'
+dvscf_name    =   'si.dvscf_q'
+dvscf_dir     =   './'
+data_dir      =   './'
+data_name     =   'data-file.q'
+/
+&product_basis
+optimal_basis_size         =  27
+super_factor_1             =  4
+super_factor_2             =  4
+super_factor_3             =  4
+qpt_basis_1                =  0.000000
+qpt_basis_2                =  0.250000
+qpt_basis_3                =  0.000000
+qpt_dir_1                  =  0.000000
+qpt_dir_2                  =  0.250000
+qpt_dir_3                  =  0.000000
+product_basis_filename     = 'B_functions.nc'
+overlaps_filename          = 'overlaps.nc'
+wannier_functions_filename = './Wannier_functions/Wannier_functions.nc'
+tolerance                  = 1.0e-8
+basis_order		   = 'diagonal'
+plane_wave_combination     = 'all'
+/
+Kpoint_Path
+3
+X      0.50000    0.50000    0.00000    
+G      0.00000    0.00000    0.00000 
+d      0.50000    0.0 0.0  
+

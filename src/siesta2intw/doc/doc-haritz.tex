@@ -1,0 +1,126 @@
+% !TeX encoding = UTF-8
+% !TeX spellcheck = en_US
+\documentclass[12pt,a4paper,onecolumn]{article}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+%\usepackage[left=2.5cm,right=2.5cm,bottom=3cm]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+%\usepackage{indentfirst}
+
+
+
+%\usepackage{makeidx}
+%\usepackage{wrapfig}
+%\usepackage{float}
+%\usepackage{caption}
+%\usepackage{subcaption}
+%\usepackage{subfigure}
+%\usepackage{cite}
+%\usepackage{pdfpages}
+%\usepackage{fancyhdr}
+%\pagestyle{fancy}
+
+\title{Fourier transformation of the wave functions}
+\author{}
+
+
+%\lhead{Elektroi-fonoi elkarrekintza grafenoan}
+%\rhead{Haritz Garai Marin}
+
+\renewcommand{\vec}{\mathbf}
+
+\begin{document}
+
+
+\maketitle
+
+
+\subsection*{Bloch's theorem}
+
+The wave function can be written as
+\begin{equation}\label{eq:bloch_1}
+\psi_{\vec{k}}(\vec{r}) = e^{i\vec{k}\cdot\vec{r}} u_{\vec{k}}(\vec{r})
+,\end{equation}
+where $u_{\vec{k}}(\vec{r})$ has the periodicity of the crystal lattice. Thus,
+\begin{equation}\label{eq:bloch_2}
+\psi_{\vec{k}}(\vec{r}+\vec{R}_l) = e^{i\vec{k}\cdot\vec{R}_l} \psi_{\vec{k}}(\vec{r})
+.\end{equation}
+
+
+\subsection*{Fourier transform}
+
+The Fourier transform of the periodic part of the wave function is
+\begin{equation}
+u_{\vec{k}}(\vec{G})
+=
+\frac{1}{\Omega}\int_\Omega u_{\vec{k}}(\vec{r})\, e^{-i\vec{G}\cdot\vec{r}}\, d\vec{r}
+,\end{equation}
+where $\Omega$ is the volume of the unit cell and $\vec{G}$ is a reciprocal lattice vector. Using equation \eqref{eq:bloch_1} it can be shown that
+\begin{equation}
+u_{\vec{k}}(\vec{G})
+=
+\psi_{\vec{k}}(\vec{k}+\vec{G})
+.\end{equation}
+
+Then, the wave function can be written in a Fourier series, as
+\begin{align}\label{eq:wave function fourier series}
+\psi_{\vec{k}}(\vec{r})
+&=
+e^{i\vec{k}\cdot\vec{r}} u_{\vec{k}}(\vec{r})
+=
+e^{i\vec{k}\cdot\vec{r}} \sum_{\vec{G}} u_{\vec{k}}(\vec{G}) e^{i\vec{G}\cdot\vec{r}} \nonumber\\
+&=\sum_{\vec{G}} u_{\vec{k}}(\vec{G}) e^{i(\vec{k}+\vec{G})\cdot\vec{r}}\nonumber\\
+&=\sum_{\vec{G}} \psi_{\vec{k}}(\vec{k}+\vec{G}) e^{i(\vec{k}+\vec{G})\cdot\vec{r}}
+.\end{align}
+
+
+\subsection*{Localized basis}
+
+For a atomic localized basis set $\{\phi^\mu\}$, with $\mu=\{\vec{R}_{\tau},\alpha,l,m,\zeta\}$, to satisfy the Bloch's theorem we can define
+\begin{equation}\label{eq:phi_k definition}
+\phi_{\vec{k}}^{\mu}(\vec{r})
+=
+\sum_{\vec{R}_l} e^{i\vec{k}\cdot\vec{R}_l}\, \phi^\mu(\vec{r}-\vec{R}_l)
+.\end{equation}
+Now, the new basis set $\phi_{\vec{k}}^\mu$ will satisfy
+\begin{equation}\label{eq:localized_1}
+\phi_{\vec{k}}^\mu(\vec{r}+\vec{R}_l) = e^{i\vec{k}\cdot\vec{R}_l} \phi_{\vec{k}}^\mu(\vec{r})
+,\end{equation}
+and the wave functions can be written as
+\begin{equation}
+\psi_{n,\vec{k}}(\vec{r})
+=
+\sum_{\mu} c_{n,\vec{k}}^\mu\, \phi_{\vec{k}}^\mu(\vec{r})
+.\end{equation}
+
+
+\subsection*{Fourier transform of the localized basis}
+
+Taking into account the equivalence between equations \eqref{eq:bloch_2} and \eqref{eq:localized_1}, we can write $\phi_{\vec{k}}^\mu$ in a Fourier series, in the same way that we have done with the wave function in equation \eqref{eq:wave function fourier series}:
+\begin{align}
+\phi_{\vec{k}}^\mu(\vec{r})
+&=\sum_{\vec{G}} \phi_{\vec{k}}^\mu(\vec{k}+\vec{G}) e^{i(\vec{k}+\vec{G})\cdot\vec{r}}
+.\end{align}
+
+But now, using the definition of $\phi_{\vec{k}}^\mu$ in equation \eqref{eq:phi_k definition}, its Fourier transform is more complicated:
+\begin{align}
+\phi_{\vec{k}}^\mu(\vec{k}+\vec{G})
+=
+\sum_{\vec{R}_l} e^{i\vec{k}\cdot\vec{R}_l}\, e^{-i(\vec{k}+\vec{G})\cdot\vec{R}_l}\, \phi^\mu(\vec{k}+\vec{G})
+.\end{align}
+
+%\bibliographystyle{abbrv}
+%\bibliographystyle{plain}
+%\bibliographystyle{apacite}
+%\bibliographystyle{unsrt}
+%\bibliography{bibliografi.bib}
+
+
+\end{document}

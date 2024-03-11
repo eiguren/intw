@@ -33,13 +33,6 @@ if (NOT SIESTA_VERSION)
   message("-- Found SIESTA_BUILD_DIR: ${SIESTA_BUILD_DIR}")
 
 
-  # Some checks
-  message("-- Checking SIESTA build.")
-  find_program(SIESTA2INTW_EXE siesta2intw PATHS ${SIESTA_HOME}/Util/Contrib/siesta2intw/Src NO_DEFAULT_PATH)
-  set(SIESTA2INTW_EXE "${SIESTA2INTW_EXE}" CACHE PATH "SIESTA2INTW executable.")
-  if("${SIESTA2INTW_EX}" STREQUAL "SIESTA2INTW_EX-NOTFOUND")
-    message(FATAL_ERROR "SIESTA2INTW_EX NOT FOUND!")
-  endif()
 
 
   # Find SIESTA version number

@@ -1,0 +1,5 @@
+&inputpp
+outdir="./"
+prefix="si"
+nk1=4, nk2=4, nk3=4,
+/

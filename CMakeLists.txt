@@ -120,6 +120,9 @@ add_subdirectory(src/utilities)
 if (USE_QE)
   add_subdirectory(src/QEtoINTW)
 endif()
+if (USE_SIESTA)
+  add_subdirectory(src/siesta2intw)
+endif()
 
 
 # Find python3 for test scripts
@@ -184,6 +187,7 @@ endif()
 if (USE_SIESTA)
   message("-- SIESTA_HOME: ${SIESTA_HOME}")
   message("-- SIESTA_VERSION: ${SIESTA_VERSION}")
+  message("-- SPGLIB: ${SPGLIB}")
 endif()
 if (USE_WANNIER)
   message("-- W_HOME: ${W_HOME}")

@@ -1,0 +1,9 @@
+
+*
+
+!.gitignore
+!H2O.fdf
+!s2intw.in
+!*.psf
+!denchar.fdf
+!plot.bash
