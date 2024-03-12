@@ -1,4 +1,5 @@
 QE_BUILD_DIR=@QE_BUILD_DIR@
+QE2INTW_BUILD_DIR=@QE2INTW_BUILD_DIR@
 W_BUILD_DIR=@W_BUILD_DIR@
 INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
 
@@ -34,7 +35,7 @@ run_w90_1:
 
 run_pw2intw:
 	rm -rf gaas.save.intw
-	$(QE_BUILD_DIR)/bin/pw2intw.x < gaas.pw2intw.in | tee gaas.pw2intw.out
+	$(QE2INTW_BUILD_DIR)/pw2intw.x < gaas.pw2intw.in | tee gaas.pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
@@ -60,7 +61,7 @@ irr_run_w90pp:
 
 irr_run_pw2intw:
 	rm -rf gaas_irr.save.intw
-	$(QE_BUILD_DIR)/bin/pw2intw.x < gaas.pw2intw_irr.in | tee gaas.pw2intw_irr.out
+	$(QE2INTW_BUILD_DIR)/pw2intw.x < gaas.pw2intw_irr.in | tee gaas.pw2intw_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 irr_run_intw:
@@ -177,4 +178,3 @@ clean:
 	rm -rf gaas_irr.wout gaas_irr_band.* gaas_irr.chk
 	rm -rf nnkp.test
 	rm -rf intw_*
-

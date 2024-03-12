@@ -1,4 +1,5 @@
 QE_BUILD_DIR=@QE_BUILD_DIR@
+QE2INTW_BUILD_DIR=@QE2INTW_BUILD_DIR@
 W_BUILD_DIR=@W_BUILD_DIR@
 INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
 
@@ -19,7 +20,7 @@ run_w90pp:
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp gaas
 
 run_pw2intw:
-	${QE_BUILD_DIR}/bin/pw2intw.x < pw2intw.in | tee pw2intw.out
+	${QE2INTW_BUILD_DIR}/pw2intw.x < pw2intw.in | tee pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_intw:
