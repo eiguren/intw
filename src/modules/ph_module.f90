@@ -578,7 +578,7 @@ contains
 
     USE intw_reading, ONLY : nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
     USE intw_fft, ONLY : eigts1, eigts2, eigts3, nl, mill, gvec_cart
-    USE intw_pseudo, ONLY : vlocq
+    USE intw_pseudo_local, ONLY : vlocq
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
     implicit none
