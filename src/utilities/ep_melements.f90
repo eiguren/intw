@@ -15,7 +15,7 @@ program ep_melements
   use intw_pseudo, only: vkb, vkqb, &
                          read_all_pseudo, &
                          init_KB_projectors, init_pp, phq_init, &
-                         allocate_nlpot, set_nqxq, allocate_phq
+                         allocate_nlpot, allocate_phq
   use intw_utility, only: get_timing, &
                           find_free_unit, &
                           switch_indices, &
@@ -424,8 +424,6 @@ program ep_melements
           file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
           form='unformatted', status='unknown', access='direct', recl=record_lengh)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
-    !
-    call set_nqxq(qpoint)
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
     dvq_local = cmplx_0

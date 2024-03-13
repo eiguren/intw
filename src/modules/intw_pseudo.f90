@@ -2,230 +2,211 @@ module intw_pseudo
   !
   use kinds, only: dp
   !
-  IMPLICIT NONE
+  implicit none
   !
-  SAVE
+  save
   !
   ! variables
-  public :: INTWPSEUDO, upf, vlocq
-  public :: nqxq, nqx, dq, qrad, tab, spline_ps, tab_d2y, npsx, nh, nhm, &
-            nbetam, lmaxkb, lmaxx, nkb, indv, nhtol, nhtolm, ijtoh, vkb, vkqb, &
-            nhtoj, DKB, beta
+  public :: intwpseudo, upf, &
+            nt_max, l_max, &
+            dq, nqx, tab, tab_d2y, &
+            nh, nhm, nbetam, lmaxkb, &
+            nkb, indv, nhtol, nhtolm, nhtoj, &
+            DKB, vlocq, vkb, vkqb
   !
   ! subroutines
   public :: read_all_pseudo, init_KB_projectors, init_pp, phq_init, setlocq, &
-            setlocq_coul, allocate_nlpot, set_nqxq, allocate_phq, deallocate_phq
+            setlocq_coul, allocate_nlpot, allocate_phq, deallocate_phq
   !
   private
   !
-  TYPE INTWPSEUDO
-    CHARACTER(LEN=2) :: psd=' '      ! Element label
-    CHARACTER(LEN=20) :: typ=' '     ! Pseudo type ( NC or US or PAW)
-    CHARACTER(len=6) :: rel=' '      ! relativistic: {no|scalar|full}
-    LOGICAL :: nlcc                  ! Non linear core corrections
-    REAL(DP) :: zp                   ! z valence
-    REAL(DP) :: ecutwfc              ! suggested cut-off for wfc
+  type intwpseudo
+    character(len=2)                           :: psd = ' ' ! Element label
+    character(len=6)                           :: rel = ' ' ! relativistic: {no|scalar|full}
+    logical                                    :: nlcc      ! Non linear core corrections
+    real(kind=dp)                              :: zp        ! z valence
+    real(kind=dp)                              :: ecutwfc   ! Suggested cut-off for wfc
+    logical                                    :: has_so    ! If .true. includes spin-orbit
     !
-    INTEGER :: lmax                  ! maximum l component in beta
-    INTEGER :: nbeta                 ! number of projectors
-    INTEGER, DIMENSION(:), ALLOCATABLE :: kbeta   ! kbeta(nbeta): number of grid points used for betas
-                                    ! this defines the cutoff radius for each of them.
+    integer                                    :: mesh      ! Number of points in the radial mesh
+    real(kind=dp), dimension(:),   allocatable :: r         ! r(mesh)  radial grid
+    real(kind=dp), dimension(:),   allocatable :: rab       ! rab(mesh) dr(i)/di
     !
-    INTEGER :: kkbeta
-    INTEGER, DIMENSION(:), ALLOCATABLE :: lll     ! lll(nbeta) l of each projector
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: beta   ! beta(mesh,nbeta) projectors
+    real(kind=dp)                              :: rcloc     ! vloc = v_ae for r > rcloc
+    integer                                    :: lloc      ! l of channel used to generate local potential
+    real(kind=dp), dimension(:),   allocatable :: vloc      ! vloc(mesh) local atomic potential
     !
-    INTEGER :: mesh                  ! number of points in the radial mesh
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: r      ! r(mesh)  radial grid
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: rab    ! rab(mesh) dr(x)/dx (x=linear grid)
-    INTEGER :: lloc                 ! L of channel used to generate local potential
-    REAL(DP) :: rcloc               ! vloc = v_ae for r > rcloc
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: vloc    ! vloc(mesh) local atomic potential
-    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: dion  ! dion(nbeta,nbeta) atomic D_{mu,nu}
-
-    LOGICAL :: has_so             ! if .true. includes spin-orbit
-    REAL(DP), DIMENSION(:), ALLOCATABLE :: jjj   ! jjj(nbeta) j=l+1/2 or l-1/2 of beta
-  END TYPE INTWPSEUDO
-
-  TYPE (INTWPSEUDO), DIMENSION(:), ALLOCATABLE :: UPF
-
-  REAL (DP), ALLOCATABLE :: vlocq(:,:)
-
-  LOGICAL :: spline_ps=.true.
-
-  !Former US in QE
-  INTEGER :: &
-       nqxq,             &! size of interpolation table
-       nqx                ! number of interpolation points
-  REAL(DP), PARAMETER:: &
-       dq = 0.01D0           ! space between points in the pseudopotential tab.
-  REAL(DP), ALLOCATABLE :: &
-       qrad(:,:,:,:),         &! radial FT of Q functions
-       tab(:,:,:)           ! interpolation table for PPs
-
-  REAL(DP), ALLOCATABLE :: &
-       tab_d2y(:,:,:)            ! for cubic splines
-  !Former USPP_PARAM in QE (INTW)
-  !TYPE (INTWPSEUDO),  ALLOCATABLE, TARGET :: upf(:)
-
-  INTEGER, PARAMETER :: npsx=10
-
-  INTEGER :: &
-       nh(npsx),             &! number of beta functions per atomic type
-       nhm,                  &! max number of different beta functions per atom
-       nbetam                 ! max number of beta functions
-  INTEGER :: &
-       lmaxkb                ! max angular momentum
-  !
-  !Former USPP
-  INTEGER, PARAMETER :: &
-       lmaxx  = 3      ! max non local angular momentum (l=0 to lmaxx)
-  !
-  INTEGER :: nkb        ! total number of beta functions, with struct.fact.
-  !
-  INTEGER, ALLOCATABLE ::&
-       indv(:,:),        &! indes linking  atomic beta's to beta's in the solid
-       nhtol(:,:),       &! correspondence n <-> angular momentum l
-       nhtolm(:,:),      &! correspondence n <-> combined lm index for (l,m)
-       ijtoh(:,:,:)       ! correspondence beta indexes ih,jh -> composite index ijh
+    integer                                    :: nbeta     ! Number of beta projectors
+    integer                                    :: lmax      ! Max l component in beta
+    integer,       dimension(:),   allocatable :: kbeta     ! kbeta(nbeta): number of grid points used for betas
+                                                            ! this defines the cutoff radius for each of them.
+    integer                                    :: kkbeta    ! Max number of grid points used for betas
+    integer,       dimension(:),   allocatable :: lll       ! lll(nbeta) l of each projector
+    real(kind=dp), dimension(:),   allocatable :: jjj       ! jjj(nbeta) j=l+1/2 or l-1/2 of beta
+    real(kind=dp), dimension(:,:), allocatable :: beta      ! beta(mesh,nbeta) projectors
+    real(kind=dp), dimension(:,:), allocatable :: dion      ! dion(nbeta,nbeta) atomic D_{mu,nu}
+  end type intwpseudo
   !
   !
-  COMPLEX(DP), ALLOCATABLE, TARGET :: &
-       vkb(:,:), vkqb(:,:)             ! all beta functions in reciprocal space
-  REAL(DP), ALLOCATABLE :: &
-       nhtoj(:,:)              ! correspondence n <-> total angular momentum
+  type(intwpseudo), dimension(:), allocatable :: upf
   !
-  COMPLEX(DP), ALLOCATABLE :: & ! variables for spin-orbit/noncolinear case:
-       DKB(:,:,:,:,:)            !
   !
-  REAL(DP), ALLOCATABLE :: &
-       beta(:,:,:)           ! beta functions for CP (without struct.factor)
+  integer, parameter :: nt_max = 10 ! Max number of different atomic types
+  integer, parameter :: l_max = 3   ! Max non local angular momentum (l=0 to l_max)
+  !
+  !
+  real(kind=dp), parameter   :: dq = 0.01d0    ! Space between points in the pseudopotential tab
+  integer                    :: nqx            ! Number of interpolation points
+  real(kind=dp), allocatable :: tab(:,:,:)     ! Interpolation table for PPs
+  real(kind=dp), allocatable :: tab_d2y(:,:,:) ! For cubic splines
+  !
+  !
+  integer :: nh(nt_max)  ! Number of beta(lm) functions per atomic type
+  integer :: nhm         ! Max number of beta(lm) functions per atomic type
+  integer :: nbetam      ! Max number of beta functions per atomic type
+  integer :: lmaxkb      ! Max angular momentum of beta functions
+  !
+  !
+  integer :: nkb ! Total number of beta(lm) functions in the solid
+  !
+  !
+  integer,       allocatable :: indv(:,:)   ! Link between index of beta(lm) function in the solid -> index of beta function in the atomic type
+  integer,       allocatable :: nhtol(:,:)  ! Link between index of beta(lm) function in the atomic type -> angular momentum l
+  integer,       allocatable :: nhtolm(:,:) ! Link between index of beta(lm) function in the atomic type -> combined lm angular momentum index l*l+m
+  real(kind=dp), allocatable :: nhtoj(:,:)  ! Link between index of beta(lm) function in the atomic type -> total angular momentum j
+  !
+  !
+  complex(kind=dp), allocatable :: DKB(:,:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions for each atomic type
+  !
+  !
+  real(kind=dp), allocatable :: vlocq(:,:) ! Local potential in reciprocal space
+  complex(kind=dp), allocatable, target :: vkb(:,:), vkqb(:,:) ! All beta functions in reciprocal space
 
 contains
 
   !---------------------------------------------------------------------
-  subroutine read_all_pseudo ()
+  subroutine read_all_pseudo()
     !
     use intw_utility, only: find_free_unit
-    USE intw_reading, only: ntyp
+    use intw_reading, only: ntyp
     use intw_input_parameters, only: mesh_dir, prefix
     !
-    IMPLICIT NONE
+    implicit none
     !
     !     Local variables
     !
-    INTEGER :: ios, nr, is, nb, ir, nb1
-    INTEGER :: io_unit, ierr
-    CHARACTER(256) :: file_pseudo
-    CHARACTER(256) :: dum
-    CHARACTER(1)   :: tag1
-    CHARACTER(2)   :: tag2
+    integer :: ios, nr, nt, nb, ir, nb1
+    integer :: io_unit, ierr
+    character(256) :: file_pseudo
+    character(256) :: dum
+    character(1)   :: tag1
+    character(2)   :: tag2
 
 
-    ALLOCATE( UPF(ntyp) )
+    allocate(upf(ntyp))
     !
     ierr = 0
-    do is=1,ntyp
+    do nt = 1, ntyp
 
       io_unit = find_free_unit()
 
-      if ((is>0).and.(is<9)) then
-        write(tag1,"(i1)")is
+      if ( nt>0 .and. nt<9 ) then
+        write(tag1,"(i1)")nt
         write(*,20)"|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
         file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
-      else if ((is>9).and.(is<19) ) then
-        write(tag2,"(i2)")is
+      else if ( nt>9 .and. nt<19 ) then
+        write(tag2,"(i2)")nt
         file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt"
       else
         print*, "ERROR: The num. of species is bigger than 19 (or <0)"
       end if
 
-      OPEN(UNIT=io_unit,FILE=file_pseudo,STATUS='old',FORM='formatted', IOSTAT=ios)
+      open(unit=io_unit ,file=file_pseudo, status='old', form='formatted', iostat=ios)
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%psd
-      write(*,20)"|                 .. for the specie "//trim(UPF(is)%psd)//"              |"
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%psd
+      write(*,20)"|                 .. for the specie "//trim(upf(nt)%psd)//"              |"
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%rel
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%rel
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%has_so
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%has_so
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%nlcc
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%nlcc
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%zp
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%zp
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%ecutwfc
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%ecutwfc
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lloc
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%lloc
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lmax
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%lmax
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%nbeta
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%nbeta
 
-      allocate( UPF(is)%kbeta( UPF(is)%nbeta ) )
+      allocate(upf(nt)%kbeta(upf(nt)%nbeta))
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%kbeta
-      UPF(is)%kkbeta = MAXVAL( UPF(is)%kbeta(:) )
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%kbeta
+      upf(nt)%kkbeta = maxval( upf(nt)%kbeta(:) )
 
-      allocate( UPF(is)%lll( UPF(is)%nbeta ) )
+      allocate(upf(nt)%lll(upf(nt)%nbeta))
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%lll
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%lll
 
-      allocate( UPF(is)%jjj( UPF(is)%nbeta ) )
+      allocate(upf(nt)%jjj(upf(nt)%nbeta))
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      if (UPF(is)%has_so) then
-        read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%jjj
+      if (upf(nt)%has_so) then
+        read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%jjj
       else
         read(unit=io_unit,fmt=*,iostat=ierr) dum
       end if
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
 
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%mesh
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%mesh
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) UPF(is)%rcloc
+      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%rcloc
 
-      allocate( UPF(is)%dion( UPF(is)%nbeta,UPF(is)%nbeta ) )
+      allocate(upf(nt)%dion( upf(nt)%nbeta,upf(nt)%nbeta))
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
 
-      do nb=1,UPF(is)%nbeta
-        read(unit=io_unit,fmt=*,iostat=ierr) (UPF(is)%dion(nb,nb1),nb1=1,UPF(is)%nbeta)
+      do nb = 1, upf(nt)%nbeta
+        read(unit=io_unit,fmt=*,iostat=ierr) (upf(nt)%dion(nb,nb1),nb1=1,upf(nt)%nbeta)
       end do
 
-      nr=UPF(is)%mesh
-      nb=UPF(is)%nbeta
-      allocate( UPF(is)%r(nr), UPF(is)%rab(nr), UPF(is)%vloc(nr) )
-      allocate( UPF(is)%beta(nr,nb) )
+      nr=upf(nt)%mesh
+      nb=upf(nt)%nbeta
+      allocate(upf(nt)%r(nr), upf(nt)%rab(nr), upf(nt)%vloc(nr))
+      allocate(upf(nt)%beta(nr,nb))
 
       read(unit=io_unit,fmt="(a)",iostat=ierr)dum
-      do ir=1,nr
+      do ir = 1, nr
         read(unit=io_unit,fmt=*,iostat=ierr) &
-        UPF(is)%r(ir), UPF(is)%rab(ir), UPF(is)%vloc(ir), (UPF(is)%beta(ir,nb), nb=1,UPF(is)%nbeta)
+        upf(nt)%r(ir), upf(nt)%rab(ir), upf(nt)%vloc(ir), (upf(nt)%beta(ir,nb), nb=1,upf(nt)%nbeta)
       end do
 
-      IF (ierr /= 0) then
+      if (ierr /= 0) then
          write(unit=*,fmt=*)"ERROR reading PP, ", file_pseudo
          stop
-      END IF
+      end if
       !
-      CLOSE(io_unit)
+      close(io_unit)
 
-    END DO !is
+    end do !nt
     !
 
 20 format(A)
 30 format(A,F8.2,6X,A)
 
-  END subroutine read_all_pseudo
+  end subroutine read_all_pseudo
 
 
   subroutine init_KB_projectors(npw, npwx, igk, qpoint_cryst, vkb_)
@@ -234,11 +215,11 @@ contains
     !   Calculates beta functions (Kleinman-Bylander projectors), with
     !   structure factor, for all atoms, in reciprocal space
     !
-    USE kinds, ONLY: dp
-    USE intw_reading, ONLY: nat, ntyp, ityp, tau, bg, tpiba
-    USE intw_useful_constants, ONLY : tpi, cmplx_0, cmplx_i
-    USE intw_fft, ONLY: gvec_cart
-    USE mcf_spline, only: splint_mcf
+    use kinds, only: dp
+    use intw_reading, only: nat, ntyp, ityp, tau, bg, tpiba
+    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
+    use intw_fft, only: gvec_cart
+    use mcf_spline, only: splint_mcf
 
     implicit none
 
@@ -246,15 +227,15 @@ contains
 
     integer, intent(in) :: npw, npwx !number of PW's
     integer, intent(in) :: igk(npwx) !G list of q vector
-    real(dp), intent(in) :: qpoint_cryst(3) !q vector
-    complex(dp), intent(out) :: vkb_(npwx,nkb) !beta functions
+    real(kind=dp), intent(in) :: qpoint_cryst(3) !q vector
+    complex(kind=dp), intent(out) :: vkb_(npwx,nkb) !beta functions
 
     !local variables
 
     integer :: ig, l, lm, na, nt, nb, ih, jkb, iq
-    real(DP) :: arg, qpoint_cart(3), gk(3,npw), vkb1(npw,nhm), xdata(nqx), ylm(npw, (lmaxkb+1)**2)
-    real(DP), dimension(npw) :: qg(npw), vq(npw)
-    complex(DP) :: phase, pref, sk(npw)
+    real(kind=dp) :: arg, qpoint_cart(3), gk(3,npw), vkb1(npw,nhm), xdata(nqx), ylm(npw, (lmaxkb+1)**2)
+    real(kind=dp), dimension(npw) :: qg(npw), vq(npw)
+    complex(kind=dp) :: phase, pref, sk(npw)
 
 
     vkb_ = cmplx_0
@@ -263,7 +244,7 @@ contains
     !
     if (lmaxkb.lt.0) return
     !
-    do ig=1,npw
+    do ig = 1, npw
       !
       if (igk(ig)==0) exit
       !
@@ -279,7 +260,7 @@ contains
     !
     ! set now qg=|q+G| in atomic units
     !
-    do ig=1,npw
+    do ig = 1, npw
       !
       if (igk(ig)==0) exit
       !
@@ -287,7 +268,7 @@ contains
       !
     enddo !ig
     !
-    do iq=1,nqx
+    do iq = 1, nqx
           !
       xdata(iq) = (iq - 1) * dq
           !
@@ -298,13 +279,13 @@ contains
     jkb = 0
     vq = 0.d0
     !
-    do nt=1,ntyp
+    do nt = 1, ntyp
       !
       ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
       !
-      do nb=1,upf(nt)%nbeta
+      do nb = 1, upf(nt)%nbeta
           !
-          do ig=1,npw
+          do ig = 1, npw
             !
             if (igk(ig)==0) exit
             !
@@ -313,14 +294,14 @@ contains
           !
           ! add spherical harmonic part  (Y_lm(q)*f_l(q))
           !
-          do ih=1,nh(nt)
+          do ih = 1, nh(nt)
             !
             if (nb.eq.indv(ih, nt)) then
                 !
                 l  = nhtol(ih,nt)
                 lm = nhtolm(ih,nt)
                 !
-                do ig=1,npw
+                do ig = 1, npw
                   !
                   if (igk(ig)==0) exit
                   !
@@ -334,7 +315,7 @@ contains
       ! vkb1 contains all betas including angular part for type nt
       ! now add the structure factor and factor (-i)^l
       !
-      do na=1,nat
+      do na = 1, nat
           !
           ! ordering: first all betas for atoms of type 1
           !           then  all betas for atoms of type 2  and so on
@@ -347,9 +328,9 @@ contains
                    + qpoint_cart(2) * tau(2,na) &
                    + qpoint_cart(3) * tau(3,na) ) * tpi
             !
-            phase = CMPLX(cos(arg), - sin(arg) ,kind=DP)
+            phase = cmplx(cos(arg), - sin(arg) ,kind=dp)
             !
-            do ig=1,npw
+            do ig = 1, npw
                 !
                 if (igk(ig)==0) exit
                 !
@@ -359,12 +340,12 @@ contains
                 !
             enddo !ig
             !
-            do ih=1,nh(nt)
+            do ih = 1, nh(nt)
                 !
                 jkb = jkb + 1
                 pref = phase * (-cmplx_i)**nhtol(ih,nt)
                 !
-                do ig=1,npw
+                do ig = 1, npw
                   !
                   if (igk(ig)==0) exit
                   !
@@ -382,44 +363,44 @@ contains
   subroutine init_pp()
     !----------------------------------------------------------------------
     !
-    USE kinds, only: dp
-    USE intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
-    USE intw_reading, only: ntyp, volume0, lspinorb
-    USE mcf_spline, only: spline_mcf
-    USE intw_utility, only: intgr_spline_gaussq !, simpson
+    use kinds, only: dp
+    use intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
+    use intw_reading, only: ntyp, volume0, lspinorb
+    use mcf_spline, only: spline_mcf
+    use intw_utility, only: intgr_spline_gaussq !, simpson
     !
     implicit none
     !
     !     here a few local variables
     !
-    integer :: nt, ih, jh, nb, ijv, l, m, ir, iq, is, ndm
+    integer :: nt, ih, jh, nb, l, m, ir, iq, is, ndm
     ! various counters
-    real(dp), allocatable :: aux(:), aux1(:), besr(:), qtot(:,:)
+    real(kind=dp), allocatable :: aux(:), aux1(:), besr(:), qtot(:,:)
     ! various work space
-    real(dp) :: prefr, pref, qi
+    real(kind=dp) :: prefr, pref, qi
     ! the prefactor of the q functions
     ! the prefactor of the beta functions
     ! the modulus of g for each shell
     ! q-point grid for interpolation
     ! the spherical harmonics
-    real(dp) ::  vqint, j
+    real(kind=dp) ::  vqint, j
     ! interpolated value
     ! J=L+S (noninteger!)
     integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, lk, mk, vk, kh
-    complex(dp) :: coeff
-    real(dp) :: xdata(nqx)
-    real(dp) :: d1, ji, jk
+    complex(kind=dp) :: coeff
+    real(kind=dp) :: xdata(nqx)
+    real(kind=dp) :: d1, ji, jk
     !
-    COMPLEX (DP), ALLOCATABLE :: fcoef(:,:,:,:,:) ! function needed to account for spinors.
-    COMPLEX (DP) :: rot_ylm(2*lmaxx+1,2*lmaxx+1)  ! transform real spherical harmonics into complex ones
+    complex(kind=dp), allocatable :: fcoef(:,:,:,:,:) ! function needed to account for spinors.
+    complex(kind=dp) :: rot_ylm(2*l_max+1,2*l_max+1)  ! transform real spherical harmonics into complex ones
     !
-    real(dp), external :: spinor
+    real(kind=dp), external :: spinor
     integer, external :: sph_ind
     !
     !
     !    Initialization of the variables
     !
-    ndm = MAXVAL( upf(:)%kkbeta )
+    ndm = maxval(upf(:)%kkbeta)
     allocate(aux(ndm))
     allocate(aux1(ndm))
     allocate(besr(ndm))
@@ -441,7 +422,7 @@ contains
       !  real spherical harmonics and yields the complex ones.
       !
       rot_ylm = cmplx_0
-      l = lmaxx
+      l = l_max
       rot_ylm(l+1, 1) = cmplx_1
       do n1 = 2, 2*l+1, 2
         m = n1/2
@@ -481,19 +462,6 @@ contains
           enddo
         enddo
       endif
-      ! ijtoh map augmentation channel indexes ih and jh to composite
-      ! "triangular" index ijh
-      ijtoh(:,:,nt) = -1
-      ijv = 0
-      do ih = 1, nh(nt)
-        do jh = ih, nh(nt)
-          ijv = ijv + 1
-          ijtoh(jh,ih,nt) = ijv
-        enddo
-      enddo
-      !
-      !    From now on the only difference between KB and US pseudopotentials
-      !    is in the presence of the q and Q functions.
       !
       !    Here we initialize the D of the solid
       !
@@ -506,20 +474,20 @@ contains
           ji = nhtoj(ih,nt)
           mi = nhtolm(ih,nt) - li*li
           vi = indv(ih,nt)
-          do kh=1,nh(nt)
+          do kh = 1, nh(nt)
             lk = nhtol(kh,nt)
             jk = nhtoj(kh,nt)
             mk = nhtolm(kh,nt) - lk*lk
             vk = indv(kh,nt)
             if (li == lk .and. abs(ji-jk) < 1.d-7) then
-              do ispin=1,2
-                do jspin=1,2
+              do ispin = 1, 2
+                do jspin = 1, 2
                   coeff = cmplx_0
                   do m = -li-1, li
-                    m0 = sph_ind(li,ji,m,ispin) + lmaxx + 1
-                    m1 = sph_ind(lk,jk,m,jspin) + lmaxx + 1
-                    coeff = coeff + rot_ylm(m0,mi)*spinor(li,ji,m,ispin) &
-                                    * CONJG(rot_ylm(m1,mk))*spinor(lk,jk,m,jspin)
+                    m0 = sph_ind(li,ji,m,ispin) + l_max + 1
+                    m1 = sph_ind(lk,jk,m,jspin) + l_max + 1
+                    coeff = coeff +         rot_ylm(m0,mi)  * spinor(li,ji,m,ispin) &
+                                    * conjg(rot_ylm(m1,mk)) * spinor(lk,jk,m,jspin)
                   enddo
                   fcoef(ih,kh,ispin,jspin,nt) = coeff
                 enddo
@@ -535,8 +503,8 @@ contains
           do jh = 1, nh(nt)
             vj = indv(jh,nt)
             ijs = 0
-            do ispin=1,2
-              do jspin=1,2
+            do ispin = 1, 2
+              do jspin = 1, 2
                 ijs = ijs + 1
                 DKB(ih,jh,ispin,jspin,nt) = upf(nt)%dion(vi,vj) * fcoef(ih,jh,ispin,jspin,nt)
                 if (vi.ne.vj) fcoef(ih,jh,ispin,jspin,nt) = cmplx_0
@@ -577,7 +545,7 @@ contains
             aux(ir) = upf(nt)%beta(ir,nb) * besr(ir) * upf(nt)%r(ir)
           enddo
           !ASIER 29/07/2021
-          !call simpson (upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
+          !call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
 
           !Integrating by spline + gauss 2. order
           vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
@@ -607,32 +575,32 @@ contains
   end subroutine init_pp
 
 
-  SUBROUTINE phq_init(q_cart)
+  subroutine phq_init(q_cart)
     !----------------------------------------------------------------------------
     !
     use kinds, only: dp
-    use intw_reading, only: nat, tau, ntyp, tpiba2, ngm, volume0
+    use intw_reading, only: ntyp, tpiba2, ngm, volume0
     use intw_useful_constants, only: tpi
     use intw_fft, only: gvec_cart
     !
     implicit none
     !
-    real(dp), intent(in) :: q_cart(3)
+    real(kind=dp), intent(in) :: q_cart(3)
     !
     ! local variables
-    integer :: nt, na
+    integer :: nt
 
 
     !
-    vlocq(:,:) = 0.D0
+    vlocq(:,:) = 0.d0
     !
-    DO nt = 1, ntyp
-      CALL setlocq( q_cart, upf(nt)%mesh, upf(nt)%mesh, upf(nt)%rab, upf(nt)%r,&
+    do nt = 1, ntyp
+      call setlocq( q_cart, upf(nt)%mesh, upf(nt)%mesh, upf(nt)%rab, upf(nt)%r,&
                     upf(nt)%vloc(1), upf(nt)%zp, tpiba2, ngm, gvec_cart, volume0, &
                     vlocq(1,nt) )
-    END DO
+    end do
 
-  END SUBROUTINE phq_init
+  end subroutine phq_init
 
 
   subroutine setlocq(q_cart, mesh, msh, rab, r, vloc_at, zp, tpiba2, ngm, g, omega, vloc)
@@ -644,9 +612,9 @@ contains
     !    The local pseudopotential of the US case is always in
     !    numerical form, expressed in Ry units.
     !
-    USE kinds, only : DP
-    USE intw_useful_constants, ONLY : e2, fpi, pi
-    USE intw_utility, ONLY : simpson, qe_erf, qe_erfc
+    use kinds, only: dp
+    use intw_useful_constants, only: e2, fpi, pi
+    use intw_utility, only: simpson, qe_erf, qe_erfc
     !
     implicit none
     !
@@ -657,7 +625,7 @@ contains
     ! input: the dimensions of the mesh
     ! input: mesh points for radial integration
 
-    real(DP), intent(in) :: q_cart(3), zp, rab(mesh), r(mesh), vloc_at(mesh), tpiba2, omega, g(3,ngm)
+    real(kind=dp), intent(in) :: q_cart(3), zp, rab(mesh), r(mesh), vloc_at(mesh), tpiba2, omega, g(3,ngm)
     ! input: the q point
     ! input: valence pseudocharge
     ! input: the derivative of mesh points
@@ -666,16 +634,16 @@ contains
     ! input: 2 pi / alat
     ! input: the volume of the unit cell
     ! input: the g vectors coordinates
-    real(DP), intent(out) :: vloc(ngm)
+    real(kind=dp), intent(out) :: vloc(ngm)
     ! output: the fourier transform of the potential
     !
     !    and the local variables
     !
-    real(DP), parameter :: eps = 1.d-8
-    real(DP) :: vlcp, vloc0, fac, g2a, aux(mesh), aux1(mesh), gx
+    real(kind=dp), parameter :: eps = 1.d-8
+    real(kind=dp) :: vlcp, vloc0, fac, g2a, aux(mesh), aux1(mesh), gx
     ! auxiliary variables
     ! gx = modulus of g vectors
-    !real(DP), external :: qe_erf
+    !real(kind=dp), external :: qe_erf
     ! the erf function
     integer :: ig, ir
     ! counters
@@ -703,11 +671,11 @@ contains
     !    dependent  part
     !
     do ig = 1, ngm
-      g2a = (q_cart(1) + g(1,ig))**2 + (q_cart(2) + g(2,ig) )**2 + (q_cart(3) + g(3,ig))**2
+      g2a = (q_cart(1) + g(1,ig))**2 + (q_cart(2) + g(2,ig))**2 + (q_cart(3) + g(3,ig))**2
       if (g2a < eps) then
-        vloc (ig) = vloc0
+        vloc(ig) = vloc0
       else
-        gx = sqrt (g2a * tpiba2)
+        gx = sqrt(g2a * tpiba2)
         do ir = 1, msh
           aux(ir) = aux1(ir) * sin(gx * r(ir)) / gx
         enddo
@@ -731,15 +699,15 @@ contains
     !    Fourier transform of the Coulomb potential - For all-electron
     !    calculations, in specific cases only, for testing purposes
     !
-    USE kinds, ONLY: DP
-    USE intw_useful_constants, ONLY : fpi, e2, eps_8
+    use kinds, only: dp
+    use intw_useful_constants, only: fpi, e2, eps_8
     implicit none
     !
     integer, intent(in) :: ngm
-    real(DP), intent(in) :: q_cart(3), zp, tpiba2, omega, g(3,ngm)
-    real(DP), intent (out) :: vloc(ngm)
+    real(kind=dp), intent(in) :: q_cart(3), zp, tpiba2, omega, g(3,ngm)
+    real(kind=dp), intent(out) :: vloc(ngm)
     !
-    real(DP) :: g2a
+    real(kind=dp) :: g2a
     integer :: ig
 
     do ig = 1, ngm
@@ -761,7 +729,6 @@ contains
     !     ngk           !  number of plane waves (for each k point)
     !     npwx          !  maximum number of plane waves
     !     nqx           !  number of points of the interpolation table
-    !     nqxq          !  as above, for q-function interpolation table
     !
     !
     use kinds, only: dp
@@ -775,21 +742,21 @@ contains
 
 
     lmaxkb = - 1
-    DO nt = 1, ntyp
+    do nt = 1, ntyp
       !
       nh(nt) = 0
       !
-      DO nb = 1, upf(nt)%nbeta
+      do nb = 1, upf(nt)%nbeta
         nh(nt) = nh(nt) + 2 * upf(nt)%lll(nb) + 1
-        lmaxkb = MAX(lmaxkb, upf(nt)%lll(nb))
-      ENDDO
+        lmaxkb = max(lmaxkb, upf(nt)%lll(nb))
+      end do
       !
-    ENDDO
+    end do
     !
     ! calculate the maximum number of beta functions
     !
-    nhm = MAXVAL(nh(1:ntyp))
-    nbetam = MAXVAL(upf(:)%nbeta)
+    nhm = maxval(nh(1:ntyp))
+    nbetam = maxval(upf(:)%nbeta)
     !
     ! Number of beta functions
     !
@@ -803,18 +770,17 @@ contains
     allocate(nhtol(nhm,ntyp))
     allocate(nhtolm(nhm,ntyp))
     allocate(nhtoj(nhm,ntyp))
-    allocate(ijtoh(nhm,nhm,ntyp))
     if (lspinorb) then
-      allocate (DKB(nhm,nhm,nspin,nspin,ntyp))
+      allocate(DKB(nhm,nhm,nspin,nspin,ntyp))
     else
-      allocate (DKB(nhm,nhm,1,1,ntyp))
+      allocate(DKB(nhm,nhm,1,1,ntyp))
     endif
     !
     !
     ! Calculate dimensions for array tab (including a possible factor
     ! coming from cell contraction during variable cell relaxation/MD)
     !
-    nqx = INT( (sqrt(2*ecutwfc) / dq + 4) ) ! x2 zeren Ry -> Hartree egin behar
+    nqx = int( sqrt(2*ecutwfc) / dq + 4 ) ! x2 zeren Ry -> Hartree egin behar
 
     allocate(tab(2*nqx,nbetam,ntyp)) ! ASIER originala nqx, errepasatu
 
@@ -834,44 +800,14 @@ contains
   end subroutine allocate_nlpot
 
 
-  subroutine set_nqxq(qpoint)
-    !
-    USE kinds, only: dp
-    USE intw_reading, ONLY: ecutrho, tpiba2, bg
-
-    implicit none
-
-    !I/O variables
-
-    real(dp), intent(in) :: qpoint(3)
-    real(dp) :: xq(3), qnorm
-    !
-    xq = matmul(bg, qpoint)
-    !
-    qnorm =sqrt(xq(1)**2+xq(2)**2+xq(3)**2)
-    !
-    ! This routine is called also by the phonon code, in which case it should
-    ! allocate an array that includes q+G vectors up to |q+G|_max <= |Gmax|+|q|
-    !
-    nqxq = INT( (( (sqrt(2*ecutrho/tpiba2) + qnorm ) / dq + 4.0_dp) )) ! x2 zeren Ry -> Hartree egin behar
-    !
-    !
-    return
-
-  end subroutine set_nqxq
-
-
   subroutine allocate_phq
     !-----------------------------------------------------------------------
-    !JLB: Commented out all bands references, not used.
-    !     Many variables are declared and not used, I don't understand why.
-    !     Discuss with Haritz/Asier, and then remove and clean up.
     !
-    USE intw_reading, only : nat, ntyp, nr1, nr2, nr3, ngm
+    use intw_reading, only: ngm, ntyp
 
     implicit none
 
-    allocate(vlocq (ngm, ntyp))
+    allocate(vlocq(ngm, ntyp))
 
   end subroutine allocate_phq
 
