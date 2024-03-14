@@ -12,11 +12,13 @@ program ep_melements
                           get_gvec, &
                           read_kpoints_data_file_xml, &
                           set_num_bands
-  use intw_pseudo, only: vkb, vkqb, &
-                         read_all_pseudo, &
-                         init_KB_projectors, init_pp, &
-                         allocate_nlpot
+  use intw_pseudo, only: read_all_pseudo
   use intw_pseudo_local, only: phq_init, allocate_phq
+  use intw_pseudo_non_local, only: vkb, vkqb, &
+                                   init_KB_projectors, &
+                                   init_pp, &
+                                   allocate_nlpot, &
+                                   multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
                           find_free_unit, &
                           switch_indices, &
@@ -475,7 +477,7 @@ program ep_melements
       ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
-      call multiply_psi_by_dvKB( kpoint, qpoint, nspin, nbands, nG_max, list_iGk, list_iGkq, wfc_k, dvpsi)
+      call multiply_psi_by_dvKB(kpoint, qpoint, nbands, list_iGk, list_iGkq, wfc_k, dvpsi)
       !
       do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz
         !

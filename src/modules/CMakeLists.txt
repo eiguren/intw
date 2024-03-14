@@ -3,8 +3,6 @@
 
 
 set(SOURCES
-  multiply_psi_by_dvKB.f90
-  multiply_psi_by_vKB.f90
   add_m_nu_lambda_text.f90
   add_q_m_nu.f90
   all_wfcs.f90
@@ -21,6 +19,7 @@ set(SOURCES
   intw2wannier.f90
   intw_pseudo.f90
   intw_pseudo_local.f90
+  intw_pseudo_non_local.f90
   lambda.f90
   matrix_elements.f90
   ph_module.f90
