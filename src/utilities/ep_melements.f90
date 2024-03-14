@@ -13,7 +13,7 @@ program ep_melements
                           read_kpoints_data_file_xml, &
                           set_num_bands
   use intw_pseudo, only: read_all_pseudo
-  use intw_pseudo_local, only: phq_init, allocate_phq
+  use intw_pseudo_local, only: phq_init, allocate_phq, dvqpsi_local
   use intw_pseudo_non_local, only: vkb, vkqb, &
                                    init_KB_projectors, &
                                    init_pp, &
@@ -36,8 +36,7 @@ program ep_melements
                              find_inverse_symmetry_matrices_indices, &
                              allocate_and_build_spin_symmetry_matrices, &
                              set_symmetry_relations, multable
-  use intw_fft, only: nl, &
-                      generate_nl, &
+  use intw_fft, only: generate_nl, &
                       allocate_fft
   use intw_ph, only: nqmesh, qmesh, dvq_local, dvpsi, QE_folder_nosym_q, QE_folder_sym_q, &
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
@@ -471,8 +470,7 @@ program ep_melements
       !
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
       ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-      call dvqpsi_local(3*nat, nG_max, num_bands_intw, nspin, list_iGk, list_iGkq, wfc_k, dvq_local, &
-                                              dvpsi(1:nG_max,1:num_bands_intw,1:nspin,1:nspin,1:3*nat))
+      call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
       !
       ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
@@ -531,91 +529,5 @@ program ep_melements
   write(*,20) '|                     ALL DONE                       |'
   write(*,30) '|     total time: ',time2-time1,' seconds            |'
   write(*,20) '====================================================='
-
-
-
-contains
-
-  subroutine dvqpsi_local(nmode,nG_max,nbands,nspin,list_iGk,list_iGkq,wfc_k,dvq_local,dvpsi_local)
-
-    implicit none
-
-    !I/O variables
-
-    integer,intent(in) :: nmode,nG_max,nbands,nspin,list_iGk(nG_max),list_iGkq(nG_max)
-    complex(kind=dp),intent(in) :: dvq_local(nr1*nr2*nr3,nmode,nspin,nspin),wfc_k(nG_max,nbands,nspin)
-    complex(kind=dp),intent(inout) :: dvpsi_local(nG_max,nbands,nspin,nspin,nmode)
-
-    !local variables
-
-    integer :: ibnd,ispin,ig,imode,ir
-    complex(kind=dp) :: wfc_r(nr1*nr2*nr3,nspin,nspin),wfc_r1(nr1*nr2*nr3,nspin)
-
-    dvpsi_local(:,:,:,:,:)=cmplx_0
-    !
-    do imode =1,nmode !3*nat
-      do ibnd=1,nbands
-        !
-        wfc_r1(:,:)=cmplx_0
-        wfc_r(:,:,:)=cmplx_0
-        !
-        do ispin=1,nspin !elektroi uhin funtzioak espazio errelarela pasatu. SO kasuan ispin osagaiz osagai.
-          do ig=1,nG_max
-            !
-            if (list_iGk(ig)==0) exit
-            wfc_r1(nl(list_iGk(ig)),ispin)=wfc_k(ig,ibnd,ispin)
-            !
-          enddo !ig
-          !
-          call cfftnd(3,(/nr1,nr2,nr3/),1,wfc_r1(:,ispin))
-          !
-        enddo !ispin
-
-        !
-        if (nspin==2) then
-          !
-          do ir=1,nr1*nr2*nr3
-            !
-            do ispin=1,nspin
-              do jspin=1,nspin
-                !
-                wfc_r(ir,ispin,jspin)=dvq_local(ir,imode,ispin,jspin)*wfc_r1(ir,jspin)
-                !
-              enddo !jspin
-            enddo !ispin
-            !
-          enddo !ir
-          !
-        else !nspin
-          !
-          do ir=1,nr1*nr2*nr3
-            !
-            wfc_r(ir,1,1)=dvq_local(ir,imode,1,1)*wfc_r1(ir,1)
-            !
-          enddo !ir
-          !
-        endif !nspin
-        !
-        do ispin=1,nspin
-          do jspin=1,nspin
-            !
-            call cfftnd(3,(/nr1,nr2,nr3/),-1,wfc_r(:,ispin,jspin))
-            !
-            do ig=1,nG_max
-              !
-              if (list_iGkq(ig)==0) exit
-              !
-              ! dvpsi_local(ig,ibnd,ispin,jspin,imode)=wfc_r(nl(ig),ispin,jspin)
-              dvpsi_local(ig,ibnd,ispin,jspin,imode)=wfc_r(nl(list_iGkq(ig)),ispin,jspin)
-              !
-            enddo !ig
-          enddo !jspin
-        enddo !ispin
-        !
-      enddo !ibnd
-      !
-    enddo !imode
-
-  end subroutine dvqpsi_local
 
 end program ep_melements

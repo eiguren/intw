@@ -6,7 +6,8 @@ module intw_pseudo_local
 
   public :: vlocq
 
-  public :: phq_init, setlocq, setlocq_coul, allocate_phq, deallocate_phq
+  public :: phq_init, setlocq, setlocq_coul, allocate_phq, deallocate_phq, &
+            dvqpsi_local
 
   private
 
@@ -182,5 +183,84 @@ contains
 
     return
   end subroutine deallocate_phq
+
+
+  subroutine dvqpsi_local(nbands, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi_local)
+
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only: nat, nspin, nG_max, nr1, nr2, nr3
+    use intw_fft, only: nl
+
+    implicit none
+
+    !I/O variables
+
+    integer, intent(in) :: nbands, list_iGk(nG_max), list_iGkq(nG_max)
+    complex(kind=dp), intent(in) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin), wfc_k(nG_max,nbands,nspin)
+    complex(kind=dp), intent(inout) :: dvpsi_local(nG_max,nbands,nspin,nspin,3*nat)
+
+    !local variables
+
+    integer :: ibnd, ispin, jspin, ig, imode, ir
+    complex(kind=dp) :: wfc_r(nr1*nr2*nr3,nspin,nspin), wfc_r1(nr1*nr2*nr3,nspin)
+
+
+    dvpsi_local = cmplx_0
+    !
+    do imode = 1, 3*nat
+      !
+      do ibnd= 1, nbands
+        !
+        ! Fourier transform the wave function to real space
+        wfc_r1 = cmplx_0
+        do ispin = 1, nspin
+          do ig = 1, nG_max
+            !
+            if (list_iGk(ig)==0) exit
+            wfc_r1(nl(list_iGk(ig)),ispin) = wfc_k(ig,ibnd,ispin)
+            !
+          enddo !ig
+          !
+          call cfftnd(3, (/nr1,nr2,nr3/), 1, wfc_r1(:,ispin))
+          !
+        enddo !ispin
+        !
+        ! Multiply the wave function and the potential in real space
+        wfc_r = cmplx_0
+        do ispin = 1, nspin
+          do jspin = 1, nspin
+            !
+            do ir = 1, nr1*nr2*nr3
+              !
+              wfc_r(ir,ispin,jspin) = dvq_local(ir,imode,ispin,jspin) * wfc_r1(ir,jspin)
+              !
+            enddo !ir
+            !
+          enddo !jspin
+        enddo !ispin
+        !
+        !
+        do ispin = 1, nspin
+          do jspin = 1, nspin
+            !
+            call cfftnd(3, (/nr1,nr2,nr3/), -1, wfc_r(:,ispin,jspin))
+            !
+            do ig = 1, nG_max
+              !
+              if (list_iGkq(ig)==0) exit
+              !
+              dvpsi_local(ig,ibnd,ispin,jspin,imode) = dvpsi_local(ig,ibnd,ispin,jspin,imode) &
+                  + wfc_r(nl(list_iGkq(ig)),ispin,jspin)
+              !
+            enddo !ig
+            !
+          enddo !jspin
+        enddo !ispin
+        !
+      enddo !ibnd
+      !
+    enddo !imode
+
+  end subroutine dvqpsi_local
 
 end module intw_pseudo_local
