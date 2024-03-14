@@ -24,7 +24,7 @@ module intw_ph
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
-            calculate_local_part_dv, get_dv, rot_dvq, func_by_gr, wsinit, &
+            get_dv, rot_dvq, func_by_gr, wsinit, &
             deallocate_ph
   !
   ! functions
@@ -567,82 +567,6 @@ contains
     return
     !
   end subroutine read_allq_dvr
-!*********************************************************************************
-!---------------------------------------------------------------------------------
-  subroutine calculate_local_part_dv(qpoint, nat, nspin, dvq_local )
-!---------------------------------------------------------------------------------
-!
-!======================================================================
-! We have dV_scf as input and we add to it the derivative of the PP   !
-!======================================================================
-
-    USE intw_reading, ONLY : nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
-    USE intw_fft, ONLY : eigts1, eigts2, eigts3, nl, mill, gvec_cart
-    USE intw_pseudo_local, ONLY : vlocq
-    use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
-
-    implicit none
-
-    external :: cfftnd
-
-    !I/O variables
-
-    real(dp),intent(in) :: qpoint(1:3) ! crystal coord.
-    integer,intent(in) :: nat,nspin
-    complex(dp),intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin) ! spin idependentea da baina koherentzia mantenduko dugu.
-
-    !local variables
-    complex(dp) :: eigqts(nat)
-    integer :: imode,na,ipol,ig,nt,ispin,ir
-    complex(dp) :: aux (nr1*nr2*nr3), fact, gtau
-    real(dp) :: qcart(3) ! qpoint in cart.
-    real(dp) :: arg
-
-    qcart=matmul(bg,qpoint)
-
-    DO na = 1, nat
-      !
-      arg = (  qcart(1) * tau(1,na) &
-             + qcart(2) * tau(2,na) &
-             + qcart(3) * tau(3,na) ) * tpi
-      !
-      eigqts(na) = CMPLX( COS(arg), -SIN(arg), kind=DP)
-      !
-    END DO
-
-    !
-    do imode=1,3*nat
-       !
-       na=(imode-1)/3+1
-       ipol=modulo(imode-1,3)+1
-       nt=ityp (na)
-       !
-       aux(:)=cmplx_0
-       !
-       fact=-tpiba*cmplx_i*eigqts(na)
-       !
-       do ig=1,ngm
-          !
-          gtau=eigts1(mill(1,ig),na)*eigts2(mill(2,ig),na)*eigts3(mill(3,ig),na)
-          aux(nl(ig))=aux(nl(ig))+vlocq(ig,nt)*(qcart(ipol)+gvec_cart(ipol,ig))*gtau*fact
-          !
-       enddo !ig
-       !
-       call cfftnd(3,(/nr1,nr2,nr3/),1,aux)
-       !
-       do ir=1,nr1*nr2*nr3
-          do ispin=1,nspin
-             !
-             dvq_local(ir,imode,ispin,ispin)=dvq_local(ir,imode,ispin,ispin)+aux(ir)
-             !
-          enddo !ispin
-       enddo !ir
-       !
-    enddo !imode osagai kanonikoetan zehar goaz hemen ..!
-    !
-    return
-    !
-  end subroutine calculate_local_part_dv
 !*******************************************************************
 !-------------------------------------------------------------------
   subroutine get_dv(iq,qpoint,nmode,nspin,dvq_local)

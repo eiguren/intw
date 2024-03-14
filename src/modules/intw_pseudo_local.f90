@@ -7,7 +7,7 @@ module intw_pseudo_local
   public :: vlocq
 
   public :: phq_init, setlocq, setlocq_coul, allocate_phq, deallocate_phq, &
-            dvqpsi_local
+            calculate_local_part_dv, dvqpsi_local
 
   private
 
@@ -183,6 +183,75 @@ contains
 
     return
   end subroutine deallocate_phq
+
+
+  subroutine calculate_local_part_dv(q_cryst, dvq_local)
+    !======================================================================
+    ! We have dV_scf as input and we add to it the derivative of the PP   !
+    !======================================================================
+
+    use intw_reading, only: nat, nspin, nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
+    use intw_fft, only: eigts1, eigts2, eigts3, nl, mill, gvec_cart
+    use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
+
+    implicit none
+
+    external :: cfftnd
+
+    !I/O variables
+
+    real(kind=dp), intent(in) :: q_cryst(3)
+    complex(kind=dp), intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin) ! spin idependentea da baina koherentzia mantenduko dugu.
+
+    !local variables
+    complex(kind=dp) :: eigqts(nat)
+    integer :: imode, na, nt, ipol, ig, ispin, ir
+    complex(kind=dp) :: aux(nr1*nr2*nr3), fact, gtau
+    real(kind=dp) :: q_cart(3)
+    real(kind=dp) :: arg
+
+    q_cart = matmul(bg, q_cryst)
+
+    do na = 1, nat
+      !
+      arg = (  q_cart(1) * tau(1,na) &
+             + q_cart(2) * tau(2,na) &
+             + q_cart(3) * tau(3,na) ) * tpi
+      !
+      eigqts(na) = cmplx( cos(arg), -sin(arg), kind=dp)
+      !
+    end do
+    !
+    do imode = 1, 3*nat
+      !
+      na = (imode-1)/3 + 1
+      ipol = modulo(imode-1, 3) + 1
+      nt = ityp(na)
+      !
+      aux = cmplx_0
+      !
+      fact = -tpiba*cmplx_i*eigqts(na)
+      !
+      do ig = 1, ngm
+        !
+        gtau = eigts1(mill(1,ig),na) * eigts2(mill(2,ig),na) * eigts3(mill(3,ig),na)
+        aux(nl(ig)) = aux(nl(ig)) + gtau * fact * ( q_cart(ipol)+gvec_cart(ipol,ig) ) * vlocq(ig,nt)
+        !
+      enddo !ig
+      !
+      call cfftnd(3, (/nr1,nr2,nr3/), 1, aux)
+      !
+      do ispin = 1, nspin
+        do ir = 1, nr1*nr2*nr3
+          !
+          dvq_local(ir,imode,ispin,ispin) = dvq_local(ir,imode,ispin,ispin) + aux(ir)
+          !
+        enddo !ir
+      enddo !ispin
+      !
+    enddo !imode
+
+  end subroutine calculate_local_part_dv
 
 
   subroutine dvqpsi_local(nbands, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi_local)

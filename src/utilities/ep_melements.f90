@@ -13,7 +13,7 @@ program ep_melements
                           read_kpoints_data_file_xml, &
                           set_num_bands
   use intw_pseudo, only: read_all_pseudo
-  use intw_pseudo_local, only: phq_init, allocate_phq, dvqpsi_local
+  use intw_pseudo_local, only: phq_init, allocate_phq, calculate_local_part_dv, dvqpsi_local
   use intw_pseudo_non_local, only: vkb, vkqb, &
                                    init_KB_projectors, &
                                    init_pp, &
@@ -42,8 +42,7 @@ program ep_melements
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
                      read_ph_information_xml, &
                      read_allq_dvr, &
-                     get_dv, &
-                     calculate_local_part_dv
+                     get_dv
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, &
                           get_psi_general_k_all_wfc
 
@@ -433,7 +432,7 @@ program ep_melements
     !
     ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
     call phq_init(matmul(bg,qpoint))
-    call calculate_local_part_dv(qpoint,nat,nspin,dvq_local)
+    call calculate_local_part_dv(qpoint, dvq_local)
     !
     ! Bi subroutina hauek (goikoak), biak batera joan behar dira beti).
     do ik=1,nkmesh
