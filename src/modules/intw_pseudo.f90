@@ -26,7 +26,6 @@ module intw_pseudo
     character(len=6)                           :: rel = ' ' ! relativistic: {no|scalar|full}
     logical                                    :: nlcc      ! Non linear core corrections
     real(kind=dp)                              :: zp        ! z valence
-    real(kind=dp)                              :: ecutwfc   ! Suggested cut-off for wfc
     logical                                    :: has_so    ! If .true. includes spin-orbit
     !
     integer                                    :: mesh      ! Number of points in the radial mesh
@@ -109,9 +108,6 @@ contains
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%zp
-
-      read(unit=io_unit,fmt="(a)",iostat=ierr) dum
-      read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%ecutwfc
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%lloc

@@ -691,10 +691,6 @@ contains
     write(unit=iounit,fmt="(a)")"Z VALENCE"
     write(unit=iounit,fmt=*) intwPP%Zval
 
-    ! NOTE: haritz: I believe that this is not needed anywhere within intw and could be removed
-    write(unit=iounit,fmt="(a)")"ECUT WFC" ! suggested cut-off for the wavefunctions
-    write(unit=iounit,fmt=*) 0.0_dp
-
     write(unit=iounit,fmt="(a)")"L LOC"
     write(unit=iounit,fmt=*) intwPP%lloc
 

@@ -141,9 +141,6 @@ contains
       write(unit=io_unit,fmt="(a)")"Z VALENCE"
       write(unit=io_unit,fmt=*) upf(is)%zp
 
-      write(unit=io_unit,fmt="(a)")"ECUT WFC"
-      write(unit=io_unit,fmt=*) upf(is)%ecutwfc
-
       write(unit=io_unit,fmt="(a)")"L LOC"
       write(unit=io_unit,fmt=*) upf(is)%lloc
 
