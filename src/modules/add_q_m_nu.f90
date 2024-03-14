@@ -17,6 +17,7 @@ subroutine add_q_m_nu_term_qe_so(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon
 
   use kinds, only: dp
   use intw_reading, only: nat, nspin
+  use intw_utility, only: gaussian
 
   implicit none
 
@@ -91,6 +92,7 @@ subroutine add_q_m_nu_term_qe(w_min,w_max,wpts,sigma_w,delta_energ,omega_phon,g_
 
   use kinds, only: dp
   use intw_reading, only: nat, nspin
+  use intw_utility, only: gaussian
 
   implicit none
 
@@ -171,7 +173,7 @@ subroutine add_q_m_nu_term_full_so(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omeg
   use kinds, only: dp
   use intw_reading, only: nat, nspin
   use intw_useful_constants, only: eps_5
-  use intw_utility, only: weight_ph
+  use intw_utility, only: weight_ph, gaussian
 
   implicit none
 
@@ -257,7 +259,7 @@ subroutine add_q_m_nu_term_full(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq,omega_p
   use kinds, only: dp
   use intw_reading, only: nat, nspin
   use intw_useful_constants, only: eps_5
-  use intw_utility, only: weight_ph
+  use intw_utility, only: weight_ph, gaussian
 
   implicit none
 
@@ -348,7 +350,7 @@ subroutine add_q_m_nu_term_full_no_spin(w_min,w_max,wpts,sigma_w,sigma_e,ekk,ekq
   use kinds, only: dp
   use intw_reading, only: nat
   use intw_useful_constants, only: eps_5, eps_6
-  use intw_utility, only: weight_ph
+  use intw_utility, only: weight_ph, gaussian
 
   implicit none
 

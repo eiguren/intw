@@ -19,7 +19,7 @@ use kinds, only: dp
   public :: get_timing, switch_indices, switch_indices_zyx, generate_kmesh, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, HPSORT, cryst_to_cart, &
-            HPSORT_real, find_r_in_WS_cell, errore, simpson
+            HPSORT_real, find_r_in_WS_cell, errore, simpson, gaussian
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
@@ -1132,5 +1132,48 @@ end function intgr_spline_gaussq
     return
 
   end function qe_erfc
+
+
+  subroutine gaussian(e0, e_min, e_max, n, sigma, gauss)
+    !
+    ! Created by Peio G. Goiricelaya 11/03/2016
+    !
+    !==========================================================================================!
+    ! We create a list containing values for Delta[e-e0] simulated by the gaussian function    !
+    ! with e defined by us from e_min to e_max, and with n points, each on separated from its  !
+    ! neighbours by abs[e_max-e_min]/n                                                         !
+    !==========================================================================================!
+
+    use kinds, only: dp
+    use intw_useful_constants, only: ZERO, pi
+
+    implicit none
+
+    !I/O variables
+
+    integer, intent(in) :: n
+    real(kind=dp), intent(in) :: e0, e_min, e_max, sigma
+    real(kind=dp), intent(inout) :: gauss(n)
+
+    !local variables
+
+    integer :: i
+    real(kind=dp) :: e
+
+    gauss = ZERO
+    !
+    do i = 1, n
+      !
+      e = e_min+(e_max-e_min)*(i-1)/(n-1)
+      !
+      if ( abs(e-e0) > 4.d0*sigma ) then
+        gauss(i) = ZERO
+      else
+        gauss(i) = exp(-((e-e0)/sigma)**2)/(sigma*sqrt(pi))
+      endif
+      !
+    enddo
+
+  end subroutine gaussian
 
 end module intw_utility

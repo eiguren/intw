@@ -11,7 +11,6 @@ set(SOURCES
   DM_Rp2q.f90
   fft.f90
   force_linearity_G.f90
-  gaussian.f90
   gk_sort.f90
   init_pp.f90
   kinds.f90
