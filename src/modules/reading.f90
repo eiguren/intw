@@ -310,6 +310,8 @@ contains
     !NTYP
     read(unit=io_unit,fmt=*)dummy
     read(unit=io_unit,fmt=*)ntyp
+    if (ntyp<1) stop "ERROR: read_parameters_data_file_xml: ntyp < 1"
+
     allocate(atom_labels(ntyp))
     allocate(atom_pfile(ntyp))
     allocate(ityp(nat))

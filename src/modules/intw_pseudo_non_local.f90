@@ -1,7 +1,6 @@
 module intw_pseudo_non_local
 
   use kinds, only: dp
-  use intw_pseudo, only: nt_max
 
   implicit none
 
@@ -22,10 +21,10 @@ module intw_pseudo_non_local
   real(kind=dp), allocatable :: tab(:,:,:)     ! Interpolation table for PPs
   real(kind=dp), allocatable :: tab_d2y(:,:,:) ! For cubic splines
 
-  integer :: nh(nt_max)  ! Number of beta(lm) functions per atomic type
-  integer :: nhm         ! Max number of beta(lm) functions per atomic type
-  integer :: nbetam      ! Max number of beta functions per atomic type
-  integer :: lmaxkb      ! Max angular momentum of beta functions
+  integer, allocatable :: nh(:)  ! Number of beta(lm) functions per atomic type
+  integer              :: nhm         ! Max number of beta(lm) functions per atomic type
+  integer              :: nbetam      ! Max number of beta functions per atomic type
+  integer              :: lmaxkb      ! Max angular momentum of beta functions
 
   integer :: nkb ! Total number of beta(lm) functions in the solid
   integer,       allocatable :: indv(:,:)   ! Link between index of beta(lm) function in the solid -> index of beta function in the atomic type
@@ -424,6 +423,7 @@ contains
 
     integer :: nt, nb, na
 
+    allocate(nh(ntyp))
 
     lmaxkb = - 1
     do nt = 1, ntyp
@@ -439,7 +439,7 @@ contains
     !
     ! calculate the maximum number of beta functions
     !
-    nhm = maxval(nh(1:ntyp))
+    nhm = maxval(nh)
     nbetam = maxval(upf(:)%nbeta)
     !
     ! Number of beta functions

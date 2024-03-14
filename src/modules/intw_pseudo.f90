@@ -15,7 +15,10 @@ module intw_pseudo
   private
 
 
-  integer, parameter :: nt_max = 10 ! Max number of different atomic types
+  integer, parameter :: nt_max = 99 ! Max number of different atomic types
+  ! NOTE: Haritz 14/03/2024:
+  ! In QE the maximum number of atomic types is 10, however, I didn't find any limit in SIESTA.
+  ! In intw we just set a limit of 2 digits due to the PP filename format (see read_all_pseudo below).
 
 
   type intwpseudo
@@ -78,15 +81,15 @@ contains
 
       io_unit = find_free_unit()
 
-      if ( nt>0 .and. nt<9 ) then
-        write(tag1,"(i1)")nt
+      if ( nt>=1 .and. nt<=9 ) then
+        write(tag1,"(i1)") nt
         write(*,20)"|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
-        file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
-      else if ( nt>9 .and. nt<19 ) then
-        write(tag2,"(i2)")nt
-        file_pseudo=trim(trim(adjustl(mesh_dir)))//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt"
+        file_pseudo=trim(mesh_dir)//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
+      else if ( nt>=10 .and. nt<=nt_max ) then
+        write(tag2,"(i2)") nt
+        file_pseudo=trim(mesh_dir)//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt"
       else
-        print*, "ERROR: The num. of species is bigger than 19 (or <0)"
+        stop "ERROR: read_all_pseudo: ntyp > nt_max"
       end if
 
       open(unit=io_unit ,file=file_pseudo, status='old', form='formatted', iostat=ios)
