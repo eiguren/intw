@@ -11,7 +11,7 @@ module intw_useful_constants
   ! Energy conversion factors
   public :: eV_to_Ha, eV_to_Ry, Ha_to_eV, Ha_to_Ry, Ry_to_eV, Ry_to_Ha
   !
-  public :: ZERO, ONE, e2, sqrt2, pi, tpi, fpi, sqrt_pi, &
+  public :: ZERO, ONE, TWO, sqrt2, pi, tpi, fpi, sqrt_pi, &
             eps_2, eps_5, eps_6, eps_7, eps_8, eps_10, eps_14, &
             bohr, boltzmann, cmplx_i, cmplx_1, cmplx_0, &
             direct_io_factor, direct_io_factor_cmplx, double_complex, double_real, &
@@ -27,7 +27,7 @@ module intw_useful_constants
   ! OpenMP gives an error in some points
   real(kind=dp), parameter :: ZERO       = 0.0_dp
   real(kind=dp), parameter :: ONE        = 1.0_dp
-  real(kind=dp), parameter :: e2         = 2.0_dp
+  real(kind=dp), parameter :: TWO         = 2.0_dp
   real(kind=dp), parameter :: sqrt2      = sqrt(2.0_dp)
   real(kind=dp), parameter :: pi         = dacos(-1.0_dp)
   real(kind=dp), parameter :: tpi        = 2.0_dp*pi
