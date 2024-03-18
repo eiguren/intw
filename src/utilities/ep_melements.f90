@@ -16,8 +16,7 @@ program ep_melements
   use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
   use intw_pseudo_non_local, only: vkb, vkqb, &
                                    init_KB_projectors, &
-                                   init_pp, &
-                                   allocate_nlpot, &
+                                   init_KB_PP, &
                                    multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
                           find_free_unit, &
@@ -224,9 +223,7 @@ program ep_melements
   !
   ! Allocate and set PP variables
   call init_local_PP()
-  !
-  call allocate_nlpot()
-  call init_pp
+  call init_KB_PP()
   !
   write(*,20) '|           ---------------------------------       |'
   !

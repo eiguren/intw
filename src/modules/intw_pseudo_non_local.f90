@@ -7,7 +7,7 @@ module intw_pseudo_non_local
   public :: l_kb_max, nh, nhm, nbetam, lmaxkb, &
             nkb, Dion, vkb, vkqb
 
-  public :: init_KB_projectors, init_pp, allocate_nlpot, &
+  public :: init_KB_PP, init_KB_projectors, &
             multiply_psi_by_vKB, multiply_psi_by_dvKB
 
   private
@@ -37,6 +37,72 @@ module intw_pseudo_non_local
 
 
 contains
+
+  subroutine init_KB_PP()
+    !
+
+    use intw_reading, only: nat, ntyp, ityp, nG_max
+    use intw_pseudo, only: upf
+    use intw_useful_constants, only: cmplx_0
+
+    implicit none
+
+    integer :: nt, nb, na
+
+
+    !
+    ! Calculate the total number of beta(lm) projectors for each atomic type and maximum angular momentum
+    !
+    if (allocated(nh)) deallocate(nh)
+    allocate(nh(ntyp))
+    lmaxkb = - 1
+    do nt = 1, ntyp
+      !
+      nh(nt) = 0
+      !
+      do nb = 1, upf(nt)%nbeta
+        nh(nt) = nh(nt) + 2 * upf(nt)%lll(nb) + 1
+        lmaxkb = max(lmaxkb, upf(nt)%lll(nb))
+      end do
+      !
+    end do
+    !
+    ! Calculate the maximum number of beta(lm) and beta functions
+    !
+    nhm = maxval(nh)
+    nbetam = maxval(upf(:)%nbeta)
+    !
+    ! Calculate the number of beta(lm) functions in the solid
+    !
+    nkb = 0
+    do na = 1, nat
+      nt = ityp(na)
+      nkb = nkb + nh(nt)
+    end do
+    !
+    ! Calculate the arrays to link indices of the beta functions
+    !
+    call init_KB_link_indices()
+    !
+    ! Calculate Dij matrix for each atomic type
+    !
+    call init_Dion()
+    !
+    ! Calculate interpolation table
+    !
+    call init_interpolation_table()
+    !
+    !
+    !
+    if (allocated(vkb)) deallocate(vkb)
+    allocate(vkb(nG_max,nkb))
+    vkb = cmplx_0
+    if (allocated(vkqb)) deallocate(vkqb)
+    allocate(vkqb(nG_max,nkb))
+    vkqb = cmplx_0
+
+  end subroutine init_KB_PP
+
 
   subroutine init_KB_link_indices()
     ! Initialize the arrays used to link the index of the beta(lm) projector for
@@ -468,107 +534,6 @@ contains
     end do !ntyp
 
   end subroutine init_KB_projectors
-
-
-  subroutine init_pp()
-    !----------------------------------------------------------------------
-    !
-    use intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
-    use intw_reading, only: ntyp, lspinorb
-    use mcf_spline, only: spline_mcf
-    use intw_utility, only: sphb, intgr_spline_gaussq !, simpson
-    use intw_pseudo, only: upf
-    !
-    implicit none
-    !
-    !     here a few local variables
-    !
-    integer :: nt, ih, jh, l, m, ir, is
-    ! various counters
-    integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, lk, mk, vk, kh
-    complex(kind=dp) :: coeff
-    real(kind=dp) :: ji, jk
-    !
-    complex(kind=dp), allocatable :: fcoef(:,:,:,:,:) ! function needed to account for spinors.
-    complex(kind=dp) :: rot_ylm(2*l_kb_max+1,2*l_kb_max+1)  ! transform real spherical harmonics into complex ones
-    !
-    real(kind=dp), external :: spinor
-    integer, external :: sph_ind
-
-
-    !
-    ! Calculate the arrays to link indices of the beta functions
-    !
-    call init_KB_link_indices()
-    !
-    ! Calculate Dij matrix for each atomic type
-    !
-    call  init_Dion()
-    !
-    ! Calculate interpolation table
-    !
-    call init_interpolation_table()
-
-  end subroutine init_pp
-
-
-  subroutine allocate_nlpot()
-    !-----------------------------------------------------------------------
-    ! Adapted from QEspresso4.3.2 Asier&&Idoia
-    !
-    !     ngk           !  number of plane waves (for each k point)
-    !     npwx          !  maximum number of plane waves
-    !
-    !
-    use intw_reading, only: nat, ntyp, ityp, ecutwfc, nspin, lspinorb, ng_max
-    use intw_pseudo, only: upf
-
-    implicit none
-
-    !local variables
-
-    integer :: nt, nb, na
-
-    allocate(nh(ntyp))
-
-    lmaxkb = - 1
-    do nt = 1, ntyp
-      !
-      nh(nt) = 0
-      !
-      do nb = 1, upf(nt)%nbeta
-        nh(nt) = nh(nt) + 2 * upf(nt)%lll(nb) + 1
-        lmaxkb = max(lmaxkb, upf(nt)%lll(nb))
-      end do
-      !
-    end do
-    !
-    ! calculate the maximum number of beta functions
-    !
-    nhm = maxval(nh)
-    nbetam = maxval(upf(:)%nbeta)
-    !
-    ! Number of beta functions
-    !
-    nkb = 0
-    do na = 1, nat
-      nt = ityp(na)
-      nkb = nkb + nh(nt)
-    end do
-
-    !
-
-    if (allocated(vkb)) deallocate(vkb)
-    if (allocated(vkqb)) deallocate(vkqb)
-
-    if (nkb > 0) then
-      allocate(vkb(nG_max,nkb))
-      allocate(vkqb(nG_max,nkb))
-    end if
-    !
-    return
-
-  end subroutine allocate_nlpot
 
 
   subroutine multiply_psi_by_vKB(nbands, list_iGk, psi, dvnl_psi)
