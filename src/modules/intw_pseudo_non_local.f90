@@ -39,6 +39,74 @@ module intw_pseudo_non_local
 
 contains
 
+  subroutine init_interpolation_table()
+    ! Initialize the interpoation table used to calculate the KB projectors in reciprocal space
+
+    use intw_reading, only: ecutwfc, ntyp, volume0
+    use intw_pseudo, only: upf
+    use intw_useful_constants, only: fpi, ZERO
+    use intw_utility, only: sphb, intgr_spline_gaussq !, simpson
+    use mcf_spline, only: spline_mcf
+
+    implicit none
+
+    real(kind=dp), allocatable :: aux(:), xdata(:)
+    real(kind=dp) ::  vqint
+    integer :: iq, ndm, nt, nb, l, ir
+
+
+    !
+    ! Calculate dimensions for array tab (including a possible factor
+    ! coming from cell contraction during variable cell relaxation/MD)
+    !
+    nqx = int( sqrt(2*ecutwfc) / dq + 4 ) ! x2 zeren Ry -> Hartree egin behar
+    !
+    ! q-point grid for interpolation
+    !
+    allocate(xdata(nqx))
+    do iq = 1, nqx
+      xdata(iq) = (iq - 1) * dq
+    end do
+    !
+    ! Fill the interpolation table
+    !
+    allocate(tab(2*nqx,nbetam,ntyp)) ! ASIER originala nqx, errepasatu
+    allocate(tab_d2y(nqx,nbetam,ntyp))
+    !
+    ndm = maxval(upf(:)%kkbeta)
+    allocate(aux(ndm))
+    !
+    tab = ZERO
+    do nt = 1, ntyp
+      do nb = 1, upf(nt)%nbeta
+        l = upf(nt)%lll(nb)
+        do iq = 1, nqx
+          aux = upf(nt)%beta(:,nb) * sphb(l, xdata(iq)*upf(nt)%r) * upf(nt)%r
+          !ASIER 29/07/2021
+          !call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
+
+          !Integrating by spline + gauss 2. order
+          vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
+
+          tab(iq,nb,nt) = vqint * fpi / sqrt(volume0)
+
+        end do
+      end do
+    end do
+    !
+    deallocate(aux)
+    !
+    ! Initialize spline interpolation
+    !
+    do nt = 1, ntyp
+      do nb = 1, upf(nt)%nbeta
+        call spline_mcf(xdata, tab(:,nb,nt), nqx, tab_d2y(:,nb,nt))
+      end do
+    end do
+
+  end subroutine init_interpolation_table
+
+
   subroutine init_KB_projectors(npw, npwx, igk, qpoint_cryst, vkb_)
     !----------------------------------------------------------------------
     !
@@ -195,7 +263,7 @@ contains
     !----------------------------------------------------------------------
     !
     use intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
-    use intw_reading, only: ntyp, volume0, lspinorb
+    use intw_reading, only: ntyp, lspinorb
     use mcf_spline, only: spline_mcf
     use intw_utility, only: sphb, intgr_spline_gaussq !, simpson
     use intw_pseudo, only: upf
@@ -204,37 +272,24 @@ contains
     !
     !     here a few local variables
     !
-    integer :: nt, ih, jh, nb, l, m, ir, iq, is, ndm
+    integer :: nt, ih, jh, nb, l, m, ir, is
     ! various counters
-    real(kind=dp), allocatable :: aux(:), aux1(:), qtot(:,:)
-    ! various work space
-    real(kind=dp) :: prefr, pref, qi
-    ! the prefactor of the q functions
-    ! the prefactor of the beta functions
-    ! the modulus of g for each shell
-    ! q-point grid for interpolation
-    ! the spherical harmonics
-    real(kind=dp) ::  vqint, j
-    ! interpolated value
+    real(kind=dp) ::  j
     ! J=L+S (noninteger!)
     integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, lk, mk, vk, kh
     complex(kind=dp) :: coeff
-    real(kind=dp) :: xdata(nqx)
-    real(kind=dp) :: d1, ji, jk
+    real(kind=dp) :: ji, jk
     !
     complex(kind=dp), allocatable :: fcoef(:,:,:,:,:) ! function needed to account for spinors.
     complex(kind=dp) :: rot_ylm(2*l_kb_max+1,2*l_kb_max+1)  ! transform real spherical harmonics into complex ones
     !
     real(kind=dp), external :: spinor
     integer, external :: sph_ind
-    !
+
+
     !
     !    Initialization of the variables
     !
-    ndm = maxval(upf(:)%kkbeta)
-    allocate(aux(ndm))
-    allocate(aux1(ndm))
-    allocate(qtot(ndm, nbetam*(nbetam+1)/2))
     if (lspinorb) allocate(fcoef(nhm,nhm,2,2,ntyp))
 
     !
@@ -242,8 +297,6 @@ contains
     ! but in some versions of the PP files lmax is not set to the maximum
     ! l of the beta functions but includes the l of the local potential
     !
-    prefr = fpi / volume0
-
     DKB = cmplx_0
 
     if (lspinorb) then
@@ -361,42 +414,11 @@ contains
     end do
     !
     !
-    !     fill the interpolation table tab
+    ! Calclate Dij matrix for the solid
     !
-    pref = fpi / sqrt(volume0)
-    tab(:,:,:) = 0.d0
-    do nt = 1, ntyp
-      do nb = 1, upf(nt)%nbeta
-        l = upf(nt)%lll(nb)
-        do iq = 1,nqx
-          qi = (iq - 1) * dq
-          aux = upf(nt)%beta(:,nb) * sphb(l, qi*upf(nt)%r) * upf(nt)%r
-          !ASIER 29/07/2021
-          !call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
-
-          !Integrating by spline + gauss 2. order
-          vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
-
-          tab(iq,nb,nt) = vqint * pref
-
-        end do
-      end do
-    end do
-
-    ! initialize spline interpolation
-    do iq = 1, nqx
-      xdata(iq) = (iq - 1) * dq
-    end do
-    do nt = 1, ntyp
-      do nb = 1, upf(nt)%nbeta
-        d1 = (tab(2,nb,nt) - tab(1,nb,nt)) / dq
-        call spline_mcf(xdata, tab(:,nb,nt), nqx, tab_d2y(:,nb,nt))
-      end do
-    end do
-
-    deallocate(qtot)
-    deallocate(aux1)
-    deallocate(aux)
+    ! Calculate interpolation table
+    !
+    call init_interpolation_table()
 
   end subroutine init_pp
 
@@ -407,7 +429,6 @@ contains
     !
     !     ngk           !  number of plane waves (for each k point)
     !     npwx          !  maximum number of plane waves
-    !     nqx           !  number of points of the interpolation table
     !
     !
     use intw_reading, only: nat, ntyp, ityp, ecutwfc, nspin, lspinorb, ng_max
@@ -457,15 +478,6 @@ contains
     end if
     !
     !
-    ! Calculate dimensions for array tab (including a possible factor
-    ! coming from cell contraction during variable cell relaxation/MD)
-    !
-    nqx = int( sqrt(2*ecutwfc) / dq + 4 ) ! x2 zeren Ry -> Hartree egin behar
-
-    allocate(tab(2*nqx,nbetam,ntyp)) ! ASIER originala nqx, errepasatu
-
-    ! d2y is for the cubic splines
-    allocate(tab_d2y(nqx,nbetam,ntyp))
 
     if (allocated(vkb)) deallocate(vkb)
     if (allocated(vkqb)) deallocate(vkqb)
