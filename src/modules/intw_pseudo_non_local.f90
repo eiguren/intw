@@ -5,8 +5,7 @@ module intw_pseudo_non_local
   implicit none
 
   public :: l_kb_max, nh, nhm, nbetam, lmaxkb, &
-            nkb, indv, nhtol, nhtolm, nhtoj, &
-            DKB, vkb, vkqb
+            nkb, DKB, vkb, vkqb
 
   public :: init_KB_projectors, init_pp, allocate_nlpot, &
             multiply_psi_by_vKB, multiply_psi_by_dvKB
@@ -27,17 +26,98 @@ module intw_pseudo_non_local
   integer              :: lmaxkb      ! Max angular momentum of beta functions
 
   integer :: nkb ! Total number of beta(lm) functions in the solid
-  integer,       allocatable :: indv(:,:)   ! Link between index of beta(lm) function in the solid -> index of beta function in the atomic type
+  integer,       allocatable :: nhtonbeta(:,:)   ! Link between index of beta(lm) function in the solid -> index of beta function in the atomic type
   integer,       allocatable :: nhtol(:,:)  ! Link between index of beta(lm) function in the atomic type -> angular momentum l
   integer,       allocatable :: nhtolm(:,:) ! Link between index of beta(lm) function in the atomic type -> combined lm angular momentum index l*l+m
   real(kind=dp), allocatable :: nhtoj(:,:)  ! Link between index of beta(lm) function in the atomic type -> total angular momentum j
-
+  integer,          allocatable :: nkbtona(:)   ! Link between index of beta(lm) function in the solid -> index of the atom
   complex(kind=dp), allocatable :: DKB(:,:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions for each atomic type
 
   complex(kind=dp), allocatable, target :: vkb(:,:), vkqb(:,:) ! All beta functions in reciprocal space
 
 
 contains
+
+  subroutine init_KB_link_indices()
+    ! Initialize the arrays used to link the index of the beta(lm) projector for
+    ! each atomic type with the index of the projetor of the PP file (nhtonbeta),
+    ! with the angular momentum of the projetor (nhtol, nhtolm and nhtoj), and the
+    ! index of the beta(lm) projector in the solid with the index of the atom (nkbtona).
+
+    use intw_reading, only: ntyp, nat, ityp
+    use intw_pseudo, only: upf
+
+    implicit none
+
+    !local variables
+    integer :: nt, ih, nb, l, m, na, ikb
+    real(kind=dp) :: j
+
+
+    if(allocated(nhtonbeta)) deallocate(nhtonbeta)
+    allocate(nhtonbeta(nhm,ntyp))
+    !
+    if(allocated(nhtol)) deallocate(nhtol)
+    allocate(nhtol(nhm,ntyp))
+    !
+    if(allocated(nhtolm)) deallocate(nhtolm)
+    allocate(nhtolm(nhm,ntyp))
+    !
+    if(allocated(nhtoj)) deallocate(nhtoj)
+    allocate(nhtoj(nhm,ntyp))
+    !
+    do nt = 1, ntyp
+      !
+      ih = 1
+      do nb = 1, upf(nt)%nbeta
+        !
+        l = upf(nt)%lll(nb)
+        !
+        do m = 1, 2 * l + 1
+          !
+          nhtol(ih,nt) = l
+          nhtolm(ih,nt) = l*l+m
+          nhtonbeta(ih,nt) = nb
+          ih = ih + 1
+          !
+        end do !m
+        !
+      end do !nb
+      !
+      if ( upf(nt)%has_so ) then
+        !
+        ih = 1
+        do nb = 1, upf(nt)%nbeta
+          !
+          l = upf(nt)%lll(nb)
+          j = upf(nt)%jjj(nb)
+          !
+          do m = 1, 2 * l + 1
+            !
+            nhtoj(ih, nt) = j
+            ih = ih + 1
+            !
+          end do !m
+          !
+        end do !nb
+        !
+      end if
+      !
+    end do !nt
+
+    if(allocated(nkbtona)) deallocate(nkbtona)
+    allocate(nkbtona(nkb))
+    ikb = 0
+    do na = 1, nat
+      nt = ityp(na)
+      do ih = 1, nh(nt)
+        ikb = ikb + 1
+        nkbtona(ikb) = na
+      end do !ih
+    end do !na
+
+  end subroutine init_KB_link_indices
+
 
   subroutine init_interpolation_table()
     ! Initialize the interpoation table used to calculate the KB projectors in reciprocal space
@@ -195,7 +275,7 @@ contains
           !
           do ih = 1, nh(nt)
             !
-            if (nb.eq.indv(ih, nt)) then
+            if (nb.eq.nhtonbeta(ih, nt)) then
                 !
                 l  = nhtol(ih,nt)
                 lm = nhtolm(ih,nt)
@@ -272,10 +352,8 @@ contains
     !
     !     here a few local variables
     !
-    integer :: nt, ih, jh, nb, l, m, ir, is
+    integer :: nt, ih, jh, l, m, ir, is
     ! various counters
-    real(kind=dp) ::  j
-    ! J=L+S (noninteger!)
     integer :: n1, m0, m1, n, li, mi, vi, vj, ijs, ispin, jspin, lk, mk, vk, kh
     complex(kind=dp) :: coeff
     real(kind=dp) :: ji, jk
@@ -288,7 +366,9 @@ contains
 
 
     !
-    !    Initialization of the variables
+    ! Calculate the arrays to link indices of the beta functions
+    !
+    call init_KB_link_indices()
     !
     if (lspinorb) allocate(fcoef(nhm,nhm,2,2,ntyp))
 
@@ -320,31 +400,10 @@ contains
     end if
     !
     !   For each pseudopotential we initialize the indices nhtol, nhtolm,
-    !   nhtoj, indv, and if the pseudopotential is of KB type we initialize the
+    !   nhtoj, nhtonbeta, and if the pseudopotential is of KB type we initialize the
     !   atomic D terms
     !
     do nt = 1, ntyp
-      ih = 1
-      do nb = 1, upf(nt)%nbeta
-        l = upf(nt)%lll(nb)
-        do m = 1, 2 * l + 1
-          nhtol(ih,nt) = l
-          nhtolm(ih,nt) = l*l+m
-          indv(ih,nt) = nb
-          ih = ih + 1
-        end do
-      end do
-      if ( upf(nt)%has_so ) then
-        ih = 1
-        do nb = 1, upf(nt)%nbeta
-          l = upf(nt)%lll(nb)
-          j = upf(nt)%jjj(nb)
-          do m = 1, 2 * l + 1
-            nhtoj(ih, nt) = j
-            ih = ih + 1
-          end do
-        end do
-      end if
       !
       !    Here we initialize the D of the solid
       !
@@ -356,12 +415,12 @@ contains
           li = nhtol(ih,nt)
           ji = nhtoj(ih,nt)
           mi = nhtolm(ih,nt) - li*li
-          vi = indv(ih,nt)
+          vi = nhtonbeta(ih,nt)
           do kh = 1, nh(nt)
             lk = nhtol(kh,nt)
             jk = nhtoj(kh,nt)
             mk = nhtolm(kh,nt) - lk*lk
-            vk = indv(kh,nt)
+            vk = nhtonbeta(kh,nt)
             if (li == lk .and. abs(ji-jk) < 1.d-7) then
               do ispin = 1, 2
                 do jspin = 1, 2
@@ -382,9 +441,9 @@ contains
         !   and calculate the bare coefficients
         !
         do ih = 1, nh(nt)
-          vi = indv(ih,nt)
+          vi = nhtonbeta(ih,nt)
           do jh = 1, nh(nt)
-            vj = indv(jh,nt)
+            vj = nhtonbeta(jh,nt)
             ijs = 0
             do ispin = 1, 2
               do jspin = 1, 2
@@ -399,8 +458,8 @@ contains
         do ih = 1, nh(nt)
           do jh = 1, nh(nt)
             if ( nhtol(ih,nt) == nhtol(jh,nt) .and. nhtolm(ih,nt) == nhtolm(jh,nt) ) then
-              ir = indv(ih,nt)
-              is = indv(jh,nt)
+              ir = nhtonbeta(ih,nt)
+              is = nhtonbeta(jh,nt)
               if (lspinorb) then
                 DKB(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
                 DKB(ih,jh,2,2,nt) = upf(nt)%dion(ir,is)
@@ -467,10 +526,6 @@ contains
       nkb = nkb + nh(nt)
     end do
 
-    allocate(indv(nhm,ntyp))
-    allocate(nhtol(nhm,ntyp))
-    allocate(nhtolm(nhm,ntyp))
-    allocate(nhtoj(nhm,ntyp))
     if (lspinorb) then
       allocate(DKB(nhm,nhm,nspin,nspin,ntyp))
     else
