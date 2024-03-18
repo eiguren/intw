@@ -1623,22 +1623,22 @@ i(\mathrm{k}_{\alpha}+\mathrm{G}'''_{\alpha})
 \tilde{\beta}_{s,i'}^*(\vec{k}+\vec{G}''')
 \tilde{u}_{m\vec{k}}(\vec{G}''')
 .\end{equation}
-\item Then, the variables $\verb|projec_1|(i')$ and $\verb|projec_2|(i')$ are multiplied by the $D_{si,si'}$ matrix to obtain $\verb|Dij_projec_1|(i)$ and $\verb|Dij_projec_2|(i)$:
+\item Then, the variables $\verb|projec_1|(i')$ and $\verb|projec_2|(i')$ are multiplied by the $D_{si,si'}$ matrix to obtain $\verb|DKB_projec_1|(i)$ and $\verb|DKB_projec_2|(i)$:
 \begin{equation}
-\verb|Dij_projec_1|(i)
+\verb|DKB_projec_1|(i)
 =
 \sum_{i'}
 D_{si,si'}
 \verb|projec_1|(i')
 ,\end{equation}
 \begin{equation}
-\verb|Dij_projec_2|(i)
+\verb|DKB_projec_2|(i)
 =
 \sum_{i'}
 D_{si,si'}
 \verb|projec_2|(i')
 ,\end{equation}
-\item Next, the variable $\verb|dvnl_psi|$ is computed by multiplying ${\beta}_{s,i}$ by $\verb|Dij_projec_2|(i)$ and its derivative by $\verb|Dij_projec_1|(i)$:
+\item Next, the variable $\verb|dvnl_psi|$ is computed by multiplying ${\beta}_{s,i}$ by $\verb|DKB_projec_2|(i)$ and its derivative by $\verb|DKB_projec_1|(i)$:
 \begin{equation}
 \begin{array}{r@{}l}
 \verb|dvnl_psi|(\vec{G})
@@ -1647,12 +1647,12 @@ D_{si,si'}
 \Big[
 &
 \phantom{-i(\mathrm{k}_{\alpha}+\mathrm{q}_{\alpha}+\mathrm{G}_{\alpha})}
-\tilde{\beta}_{s,i}(\vec{k}+\vec{q}+\vec{G})\times \verb|Dij_projec_2|(i)
+\tilde{\beta}_{s,i}(\vec{k}+\vec{q}+\vec{G})\times \verb|DKB_projec_2|(i)
 \\
 &
 -
 i(\mathrm{k}_{\alpha}+\mathrm{q}_{\alpha}+\mathrm{G}_{\alpha})
-\tilde{\beta}_{s,i}(\vec{k}+\vec{q}+\vec{G})\times \verb|Dij_projec_1|(i)
+\tilde{\beta}_{s,i}(\vec{k}+\vec{q}+\vec{G})\times \verb|DKB_projec_1|(i)
 \Big]
 \end{array}
 .\end{equation}

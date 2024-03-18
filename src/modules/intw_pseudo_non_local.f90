@@ -4,8 +4,7 @@ module intw_pseudo_non_local
 
   implicit none
 
-  public :: l_kb_max, nh, nhm, nbetam, lmaxkb, &
-            nkb, Dion, vkb, vkqb
+  public :: nkb, DKB, vkb, vkqb
 
   public :: init_KB_PP, init_KB_projectors, &
             multiply_psi_by_vKB, multiply_psi_by_dvKB
@@ -20,18 +19,19 @@ module intw_pseudo_non_local
   real(kind=dp), allocatable :: tab(:,:,:)     ! Interpolation table for PPs
   real(kind=dp), allocatable :: tab_d2y(:,:,:) ! For cubic splines
 
-  integer, allocatable :: nh(:)  ! Number of beta(lm) functions per atomic type
-  integer              :: nhm         ! Max number of beta(lm) functions per atomic type
-  integer              :: nbetam      ! Max number of beta functions per atomic type
-  integer              :: lmaxkb      ! Max angular momentum of beta functions
-
-  integer :: nkb ! Total number of beta(lm) functions in the solid
-  integer,       allocatable :: nhtonbeta(:,:)   ! Link between index of beta(lm) function in the solid -> index of beta function in the atomic type
-  integer,       allocatable :: nhtol(:,:)  ! Link between index of beta(lm) function in the atomic type -> angular momentum l
-  integer,       allocatable :: nhtolm(:,:) ! Link between index of beta(lm) function in the atomic type -> combined lm angular momentum index l*l+m
-  real(kind=dp), allocatable :: nhtoj(:,:)  ! Link between index of beta(lm) function in the atomic type -> total angular momentum j
-  integer,          allocatable :: nkbtona(:)   ! Link between index of beta(lm) function in the solid -> index of the atom
+  integer                       :: lmaxkb          ! Max angular momentum of beta functions
+  integer                       :: nbetam          ! Max number of beta functions per atomic type
+  integer,          allocatable :: nh(:)           ! Number of beta(lm) functions per atomic type
+  integer                       :: nhm             ! Max number of beta(lm) functions per atomic type
+  integer,          allocatable :: nhtonbeta(:,:)  ! Link between index of beta(lm) function in the atomic type -> index of beta function in the atomic type
+  integer,          allocatable :: nhtol(:,:)      ! Link between index of beta(lm) function in the atomic type -> angular momentum l
+  integer,          allocatable :: nhtolm(:,:)     ! Link between index of beta(lm) function in the atomic type -> combined lm angular momentum index l*l+m
+  real(kind=dp),    allocatable :: nhtoj(:,:)      ! Link between index of beta(lm) function in the atomic type -> total angular momentum j
   complex(kind=dp), allocatable :: Dion(:,:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions for each atomic type
+
+  integer                       :: nkb          ! Total number of beta(lm) functions in the solid
+  integer,          allocatable :: nkbtona(:)   ! Link between index of beta(lm) function in the solid -> index of the atom
+  complex(kind=dp), allocatable :: DKB(:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions in the solid
 
   complex(kind=dp), allocatable, target :: vkb(:,:), vkqb(:,:) ! All beta functions in reciprocal space
 
@@ -87,6 +87,10 @@ contains
     ! Calculate Dij matrix for each atomic type
     !
     call init_Dion()
+    !
+    ! Calclate Dij matrix for the solid
+    !
+    call init_DKB()
     !
     ! Calculate interpolation table
     !
@@ -316,6 +320,56 @@ contains
   end subroutine init_Dion
 
 
+  subroutine init_DKB()
+    ! Initilize the DKB matrix for all beta(lm) projectors in the solid
+
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only: nat, ntyp, nspin, lspinorb, ityp
+
+    implicit none
+
+    integer :: ikb, jkb, nt, na, ih, jh, ntj, naj, ispin
+
+
+    allocate(DKB(nkb,nkb,nspin,nspin))
+    DKB = cmplx_0
+    ikb = 0
+    do nt = 1, ntyp
+      do na = 1, nat
+        !
+        if (ityp(na)==nt) then
+          !
+          do ih = 1, nh(ityp(na))
+            ikb = ikb + 1
+            jkb = 0
+            do ntj = 1, ntyp
+              do naj = 1, nat
+                if (ityp(naj)==ntj) then
+                  do jh = 1, nh(ityp(naj))
+                    jkb = jkb + 1
+                    if (na==naj) then
+                      if (lspinorb) then
+                        DKB(ikb,jkb,:,:) = Dion(ih,jh,:,:,ityp(na))
+                      else
+                        do ispin=1,nspin
+                          DKB(ikb,jkb,ispin,ispin) = Dion(ih,jh,1,1,ityp(na))
+                        end do
+                      end if
+                    end if
+                  end do !jh
+                end if
+              end do !naj
+            end do !ntj
+          end do !ih
+          !
+        end if
+        !
+      end do !na
+    end do !nt
+
+  end subroutine init_DKB
+
+
   subroutine init_interpolation_table()
     ! Initialize the interpoation table used to calculate the KB projectors in reciprocal space
 
@@ -384,13 +438,13 @@ contains
   end subroutine init_interpolation_table
 
 
-  subroutine init_KB_projectors(npw, npwx, igk, qpoint_cryst, vkb_)
+  subroutine init_KB_projectors(npw, igk, qpoint_cryst, kb_projectors)
     !----------------------------------------------------------------------
     !
     !   Calculates beta functions (Kleinman-Bylander projectors), with
     !   structure factor, for all atoms, in reciprocal space
     !
-    use intw_reading, only: nat, ntyp, ityp, tau, bg, tpiba
+    use intw_reading, only: nat, nG_max, ntyp, ityp, tau, bg, tpiba
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
     use intw_fft, only: gvec_cart
     use mcf_spline, only: splint_mcf
@@ -401,10 +455,10 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: npw, npwx !number of PW's
-    integer, intent(in) :: igk(npwx) !G list of q vector
+    integer, intent(in) :: npw !number of PW's
+    integer, intent(in) :: igk(nG_max) !G list of q vector
     real(kind=dp), intent(in) :: qpoint_cryst(3) !q vector
-    complex(kind=dp), intent(out) :: vkb_(npwx,nkb) !beta functions
+    complex(kind=dp), intent(out) :: kb_projectors(nG_max,nkb) !beta functions
 
     !local variables
 
@@ -414,7 +468,7 @@ contains
     complex(kind=dp) :: phase, pref, sk(npw)
 
 
-    vkb_ = cmplx_0
+    kb_projectors = cmplx_0
     !
     qpoint_cart = matmul(bg, qpoint_cryst)
     !
@@ -430,7 +484,7 @@ contains
       !
       qg(ig) = gk(1,ig)**2 + gk(2,ig)**2 + gk(3,ig)**2
       !
-    end do
+    end do !ig
     !
     call real_ylmr2(lmaxkb, npw, gk, qg, ylm)
     !
@@ -445,10 +499,8 @@ contains
     end do !ig
     !
     do iq = 1, nqx
-          !
       xdata(iq) = (iq - 1) * dq
-          !
-    end do !ig
+    end do !iq
     !
     ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
     !
@@ -460,157 +512,139 @@ contains
       ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
       !
       do nb = 1, upf(nt)%nbeta
+        !
+        do ig = 1, npw
+          !
+          if (igk(ig)==0) exit
+          !
+          call splint_mcf(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
+          !
+        end do !ig
+        !
+        ! add spherical harmonic part  (Y_lm(q)*f_l(q))
+        !
+        do ih = 1, nh(nt)
+          !
+          if (nb /= nhtonbeta(ih, nt)) cycle
+          !
+          l  = nhtol(ih,nt)
+          lm = nhtolm(ih,nt)
           !
           do ig = 1, npw
             !
             if (igk(ig)==0) exit
             !
-            call splint_mcf(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
+            vkb1(ig,ih) = ylm(ig,lm) * vq(ig)
+            !
           end do !ig
           !
-          ! add spherical harmonic part  (Y_lm(q)*f_l(q))
-          !
-          do ih = 1, nh(nt)
-            !
-            if (nb.eq.nhtonbeta(ih, nt)) then
-                !
-                l  = nhtol(ih,nt)
-                lm = nhtolm(ih,nt)
-                !
-                do ig = 1, npw
-                  !
-                  if (igk(ig)==0) exit
-                  !
-                  vkb1(ig,ih) = ylm(ig,lm) * vq(ig)
-                  !
-                end do !ig
-            end if !nb
-          end do !ih
-      end do !nt
+        end do !ih
+        !
+      end do !nb
       !
       ! vkb1 contains all betas including angular part for type nt
       ! now add the structure factor and factor (-i)^l
       !
       do na = 1, nat
+        !
+        ! ordering: first all betas for atoms of type 1
+        !           then  all betas for atoms of type 2  and so on
+        !
+        if (ityp(na) /= nt) cycle
+        !
+        ! qpoint_cart is cart. coordinates
+        !
+        arg = (  qpoint_cart(1) * tau(1,na) &
+                + qpoint_cart(2) * tau(2,na) &
+                + qpoint_cart(3) * tau(3,na) ) * tpi
+        !
+        phase = cmplx(cos(arg), - sin(arg) ,kind=dp)
+        !
+        do ig = 1, npw
           !
-          ! ordering: first all betas for atoms of type 1
-          !           then  all betas for atoms of type 2  and so on
+          if (igk(ig)==0) exit
           !
-          if (ityp(na).eq.nt) then
+          sk (ig) = exp(-tpi*cmplx_i*(  gvec_cart(1,igk(ig))*tau(1,na) &
+                                      + gvec_cart(2,igk(ig))*tau(2,na) &
+                                      + gvec_cart(3,igk(ig))*tau(3,na) ) )
+          !
+        end do !ig
+        !
+        do ih = 1, nh(nt)
+          !
+          jkb = jkb + 1
+          pref = phase * (-cmplx_i)**nhtol(ih,nt)
+          !
+          do ig = 1, npw
             !
-            ! qpoint_cart is cart. coordinates
+            if (igk(ig)==0) exit
             !
-            arg = (  qpoint_cart(1) * tau(1,na) &
-                   + qpoint_cart(2) * tau(2,na) &
-                   + qpoint_cart(3) * tau(3,na) ) * tpi
+            kb_projectors(ig, jkb) = vkb1(ig,ih) * sk(ig) * pref
             !
-            phase = cmplx(cos(arg), - sin(arg) ,kind=dp)
-            !
-            do ig = 1, npw
-                !
-                if (igk(ig)==0) exit
-                !
-                sk (ig) = exp( -tpi*cmplx_i*(  gvec_cart(1,igk(ig))*tau(1,na) &
-                                             + gvec_cart(2,igk(ig))*tau(2,na) &
-                                             + gvec_cart(3,igk(ig))*tau(3,na) ) )
-                !
-            end do !ig
-            !
-            do ih = 1, nh(nt)
-                !
-                jkb = jkb + 1
-                pref = phase * (-cmplx_i)**nhtol(ih,nt)
-                !
-                do ig = 1, npw
-                  !
-                  if (igk(ig)==0) exit
-                  !
-                  vkb_(ig, jkb) = vkb1(ig,ih) * sk(ig) * pref
-                  !
-                end do
-            end do
-          end if
-      end do !n bet
+          end do !ig
+          !
+        end do !ih
+        !
+      end do !na
+      !
     end do !ntyp
 
   end subroutine init_KB_projectors
 
 
-  subroutine multiply_psi_by_vKB(nbands, list_iGk, psi, dvnl_psi)
+  subroutine multiply_psi_by_vKB(nbands, psi, vnl_psi)
     !INTW project: KB projection by wave functions.
     !
 
-    use intw_useful_constants, only: cmplx_0, cmplx_i
-    use intw_reading, only: nat, nspin, nG_max, lspinorb, ityp
-    use intw_pseudo, only: upf
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only: nspin, nG_max
 
     implicit none
 
-    integer, intent(in)             :: nbands, list_iGk(nG_max)
-    complex(kind=dp), intent(inout) :: psi(nG_max,nbands,nspin), dvnl_psi(nG_max,nbands,nspin)
+    integer, intent(in)             :: nbands
+    complex(kind=dp), intent(inout) :: psi(nG_max,nbands,nspin), vnl_psi(nG_max,nbands,nspin)
 
-    complex(kind=dp)                :: projec_d(nat,nhm,nspin)
-    integer                         :: ispin, jspin, na, ih, ig
-    integer                         :: nt, ikb, iGk, iband
+    complex(kind=dp)                :: projec_d(nkb,nspin), DKB_projec_d(nkb,nspin)
+    integer                         :: iband, ikb, ispin, jspin, ig
 
 
     do iband = 1, nbands
       !
       projec_d = cmplx_0
       !
-      ikb = 0
-      do na = 1, nat
-        do ih = 1, nh(ityp(na))
-          !
-          ikb = ikb + 1
+      !
+      do ikb = 1, nkb
+        !
+        do ispin = 1, nspin
           !
           do ig = 1, nG_max
-            !
-            iGk = list_iGk(iG)
-            if (iGk==0) exit
-            !
-            do ispin = 1, nspin
-              ! Dion(nhm,nhm,nspin,nspin,ntyp)
-              projec_d(na,ih,ispin) = projec_d(na,ih,ispin) + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
-            end do
-            !
+            projec_d(ikb,ispin) = projec_d(ikb,ispin) + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
           end do !ig
           !
-        end do !ih
-      end do !na
+        end do !ispin
+        !
+      end do !ikb
 
-      ikb = 0
-      do na = 1, nat
-        do ih = 1, nh(ityp(na))
+      ! multiplay the projections <\beta_j|\psi_n> by the matrix DKB
+      DKB_projec_d = cmplx_0
+      do ispin = 1, nspin
+        do jspin = 1, nspin
           !
-          ikb = ikb + 1
+          DKB_projec_d(:,ispin) = DKB_projec_d(:,ispin) + matmul( DKB(:,:,ispin,jspin), projec_d(:,jspin) )
           !
-          do ig = 1, nG_max
-            !
-            iGk = list_iGk(iG)
-            if (iGk==0) exit
-            !
-            if ( upf(nt)%has_so .and. lspinorb ) then
-              !
-              do ispin = 1, nspin
-                do jspin = 1, nspin
-                  dvnl_psi(iG,iband,ispin) = dvnl_psi(iG,iband,ispin) &
-                      + Dion(ih,ih,ispin,jspin,ityp(na)) * projec_d(na,ih,jspin) * vkb(iG,ikb)
-                end do
-              end do
-              !
-            else ! no SO
-              !
-              do ispin = 1, nspin
-                dvnl_psi(iG,iband,ispin) = dvnl_psi(iG,iband,ispin) &
-                    + Dion(ih,ih,ispin,ispin,ityp(na)) * projec_d(na,ih,ispin) * vkb(iG,ikb)
-              end do
-            end if
-            !
-          end do !ig
+        end do !jspin
+      end do !ispin
+
+      !
+      do ikb = 1, nkb
+        !
+        do ispin = 1, nspin
           !
-        end do!ih
-      end do! na
+          vnl_psi(:,iband,ispin) = DKB_projec_d(ikb,ispin) * vkb(:,ikb)
+          !
+        end do !ispin
+        !
+      end do !ikb
       !
     end do !iband
 
@@ -620,9 +654,8 @@ contains
   subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, nbands, list_iGk, list_iGkq, psi, dvnl_psi)
 
     use intw_useful_constants, only: cmplx_0, cmplx_i
-    use intw_reading, only: nat, nspin, nG_max, tpiba, bg, lspinorb, ntyp, ityp
+    use intw_reading, only: nat, nspin, nG_max, tpiba, bg
     use intw_fft, only: gvec_cart
-    use intw_pseudo, only: upf
 
     implicit none
 
@@ -630,56 +663,15 @@ contains
     integer, intent(in)             :: nbands, list_iGk(nG_max), list_iGkq(nG_max)
     complex(kind=dp), intent(inout) :: psi(nG_max,nbands,nspin), dvnl_psi(nG_max,nbands,nspin,nspin,3*nat)
 
-    complex(kind=dp)                :: Dij(nkb,nkb,nspin,nspin)
     complex(kind=dp)                :: projec_1(nkb,3,nspin), projec_2(nkb,3,nspin)
-    complex(kind=dp)                :: Dij_projec_1(nkb,3,nspin,nspin), Dij_projec_2(nkb,3,nspin,nspin)
+    complex(kind=dp)                :: DKB_projec_1(nkb,3,nspin,nspin), DKB_projec_2(nkb,3,nspin,nspin)
 
     real(kind=dp)                   :: k_cart(3), q_cart(3)
-    integer                         :: nt, ntj, na, naj, ih, jh, ikb, jkb, ispin, jspin, ipol, ig
-    integer                         :: imode, iband, iGk, iGkq
+    integer                         :: iband, ipol, ikb, ig, iGk, iGkq, ispin, jspin, na, imode
 
 
     k_cart = matmul(bg, k_cryst)
     q_cart = matmul(bg, q_cryst)
-
-    ! build D matrix with ikb index
-    Dij = cmplx_0
-    ikb = 0
-    do nt = 1, ntyp
-      do na = 1, nat
-        !
-        if (ityp(na)==nt) then
-          !
-          do ih = 1, nh(ityp(na))
-            ikb = ikb + 1
-            jkb = 0
-            do ntj = 1, ntyp
-              do naj = 1, nat
-                if (ityp(naj)==ntj) then
-                  do jh = 1, nh(ityp(naj))
-                    jkb = jkb + 1
-                    if (na==naj) then
-                      if (lspinorb) then
-                        Dij(ikb,jkb,:,:) = Dion(ih,jh,:,:,ityp(na))
-                      else
-                        do ispin=1,nspin
-                          Dij(ikb,jkb,ispin,ispin) = Dion(ih,jh,1,1,ityp(na))
-                        end do
-                      end if
-                    end if
-                  end do !jh
-                end if
-              end do !naj
-            end do !ntj
-          end do !ih
-          !
-        end if
-        !
-      end do !na
-    end do !nt
-
-
-
 
     do iband = 1, nbands
 
@@ -694,121 +686,77 @@ contains
 
       do ipol = 1, 3 ! Cart. coord.
         !
-        ikb = 0
-        do nt = 1, ntyp
-          do na = 1, nat
+        do ikb = 1, nkb
+          !
+          do ispin = 1, nspin
             !
-            if (ityp(na)==nt) then
+            do ig = 1, nG_max
               !
-              do ih = 1, nh(ityp(na))
-                !
-                ikb=ikb+1
-                !
-                do ig = 1, nG_max
-                !
-                  iGk = list_iGk(iG)
-                  if (iGk==0) exit
-                  !
-                  do ispin = 1, nspin
-
-                    projec_1(ikb,ipol,ispin) = projec_1(ikb,ipol,ispin) &
-                        + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
-
-                    projec_2(ikb,ipol,ispin) = projec_2(ikb,ipol,ispin) &
-                        + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin) * &
-                          tpiba * cmplx_i * ( k_cart(ipol) + gvec_cart(ipol,iGk) )
-
-                  end do !ispin
-                  !
-                end do !ig
-                !
-              end do !ih
+              iGk = list_iGk(iG)
+              if (iGk==0) exit
               !
-            end if
+              projec_1(ikb,ipol,ispin) = projec_1(ikb,ipol,ispin) &
+                  + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
+              !
+              projec_2(ikb,ipol,ispin) = projec_2(ikb,ipol,ispin) &
+                  + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin) * &
+                    tpiba * cmplx_i * ( k_cart(ipol) + gvec_cart(ipol,iGk) )
+              !
+            end do !ig
             !
-          end do !na
-        end do ! nt
+          end do !ispin
+          !
+        end do !ikb
         !
       end do !ipol
 
 
-      ! multiplay the projections <\beta_j|\psi_n> by the matrix Dij
-      Dij_projec_1 = cmplx_0
-      Dij_projec_2 = cmplx_0
+      ! multiplay the projections <\beta_j|\psi_n> by the matrix DKB
+      DKB_projec_1 = cmplx_0
+      DKB_projec_2 = cmplx_0
       do ipol = 1, 3 ! Cart. coord.
         !
-        if (lspinorb) then
-          do ispin = 1, nspin
-            do jspin = 1, nspin
-              Dij_projec_1(:,ipol,ispin,jspin) = matmul( Dij(:,:,ispin,jspin), projec_1(:,ipol,jspin) )
-              Dij_projec_2(:,ipol,ispin,jspin) = matmul( Dij(:,:,ispin,jspin), projec_2(:,ipol,jspin) )
-            end do !jspin
-          end do !ispin
-        else
-          do ispin = 1, nspin
-            Dij_projec_1(:,ipol,ispin,ispin) = matmul( Dij(:,:,ispin,ispin), projec_1(:,ipol,ispin) )
-            Dij_projec_2(:,ipol,ispin,ispin) = matmul( Dij(:,:,ispin,ispin), projec_2(:,ipol,ispin) )
-          end do !ispin
-        end if
+        do ispin = 1, nspin
+          do jspin = 1, nspin
+            !
+            DKB_projec_1(:,ipol,ispin,jspin) = matmul( DKB(:,:,ispin,jspin), projec_1(:,ipol,jspin) )
+            DKB_projec_2(:,ipol,ispin,jspin) = matmul( DKB(:,:,ispin,jspin), projec_2(:,ipol,jspin) )
+            !
+          end do !jspin
+        end do !ispin
         !
       end do !ipol
 
 
       do ipol = 1, 3 ! Cart. coord.
         !
-        ikb = 0
-        do nt = 1, ntyp
-          do na = 1, nat
+        do ikb = 1, nkb
+          !
+          na = nkbtona(ikb)
+          !
+          imode = (na-1)*3 + ipol
+          !
+          do ig = 1, nG_max
             !
-            if (ityp(na)==nt) then
-              !
-              imode = (na-1)*3 + ipol
-              !
-              do ih = 1, nh(ityp(na))
-                !
-                ikb = ikb + 1
-                !
-                do ig = 1, nG_max
-                  !
-                  iGkq = list_iGkq(iG)
-                  if (iGkq==0) exit
-                  !
-                  if ( upf(nt)%has_so .and. lspinorb ) then
-                    !
-                    do ispin = 1, nspin
-                      do jspin = 1, nspin
-
-                        dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
-                            + Dij_projec_2(ikb,ipol,ispin,jspin) * vkqb(iG,ikb)
-                        dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
-                            - Dij_projec_1(ikb,ipol,ispin,jspin) * vkqb(iG,ikb) * &
-                              tpiba * cmplx_i * ( k_cart(ipol) + q_cart(ipol) + gvec_cart(ipol,iGkq) )
-
-                      end do !jspin
-                    end do !ispin
-                    !
-                  else ! no SO
-                    !
-                    do ispin = 1, nspin
-
-                      dvnl_psi(iG,iband,ispin,ispin,imode) = dvnl_psi(iG,iband,ispin,ispin,imode) &
-                          + Dij_projec_2(ikb,ipol,ispin,ispin) * vkqb(iG,ikb)
-                      dvnl_psi(iG,iband,ispin,ispin,imode) = dvnl_psi(iG,iband,ispin,ispin,imode) &
-                          - Dij_projec_1(ikb,ipol,ispin,ispin) * vkqb(iG,ikb) * &
-                            tpiba * cmplx_i * ( k_cart(ipol) + q_cart(ipol) + gvec_cart(ipol,iGkq) )
-
-                    end do !ispin
-                    !
-                  end if
-
-                end do !ig
-                !
-              end do !ih
-              !
-            end if
+            iGkq = list_iGkq(iG)
+            if (iGkq==0) exit
             !
-          end do !na
-        end do !nt
+            do ispin = 1, nspin
+              do jspin = 1, nspin
+                !
+                dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
+                    + DKB_projec_2(ikb,ipol,ispin,jspin) * vkqb(iG,ikb)
+                !
+                dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
+                    - DKB_projec_1(ikb,ipol,ispin,jspin) * vkqb(iG,ikb) * &
+                      tpiba * cmplx_i * ( k_cart(ipol) + q_cart(ipol) + gvec_cart(ipol,iGkq) )
+                !
+              end do !jspin
+            end do !ispin
+            !
+          end do !ig
+          !
+        end do !ikb
         !
       end do !ipol
 
