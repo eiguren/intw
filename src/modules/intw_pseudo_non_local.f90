@@ -5,7 +5,7 @@ module intw_pseudo_non_local
   implicit none
 
   public :: l_kb_max, nh, nhm, nbetam, lmaxkb, &
-            nkb, DKB, vkb, vkqb
+            nkb, Dion, vkb, vkqb
 
   public :: init_KB_projectors, init_pp, allocate_nlpot, &
             multiply_psi_by_vKB, multiply_psi_by_dvKB
@@ -31,7 +31,7 @@ module intw_pseudo_non_local
   integer,       allocatable :: nhtolm(:,:) ! Link between index of beta(lm) function in the atomic type -> combined lm angular momentum index l*l+m
   real(kind=dp), allocatable :: nhtoj(:,:)  ! Link between index of beta(lm) function in the atomic type -> total angular momentum j
   integer,          allocatable :: nkbtona(:)   ! Link between index of beta(lm) function in the solid -> index of the atom
-  complex(kind=dp), allocatable :: DKB(:,:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions for each atomic type
+  complex(kind=dp), allocatable :: Dion(:,:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions for each atomic type
 
   complex(kind=dp), allocatable, target :: vkb(:,:), vkqb(:,:) ! All beta functions in reciprocal space
 
@@ -117,6 +117,137 @@ contains
     end do !na
 
   end subroutine init_KB_link_indices
+
+
+  subroutine init_Dion()
+    ! Initialize the Dion matrix for the beta(lm) projetors for all atomic types
+    ! Dion includes the spin indices in the case of a SO calculation
+
+    use intw_useful_constants, only: sqrt2, cmplx_0, cmplx_1, cmplx_i
+    use intw_reading, only: ntyp, lspinorb, nspin
+    use intw_pseudo, only: upf
+
+    implicit none
+
+    complex(kind=dp) :: rot_ylm(2*l_kb_max+1,2*l_kb_max+1) ! to transform real spherical harmonics into complex ones
+    complex(kind=dp), allocatable :: fcoef(:,:,:,:,:) ! needed to account for spinors
+    integer :: n1, n, l, m
+    integer :: nt, ih, jh, kh, ir, is
+    integer :: m0, m1, li, lk, mi, mk, vi, vj, ispin, jspin
+    complex(kind=dp) :: coeff
+    real(kind=dp) :: ji, jk
+
+    real(kind=dp), external :: spinor
+    integer, external :: sph_ind
+
+
+    !
+    ! Initialization of the variables
+    !
+    if (lspinorb) then
+      allocate(Dion(nhm,nhm,nspin,nspin,ntyp))
+      allocate(fcoef(nhm,nhm,2,2,ntyp))
+    else
+      allocate(Dion(nhm,nhm,1,1,ntyp))
+    end if
+    !
+    Dion = cmplx_0
+    !
+    ! the following prevents an out-of-bound error: upf(nt)%nqlc=2*lmax+1
+    ! but in some versions of the PP files lmax is not set to the maximum
+    ! l of the beta functions but includes the l of the local potential
+    !
+    if (lspinorb) then
+      !
+      ! In the spin-orbit case we need the unitary matrix u which rotates the
+      ! real spherical harmonics and yields the complex ones.
+      !
+      rot_ylm = cmplx_0
+      l = l_kb_max
+      rot_ylm(l+1, 1) = cmplx_1
+      do n1 = 2, 2*l+1, 2
+        m = n1/2
+        n = l + 1 - m
+        rot_ylm(n, n1) = cmplx_1/sqrt2 * (-1)**m
+        rot_ylm(n, n1+1) = -cmplx_i/sqrt2 * (-1)**m
+        n = l + 1 + m
+        rot_ylm(n, n1) = cmplx_1/sqrt2
+        rot_ylm(n, n1+1) = cmplx_i/sqrt2
+      end do
+      fcoef = cmplx_0
+    end if
+    !
+    ! For each pseudopotential we initialize the indices nhtol, nhtolm,
+    ! nhtoj, nhtonbeta, and if the pseudopotential is of KB type we initialize the
+    ! atomic D terms
+    !
+    !
+    ! Here we initialize the D of the solid
+    !
+    do nt = 1, ntyp
+      !
+      if (upf(nt)%has_so .and. lspinorb) then
+        !
+        ! first calculate the fcoef coefficients
+        !
+        do ih = 1, nh(nt)
+          li = nhtol(ih,nt)
+          ji = nhtoj(ih,nt)
+          mi = nhtolm(ih,nt) - li*li
+          do kh = 1, nh(nt)
+            lk = nhtol(kh,nt)
+            jk = nhtoj(kh,nt)
+            mk = nhtolm(kh,nt) - lk*lk
+            if (li == lk .and. abs(ji-jk) < 1.d-7) then
+              do ispin = 1, 2
+                do jspin = 1, 2
+                  coeff = cmplx_0
+                  do m = -li-1, li
+                    m0 = sph_ind(li,ji,m,ispin) + l_kb_max + 1
+                    m1 = sph_ind(lk,jk,m,jspin) + l_kb_max + 1
+                    coeff = coeff +         rot_ylm(m0,mi)  * spinor(li,ji,m,ispin) &
+                                    * conjg(rot_ylm(m1,mk)) * spinor(lk,jk,m,jspin)
+                  end do
+                  fcoef(ih,kh,ispin,jspin,nt) = coeff
+                end do
+              end do
+            end if
+          end do
+        end do
+        !
+        ! and calculate the bare coefficients
+        !
+        do ih = 1, nh(nt)
+          vi = nhtonbeta(ih,nt)
+          do jh = 1, nh(nt)
+            vj = nhtonbeta(jh,nt)
+            do ispin = 1, 2
+              do jspin = 1, 2
+                Dion(ih,jh,ispin,jspin,nt) = upf(nt)%dion(vi,vj) * fcoef(ih,jh,ispin,jspin,nt)
+                if (vi.ne.vj) fcoef(ih,jh,ispin,jspin,nt) = cmplx_0
+              end do
+            end do
+          end do
+        end do
+      else
+        do ih = 1, nh(nt)
+          do jh = 1, nh(nt)
+            if ( nhtol(ih,nt) == nhtol(jh,nt) .and. nhtolm(ih,nt) == nhtolm(jh,nt) ) then
+              ir = nhtonbeta(ih,nt)
+              is = nhtonbeta(jh,nt)
+              if (lspinorb) then
+                Dion(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
+                Dion(ih,jh,2,2,nt) = upf(nt)%dion(ir,is)
+              else
+                Dion(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
+              end if
+            end if
+          end do
+        end do
+      end if
+    end do
+
+  end subroutine init_Dion
 
 
   subroutine init_interpolation_table()
@@ -370,110 +501,9 @@ contains
     !
     call init_KB_link_indices()
     !
-    if (lspinorb) allocate(fcoef(nhm,nhm,2,2,ntyp))
-
+    ! Calculate Dij matrix for each atomic type
     !
-    ! the following prevents an out-of-bound error: upf(nt)%nqlc=2*lmax+1
-    ! but in some versions of the PP files lmax is not set to the maximum
-    ! l of the beta functions but includes the l of the local potential
-    !
-    DKB = cmplx_0
-
-    if (lspinorb) then
-      !
-      !  In the spin-orbit case we need the unitary matrix u which rotates the
-      !  real spherical harmonics and yields the complex ones.
-      !
-      rot_ylm = cmplx_0
-      l = l_kb_max
-      rot_ylm(l+1, 1) = cmplx_1
-      do n1 = 2, 2*l+1, 2
-        m = n1/2
-        n = l + 1 - m
-        rot_ylm(n, n1) = cmplx_1/sqrt2 * (-1)**m
-        rot_ylm(n, n1+1) = -cmplx_i/sqrt2 * (-1)**m
-        n = l + 1 + m
-        rot_ylm(n, n1) = cmplx_1/sqrt2
-        rot_ylm(n, n1+1) = cmplx_i/sqrt2
-      end do
-      fcoef = cmplx_0
-    end if
-    !
-    !   For each pseudopotential we initialize the indices nhtol, nhtolm,
-    !   nhtoj, nhtonbeta, and if the pseudopotential is of KB type we initialize the
-    !   atomic D terms
-    !
-    do nt = 1, ntyp
-      !
-      !    Here we initialize the D of the solid
-      !
-      if (upf(nt)%has_so .and. lspinorb) then
-        !
-        !  first calculate the fcoef coefficients
-        !
-        do ih = 1, nh(nt)
-          li = nhtol(ih,nt)
-          ji = nhtoj(ih,nt)
-          mi = nhtolm(ih,nt) - li*li
-          vi = nhtonbeta(ih,nt)
-          do kh = 1, nh(nt)
-            lk = nhtol(kh,nt)
-            jk = nhtoj(kh,nt)
-            mk = nhtolm(kh,nt) - lk*lk
-            vk = nhtonbeta(kh,nt)
-            if (li == lk .and. abs(ji-jk) < 1.d-7) then
-              do ispin = 1, 2
-                do jspin = 1, 2
-                  coeff = cmplx_0
-                  do m = -li-1, li
-                    m0 = sph_ind(li,ji,m,ispin) + l_kb_max + 1
-                    m1 = sph_ind(lk,jk,m,jspin) + l_kb_max + 1
-                    coeff = coeff +         rot_ylm(m0,mi)  * spinor(li,ji,m,ispin) &
-                                    * conjg(rot_ylm(m1,mk)) * spinor(lk,jk,m,jspin)
-                  end do
-                  fcoef(ih,kh,ispin,jspin,nt) = coeff
-                end do
-              end do
-            end if
-          end do
-        end do
-        !
-        !   and calculate the bare coefficients
-        !
-        do ih = 1, nh(nt)
-          vi = nhtonbeta(ih,nt)
-          do jh = 1, nh(nt)
-            vj = nhtonbeta(jh,nt)
-            ijs = 0
-            do ispin = 1, 2
-              do jspin = 1, 2
-                ijs = ijs + 1
-                DKB(ih,jh,ispin,jspin,nt) = upf(nt)%dion(vi,vj) * fcoef(ih,jh,ispin,jspin,nt)
-                if (vi.ne.vj) fcoef(ih,jh,ispin,jspin,nt) = cmplx_0
-              end do
-            end do
-          end do
-        end do
-      else
-        do ih = 1, nh(nt)
-          do jh = 1, nh(nt)
-            if ( nhtol(ih,nt) == nhtol(jh,nt) .and. nhtolm(ih,nt) == nhtolm(jh,nt) ) then
-              ir = nhtonbeta(ih,nt)
-              is = nhtonbeta(jh,nt)
-              if (lspinorb) then
-                DKB(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
-                DKB(ih,jh,2,2,nt) = upf(nt)%dion(ir,is)
-              else
-                DKB(ih,jh,1,1,nt) = upf(nt)%dion(ir,is)
-              end if
-            end if
-          end do
-        end do
-      end if
-    end do
-    !
-    !
-    ! Calclate Dij matrix for the solid
+    call  init_Dion()
     !
     ! Calculate interpolation table
     !
@@ -526,12 +556,6 @@ contains
       nkb = nkb + nh(nt)
     end do
 
-    if (lspinorb) then
-      allocate(DKB(nhm,nhm,nspin,nspin,ntyp))
-    else
-      allocate(DKB(nhm,nhm,1,1,ntyp))
-    end if
-    !
     !
 
     if (allocated(vkb)) deallocate(vkb)
@@ -581,7 +605,7 @@ contains
             if (iGk==0) exit
             !
             do ispin = 1, nspin
-              ! DKB(nhm,nhm,nspin,nspin,ntyp)
+              ! Dion(nhm,nhm,nspin,nspin,ntyp)
               projec_d(na,ih,ispin) = projec_d(na,ih,ispin) + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
             end do
             !
@@ -606,7 +630,7 @@ contains
               do ispin = 1, nspin
                 do jspin = 1, nspin
                   dvnl_psi(iG,iband,ispin) = dvnl_psi(iG,iband,ispin) &
-                      + DKB(ih,ih,ispin,jspin,ityp(na)) * projec_d(na,ih,jspin) * vkb(iG,ikb)
+                      + Dion(ih,ih,ispin,jspin,ityp(na)) * projec_d(na,ih,jspin) * vkb(iG,ikb)
                 end do
               end do
               !
@@ -614,7 +638,7 @@ contains
               !
               do ispin = 1, nspin
                 dvnl_psi(iG,iband,ispin) = dvnl_psi(iG,iband,ispin) &
-                    + DKB(ih,ih,ispin,ispin,ityp(na)) * projec_d(na,ih,ispin) * vkb(iG,ikb)
+                    + Dion(ih,ih,ispin,ispin,ityp(na)) * projec_d(na,ih,ispin) * vkb(iG,ikb)
               end do
             end if
             !
@@ -671,10 +695,10 @@ contains
                     jkb = jkb + 1
                     if (na==naj) then
                       if (lspinorb) then
-                        Dij(ikb,jkb,:,:) = DKB(ih,jh,:,:,ityp(na))
+                        Dij(ikb,jkb,:,:) = Dion(ih,jh,:,:,ityp(na))
                       else
                         do ispin=1,nspin
-                          Dij(ikb,jkb,ispin,ispin) = DKB(ih,jh,1,1,ityp(na))
+                          Dij(ikb,jkb,ispin,ispin) = Dion(ih,jh,1,1,ityp(na))
                         end do
                       end if
                     end if
