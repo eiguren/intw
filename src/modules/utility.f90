@@ -1,5 +1,5 @@
 !----------------------------------------------------------------------------!
-!	intw project.
+! intw project.
 !
 !----------------------------------------------------------------------------!
 module intw_utility
@@ -18,8 +18,9 @@ use kinds, only: dp
   ! subroutines
   public :: get_timing, switch_indices, switch_indices_zyx, generate_kmesh, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
-            find_k_1BZ_and_G, HPSORT, cryst_to_cart, &
-            HPSORT_real, find_r_in_WS_cell, errore, simpson, gaussian
+            find_k_1BZ_and_G, cryst_to_cart, &
+            HPSORT, HPSORT_real, hpsort_eps, &
+            find_r_in_WS_cell, errore, simpson, gaussian
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
@@ -67,14 +68,14 @@ end function intgr_spline_gaussq
 
   subroutine get_timing(time)
     !----------------------------------------------------------------------------!
-    !     Timing the code is very important for optimized performance.
-    !	However, some experimence indicates that "timing" is not so easy:
-    !	time can overflow the buffer in which it is held, or it can give
-    !	crazy numbers for (so far) unknown reasons. Thus, in order to be
-    !	able to quickly modify how time is measured, a single subroutine
-    !	will be called throuhout the code to measure time. This subroutine
-    !	can then easily be modified as the code writer becomes
-    !	aware of "better" timing algorithms.
+    ! Timing the code is very important for optimized performance.
+    ! However, some experimence indicates that "timing" is not so easy:
+    ! time can overflow the buffer in which it is held, or it can give
+    ! crazy numbers for (so far) unknown reasons. Thus, in order to be
+    ! able to quickly modify how time is measured, a single subroutine
+    ! will be called throuhout the code to measure time. This subroutine
+    ! can then easily be modified as the code writer becomes
+    ! aware of "better" timing algorithms.
     !----------------------------------------------------------------------------!
     implicit none
 
@@ -456,18 +457,18 @@ end function intgr_spline_gaussq
   subroutine test_qpt_on_fine_mesh(qpt,nk1s,nk2s,nk3s,test_qpt,i_qpt1,i_qpt2,i_qpt3)
     !----------------------------------------------------------------------------!
     !
-    !    This subroutine tests whether the q-point, qpt(3), is of the form
+    ! This subroutine tests whether the q-point, qpt(3), is of the form
     !
     !     qpt(:) = [ i_qpt1-1   i_qpt2-1   i_qpt3-1 ] + (I,J,K)
     !              [ -------- , -------- , -------- ]
     !              [   nk1s       nk2s       nk3s   ]
     !
     !
-    !	where I,J,K are integers, and i_qpt(1,2,3) are integers between 1 and nk(123)s.
+    ! where I,J,K are integers, and i_qpt(1,2,3) are integers between 1 and nk(123)s.
     !
-    !	It is important to perform this task in a defensive way.
-    !     The fortran internal functions nint, floor, and modulo are DANGEROUS.
-    !     IT IS CRUCIAL TO DO THIS RIGHT ONCE AND FOR ALL.
+    ! It is important to perform this task in a defensive way.
+    ! The fortran internal functions nint, floor, and modulo are DANGEROUS.
+    ! IT IS CRUCIAL TO DO THIS RIGHT ONCE AND FOR ALL.
     !
     !----------------------------------------------------------------------------!
     use intw_useful_constants, only: eps_8
@@ -519,40 +520,39 @@ end function intgr_spline_gaussq
 
   subroutine find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i,j,k,kpt_in_1BZ,G)
     !----------------------------------------------------------------------------!
-    !     Given a kpoint(3) in crystal coordinates, this subroutine
-    !     generates:
+    ! Given a kpoint(3) in crystal coordinates, this subroutine
+    ! generates:
     !            - k_1BZ(3),   with 0 <= k_1BZ(i) < 1
     !            - G(3),       G(i) an integer
     !            - i,j,k       the triplet coordinates of the point in the mesh.
     !
-    !	It it EXTREMELY important to have a subroutine which performs this
-    !	task in a defensive way. The fortran internal functions nint, floor,
-    !	and modulo are DANGEROUS. IT IS CRUCIAL TO DO THIS RIGHT ONCE AND FOR
-    !     ALL.
+    ! It it EXTREMELY important to have a subroutine which performs this
+    ! task in a defensive way. The fortran internal functions nint, floor,
+    ! and modulo are DANGEROUS. IT IS CRUCIAL TO DO THIS RIGHT ONCE AND FOR
+    ! ALL.
     !
-    !	The basic relationship is
+    ! The basic relationship is
+    !    kpoint = k_1BZ + G
     !
-    !		kpoint = k_1BZ + G
-    !
-    !     Assume
-    !		kpoint(l) =  G(l) + (i_l-1)/nk_l+ epsilon ,
-    !                  with
-    !                            l    = 1, 2, 3
-    !                            i_l  = i, j ,k
-    !                            nk_l = nk1, nk2, nk3
-    !                            G(l) an integer
-    !                         epsilon numerical noise
+    ! Assume
+    !    kpoint(l) =  G(l) + (i_l-1)/nk_l+ epsilon ,
+    ! with
+    !    l    = 1, 2, 3
+    !    i_l  = i, j ,k
+    !    nk_l = nk1, nk2, nk3
+    !    G(l) an integer
+    ! epsilon numerical noise
     !----------------------------------------------------------------------------!
     implicit none
 
     ! input
     integer, intent(in) :: nk1, nk2, nk3             ! the mesh parameters
-    real(dp), intent(in) :: kpoint(3)                 ! the kpoint of interest
+    real(dp), intent(in) :: kpoint(3)                ! the kpoint of interest
 
     ! output
-    integer, intent(out) :: i, j, k                   ! the triplet coordinates of k_1BZ
-    real(dp), intent(out) :: kpt_in_1BZ(3)             ! the k point in the 1BZ
-    integer, intent(out) :: G(3)                      ! the translation vector
+    integer, intent(out) :: i, j, k                  ! the triplet coordinates of k_1BZ
+    real(dp), intent(out) :: kpt_in_1BZ(3)           ! the k point in the 1BZ
+    integer, intent(out) :: G(3)                     ! the translation vector
 
     ! internal variables
     integer :: nG_im1, nG_jm1, nG_km1
@@ -560,9 +560,9 @@ end function intgr_spline_gaussq
 
 
     ! this step kills epsilon
-     nG_im1 = nint(kpoint(1)*dble(nk1))
-     nG_jm1 = nint(kpoint(2)*dble(nk2))
-     nG_km1 = nint(kpoint(3)*dble(nk3))
+    nG_im1 = nint(kpoint(1)*dble(nk1))
+    nG_jm1 = nint(kpoint(2)*dble(nk2))
+    nG_km1 = nint(kpoint(3)*dble(nk3))
 
     ! this step gets rid of G
     im1 = modulo(nG_im1,nk1)
@@ -575,7 +575,6 @@ end function intgr_spline_gaussq
     G(3) = (nG_km1 - km1)/nk3
 
     ! finally we have the triplet coordinates
-
     i = im1 + 1
     j = jm1 + 1
     k = km1 + 1
@@ -586,100 +585,6 @@ end function intgr_spline_gaussq
     kpt_in_1BZ(3) = dble(k-1)/dble(nk3)
 
   end subroutine find_k_1BZ_and_G
-
-
-  SUBROUTINE HPSORT(N,RA,P)
-    !------------------------------------------------------------
-    ! subroutine which performs heap sort on a list of integers
-    ! and also returns an array identifying the permutation
-    ! which sorted the array.
-    !
-    ! The subroutine was copied from the internet, and slightly
-    ! modified to handle integers and return the permutation
-    ! array.
-    !
-    ! Part of the original header follows:
-    !------------------------------------------------------------
-
-    !*****************************************************
-    !*  Sorts an array RA of length N in ascending order *
-    !*                by the Heapsort method             *
-    !* ------------------------------------------------- *
-    !* INPUTS:                                           *
-    !*	    N	  size of table RA                   *
-    !*          RA	  table to be sorted                 *
-    !* OUTPUT:                                           *
-    !*	    RA    table sorted in ascending order    *
-    !*	    P     table of indices showing transform *
-    !*                                                   *
-    !* NOTE: The Heapsort method is a N Log N routine,   *
-    !*       and can be used for very large arrays.      *
-    !* ------------------------------------------------- *
-    !* REFERENCE:                                        *
-    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
-    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
-    !*   University Press, 1986".                        *
-    !*****************************************************
-    integer, intent(in) :: N
-    integer, intent(inout) :: RA(N)
-    integer, intent(out) :: P(N)
-
-    integer :: i, L, IR, RRA, PP, J
-
-    do i=1,N
-      P(i) = i
-    end do
-
-    L=N/2+1
-    IR=N
-    !The index L will be decremented from its initial value during the
-    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-    !will be decremented from its initial value down to 1 during the
-    !"retirement-and-promotion" (heap selection) phase.
-  10 continue
-    if(L > 1)then
-      L=L-1
-
-      RRA=RA(L)
-      PP =P(L)
-
-    else
-      RRA=RA(IR)
-      PP =P (IR)
-
-      RA(IR)=RA(1)
-      P(IR) =P(1)
-
-      IR=IR-1
-      if(IR.eq.1)then
-
-        RA(1)=RRA
-        P (1)=PP
-
-        return
-      end if
-    end if
-    I=L
-    J=L+L
-  20 if(J.le.IR)then
-    if(J < IR)then
-      if(RA(J) < RA(J+1))  J=J+1
-    end if
-    if(RRA < RA(J))then
-      RA(I)=RA(J)
-      P (I)=P (J)
-
-      I=J; J=J+J
-    else
-      J=IR+1
-    end if
-    goto 20
-    end if
-    RA(I)=RRA
-    P (I)=PP
-    goto 10
-
-  END SUBROUTINE HPSORT
 
 
   function find_free_unit()
@@ -714,10 +619,10 @@ end function intgr_spline_gaussq
   subroutine cryst_to_cart (nvec, vec, trmat, iflag)
     !-----------------------------------------------------------------------
     !
-    !     This routine transforms the atomic positions or the k-point
-    !     components from crystallographic to cartesian coordinates
-    !     ( iflag=1 ) and viceversa ( iflag=-1 ).
-    !     Output cartesian coordinates are stored in the input ('vec') array
+    ! This routine transforms the atomic positions or the k-point
+    ! components from crystallographic to cartesian coordinates
+    ! ( iflag=1 ) and viceversa ( iflag=-1 ).
+    ! Output cartesian coordinates are stored in the input ('vec') array
     !
     !-----------------------------------------------------------------------
     !
@@ -772,29 +677,24 @@ end function intgr_spline_gaussq
   end subroutine cryst_to_cart
 
 
-  SUBROUTINE HPSORT_real(N,RA,P)
+    SUBROUTINE HPSORT(N,RA,P)
     !------------------------------------------------------------
-    ! subroutine which performs heap sort on a list of real numbers
+    ! subroutine which performs heap sort on a list of integers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
     !
-    ! The subroutine was copied from the internet, and slightly
-    ! modified to handle integers and return the permutation
-    ! array.
+    ! adapted from Numerical Recipes pg. 329 (new edition)
     !
-    ! Part of the original header follows:
-    !------------------------------------------------------------
-
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
     !*                by the Heapsort method             *
     !* ------------------------------------------------- *
     !* INPUTS:                                           *
-    !*	    N	  size of table RA                   *
-    !*          RA	  table to be sorted                 *
+    !*      N   size of table RA                         *
+    !*      RA  table to be sorted                       *
     !* OUTPUT:                                           *
-    !*	    RA    table sorted in ascending order    *
-    !*	    P     table of indices showing transform *
+    !*      RA  table sorted in ascending order          *
+    !*      P   table of indices showing transform       *
     !*                                                   *
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
@@ -804,14 +704,20 @@ end function intgr_spline_gaussq
     !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
     !*   University Press, 1986".                        *
     !*****************************************************
+
+    implicit none
+
     integer, intent(in) :: N
-    real(dp), intent(inout) :: RA(N)
+    integer, intent(inout) :: RA(N)
     integer, intent(out) :: P(N)
 
-    integer :: i, L, IR, RRA, PP, J
+    integer :: I, L, IR, RRA, PP, J
 
-    do i=1,N
-      P(i) = i
+    ! nothing to order
+    if (N < 2) return
+
+    do I=1,N
+      P(I) = I
     end do
 
     L=N/2+1
@@ -862,16 +768,237 @@ end function intgr_spline_gaussq
     RA(I)=RRA
     P (I)=PP
     goto 10
+
+  END SUBROUTINE HPSORT
+
+
+  SUBROUTINE HPSORT_real(N,RA,P)
+    !------------------------------------------------------------
+    ! subroutine which performs heap sort on a list of real numbers
+    ! and also returns an array identifying the permutation
+    ! which sorted the array.
+    !
+    ! adapted from Numerical Recipes pg. 329 (new edition)
+    !
+    !*****************************************************
+    !*  Sorts an array RA of length N in ascending order *
+    !*                by the Heapsort method             *
+    !* ------------------------------------------------- *
+    !* INPUTS:                                           *
+    !*      N   size of table RA                         *
+    !*      RA  table to be sorted                       *
+    !* OUTPUT:                                           *
+    !*      RA  table sorted in ascending order          *
+    !*      P   table of indices showing transform       *
+    !*                                                   *
+    !* NOTE: The Heapsort method is a N Log N routine,   *
+    !*       and can be used for very large arrays.      *
+    !* ------------------------------------------------- *
+    !* REFERENCE:                                        *
+    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
+    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
+    !*   University Press, 1986".                        *
+    !*****************************************************
+
+    implicit none
+
+    integer, intent(in) :: N
+    real(dp), intent(inout) :: RA(N)
+    integer, intent(out) :: P(N)
+
+    integer :: I, L, IR, RRA, PP, J
+
+
+    ! nothing to order
+    if (N < 2) return
+
+    do I=1,N
+      P(I) = I
+    end do
+
+    L=N/2+1
+    IR=N
+    !The index L will be decremented from its initial value during the
+    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
+    !will be decremented from its initial value down to 1 during the
+    !"retirement-and-promotion" (heap selection) phase.
+    10 continue
+    if(L > 1)then
+      L=L-1
+
+      RRA=RA(L)
+      PP =P(L)
+
+    else
+      RRA=RA(IR)
+      PP =P (IR)
+
+      RA(IR)=RA(1)
+      P(IR) =P(1)
+
+      IR=IR-1
+      if(IR.eq.1)then
+
+        RA(1)=RRA
+        P (1)=PP
+
+        return
+      end if
+    end if
+    I=L
+    J=L+L
+  20 if(J.le.IR)then
+    if(J < IR)then
+      if(RA(J) < RA(J+1))  J=J+1
+    end if
+    if(RRA < RA(J))then
+      RA(I)=RA(J)
+      P (I)=P (J)
+
+      I=J; J=J+J
+    else
+      J=IR+1
+    end if
+    goto 20
+    end if
+    RA(I)=RRA
+    P (I)=PP
+    goto 10
   END SUBROUTINE HPSORT_real
+
+
+  subroutine hpsort_eps(n, ra, ind, eps)
+    !---------------------------------------------------------------------
+    ! sort an array ra(1:n) into ascending order using heapsort algorithm,
+    ! and considering two elements being equal if their values differ
+    ! for less than "eps".
+    ! n is input, ra is replaced on output by its sorted rearrangement.
+    ! create an index table (ind) by making an exchange in the index array
+    ! whenever an exchange is made on the sorted data array (ra).
+    ! in case of equal values in the data array (ra) the values in the
+    ! index array (ind) are used to order the entries.
+    ! if on input ind(1)  = 0 then indices are initialized in the routine,
+    ! if on input ind(1) != 0 then indices are assumed to have been
+    !                initialized before entering the routine and these
+    !                indices are carried around during the sorting process
+    !
+    ! no work space needed !
+    ! free us from machine-dependent sorting-routines !
+    !
+    ! adapted from Numerical Recipes pg. 329 (new edition)
+    !
+
+    implicit none
+
+    !-input/output variables
+    integer, intent(in) :: n
+    integer, intent(inout) :: ind(*)
+    real(dp), intent(inout) :: ra(*)
+    real(dp), intent(in) :: eps
+
+    !-local variables
+    integer :: i, ir, j, l, iind
+    real(dp) :: rra
+
+
+    ! nothing to order
+    if (n < 2) return
+
+    ! initialize index array
+    if (ind(1) == 0) then
+      do i = 1, n
+          ind(i) = i
+      enddo
+    endif
+
+    ! initialize indices for hiring and retirement-promotion phase
+    l = n / 2 + 1
+
+    ir = n
+
+    sorting: do
+
+      ! still in hiring phase
+      if ( l > 1 ) then
+        l    = l - 1
+        rra  = ra(l)
+        iind = ind(l)
+        ! in retirement-promotion phase.
+      else
+        ! clear a space at the end of the array
+        rra  = ra(ir)
+        !
+        iind = ind(ir)
+        ! retire the top of the heap into it
+        ra(ir) = ra(1)
+        !
+        ind(ir) = ind(1)
+        ! decrease the size of the corporation
+        ir = ir - 1
+        ! done with the last promotion
+        if ( ir == 1 ) then
+            ! the least competent worker at all !
+            ra(1)  = rra
+            !
+            ind(1) = iind
+            exit sorting
+        endif
+      endif
+      ! wheter in hiring or promotion phase, we
+      i = l
+      ! set up to place rra in its proper level
+      j = l + l
+      !
+      do while ( j <= ir )
+        if ( j < ir ) then
+            ! compare to better underling
+            if ( abs(ra(j)-ra(j+1)) >= eps ) then
+              if (ra(j) < ra(j+1)) j = j + 1
+            else
+              ! this means ra(j) == ra(j+1) within tolerance
+              if (ind(j) < ind(j + 1) ) j = j + 1
+            endif
+        endif
+        ! demote rra
+        if ( abs(rra - ra(j)) >= eps ) then
+            if (rra < ra(j)) then
+              ra(i) = ra(j)
+              ind(i) = ind(j)
+              i = j
+              j = j + j
+            else
+              ! set j to terminate do-while loop
+              j = ir + 1
+            end if
+        else
+            !this means rra == ra(j) within tolerance
+            ! demote rra
+            if (iind < ind(j) ) then
+              ra(i) = ra(j)
+              ind(i) = ind(j)
+              i = j
+              j = j + j
+            else
+              ! set j to terminate do-while loop
+              j = ir + 1
+            endif
+        end if
+      enddo
+      ra(i) = rra
+      ind(i) = iind
+
+    end do sorting
+    !
+  end subroutine hpsort_eps
 
 
   subroutine find_r_in_WS_cell(at,rvec_cryst,nr1,nr2,nr3,rvec_WS_cryst)
     !----------------------------------------------------------------------------!
-    !     Given a real space vector in crystal coordinates rvec_cryst(3),
-    !	which has coordinates on a nr1 x nr2 x nr3 grid,
-    !	this subroutine finds the coordinates of the corresponding vector
-    !     in the Wigner Seitz cell, namely the corresponding vector which is
-    !	closest to the origin.
+    ! Given a real space vector in crystal coordinates rvec_cryst(3),
+    ! which has coordinates on a nr1 x nr2 x nr3 grid,
+    ! this subroutine finds the coordinates of the corresponding vector
+    ! in the Wigner Seitz cell, namely the corresponding vector which is
+    ! closest to the origin.
     !----------------------------------------------------------------------------!
     use intw_useful_constants, only: one, zero
 
@@ -880,18 +1007,18 @@ end function intgr_spline_gaussq
     ! input
     real(dp), intent(in) :: at(3,3)                   ! the real space basis vectors
     real(dp), intent(in) :: rvec_cryst(3)             ! the real space vector
-    integer, intent(in) :: nr1, nr2, nr3             ! the real mesh parameters
+    integer, intent(in) :: nr1, nr2, nr3              ! the real mesh parameters
 
     ! output
-    real(dp), intent(out) :: rvec_WS_cryst(3)   	      ! vector in the WS cell
+    real(dp), intent(out) :: rvec_WS_cryst(3)         ! vector in the WS cell
 
     ! internal variables
     integer :: i, j, k                   ! the triplet coordinates of k_1BZ
     integer :: Rlat(3)                   ! the translation vector
 
 
-    real(dp) :: r_UC(3)   	              ! temporary UC vector
-    real(dp) :: r_WS(3)   	              ! temporary WS vector
+    real(dp) :: r_UC(3)                   ! temporary UC vector
+    real(dp) :: r_WS(3)                   ! temporary WS vector
     real(dp) :: list_T(3)                 ! translation coefficients
     real(dp) :: T1, T2, T3
     integer :: it1, it2, it3
@@ -925,13 +1052,13 @@ end function intgr_spline_gaussq
           !
           ! its norm^2 is given by r_WS*r_WS
 
-  	      r_WS(:)  =  r_UC(:) + (/T1,T2,T3/)
+          r_WS(:)  =  r_UC(:) + (/T1,T2,T3/)
 
-  	      square_norm = dot_product(r_WS,matmul(ai_dot_aj(:,:),r_WS))
+          square_norm = dot_product(r_WS,matmul(ai_dot_aj(:,:),r_WS))
 
-  	      if ( square_norm < minimum_square_norm ) then
-  		      minimum_square_norm  = square_norm
-    		    rvec_WS_cryst(:)     = r_WS(:)
+          if ( square_norm < minimum_square_norm ) then
+            minimum_square_norm  = square_norm
+            rvec_WS_cryst(:)     = r_WS(:)
 
           end if
 
