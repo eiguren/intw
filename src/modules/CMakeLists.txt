@@ -3,7 +3,6 @@
 
 
 set(SOURCES
-  add_m_nu_lambda_text.f90
   add_q_m_nu.f90
   all_wfcs.f90
   cfftnd.f90
