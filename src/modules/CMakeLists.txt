@@ -28,7 +28,6 @@ set(SOURCES
   utility.f90
   ylmr2.f90
   fft_interp.f90
-  splinelib.f90
   mcf_interpolacion.f90
   w90_setup.f90
   selfen.f90
