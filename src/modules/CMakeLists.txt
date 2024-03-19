@@ -3,9 +3,9 @@
 
 
 set(SOURCES
-  add_q_m_nu.f90
   all_wfcs.f90
   cfftnd.f90
+  eliashberg.f90
   fft.f90
   force_linearity_G.f90
   gk_sort.f90
