@@ -1,5 +1,6 @@
 
 QE_BUILD_DIR=@QE_BUILD_DIR@
+QE2INTW_BUILD_DIR=@QE2INTW_BUILD_DIR@
 
 #MPI_CMD=@MPI_CMD@
 
@@ -32,7 +33,7 @@ run_nscf:
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_nscf_pw2intw:
-	${QE_BUILD_DIR}/bin/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
+	${QE2INTW_BUILD_DIR}/pw2intw.x < nscf.pw2intw.in | tee nscf.pw2intw.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 
@@ -98,4 +99,3 @@ clean:
 	rm -rf nscf.pw2intw.out gaas-nscf.save.intw
 	rm -rf pw2intw.out gaas.save.intw
 	rm -rf intw.out ep_mat.dat_1
-
