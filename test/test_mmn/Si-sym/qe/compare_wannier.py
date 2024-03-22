@@ -30,7 +30,7 @@ for line in data:
 
 # Read previously generated file
 # with INTW+W90 on full BZ grid
-out_file = "../../Si-fullmesh/QE-6.7.0/si.wout"
+out_file = "../../Si-fullmesh/qe/si.wout"
 #
 with open(out_file, "rt") as f:
     data = f.readlines()

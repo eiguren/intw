@@ -8,9 +8,9 @@ if(USE_WANNIER AND (USE_QE OR USE_SIESTA))
   )
   if(USE_QE)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/mmn-test.bash.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/QE-6.7.0/mmn-test.bash" @ONLY)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/QE-6.7.0/Makefile.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/QE-6.7.0/Makefile" @ONLY)
+      "${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/qe/mmn-test.bash" @ONLY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/qe/Makefile.in"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/qe/Makefile" @ONLY)
   endif()
   if(USE_SIESTA)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-fullmesh/mmn-test.bash.in"
@@ -31,9 +31,9 @@ if(USE_WANNIER AND (USE_QE OR USE_SIESTA))
 
   if(USE_QE)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/mmn-test.bash.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/mmn-test.bash" @ONLY)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/Makefile.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/QE-6.7.0/Makefile" @ONLY)
+      "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/qe/mmn-test.bash" @ONLY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/qe/Makefile.in"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/qe/Makefile" @ONLY)
   endif()
   if(USE_SIESTA)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/Si-sym/mmn-test.bash.in"
@@ -50,9 +50,9 @@ if(USE_WANNIER AND (USE_QE OR USE_SIESTA))
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc
     )
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/mmn-test.bash.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/mmn-test.bash" @ONLY)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/Makefile.in"
-      "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/QE-6.7.0/Makefile" @ONLY)
+      "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/qe/mmn-test.bash" @ONLY)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/qe/Makefile.in"
+      "${CMAKE_CURRENT_SOURCE_DIR}/GaAs-soc/qe/Makefile" @ONLY)
   endif()
 
 else()

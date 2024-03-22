@@ -41,7 +41,7 @@ kpoint_1 = kpoint_1.astype(int)
 
 
 # Read INTW generated file using full BZ wave functions
-out_file = "../../Si-fullmesh/QE-6.7.0/"+prefix+".amn"
+out_file = "../../Si-fullmesh/qe/"+prefix+".amn"
 band_2, proj_2, kpoint_2, re_amn_2, im_amn_2 = np.loadtxt(out_file, unpack=True, skiprows=2)
 #
 band_2 = band_2.astype(int)

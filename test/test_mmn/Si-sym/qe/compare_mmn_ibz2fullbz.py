@@ -49,7 +49,7 @@ for i in range(len(data[2:])):
 
 
 # Read INTW generated file using full BZ wave functions
-out_file = "../../Si-fullmesh/QE-6.7.0/si.mmn"
+out_file = "../../Si-fullmesh/qe/si.mmn"
 #
 with open(out_file, "rt") as f:
     data = f.readlines()
