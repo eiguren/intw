@@ -196,7 +196,7 @@ contains
     use intw_useful_constants, only: fpi, sqrt2, cmplx_0, cmplx_1, cmplx_i
     use intw_reading, only: ntyp, volume0, lspinorb
     use mcf_spline, only: spline_mcf
-    use intw_utility, only: intgr_spline_gaussq !, simpson
+    use intw_utility, only: sphb, intgr_spline_gaussq !, simpson
     use intw_pseudo, only: upf
     !
     implicit none
@@ -205,7 +205,7 @@ contains
     !
     integer :: nt, ih, jh, nb, l, m, ir, iq, is, ndm
     ! various counters
-    real(kind=dp), allocatable :: aux(:), aux1(:), besr(:), qtot(:,:)
+    real(kind=dp), allocatable :: aux(:), aux1(:), qtot(:,:)
     ! various work space
     real(kind=dp) :: prefr, pref, qi
     ! the prefactor of the q functions
@@ -233,7 +233,6 @@ contains
     ndm = maxval(upf(:)%kkbeta)
     allocate(aux(ndm))
     allocate(aux1(ndm))
-    allocate(besr(ndm))
     allocate(qtot(ndm, nbetam*(nbetam+1)/2))
     if (lspinorb) allocate(fcoef(nhm,nhm,2,2,ntyp))
 
@@ -370,10 +369,7 @@ contains
         l = upf(nt)%lll(nb)
         do iq = 1,nqx
           qi = (iq - 1) * dq
-          call sph_bes(upf(nt)%kkbeta, upf(nt)%r, qi, l, besr)
-          do ir = 1, upf(nt)%kkbeta
-            aux(ir) = upf(nt)%beta(ir,nb) * besr(ir) * upf(nt)%r(ir)
-          end do
+          aux = upf(nt)%beta(:,nb) * sphb(l, qi*upf(nt)%r) * upf(nt)%r
           !ASIER 29/07/2021
           !call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
 
@@ -398,7 +394,6 @@ contains
     end do
 
     deallocate(qtot)
-    deallocate(besr)
     deallocate(aux1)
     deallocate(aux)
 

@@ -20,7 +20,7 @@ use kinds, only: dp
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
             HPSORT, HPSORT_real, hpsort_eps, &
-            find_r_in_WS_cell, errore, simpson, gaussian
+            find_r_in_WS_cell, errore, simpson, gaussian, sphb
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
@@ -1302,5 +1302,46 @@ end function intgr_spline_gaussq
     enddo
 
   end subroutine gaussian
+
+
+  recursive function sphb(n,x) result(sphb_)
+    !
+    ! Spherical bessel functions
+    !
+
+    use intw_useful_constants, only: ZERO, ONE
+
+    implicit none
+
+    real(kind=dp), intent(in) :: x(:)
+    integer, intent(in) :: n
+    real(kind=dp) :: sphb_(size(x))
+
+    integer :: i0
+
+
+    if (any(x < ZERO)) stop "ERROR: sphb"
+
+    do i0 = 1, size(x)
+      if (abs(x(i0)) > epsilon(x(1))) exit
+    enddo
+
+    if (n==0) then
+      sphb_(:i0-1) = ONE
+      sphb_(i0:) = sin(x(i0:))/x(i0:)
+    else if (n==1) then
+      sphb_(:i0-1) = ZERO
+      sphb_(i0:) = ( sin(x(i0:))/x(i0:) - cos(x(i0:)) ) / x(i0:)
+    else if (n==2) then
+      sphb_(:i0-1) = ZERO
+      sphb_(i0:) = (3.0_dp/x(i0:)**2 - 1) * sin(x(i0:))/x(i0:) - 3.0_dp*cos(x(i0:))/x(i0:)**2
+    else if (n==3) then
+      sphb_(:i0-1) = ZERO
+      sphb_(i0:) = (15.0_dp/x(i0:)**2 - 6.0_dp) * sin(x(i0:))/x(i0:)**2 - (15.0_dp/x(i0:)**2 - 1.0_dp) * cos(x(i0:))/x(i0:)
+    else if (n>=4) then
+      sphb_ = - sphb(n-2,x) + (2*n-1) * sphb(n-1,x)/x
+    end if
+
+  end function sphb
 
 end module intw_utility

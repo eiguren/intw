@@ -41,7 +41,6 @@ module intw_intw2wannier
   ! variables read from the $prefix.nnkp file, which must be checked with
   ! the data read from the input file for consistency.
 
-  external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
 
   integer     :: nnkp_exclude_bands     !how many bands are excluded?
 
@@ -1031,7 +1030,7 @@ contains
    ! Numerical integration, c+p from pw2wannier for testing
    ! JLB: Extended to multiple l, needed for hybrid projections
    use intw_reading, only: ngm, volume0
-   USE intw_utility, ONLY : simpson
+   USE intw_utility, ONLY : simpson, sphb
    use intw_useful_constants, only: fpi, ZERO
 
    implicit none
@@ -1053,7 +1052,7 @@ contains
    integer :: mesh_r, ir
    real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
    real(DP) :: x, rad_int
-   real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
+   real(DP), ALLOCATABLE :: func_r(:), r(:), rij(:), aux(:)
 
    z=zona
    z2=z*z
@@ -1067,8 +1066,8 @@ contains
    do iG=1,ngm
    !
    p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
-            + k_plus_G_cart(2,iG)**2 &
-            + k_plus_G_cart(3,iG)**2 )
+             + k_plus_G_cart(2,iG)**2 &
+             + k_plus_G_cart(3,iG)**2 )
    !
    enddo !iG
 
@@ -1076,7 +1075,7 @@ contains
    ! from pw2intw:
    !
    mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
-   allocate ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
+   allocate ( func_r(mesh_r), r(mesh_r), rij(mesh_r) )
    allocate ( aux(mesh_r))
    !
    !    compute the radial mesh
@@ -1106,8 +1105,7 @@ contains
       if ( any(coef(l**2+1:l**2+1+2*l) > 1.0d-8) ) then
          !
          do iG=1,ngm
-            call sph_bes (mesh_r, r, p(iG), l, bes)
-            aux = r*r*bes*func_r
+            aux = r*r*sphb(l,p(iG)*r)*func_r
             call simpson (mesh_r, aux, rij, rad_int)
             radial_l(iG, l) = rad_int * fpi/sqrt(volume0)
          end do
@@ -1115,7 +1113,7 @@ contains
       end if
    end do
 
-   deallocate(bes,func_r,r,rij,aux)
+   deallocate(func_r,r,rij,aux)
 
    return
 
