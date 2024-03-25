@@ -384,7 +384,7 @@ program ep_melements
   !
   write(*,20) '|       - Reading induced potentials...             |'
   !
-  call read_allq_dvr(nqirr,3*nat)
+  call read_allq_dvr()
   !
   write(*,20) '====================================================='
   !
@@ -428,7 +428,7 @@ program ep_melements
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
     dvq_local = cmplx_0
-    call get_dv(iq,qpoint,3*nat,nspin,dvq_local)
+    call get_dv(qpoint,3*nat,nspin,dvq_local)
     !
     ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
     call phq_init(matmul(bg,qpoint))

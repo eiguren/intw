@@ -337,14 +337,14 @@ contains
   END SUBROUTINE readfc
 
 
-  subroutine mat_inv_four_t ( q_point, nkk1, nkk2, nkk3,  nnmode , frc , out_mat )
+  subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
 
     USE intw_reading, only : tau, ityp, at, bg, amass, nat
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, Ry_to_eV
 
     implicit none
 
-    complex(dp), intent(in) :: frc(nkk1, nkk2, nkk3, 3,3, nat,nat)
+    complex(dp), intent(in) :: in_mat(nkk1,nkk2,nkk3,3,3,nat,nat)
     complex(dp), intent(out) :: out_mat(nnmode, nnmode)
 
     real(dp) :: q_point(3),q(3)
@@ -404,7 +404,7 @@ contains
                          do j=1, 3
                             out_mat((na-1)*3+i, (nb-1)*3+j)= &
                                  out_mat((na-1)*3+i, (nb-1)*3+j) + &
-                                 frc(m1,m2,m3, i,j, na, nb) * exp(-cmplx_i*arg)*weight / &
+                                 in_mat(m1,m2,m3, i,j, na,nb) * exp(-cmplx_i*arg)*weight / &
                                  sqrt(amass(ityp(na))*amass(ityp(nb))) / &
                                  (pmass/2.d0) * & !Up to this in Ry.
                                  (Ry_to_eV*1000)**2 !Now in meV.
@@ -432,19 +432,15 @@ contains
 
 !***********************************************************************
 !-----------------------------------------------------------------------
-  subroutine   read_allq_dvr(nqirr,nmodes)
+  subroutine read_allq_dvr()
 !-----------------------------------------------------------------------
 
     use intw_utility, only: find_free_unit
     use intw_reading, only: nr1, nr2, nr3, nspin, spinorb_mag, nat
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
-    use intw_input_parameters, only: mesh_dir, prefix, dvscf_name
+    use intw_input_parameters, only: mesh_dir, prefix, dvscf_name, nqirr
 
     implicit none
-
-    !I/O varibales
-
-    integer, intent (in) :: nqirr, nmodes
 
     !local variables
 
@@ -454,10 +450,6 @@ contains
     character(len=256) :: dv_name
 
 
-    if (nmodes/=3*nat) then
-       write(*,"(a)")"ERROR(read_allq_dvr): nmodes = ", nmodes, " and 3*nat =", 3*nat
-       stop
-    endif
     !
     nr(1)=nr1
     nr(2)=nr2
@@ -569,7 +561,7 @@ contains
   end subroutine read_allq_dvr
 !*******************************************************************
 !-------------------------------------------------------------------
-  subroutine get_dv(iq,qpoint,nmode,nspin,dvq_local)
+  subroutine get_dv(qpoint, nmode, nspin, dv)
 !-------------------------------------------------------------------
 
     use intw_utility, only: cmplx_trace, switch_indices, find_k_1BZ_and_G
@@ -580,9 +572,9 @@ contains
     implicit none
 
     !I/O variables
-    integer, intent(in) :: iq, nmode, nspin
+    integer, intent(in) :: nmode, nspin
     real(dp), intent(in) :: qpoint(1:3) ! in crystal
-    complex(dp), intent(out) :: dvq_local(nr1*nr2*nr3,nmode,nspin,nspin)
+    complex(dp), intent(out) :: dv(nr1*nr2*nr3,nmode,nspin,nspin)
 
     !local variables
     complex(dp) :: dvr(nr1*nr2*nr3,nmode,nspin,nspin)
@@ -594,7 +586,7 @@ contains
     integer :: GKQ_bz(1:3), GKQ (1:3)
 
 
-    dvq_local=cmplx_0
+    dv = cmplx_0
     !
     ! We find the associated of qpoint in 1BZ (it usually is itself!)
     !
@@ -627,13 +619,13 @@ contains
     call rot_dvq(qpoint,q_irr_cryst(1:3,q_index_irr),nr1,nr2,nr3,nmode,s_index, &
          (/0,0,0/),dvscf_cart(1:nr1*nr2*nr3,q_index_irr,1:nmode,1:nspin,1:nspin),dvr)
     !
-    dvq_local = dvr
+    dv = dvr
     !
     if (imq.eq.1) then !TR YES
        !
        if (nspin==1) then !SOC NO
           !
-          dvq_local=conjg(dvr)
+          dv = conjg(dvr)
           !
        else if (nspin==2) then !SOC YES
           !
@@ -645,7 +637,7 @@ contains
                 mry=0.5d0*cmplx_trace(matmul(sig_y,dvr(ir,imode,:,:)))
                 mrz=0.5d0*cmplx_trace(matmul(sig_z,dvr(ir,imode,:,:)))
                 !
-                dvq_local(ir,imode,:,:)=conjg(vr(:,:))*I2-(conjg(mrx(:,:))*sig_x+conjg(mry(:,:))*sig_y+conjg(mrz(:,:))*sig_z)
+                dv(ir,imode,:,:) = conjg(vr(:,:))*I2-(conjg(mrx(:,:))*sig_x+conjg(mry(:,:))*sig_y+conjg(mrz(:,:))*sig_z)
                 !
              enddo !imode
           enddo !ir
@@ -656,7 +648,7 @@ contains
     !
     ! with this we add to dV the phase for being associated to q1BZ from qrot
     !
-    call func_by_gr(nr1,nr2,nr3,nmode,-dble(GKQ),dvq_local)
+    call func_by_gr(nr1, nr2, nr3, nmode, -dble(GKQ), dv)
     !
     return
 
