@@ -7,7 +7,6 @@ set(SOURCES
   cfftnd.f90
   eliashberg.f90
   fft.f90
-  force_linearity_G.f90
   init_pp.f90
   kinds.f90
   input_parameters.f90
