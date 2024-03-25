@@ -7,7 +7,7 @@ import sys
 acc = 1.0E-5
 
 # Read INTW+W90 generated file from IBZ calculation
-out_file = "gaas_irr.wout"
+out_file = "intw_gaas.wout"
 #
 w_center=[]
 with open(out_file, "rt") as f:

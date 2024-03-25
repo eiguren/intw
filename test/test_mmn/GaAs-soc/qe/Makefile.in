@@ -24,14 +24,18 @@ run_w90pp:
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp gaas
 
 run_pw2wannier90:
+	rm -rf gaas.mmn gaas.amn
 	$(MPI_CMD) $(QE_BUILD_DIR)/bin/pw2wannier90.x < gaas.pw2wannier.in | tee gaas.pw2wannier.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	cp gaas.mmn qe_gaas.mmn
-	cp gaas.mmn qe_gaas.amn
+	mv gaas.mmn qe_gaas.mmn
+	mv gaas.amn qe_gaas.amn
 
 run_w90_1:
+	rm -rf gaas.wout
+	cp qe_gaas.mmn gaas.mmn
+	cp qe_gaas.amn gaas.amn
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas
-	cp gaas.wout qe_gaas.wout
+	mv gaas.wout qe_gaas.wout
 
 run_pw2intw:
 	rm -rf gaas.save.intw
@@ -42,13 +46,15 @@ run_intw:
 	rm -rf gaas.mmn gaas.amn
 	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < gaas.intw_fullmesh.in | tee gaas.intw_fullmesh.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	cp gaas.mmn intw_fullmesh_gaas.mmn
-	cp gaas.amn intw_fullmesh_gaas.amn
+	mv gaas.mmn intw_fullmesh_gaas.mmn
+	mv gaas.amn intw_fullmesh_gaas.amn
 
 run_w90_2:
 	rm -rf gaas.wout
+	cp intw_fullmesh_gaas.mmn gaas.mmn
+	cp intw_fullmesh_gaas.amn gaas.amn
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas
-	cp gaas.wout intw_fullmesh_gaas.wout
+	mv gaas.wout intw_fullmesh_gaas.wout
 
 # --- irr scf calculation
 
@@ -68,13 +74,15 @@ irr_run_intw:
 	rm -rf gaas_irr.mmn gaas_irr.amn
 	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < gaas.intw_irr.in | tee gaas.intw_irr.out
 	( test -f CRASH && exit 1 || echo "OK" )
-	cp gaas_irr.mmn intw_gaas.mmn
-	cp gaas_irr.amn intw_gaas.amn
+	mv gaas_irr.mmn intw_gaas.mmn
+	mv gaas_irr.amn intw_gaas.amn
 
 irr_run_w90:
 	rm -rf gaas_irr.wout
+	cp intw_gaas.mmn gaas_irr.mmn
+	cp intw_gaas.amn gaas_irr.amn
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x gaas_irr
-	cp gaas_irr.wout intw_gaas.wout
+	mv gaas_irr.wout intw_gaas.wout
 
 
 PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
