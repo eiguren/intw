@@ -323,6 +323,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
     use intw_reading, only: s, at, bg
+    use intw_utility, only: det
 
     implicit none
 
@@ -337,7 +338,7 @@ contains
     real(kind=dp) :: sym_cart(3,3) !symmetry matrix in crystal coordinates
     complex(kind=dp) :: S_u(2,2) !the 2x2 spin rotation matrix
     real(kind=dp) :: axis(3), angle !axis and angle of a given rotation matrix
-    real(kind=dp) :: det, I3(3,3)
+    real(kind=dp) :: determinant, I3(3,3)
     real(kind=dp) :: bgtrans(3,3)
     integer :: i,j,k,h
 
@@ -366,17 +367,13 @@ contains
       !       call rotaxis_crystal(sym,axis,angle)
       !call rotaxis(sym,axis,angle)
 
-      det = sym(1,1)*sym(2,2)*sym(3,3) +  &
-            sym(1,2)*sym(2,3)*sym(3,1) +  &
-            sym(1,3)*sym(2,1)*sym(3,2) -  &
-            sym(1,3)*sym(2,2)*sym(3,1) -  &
-            sym(1,1)*sym(2,3)*sym(3,2) -  &
-            sym(1,2)*sym(2,1)*sym(3,3)
+      determinant = det(real(sym, kind=dp))
+
 
       !the inversion part does not affect the spin
       !we must remove this, otherwise the dimension of the
       !null space of sym-I is more than 1.
-      if (det<0) sym = -sym
+      if (determinant<0) sym = -sym
 
 
       sym_cart = 0.0_dp
@@ -552,6 +549,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: ZERO, ONE, pi, eps_8
     use intw_reading, only: at, bg
+    use intw_utility, only: det
 
     implicit none
 
@@ -570,12 +568,7 @@ contains
 
     ! First, find the determinant
     !
-    determinant = sym(1,1)*sym(2,2)*sym(3,3) +  &
-                  sym(1,2)*sym(2,3)*sym(3,1) +  &
-                  sym(1,3)*sym(2,1)*sym(3,2) -  &
-                  sym(1,3)*sym(2,2)*sym(3,1) -  &
-                  sym(1,1)*sym(2,3)*sym(3,2) -  &
-                  sym(1,2)*sym(2,1)*sym(3,3)
+    determinant = det(real(sym, kind=dp))
     !
     ! Put the rotation part of the symmetry matrix in the Rotation array,
     ! multiplied by the appropriate coefficient to account for inversion

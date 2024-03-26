@@ -657,7 +657,7 @@ contains
   subroutine rot_dvq(q_point_crys,q_point_crys_irr,nr1,nr2,nr3,nmode,s_index,GKQ,dv_in,dv_out)
 !--------------------------------------------------------------------------------------------------------
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
-    use intw_utility, only: cmplx_ainv_2, switch_indices_zyx
+    use intw_utility, only: cmplx_ainv, switch_indices_zyx
     use intw_reading, only: s, ftau, nspin, spinorb_mag, at, bg, tau, nat
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
@@ -801,7 +801,7 @@ contains
        do ir=1,nr1*nr2*nr3
           do imode=1,3*nat
              !
-             dv_out(ir,imode,:,:)=matmul(cmplx_ainv_2(spin_symmetry_matrices(:,:,s_index)), &
+             dv_out(ir,imode,:,:)=matmul(cmplx_ainv(spin_symmetry_matrices(:,:,s_index)), &
                   matmul(dv_aux(ir,imode,:,:),spin_symmetry_matrices(:,:,s_index)))
              !
           enddo !imode

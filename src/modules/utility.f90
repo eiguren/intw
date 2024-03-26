@@ -23,7 +23,7 @@ use kinds, only: dp
             find_r_in_WS_cell, errore, simpson, gaussian, sphb
   !
   ! functions
-  public :: intgr_spline_gaussq, ainv, cmplx_ainv, cmplx_ainv_2, cmplx_trace, multiple, weight_ph, &
+  public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser
   !
   private
@@ -88,116 +88,224 @@ end function intgr_spline_gaussq
   end subroutine get_timing
 
 
-   function ainv(a)
+  function ainv(A)
 
     implicit none
 
-    real(dp), dimension(3,3), intent(in) :: a
-    real(dp), dimension(3,3) :: ainv
+    real(kind=dp), intent(in) :: A(:,:)
+    real(kind=dp) :: ainv(size(A, dim=1),size(A, dim=2))
 
-    real(dp), parameter :: eps = 1.0d-13
-    real(dp) :: det
-    real(dp), dimension(3,3) :: cofactor
+    real(kind=dp), parameter :: eps = 1.0d-13
+    real(kind=dp) :: determinant
+    real(kind=dp) :: cofactor(size(A, dim=1),size(A, dim=2))
+    integer :: N, M, i, j
 
-    det =  a(1,1)*a(2,2)*a(3,3)  &
-         - a(1,1)*a(2,3)*a(3,2)  &
-         - a(1,2)*a(2,1)*a(3,3)  &
-         + a(1,2)*a(2,3)*a(3,1)  &
-         + a(1,3)*a(2,1)*a(3,2)  &
-         - a(1,3)*a(2,2)*a(3,1)
 
-    if (abs(det) .le. eps) then
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    if  ( N /= M ) stop "ERROR: ainv: A must be a square matrix"
+
+    determinant =  det(A)
+
+    if (abs(determinant) < eps) then
       ainv = 0.0d0
       write(*,*)"ERROR IN CALCULATING MATRIX INVERSE"
       stop
     end if
 
-    cofactor(1,1) = +(a(2,2)*a(3,3)-a(2,3)*a(3,2))
-    cofactor(1,2) = -(a(2,1)*a(3,3)-a(2,3)*a(3,1))
-    cofactor(1,3) = +(a(2,1)*a(3,2)-a(2,2)*a(3,1))
-    cofactor(2,1) = -(a(1,2)*a(3,3)-a(1,3)*a(3,2))
-    cofactor(2,2) = +(a(1,1)*a(3,3)-a(1,3)*a(3,1))
-    cofactor(2,3) = -(a(1,1)*a(3,2)-a(1,2)*a(3,1))
-    cofactor(3,1) = +(a(1,2)*a(2,3)-a(1,3)*a(2,2))
-    cofactor(3,2) = -(a(1,1)*a(2,3)-a(1,3)*a(2,1))
-    cofactor(3,3) = +(a(1,1)*a(2,2)-a(1,2)*a(2,1))
+    do i = 1, N
+      do j = 1, M
+       cofactor(i,j) = cof(A, i, j)
+      enddo
+    end do
 
-    ainv = transpose(cofactor) / det
+    ainv = transpose(cofactor) / determinant
 
   end function ainv
 
 
-  function cmplx_ainv (a)
-
-    use intw_useful_constants, only: cmplx_0
+  recursive function det(A)
 
     implicit none
 
-    complex(dp), dimension(3,3), intent(in) :: a
-    complex(dp), dimension(3,3) :: cmplx_ainv
+    real(kind=dp), intent(in) :: A(:,:)
+    real(kind=dp) :: det
 
-    real(dp), parameter :: eps = 1.0d-13
-    complex(dp) :: det
-    complex(dp), dimension(3,3) :: cofactor
+    integer :: N, M, i
 
-    det =  a(1,1)*a(2,2)*a(3,3)  &
-         - a(1,1)*a(2,3)*a(3,2)  &
-         - a(1,2)*a(2,1)*a(3,3)  &
-         + a(1,2)*a(2,3)*a(3,1)  &
-         + a(1,3)*a(2,1)*a(3,2)  &
-         - a(1,3)*a(2,2)*a(3,1)
 
-    if (abs(det) .le. eps) then
-      cmplx_ainv = cmplx_0
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    if  ( N /= M ) stop "ERROR: det: A must be a square matrix"
+
+    if (N == 1) then
+      det = A(1,1)
+    else if (N > 1) then
+      det = 0.0_dp
+      do i=1,N
+        det = det + A(1,i) * cof(A, 1, i)
+      enddo
+    else
+      stop "ERROR: det: Wrong size"
+    end if
+
+  end function det
+
+
+  function cof(A, ROW, COL)
+
+    implicit none
+
+    real(kind=dp), intent(in) :: A(:,:)
+    integer, intent(in) :: ROW, COL
+
+    real(kind=dp) :: cof
+
+
+    cof = (-1)**(ROW+COL)*det(minor_matrix(A, ROW, COL))
+
+  end function cof
+
+
+  function minor_matrix(A, ROW, COL)
+
+    implicit none
+
+    real(kind=dp), intent(in) :: A(:,:)
+    integer, intent(in) :: ROW, COL
+
+    real(kind=dp) :: minor_matrix(size(A, dim=1)-1, size(A, dim=2)-1)
+
+    integer :: N, M, i, ii, j, jj
+
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    ii = 0
+    do i = 1, N
+      if (i==ROW) cycle
+      ii = ii + 1
+      jj = 0
+      do j = 1, N
+        if (j==COL) cycle
+        jj = jj + 1
+        minor_matrix(ii, jj) = A(i, j)
+      end do
+    end do
+
+  end function minor_matrix
+
+
+  function cmplx_ainv(A)
+
+    implicit none
+
+    complex(kind=dp), intent(in) :: A(:,:)
+    complex(kind=dp) :: cmplx_ainv(size(A, dim=1),size(A, dim=2))
+
+    real(kind=dp), parameter :: eps = 1.0d-13
+    complex(kind=dp) :: determinant
+    complex(kind=dp) :: cofactor(size(A, dim=1),size(A, dim=2))
+    integer :: N, M, i, j
+
+
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    if  ( N /= M ) stop "ERROR: cmplx_ainv: A must be a square matrix"
+
+    determinant =  cmplx_det(A)
+
+    if (abs(determinant) < eps) then
+      cmplx_ainv = 0.0d0
       write(*,*)"ERROR IN CALCULATING MATRIX INVERSE"
       stop
     end if
 
-    cofactor(1,1) = +(a(2,2)*a(3,3)-a(2,3)*a(3,2))
-    cofactor(1,2) = -(a(2,1)*a(3,3)-a(2,3)*a(3,1))
-    cofactor(1,3) = +(a(2,1)*a(3,2)-a(2,2)*a(3,1))
-    cofactor(2,1) = -(a(1,2)*a(3,3)-a(1,3)*a(3,2))
-    cofactor(2,2) = +(a(1,1)*a(3,3)-a(1,3)*a(3,1))
-    cofactor(2,3) = -(a(1,1)*a(3,2)-a(1,2)*a(3,1))
-    cofactor(3,1) = +(a(1,2)*a(2,3)-a(1,3)*a(2,2))
-    cofactor(3,2) = -(a(1,1)*a(2,3)-a(1,3)*a(2,1))
-    cofactor(3,3) = +(a(1,1)*a(2,2)-a(1,2)*a(2,1))
+    do i = 1, N
+      do j = 1, M
+       cofactor(i,j) = cmplx_cof(A, i, j)
+      enddo
+    end do
 
-    cmplx_ainv = transpose(cofactor) / det
+    cmplx_ainv = transpose(cofactor) / determinant
 
   end function cmplx_ainv
 
 
-  function cmplx_ainv_2 (a)
-
-    use intw_useful_constants, only: cmplx_0
+  recursive function cmplx_det(A)
 
     implicit none
 
-    complex(dp), dimension(2,2), intent(in) :: a
-    complex(dp), dimension(2,2) :: cmplx_ainv_2
+    complex(kind=dp), intent(in) :: A(:,:)
+    complex(kind=dp) :: cmplx_det
 
-    real(dp), parameter :: eps = 1.0d-13
-    complex(dp) :: det
-    complex(dp), dimension(2,2) :: cofactor
+    integer :: N, M, i
 
-    det =  a(1,1)*a(2,2)  &
-         - a(1,2)*a(2,1)
 
-    if (abs(det) .le. eps) then
-      cmplx_ainv_2 = cmplx_0
-      write(*,*)"ERROR IN CALCULATING MATRIX INVERSE"
-      stop
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    if  ( N /= M ) stop "ERROR: cmplx_det: A must be a square metrix"
+
+    if (N == 1) then
+      cmplx_det = A(1,1)
+    else if (N > 1) then
+      cmplx_det = 0.0_dp
+      do i=1,N
+        cmplx_det = cmplx_det + A(1,i) * cmplx_cof(A, 1, i)
+      enddo
+    else
+      stop "ERROR: cmplx_det: Wrong size"
     end if
 
-    cofactor(1,1) = +a(2,2)
-    cofactor(1,2) = -a(2,1)
-    cofactor(2,1) = -a(1,2)
-    cofactor(2,2) = +a(1,1)
+  end function cmplx_det
 
-    cmplx_ainv_2 = transpose(cofactor) / det
 
-  end function cmplx_ainv_2
+  function cmplx_cof(A, ROW, COL)
+
+    implicit none
+
+    complex(kind=dp), intent(in) :: A(:,:)
+    integer, intent(in) :: ROW, COL
+
+    real(kind=dp) :: cmplx_cof
+
+
+    cmplx_cof = (-1)**(ROW+COL)*cmplx_det(cmplx_minor_matrix(A, ROW, COL))
+
+  end function cmplx_cof
+
+
+  function cmplx_minor_matrix(A, ROW, COL)
+
+    implicit none
+
+    complex(kind=dp), intent(in) :: A(:,:)
+    integer, intent(in) :: ROW, COL
+
+    complex(kind=dp) :: cmplx_minor_matrix(size(A, dim=1)-1, size(A, dim=2)-1)
+
+    integer :: N, M, i, ii, j, jj
+
+    N = size(A, dim=1)
+    M = size(A, dim=2)
+
+    ii = 0
+    do i = 1, N
+      if (i==ROW) cycle
+      ii = ii + 1
+      jj = 0
+      do j = 1, N
+        if (j==COL) cycle
+        jj = jj + 1
+        cmplx_minor_matrix(ii, jj) = A(i, j)
+      end do
+    end do
+
+  end function cmplx_minor_matrix
 
 
   function conmesurate_and_coarser (nk1, nk2, nk3, nq1, nq2, nq3)
