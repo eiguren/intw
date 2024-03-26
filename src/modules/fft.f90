@@ -547,7 +547,7 @@ contains
     integer :: i, j, k, ir
     integer :: ispin
 
-    real(dp) :: phase
+    real(dp) :: gr
 
     do ispin=1,nspin
       do mode=1,nfunc
@@ -556,9 +556,9 @@ contains
 
           call switch_indices(nr1,nr2,nr3,ir,i,j,k,-1)
 
-          phase = tpi*(g(1) * (i-1)/nr1+g(1) * (j-1)/nr2+ g(1) * (k-1)/nr3)
+          gr = tpi*(g(1)*(i-1)/nr1 + g(1)*(j-1)/nr2 + g(1)*(k-1)/nr3)
 
-          fr_exp_igr(ir,ispin, mode) = fr (ir,ispin,mode) * exp ( cmplx_i * phase  )
+          fr_exp_igr(ir,ispin, mode) = fr(ir,ispin,mode) * exp( cmplx_i * gr )
 
         enddo
       enddo
