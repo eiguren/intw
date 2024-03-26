@@ -212,7 +212,7 @@ for iq in range(NQPTS):
                                   ik+1, ib+1, jb+1, im+1, me_r,
                                   me_t, me_r-me_t, (me_r-me_t)/me_r*100)
                                   )
-                            if (abs(me_r-me_t)/me_r*100 > MAX_DIFF_PERCENTAGE):
+                            if np.isnan(me_t) or (abs(me_r-me_t)/me_r*100 > MAX_DIFF_PERCENTAGE):
                                 print("MAX_DIFF_PERCENTAGE exceeded!")
                                 print("ik =", ik+1)
                                 print("KPT_LIST[ik] =", KPT_LIST[ik])
