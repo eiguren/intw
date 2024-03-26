@@ -18,7 +18,6 @@ set(SOURCES
   matrix_elements.f90
   ph_module.f90
   reading.f90
-  rotaxis.f90
   set_asr.f90
   symmetries.f90
   useful_constants.f90
