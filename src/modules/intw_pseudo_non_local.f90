@@ -50,6 +50,7 @@ contains
     use intw_fft, only: gvec_cart
     use mcf_spline, only: splint_mcf
     use intw_pseudo, only: upf
+    use intw_utility, only: real_ylmr2
 
     implicit none
 
@@ -86,7 +87,7 @@ contains
       !
     end do
     !
-    call intw_real_ylmr2((lmaxkb+1)**2, npw, gk, qg, ylm)
+    call real_ylmr2(lmaxkb, npw, gk, qg, ylm)
     !
     ! set now qg=|q+G| in atomic units
     !

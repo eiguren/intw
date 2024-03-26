@@ -22,7 +22,6 @@ set(SOURCES
   symmetries.f90
   useful_constants.f90
   utility.f90
-  ylmr2.f90
   fft_interp.f90
   mcf_interpolacion.f90
   w90_setup.f90

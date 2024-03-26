@@ -20,7 +20,8 @@ use kinds, only: dp
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
             HPSORT, HPSORT_real, hpsort_eps, &
-            find_r_in_WS_cell, errore, simpson, gaussian, sphb
+            find_r_in_WS_cell, errore, simpson, gaussian, sphb, &
+            real_ylmr2
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
@@ -1451,5 +1452,141 @@ end function intgr_spline_gaussq
     end if
 
   end function sphb
+
+
+  subroutine real_ylmr2(lmax, ng, g, gg, ylm)
+    !-----------------------------------------------------------------------
+    ! Real spherical harmonics ylm(G) up to l=lmax
+    ! lmax2 = (lmax+1)^2 is the total number of spherical harmonics
+    ! Numerical recursive algorithm based on the one given in Numerical
+    ! Recipes but avoiding the calculation of factorials that generate
+    ! overflow for lmax > 11
+    !-----------------------------------------------------------------------
+    use kinds, only: dp
+    use intw_useful_constants, only: pi, tpi, fpi
+    !
+    implicit none
+    !
+    integer, intent(in) :: lmax, ng
+    real(kind=dp), intent(in) :: g(3,ng), gg(ng)
+    real(kind=dp), intent(out) :: ylm(ng,(lmax+1)**2)
+    !
+    ! local variables
+    real(kind=dp), parameter :: eps = 1.0d-9
+    real(kind=dp) :: cost(ng), sent(ng), phi(ng)
+    real(kind=dp) :: Q(ng,0:lmax,0:lmax)
+    real(kind=dp) :: c, gmod
+    integer :: lmax2, ig, l, m, lm
+
+
+    if (ng < 1 .or. lmax < 1) return
+
+    lmax2 = (lmax+1)**2
+
+  10 continue
+
+    if (lmax == 0) then
+      ylm(:,1) =  sqrt(1.d0 / fpi)
+      return
+    end if
+    !
+    !  theta and phi are polar angles, cost = cos(theta)
+    !
+!$omp parallel default(shared), private(ig,gmod,lm,l,c,m)
+!$omp do
+    do ig = 1, ng
+      gmod = sqrt(gg(ig))
+      if (gmod < eps) then
+        cost(ig) = 0.d0
+      else
+        cost(ig) = g(3,ig)/gmod
+      endif
+      !
+      !  beware the arc tan, it is defined modulo pi
+      !
+      if (g(1,ig) > eps) then
+        phi(ig) = atan( g(2,ig)/g(1,ig) )
+      else if (g(1,ig) < -eps) then
+        phi(ig) = atan( g(2,ig)/g(1,ig) ) + pi
+      else
+        phi(ig) = sign( pi/2.d0,g(2,ig) )
+      end if
+      sent(ig) = sqrt(max(0d0,1.d0-cost(ig)**2))
+    enddo
+    !
+!$omp end parallel
+    !
+    !  Q(:,l,m) are defined as sqrt ((l-m)!/(l+m)!) * P(:,l,m) where
+    !  P(:,l,m) are the Legendre Polynomials (0 <= m <= l)
+    !
+    lm = 0
+    do l = 0, lmax
+      !
+      c = sqrt(dble(2*l+1) / fpi)
+      if ( l == 0 ) then
+        Q(:,0,0) = 1.d0
+      else if ( l == 1 ) then
+        Q(:,1,0) = cost(:)
+        Q(:,1,1) =-sent(:)/sqrt(2.d0)
+      else
+        !
+        !  recursion on l for Q(:,l,m)
+        !
+        do m = 0, l - 2
+          Q(:,l,m) = cost(:)*(2*l-1)/sqrt(DBLE(l*l-m*m))*Q(:,l-1,m) &
+                    - sqrt(DBLE((l-1)*(l-1)-m*m))/sqrt(DBLE(l*l-m*m))*Q(:,l-2,m)
+        end do
+        Q(:,l,l-1) = cost(:) * sqrt(DBLE(2*l-1)) * Q(:,l-1,l-1)
+        Q(:,l,l)   = - sqrt(DBLE(2*l-1))/sqrt(DBLE(2*l))*sent(:)*Q(:,l-1,l-1)
+      end if
+      !
+      ! Y_lm, m = 0
+      !
+      lm = lm + 1
+      ylm(:, lm) = c * Q(:,l,0)
+      !
+      do m = 1, l
+        !
+        ! Y_lm, m > 0
+        !
+        lm = lm + 1
+        ylm(:, lm) = c * sqrt(2.d0) * Q(:,l,m) * cos (m*phi(:))
+        !
+        ! Y_lm, m < 0
+        !
+        lm = lm + 1
+        ylm(:, lm) = c * sqrt(2.d0) * Q(:,l,m) * sin (m*phi(:))
+      end do
+      !
+    end do
+
+  end subroutine real_ylmr2
+
+
+  ! subroutine complex_ylmr2(lmax, ng, g, gg, ylm)
+  !   !-----------------------------------------------------------------------
+  !   !     INTW project
+  !   !     Complex spherical harmonics ylm(G) up to l=lmax
+  !   !     lmax2 = (lmax+1)^2 is the total number of spherical harmonics
+  !   !-----------------------------------------------------------------------
+  !
+  !   use kinds, only: dp
+  !   use intw_useful_constants, only: pi, tpi, fpi
+  !
+  !   implicit none
+  !
+  !   integer, intent(in) :: lmax, ng
+  !   real(kind=dp), intent(in) :: g(3,ng), gg(ng)
+  !   complex(kind=dp), intent(out) :: ylm(ng,(lmax+1)**2)
+  !
+  !   real(kind=dp), parameter :: eps = 1.0d-9
+  !   integer :: lmax2
+  !
+  !
+  !   lmax2 =(lmax+1)**2
+  !
+  !   ylm=(0.0_dp,0.0_dp)
+  !
+  ! end subroutine complex_ylmr2
 
 end module intw_utility
