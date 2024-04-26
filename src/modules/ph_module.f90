@@ -25,7 +25,7 @@ module intw_ph
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
-            DM_q2Rp, DM_Rp2q
+            read_dynq
   !
   ! functions
   public :: wsweight, rot_k_index
@@ -335,6 +335,160 @@ contains
        ! End IGG
 
   END SUBROUTINE readfc
+
+  !====================================================================
+      ! MBR 14/02/24
+      ! read dynamical matrices info from prefix.dyn_q(iq) files in
+      ! prefix.save.intw and store into dynq for all q-points
+      ! (each files contains the info of an irreducible q-point)
+  !====================================================================
+
+      subroutine read_dynq (dynq)
+
+      use intw_reading, only: ntyp, nat, at, amass, ityp
+      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
+      use intw_utility, only: cryst_to_cart, find_free_unit, &
+              switch_indices, find_k_1BZ_and_G
+      use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3
+
+      implicit none
+
+      ! I/O
+      complex(dp) , intent(out) :: dynq(3*nat,3*nat,nqmesh)
+
+      ! Internal
+      character(len=4) :: iq_loc
+      character(len=100) :: comentario
+      character(256) :: dynq_file, intwdir
+      logical :: all_done
+      integer :: ntyp_, nat_, ibrav_
+      integer :: dynq_unit, ierr
+      integer :: iat, iat1, iat2, iq1, iq2, iq, iqirr, Gq(3), i,j,k, iq_done(nqmesh)
+      real(dp) :: celldm_(6), at_(3,3), dist, massfac
+      real(dp) ::  fracpos(3), qpoint(3), qpoint1(3), qpoint_cart(3,nqmesh)
+      real(dp) ::  dynq_re(3,3), dynq_im(3,3)
+      ! From mat_inv_four_t, see IGG's comments
+      ! TODO add to useful_constants
+      real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.396d0
+
+      iq_done=0
+
+      ! INTW directory
+      intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
+
+      do iqirr = 1,nqirr
+
+      ! open file
+      if (                   iqirr <   10) write(iq_loc,"(i1)") iqirr
+      if ( 10 <= iqirr .and. iqirr <  100) write(iq_loc,"(i2)") iqirr
+      if (100 <= iqirr .and. iqirr < 1000) write(iq_loc,"(i3)") iqirr
+      dynq_unit = find_free_unit()
+      dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//adjustl(iq_loc)
+      open(unit=dynq_unit, iostat=ierr, file=dynq_file, form='formatted', status='old')
+      if (ierr /= 0 ) then
+         write(*,*) 'Error opening .dyn_q file in ',  intwdir,' . Stopping.'
+         stop
+      end if
+
+      read(dynq_unit,'(a)') comentario
+      read(dynq_unit,'(a)') comentario
+
+      ! Information about lattice and atoms (not used but checked for
+      ! consistency in the parameters)
+      read(dynq_unit,*) ntyp_, nat_, ibrav_, celldm_
+      if (ntyp_ /= ntyp .or.  nat_ /= nat ) then
+         write(*,*)' Error reading parameters in .dyn_q file ', dynq_file, '. Stopping.'
+         stop
+      end if
+      if ( ibrav_ == 0 ) then
+        read(dynq_unit,'(a)') comentario  ! symm_type  not used
+        read(dynq_unit,*) ((at_(i,j),i=1,3),j=1,3)  ! not used
+      end if
+      ! atoms
+      do i=1,ntyp
+         read(dynq_unit,'(a)') comentario !i, atom, amass, not used, not stored
+      end do
+      ! positions
+      do iat = 1,nat
+        read(dynq_unit,*) i,j, fracpos(:)  !not used, not stored
+      end do
+
+      ! loop over symmetry equivalent qpoints:
+      ! a priori, we do not know how many there are.
+      ! The signal to stop is that the last qpoint line is the
+      ! one for diagonalization information, where the initial
+      ! q-point is stated again.
+
+      do iq1 = 1,nqmesh
+
+         read(dynq_unit,'(/,a,/)') comentario
+         read(dynq_unit,'(11x, 3(f14.9), / )') qpoint_cart(:,iq1)
+
+         ! compare to first read qpoint to see if we are at the
+         ! end of the part of the file that contains the dynq matrices
+         dist = ( qpoint_cart(1,iq1) - qpoint_cart(1,1) )**2 + &
+                ( qpoint_cart(2,iq1) - qpoint_cart(2,1) )**2 + &
+                ( qpoint_cart(3,iq1) - qpoint_cart(3,1) )**2
+         if (iq1 > 1 .and. dist < eps_6) exit
+
+         !cartesian to crystalline
+         qpoint=qpoint_cart(:,iq1)
+         call cryst_to_cart (1, qpoint, at, -1)
+         ! find index in full list: iq
+         call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
+         call switch_indices(nq1,nq2,nq3,iq,i,j,k,+1)
+
+         ! block: dynq matrix
+         ! loop over atoms
+         do iat1 = 1,nat
+           do iat2 = 1,nat
+
+              ! mass factor sqrt(m1*m2) to be used below
+              ! (QE routine elph.f90 adds it when reading dynq and then
+              ! again after diagonalization)
+              massfac = sqrt( amass(ityp(iat1)) * amass(ityp(iat2))  )
+
+              read(dynq_unit,*) i,j ! not used
+
+              ! cartesian 3x3 block of this atom pair in dynq matrix
+              read(dynq_unit,*) ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3)
+
+              ! Add mass factor and unit conversion
+              ! (this will give the same as mat_inv_four_t)
+              dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
+                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) &
+                     / massfac &  !sqrt(m1*m2)
+                     / (pmass/2.d0) & !Up to this in Ry.
+                     * (aumev/2.d0)**2 !Now in meV.
+
+
+           end do
+         end do !atoms
+
+         iq_done(iq)=1
+
+      end do !iq1
+
+      ! read next block in .dyn file: diagonalization of dynq
+      ! (skipped, as we usually do this step elsewhere in INTW)
+
+      close(dynq_unit)
+
+      end do ! iqirr
+            ! Check that all the qpoints in the full mesh have been read
+      all_done=.true.
+      do iq=1,nqmesh
+         if (iq_done(iq) == 0) then
+            all_done=.false.
+            write(*,*)' Failed to read dynq for iq= ',iq
+         end if
+      end do
+      if ( not(all_done) ) stop
+
+      return
+      end subroutine read_dynq
+  !====================================================================
+      
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
@@ -909,205 +1063,5 @@ contains
     deallocate(q_irr)
     deallocate(u_irr)
   end subroutine deallocate_ph
-  !----------------------------------------------------------------------------------
-  subroutine DM_q2Rp(nrr_q, irr_q, dyn_r)
-  !----------------------------------------------------------------------------------
-    !
-    ! Created by Peio G. Goiricelaya 08/03/2016
-    !
-    !====================================================================================
-    ! Fourier Transform to the Reciprocal Dynamical Matrix DM_q(3*nat,3*nat,q) to Real  !
-    ! representation DM_r(3*nat,3*nat,R), so that:                                      !
-    !                                                                                   !
-    ! DM_r(m,n,R)=Sum_in_q_1BZ[DM_q(m,n,k)*Exp[-i*q*R]]/nqmesh                          !
-    !====================================================================================
-    use kinds, only: dp
-    use intw_input_parameters, only: nq1, nq2, nq3
-    use intw_reading, only: nat
-    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-
-    implicit none
-
-    !I/O vaiables
-
-    integer, intent(in) :: nrr_q
-    integer, intent(in) :: irr_q(3,nrr_q)
-    complex(kind=dp), intent(inout) :: dyn_r(3*nat,3*nat,nrr_q)
-
-    !local variables
-
-    integer :: iq, irq
-    real(kind=dp) :: qpoint(3), arg
-    complex(kind=dp) :: dyn_q(3*nat,3*nat,nqmesh), dynm(3*nat,3*nat), fac
-
-    nqmesh = nq1*nq2*nq3
-    dyn_q = cmplx_0
-    !
-    ! 1) We have to calculate the Dynamical Matrix
-    ! for each q point in phonons coarse qmesh
-    !
-    write(*,*) "1) We calculate the Reciprocal Dynamical Matrices in coarse mesh"
-    !
-    do iq = 1, nqmesh
-      write(*,*) "iq =", iq, "/", nqmesh
-      !
-      qpoint = qmesh(:,iq)
-      !
-      call mat_inv_four_t(qpoint, nq1, nq2, nq3, 3*nat, frc, dynm)
-      !
-      dyn_q(:,:,iq) = dynm
-      !
-    enddo !iq
-    !
-    write(*,*) ""
-    !
-    ! 2) Fourier transform of the Reciprocal Dynamical Matrix to
-    ! to the Real Representation
-    ! + check of the spatial decay of Dynamical Matrix in Real space
-    !
-    write(*,*) "2) Fourier transform: Reciprocal Dynamical Matrix -> Real Dynamical Matrix"
-    !
-    do irq = 1, nrr_q
-      write(*,*) "irq =", irq, "/", nrr_q
-      !
-      do iq = 1, nqmesh
-        !
-        arg = tpi*dot_product(qmesh(:,iq), dble(irr_q(:,irq)))
-        fac = exp(-cmplx_i*arg)/dble(nqmesh)
-        dyn_r(:,:,irq) = dyn_r(:,:,irq) + fac*dyn_q(:,:,iq)
-        !
-      enddo !iq
-      !
-    enddo !irq
-
-  end subroutine DM_q2Rp
-  !----------------------------------------------------------------------------------
-  !----------------------------------------------------------------------------------
-  subroutine DM_Rp2q(nrr_q, irr_q, ndegen_q, qpoint, dyn_r, P_diag, omega)
-  !----------------------------------------------------------------------------------
-  !
-  ! Created by Peio G. Goiricelaya 08/03/2016
-  !
-  !===========================================================================================
-  ! 1) Fourier Antitransform of the Real Dynamical Matrix DM_r(3*nat,3*nat,R) to Reciprocal  !
-  ! representation DM_q(3*nat,3*nat,q), so that:                                             !
-  !                                                                                          !
-  ! DM_q(m,n,q)=Sum_in_R[DM_R(m,n,R)*Exp[i*q*R]]/ndeg(R)                                     !
-  !                                                                                          !
-  ! 2) Diagonalization of the Reciprocal Dynamical Matrix DM_q(3*nat,3*nat,q) in order to    !
-  ! obtain the eigenmodes and eigenvalues:                                                   !
-  !                                                                                          !
-  ! W_q(m,n)=Sum_m',n'[P+(m',m)*DM_q(m,n)*P(n',n)]                                           !
-  !                                                                                          !
-  ! W_k(m,n)=w2(n)*d(m-n)                                                                    !
-  !                                                                                          !
-  ! But these eigenmodes have not physical meaning and have to be divide by sqrt(mass)       !
-  ! in order to get the real displacements of the ions of these normal modes:                !
-  !                                                                                          !
-  ! P(m,n)=P(m,n)/Sqrt[M(m)]                                                                 !
-  !                                                                                          !
-  ! We use these displacements in order to recover physical meaning matrix elements from     !
-  ! our canonical representation matrix elements                                             !
-  !===========================================================================================
-
-    use kinds, only: dp
-    use intw_reading, only: nat, amass, ityp
-    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, ZERO
-
-    implicit none
-
-    !I/O variables
-
-    integer, intent(in) :: nrr_q
-    integer, intent(in) :: irr_q(3,nrr_q)
-    integer, intent(in) :: ndegen_q(nrr_q)
-    real(kind=dp), intent(in) :: qpoint(3)
-    complex(kind=dp), intent(in) :: dyn_r(3*nat,3*nat,nrr_q)
-    complex(kind=dp), intent(inout) :: P_diag(3*nat,3*nat)
-    real(kind=dp), intent(inout) :: omega(3*nat)
-
-    !local variables
-
-    integer :: irq, imode, jmode, na, ifail(3*nat), nfound, info
-    integer :: iwork(5*3*nat)
-    real(dp) :: arg, w2(3*nat), rwork(7*3*nat)
-    complex(dp) :: fac, dyn_q_f(3*nat,3*nat)
-    complex(dp) :: dyn_pack(3*nat*(3*nat+1)/2)
-    complex(dp) :: cwork(2*3*nat)
-
-    ! 1) Inverse Fourier transform of the Real Dynamical Matrix
-    ! to Reciprocal representation
-    !
-    dyn_q_f = cmplx_0
-    !
-    do imode = 1, 3*nat
-      do jmode = 1, 3*nat
-        !
-        do irq = 1, nrr_q
-          !
-          arg = tpi*dot_product(qpoint, dble(irr_q(:,irq)))
-          fac = exp(cmplx_i*arg)/dble(ndegen_q(irq))
-          dyn_q_f(imode,jmode) = dyn_q_f(imode,jmode) + fac*dyn_r(imode,jmode,irq)
-          !
-        enddo !irq
-        !
-      enddo !jmode
-    enddo !imode
-    !
-    ! 2) We diagonalize the Reciprocal Dynamical Matrix in order to obtain the eigenmodes
-    ! and squared eigenfrequencies at each q point of the phonon fine mesh (real vibrational
-    ! phonon representation). We use the diagonalizing matrix to recover the physical meaning
-    ! vibration modes
-    !
-    ! Diagonalise DM_k of the fine grid (->basis of eigenmodes) (based on Wannier90 knowhow)
-    !
-    dyn_pack = cmplx_0
-    P_diag = cmplx_0
-    w2 = ZERO
-    omega = ZERO
-    !
-    ! We pack the complex hamiltonian (upper triangular part for zhpevx)
-    !
-    do jmode = 1, 3*nat
-      do imode = 1, jmode
-        !
-        dyn_pack(imode+((jmode-1)*jmode)/2) = dyn_q_f(imode,jmode)
-        !
-      enddo !imode
-    enddo !jmode
-    !
-    ! And we diagonalize
-    !
-    call zhpevx("V", "A", "U", 3*nat, dyn_pack, 0.0, 0.0, 0,0, -1.0, nfound, w2, P_diag, &
-                                                  3*nat, cwork, rwork, iwork, ifail, info)
-    !
-    do imode = 1, 3*nat
-      !
-      if (w2(imode)>ZERO) then
-        omega(imode) = sqrt(abs(w2(imode)))
-      else
-        omega(imode) = -sqrt(abs(w2(imode)))
-      endif
-      omega(imode) = omega(imode)*0.001d0 ! from meV to eV
-      !
-      ! At this step, some folks calculate the real displacements (polarizations) of the atoms
-      ! that are the vibrational eigenvectors divided by sqrt(amass)
-      !
-      do jmode = 1, 3*nat
-        !
-        na = ((jmode-1)/3) + 1
-        P_diag(jmode,imode) = P_diag(jmode,imode)/sqrt(amass(ityp(na)))
-        !
-      enddo !jmode
-      !
-      ! But, if we calculate the displacements, the matrix made by them is not the change matrix P
-      ! that diagonalize A (Dynamical Matrix) through P^-1*A*P, because this one is made by the
-      ! eigenvectors (and not the displacements) of A
-      ! But don't worry, because this displacements allow you to recover the physical meaning
-      ! of the vibraional mode, so let's work with them
-      !
-    enddo !imode
-
-  end subroutine DM_Rp2q
 
 end module intw_ph
