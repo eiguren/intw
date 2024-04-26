@@ -22,7 +22,7 @@ module intw_input_parameters
   save
   !
   ! variables
-  public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry
+  public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential
   public :: intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
   public :: ph_dir, qlist, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
             nq1, nq2, nq3, nqirr, calc_epmat
@@ -44,6 +44,9 @@ module intw_input_parameters
 
   integer :: nk1 = 0, nk2 = 0, nk3 = 0
   ! Monkhorst-Pack mesh indices for the coarse mesh
+
+  real(dp) :: chemical_potential = 0.0_dp
+  ! The  value which determines the occupation factors, in eV.
 
   logical :: TR_symmetry
   !If TR symmetry is present TR_symmetry=.true.
@@ -79,7 +82,8 @@ module intw_input_parameters
 
 
   NAMELIST / input / mesh_dir, prefix, nk1, nk2, nk3, &
-                     TR_symmetry
+                     TR_symmetry, &
+                     chemical_potential
 
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, compute_mmn, &
                       compute_amn
