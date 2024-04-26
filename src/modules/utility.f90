@@ -25,7 +25,8 @@ use kinds, only: dp
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
-            qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser
+            qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
+            smeared_delta, fermi_dirac, area_vec
   !
   private
   !
@@ -1588,5 +1589,47 @@ end function intgr_spline_gaussq
   !   ylm=(0.0_dp,0.0_dp)
   !
   ! end subroutine complex_ylmr2
+
+
+
+  ! MBR 24/04/24
+  ! smearing functions for integrals
+
+  function smeared_delta(x,s)
+    use kinds, only: dp
+    use intw_useful_constants, only: tpi
+    implicit none
+    real(dp) :: x,s, smeared_delta
+    !gaussian
+    smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
+  return
+  end function smeared_delta
+
+  function fermi_dirac(x, kt)
+          ! x = energy - e_fermi, kT = Boltzmann * temp, same units
+    use kinds, only: dp
+    use intw_useful_constants, only: tpi
+    implicit none
+    real(dp) :: x, kt, fermi_dirac
+    ! With finite T
+    fermi_dirac = 1.0_dp/(exp(x/kt) + 1.0_dp)
+    !  T=0 limit
+    ! fermi_dirac = 0.5_dp* (-sign(1.0_dp,x) + 1.0_dp)
+  return
+  end function fermi_dirac
+
+
+  ! MBR 24/04/24
+  ! triangle area (taken from FSH/modules/geometry.f90)
+  function  area_vec(v1,v2)
+    use kinds, only: dp
+    implicit none
+    real(kind=dp), dimension(3), intent(in) :: v1,v2
+    real(kind=dp) :: area_vec
+    area_vec =  (v1(2)*v2(3) - v1(3)*v2(2))**2 + &
+                (v1(3)*v2(1) - v1(1)*v2(3))**2 + &
+                (v1(1)*v2(2) - v1(2)*v2(1))**2
+    area_vec = sqrt(area_vec)*0.5_dp
+  end function area_vec
 
 end module intw_utility
