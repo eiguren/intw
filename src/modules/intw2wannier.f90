@@ -14,6 +14,8 @@ module intw_intw2wannier
 !       using only the wavefunctions in the IBZ, rotating them appropriately.
 !----------------------------------------------------------------------------!
   use kinds, only: dp
+  use intw_reading, only: nbands, nG_max, ngm, nspin
+  use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
   !
@@ -32,7 +34,7 @@ module intw_intw2wannier
             generate_guiding_function, &
             get_guiding_function_overlap_FFT, &
             get_guiding_function_overlap_convolution, get_radial_part, &
-            get_angular_part, ylm_wannier
+            get_angular_part, ylm_wannier  !, get_bvec_list
   !
   private
   !
@@ -41,6 +43,7 @@ module intw_intw2wannier
   ! variables read from the $prefix.nnkp file, which must be checked with
   ! the data read from the input file for consistency.
 
+  external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
 
   integer     :: nnkp_exclude_bands     !how many bands are excluded?
 
@@ -58,7 +61,7 @@ module intw_intw2wannier
 
   integer     :: nnkp_nnkpts            !the number near neighbor k-points
 
-  integer     :: nnkp_n_proj            !the number of projections specified
+  integer     :: nnkp_n_proj            !the number of projections specified 
                                         !(should be the same as number of Wannier functions)
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
@@ -80,6 +83,7 @@ module intw_intw2wannier
   integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another
 
   logical,allocatable  :: nnkp_excluded_bands(:) ! what bands are excluded
+
 
 contains
   !
@@ -118,9 +122,8 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, noncolin, scan_file_to, nbands
+  use intw_reading, only: alat, noncolin, scan_file_to
   use intw_utility, only: find_free_unit
-  use intw_useful_constants, only: bohr, tpi, eps_8
 
   implicit none
 
@@ -265,7 +268,7 @@ contains
   read(nnkp_unit,*) nnkp_exclude_bands
   !
   ! JLB: Now this is done in reading.f90 -> set_num_bands
-  !      Here only poulating nnkp_* variables,
+  !      Here only poulating nnkp_* variables, 
   !      then check for consistency with intw_* in main program / utility
   !num_exclude_bands=nnkp_exclude_bands
   !allocate(exclude_bands(num_exclude_bands))
@@ -399,7 +402,6 @@ contains
 ! This subroutine checks that the irreducible kpoints and the mesh
 ! read from the nnkp file are related.
 !--------------------------------------------------------------------!
-  use intw_useful_constants, only: eps_8
 
   implicit none
 
@@ -463,10 +465,10 @@ contains
 ! header to provide a time stamp in our files
 !-----------------------------------------------------------
 
-  character(*), intent(in)   :: method
-  character(256), intent(out) :: header
+  character(256) :: header
   character(8)   :: cdate
   character(10)  :: ctime
+  character(*)   :: method
 
   call date_and_time(DATE=cdate,TIME=ctime)
   !
@@ -490,16 +492,17 @@ contains
   !----------------------------------------------------------------------------!
   USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
   use intw_utility, only: find_free_unit
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution
+  use intw_matrix_elements, only: get_plane_wave_matrix_element_convolution_map
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use intw_reading, only: num_bands_intw, nG_max, nbands, nspin
+  use intw_reading, only: num_bands_intw
   use intw_symmetries, only:  QE_folder_sym
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, &
-                                  get_plane_wave_matrix_element_convolution_map
+
 
   implicit none
 
-  logical, intent(in)        :: intw2W_fullzone
-  character(*), intent(in)   :: method
+  logical        :: intw2W_fullzone
+  character(*)   :: method
 
 
   integer        :: io_unit_mmn, io_unit_eig
@@ -511,7 +514,7 @@ contains
 
   integer        :: ikpt_1, ikpt_2
   integer        :: nb1, nb2, nb
-  integer        :: G(3)
+  integer        :: G(3), G_plus(3)
 
   integer        :: ngk1, ngk2
 
@@ -571,13 +574,17 @@ contains
       write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
       ! fetch data
-      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2)
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig)
 
       ngk2= ngk_all(QE_folder_sym(ikpt_2))
       ! Compute the matrix elements
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
                         ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
+          !call get_plane_wave_matrix_element_convolution      &
+          !(G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
+
+
       else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
                         ((/0, 0, 0/),list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
@@ -616,14 +623,14 @@ contains
   !----------------------------------------------------------------------------!
    USE intw_allwfcs, only: get_psi_general_k_all_wfc
    use intw_utility, only: find_free_unit
-   use intw_reading, only : noncolin, num_bands_intw, nbands, ngm, nG_max, nspin
-   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
    use intw_useful_constants, only: cmplx_0
+   use intw_reading, only : noncolin, num_bands_intw
+   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
 
   implicit none
 
-  logical, intent(in)      :: intw2W_fullzone
-  character(*), intent(in) :: method
+  logical        :: intw2W_fullzone
+  character(256) :: method
 
   integer        :: io_unit_amn
   integer        :: nkmesh
@@ -640,9 +647,13 @@ contains
 
   complex(dp)    :: guiding_function(ngm,nspin)
 
+  real(dp)       :: QE_eig(num_bands_intw)
+
   complex(dp)    :: amn(num_bands_intw)
 
   character(256) :: header
+
+  integer :: G_plus(3)
 
 
   nkmesh = nk1*nk2*nk3
@@ -662,7 +673,9 @@ contains
   do ikpt = 1, nnkp_num_kpoints
 
     ! fetch the data
-    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc)
+    !call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
+!     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , nspin,list_iG, wfc, QE_eig, G_plus)
+    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig)
 
     !loop on all bands and all trial functions
     do n_proj = 1,nnkp_n_proj
@@ -727,7 +740,6 @@ contains
 !---------------------------------------------------------------------------
 
   use intw_reading, only: gvec, ngm, alat
-  use intw_useful_constants, only: tpi, fpi, ZERO, cmplx_0, cmplx_i
 
   implicit none
 
@@ -745,7 +757,7 @@ contains
   real(dp) :: zona, zaxis(3), xaxis(3), ylm(ngm)
   real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
   real(dp) :: k_plus_G_cart(3,ngm)
-  real(dp) :: norm2
+  real(dp) :: norm2, x, y
   real(dp) :: radial_l(ngm, 0:lmax), coef(lmmax)
   complex(dp) :: four_pi_i_l
 
@@ -788,13 +800,13 @@ contains
   !
   ! JLB: Expansion coefficients of this projection in lm-s (needed for hybrids)
   call projection_expansion(proj_l, proj_m, coef)
-  !
+  ! 
   ! get the part from the radial integration
   proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
   zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
   !
   ! MBR, JLB: radial integrals based on pw2wannier
-  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
+  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function) 
   call get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
   !
   do l=0, lmax
@@ -857,10 +869,9 @@ contains
 !  The computation is done over all bands using FFT.
 !------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw, nspin
+  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw
   use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
                       wfc_from_g_to_r
-  use intw_useful_constants, only: cmplx_0
 
   implicit none
 
@@ -873,7 +884,7 @@ contains
 
   !local variables
 
-  integer :: ibnd, ir, ispin, iG0, iG0_fft, G0(3)
+  integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
   complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3,nspin)
   complex(dp) :: frr(nr1*nr2*nr3,nspin)
   complex(dp) :: fg(ngm,nspin)
@@ -898,24 +909,24 @@ contains
      !call func_from_g_to_r (1,ngm,guiding_function,fr)
      call func_from_g_to_r (1,ngm,guiding_function,frr)
      !
-     do ispin=1,nspin
+     do is=1,nspin
         !
-        call wfc_from_g_to_r (list_iG,wfc(:,ibnd,ispin),wfc_r)
+        call wfc_from_g_to_r (list_iG,wfc(:,ibnd,is),wfc_r)
         !
         do ir=1,nr1*nr2*nr3
            !
            ! MBR
            !fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
-           fr(ir,ispin)=fr(ir,ispin) + conjg(wfc_r(ir))*frr(ir,ispin)
+           fr(ir,is)=fr(ir,is) + conjg(wfc_r(ir))*frr(ir,is)
            !
         enddo !ir
-     enddo !ispin
+     enddo !is
      !
      call func_from_r_to_g (1,ngm,fr,fg)
      !
      ! JLB: Sum both spin components
-     do ispin=1, nspin
-      amn(ibnd)=amn(ibnd)+fg(iG0_fft, ispin)
+     do is=1, nspin
+      amn(ibnd)=amn(ibnd)+fg(iG0_fft, is)
      end do
      !amn(ibnd)=fg(iG0_fft)
      !
@@ -944,8 +955,7 @@ contains
 !
 !--------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, num_bands_intw, nspin
-  use intw_useful_constants, only: cmplx_0
+  use intw_reading, only: ngm, nG_max, num_bands_intw
 
   implicit none
 
@@ -958,7 +968,7 @@ contains
 
   !local variables
 
-  integer :: i, ibnd, ispin, iG, nG_max_non_zero
+  integer :: i, ibnd, is, iG, nG_max_non_zero
   integer        :: list_iG1(nG_max)
   complex(dp) :: amn_local(num_bands_intw)
 !  real(dp)       :: wrong_norm2
@@ -984,7 +994,7 @@ contains
   !$omp parallel default(none)                          &
   !$omp shared(nG_max_non_zero,nG_max,list_iG,list_iG1,cmplx_0)  &
   !$omp shared(nbands,num_bands_intw,nspin,wfc,amn,guiding_function)   &
-  !$omp private(i,iG,ibnd,ispin,amn_local)
+  !$omp private(i,iG,ibnd,is,amn_local)
   !
   amn_local = cmplx_0
   !
@@ -999,11 +1009,11 @@ contains
      ! it is thus properly indexed by iG, not i.
      !
      do ibnd=1,num_bands_intw
-        do ispin=1,nspin
+        do is=1,nspin
            !
-           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,ispin))*guiding_function(iG,ispin)
+           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG,is)
            !
-        enddo !ispin
+        enddo !is
      enddo !ibnd
      !
   enddo !i loop
@@ -1044,7 +1054,7 @@ contains
    !local variables
 
    integer :: iG, l
-   real(dp) :: z, z2, z4, z6, z52, sqrt_z
+   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
    real(dp) :: p(ngm)
 
    ! from pw2wannier
@@ -1052,7 +1062,7 @@ contains
    integer :: mesh_r, ir
    real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
    real(DP) :: x, rad_int
-   real(DP), ALLOCATABLE :: func_r(:), r(:), rij(:), aux(:)
+   real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
 
    z=zona
    z2=z*z
@@ -1066,16 +1076,16 @@ contains
    do iG=1,ngm
    !
    p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
-             + k_plus_G_cart(2,iG)**2 &
-             + k_plus_G_cart(3,iG)**2 )
+            + k_plus_G_cart(2,iG)**2 &
+            + k_plus_G_cart(3,iG)**2 )
    !
-   enddo !iG
+   enddo !iG  
 
    !
    ! from pw2intw:
    !
    mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
-   allocate ( func_r(mesh_r), r(mesh_r), rij(mesh_r) )
+   allocate ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
    allocate ( aux(mesh_r))
    !
    !    compute the radial mesh
@@ -1113,7 +1123,7 @@ contains
       end if
    end do
 
-   deallocate(func_r,r,rij,aux)
+   deallocate(bes,func_r,r,rij,aux)
 
    return
 
@@ -1308,7 +1318,6 @@ contains
 ! If ordering in wannier90 code is changed or extended this should be the
 ! only place to be modified accordingly
 !--------------------------------------------------------------------------
-   use intw_useful_constants, only: pi, eps_8
 
    implicit none
 
@@ -1316,7 +1325,7 @@ contains
 
    integer,intent(in) :: l, mr, nr
    real(dp), intent(in) :: r(3,nr)
-   real(dp),intent(out) :: ylm(nr)
+   real(dp),intent(out) :: ylm(nr) 
 
    !local variables
 
@@ -1483,7 +1492,7 @@ contains
 !----------------------------------------
 !
 !--------------------------------------------------------------------------
-!     Outputs expansion coefficients for hybrid projections,
+!     Outputs expansion coefficients for hybrid projections, 
 !     following wannier90 user guide table 3.2
 !--------------------------------------------------------------------------
 
@@ -1495,8 +1504,8 @@ contains
    integer, intent(in)  :: l, mr
    real(dp), intent(out) :: coef(:)
    !
-   !local variables
-   integer :: lm
+   !local variables  
+   integer :: lm 
    real(dp) :: fac1, fac2, fac3, fac4, fac5
 
    coef = ZERO
@@ -1531,7 +1540,7 @@ contains
          !
          write(*,*)' ylm_wannier: m out of range! '
          stop
-         !
+         !         
       end if
       !
       if (l==-1) then  !  sp hybrids
@@ -1661,6 +1670,35 @@ contains
    end if
 
    end subroutine
+
+
+
+!===================================================
+            ! MBR 18/04/24: currently unused!!!
+    subroutine get_bvec_list (bvec)
+! Reads the first k-vector and its neighbours shells from nnkp, and
+! returns the list of the nnkp_nnkpts b-vectors used by W90
+! in fractional coordinates
+
+  implicit none
+  real(dp) , intent(out) :: bvec(3,nnkp_nnkpts)
+  integer   :: nn, ik, G(3)
+  real(dp)  :: kpoint(3), kpoint_plus_b(3)
+
+  kpoint = nnkp_kpoints(:,1)
+  do nn = 1, nnkp_nnkpts
+      G = nnkp_list_G(:,nn,1)
+      ik = nnkp_list_ikpt_nn(nn,1)
+      kpoint_plus_b =  nnkp_kpoints(:,ik) + real(G,dp)
+      bvec(:,nn) = kpoint_plus_b - kpoint
+  end do
+
+  return
+  end subroutine get_bvec_list
+!===================================================
+
+
+   
 !----------------------------------------------------------------------------!
 !
 !
