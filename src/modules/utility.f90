@@ -371,8 +371,17 @@ end function intgr_spline_gaussq
     implicit none
 
     integer, intent(in) :: nk_1, nk_2, nk_3
-    integer, intent(inout) :: ikpt
-    integer, intent(inout) :: i, j, k
+    integer :: ikpt
+    integer :: i, j, k
+!    integer, intent(inout) :: ikpt
+!    integer, intent(inout) :: i, j, k
+! ASIER(9/5/2024): There are numerous calls to this subroutine within loops, e.g.,
+! do ikpt = 1, n
+!   call switch_indices(.. , ikpt, ..)
+! The loop counter cannot be modified as output.
+! Currently, the workaround is to remove the "intent(inout)" specification.
+
+
     integer, intent(in) :: switch
 
     integer :: i_m_1, j_m_1
@@ -427,7 +436,7 @@ end function intgr_spline_gaussq
     !         Old
     !             ikpt = (k-1) + (j-1)*nk_3 + (i-1)*nk_2*nk_3 + 1
     !         New 20 06 2014
-    !             ikpt = (i-1) + (j-1)*nk_1 + (k-1)*nk_1*nk2 + 1
+    !             ikpt = (i-1) + 
     !
     !     in general:
     !
@@ -449,8 +458,11 @@ end function intgr_spline_gaussq
     implicit none
 
     integer, intent(in) :: nk_1, nk_2, nk_3
-    integer, intent(inout) :: ikpt
-    integer, intent(inout) :: i, j, k
+    ! ASIER(9/5/2024): the same as in  switch_indices (see above)
+    integer :: ikpt
+    integer :: i, j, k
+    !integer, intent(inout) :: ikpt
+    !integer, intent(inout) :: i, j, k
     integer, intent(in) :: switch
 
     integer :: j_m_1, k_m_1

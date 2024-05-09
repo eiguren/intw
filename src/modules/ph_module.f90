@@ -483,8 +483,15 @@ contains
             write(*,*)' Failed to read dynq for iq= ',iq
          end if
       end do
-      if ( not(all_done) ) stop
 
+      !if ( not(all_done) ) stop
+      !ASIER 9/5/2024 gfortran does not admit the above with
+      !  486 |       if ( not(all_done) ) stop
+      !      |               1
+      !Error: ‘i’ argument of ‘not’ intrinsic at (1) must be INTEGER
+      !
+       if(.not.all_done) stop
+       
       return
       end subroutine read_dynq
   !====================================================================
