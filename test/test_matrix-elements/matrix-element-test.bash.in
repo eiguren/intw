@@ -9,7 +9,7 @@ fi
 
 
 # Run pw2intw
-@QE_BUILD_DIR@/bin/pw2intw.x < pw2intw.in | tee pw2intw.out
+@QE2INTW_BUILD_DIR@/pw2intw.x < pw2intw.in | tee pw2intw.out
 if [ -f CRASH ]; then
   exit 1
 fi
@@ -17,7 +17,7 @@ fi
 # Run the matrix-element calculation
 rm -rf ep_mat.dat*
 cp ../intw.in ./
-@CMAKE_BINARY_DIR@/src/utilities/ep_melements_noW.x < intw.in | tee intw.out
+@CMAKE_BINARY_DIR@/src/utilities/ep_melements.x < intw.in | tee intw.out
 
 
 # Compare calculation

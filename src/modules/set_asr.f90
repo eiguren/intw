@@ -6,7 +6,6 @@
 
 module intw_set_asr
 
-  use intw_utility, only: errore
   use kinds, only : dp
 
   implicit none
@@ -25,6 +24,7 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
   !-----------------------------------------------------------------------
   !
   USE kinds,      ONLY : DP
+  use intw_utility, only: errore
   !
   IMPLICIT NONE
   CHARACTER (LEN=10), intent(in) :: asr
@@ -34,7 +34,7 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
   !
   INTEGER :: axis, n, i, j, na, nb, n1,n2,n3, m,p,k,l,q,r, i1,j1,na1
   REAL(DP) :: zeu_new(3,3,nat)
-  REAL(DP), ALLOCATABLE :: frc_new(:,:,:,:,:,:,:)
+  REAL(DP) :: frc_new(nr1,nr2,nr3,3,3,nat,nat)
   type vector
      real(DP),pointer :: vec(:,:,:,:,:,:,:)
   end type vector
@@ -46,14 +46,14 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
   ! indices of the vectors u that are not independent to the preceding ones,
   ! n_less = number of such vectors, i_less = temporary parameter
   !
-  integer, allocatable :: ind_v(:,:,:)
-  real(DP), allocatable :: v(:,:)
+  integer :: ind_v(9*nat*nat*nr1*nr2*nr3,2,7)
+  real(DP) :: v(9*nat*nat*nr1*nr2*nr3,2)
   ! These are the "vectors" associated with symmetry conditions, coded by
   ! indicating the positions (i.e. the seven indices) of the non-zero elements (there
   ! should be only 2 of them) and the value of that element. We do so in order
   ! to limit the amount of memory used.
   !
-  real(DP), allocatable :: w(:,:,:,:,:,:,:), x(:,:,:,:,:,:,:)
+  real(DP) :: w(nr1,nr2,nr3,3,3,nat,nat), x(nr1,nr2,nr3,3,3,nat,nat)
   ! temporary vectors and parameters
   real(DP) :: scal,norm2, sum
   !
@@ -110,7 +110,6 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
                   end do
                end do
                frc(1,1,1,i,j,na,na) = frc(1,1,1,i,j,na,na) - sum
-               !               write(6,*) ' na, i, j, sum = ',na,i,j,sum
             end do
          end do
       end do
@@ -272,7 +271,6 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
      allocate(u(k) % vec(nr1,nr2,nr3,3,3,nat,nat))
      u(k) % vec (:,:,:,:,:,:,:)=0.0d0
   enddo
-  ALLOCATE (frc_new(nr1,nr2,nr3,3,3,nat,nat))
   do i=1,3
      do j=1,3
         do na=1,nat
@@ -334,7 +332,6 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
      enddo
   endif
   !
-  allocate (ind_v(9*nat*nat*nr1*nr2*nr3,2,7), v(9*nat*nat*nr1*nr2*nr3,2) )
   m=0
   do i=1,3
      do j=1,3
@@ -391,7 +388,6 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
   ! orthonormalized by construction.
   !
   n_less=0
-  allocate (w(nr1,nr2,nr3,3,3,nat,nat), x(nr1,nr2,nr3,3,3,nat,nat))
   do k=1,p
      w(:,:,:,:,:,:,:)=u(k) % vec (:,:,:,:,:,:,:)
      x(:,:,:,:,:,:,:)=u(k) % vec (:,:,:,:,:,:,:)
@@ -513,9 +509,6 @@ SUBROUTINE set_asr (asr, nr1, nr2, nr3, frc, zeu, nat, ibrav, tau)
         enddo
      enddo
   enddo
-  deallocate (x, w)
-  deallocate (v, ind_v)
-  deallocate (frc_new)
   !
   return
 end subroutine set_asr
@@ -529,15 +522,14 @@ subroutine sp_zeu(zeu_u,zeu_v,nat,scal)
   !
   USE kinds, ONLY: DP
   implicit none
-  integer i,j,na,nat
-  real(DP) zeu_u(3,3,nat)
-  real(DP) zeu_v(3,3,nat)
-  real(DP) scal
+  integer, intent(in) :: nat
+  real(DP), intent(in) :: zeu_u(3,3,nat)
+  real(DP), intent(in) :: zeu_v(3,3,nat)
+  real(DP), intent(out) :: scal
+  !
+  integer :: i,j,na
   !
   !
-!haritz
-!write(*,*) 'sp_zeu: nat',nat
-!haritz
   scal=0.0d0
   do i=1,3
     do j=1,3
@@ -560,10 +552,12 @@ subroutine sp1(u,v,nr1,nr2,nr3,nat,scal)
   !
   USE kinds, ONLY: DP
   implicit none
-  integer nr1,nr2,nr3,i,j,na,nb,n1,n2,n3,nat
-  real(DP) u(nr1,nr2,nr3,3,3,nat,nat)
-  real(DP) v(nr1,nr2,nr3,3,3,nat,nat)
-  real(DP) scal
+  integer, intent(in) :: nr1,nr2,nr3,nat
+  real(DP), intent(in) :: u(nr1,nr2,nr3,3,3,nat,nat)
+  real(DP), intent(in) :: v(nr1,nr2,nr3,3,3,nat,nat)
+  real(DP), intent(out) :: scal
+  !
+  integer :: i,j,na,nb,n1,n2,n3
   !
   !
   scal=0.0d0
@@ -598,11 +592,13 @@ subroutine sp2(u,v,ind_v,nr1,nr2,nr3,nat,scal)
   !
   USE kinds, ONLY: DP
   implicit none
-  integer nr1,nr2,nr3,i,nat
-  real(DP) u(nr1,nr2,nr3,3,3,nat,nat)
-  integer ind_v(2,7)
-  real(DP) v(2)
-  real(DP) scal
+  integer, intent(in) :: nr1,nr2,nr3,nat
+  real(DP), intent(in) :: u(nr1,nr2,nr3,3,3,nat,nat)
+  integer, intent(in) :: ind_v(2,7)
+  real(DP), intent(in) :: v(2)
+  real(DP), intent(out) :: scal
+  !
+  integer :: i
   !
   !
   scal=0.0d0
@@ -626,10 +622,12 @@ subroutine sp3(u,v,i,na,nr1,nr2,nr3,nat,scal)
   !
   USE kinds, ONLY: DP
   implicit none
-  integer nr1,nr2,nr3,i,j,na,nb,n1,n2,n3,nat
-  real(DP) u(nr1,nr2,nr3,3,3,nat,nat)
-  real(DP) v(nr1,nr2,nr3,3,3,nat,nat)
-  real(DP) scal
+  integer, intent(in) :: nr1,nr2,nr3,i,na,nat
+  real(DP), intent(in) :: u(nr1,nr2,nr3,3,3,nat,nat)
+  real(DP), intent(in) :: v(nr1,nr2,nr3,3,3,nat,nat)
+  real(DP), intent(out) :: scal
+  !
+  integer :: j,nb,n1,n2,n3
   !
   !
   scal=0.0d0

@@ -1,0 +1,16 @@
+&input
+    mesh_dir = './'
+    prefix = 'si'
+    nk1 = 8
+    nk2 = 8
+    nk3 = 8
+    TR_symmetry = .false.
+/
+
+&intw2W
+    intw2W_fullzone = .false.
+    intw2W_method = 'CONVOLUTION'
+/
+
+&ph
+/

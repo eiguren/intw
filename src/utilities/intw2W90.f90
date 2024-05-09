@@ -1,23 +1,23 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!       program intw2W90
-!       -----------------------------------
+! program intw2W90
+! -----------------------------------
 !
-!       This is a "utility" program which is part of the intw project.
+! This is a "utility" program which is part of the intw project.
 !
-!       The purpose of this utility is to perform the same tasks as the
-!       program "pw2wannier90" which is part of the QE distribution, but
-!       utilizing a minimum set of (QE generated) Bloch functions, using
-!       symmetry.
+! The purpose of this utility is to perform the same tasks as the
+! program "pw2wannier90" which is part of the QE distribution, but
+! utilizing a minimum set of (QE generated) Bloch functions, using
+! symmetry.
 !
-!       The code is heavily inspired from pw2wannier90.
-!       Mad props to the QE people; their code is a bit above my paygrade,
-!       however, so I've taken some bits and modified them so that a monkey
-!       could understand.
+! The code is heavily inspired from pw2wannier90.
+! Mad props to the QE people; their code is a bit above my paygrade,
+! however, so I've taken some bits and modified them so that a monkey
+! could understand.
 !
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program intw2W90_2
+program intw2W90
 
   use kinds, only: dp
   use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, nnkp_n_proj, &
@@ -34,368 +34,334 @@ program intw2W90_2
   use intw_input_parameters, only: mesh_dir, prefix, intw2W_fullzone, intw2W_method, tr_symmetry, &
                                    nk1, nk2, nk3, tr_symmetry, compute_mmn, compute_amn, &
                                    read_input
-  use intw_reading, only: gvec, ngm, nbands, kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
-                          read_parameters_data_file_xml, get_ngm, get_ngmax, get_gvec, &
+  use intw_reading, only: kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
+                          read_parameters_data_file_xml, get_gvec, &
                           read_kpoints_data_file_xml, deallocate_reading_variables, &
-                          num_bands_intw, num_wann_intw, num_exclude_bands_intw, band_excluded_intw, &
+                          num_wann_intw, num_exclude_bands_intw, &
                           set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
   use intw_utility, only: get_timing, generate_kmesh
 
 !================================================================================
-!       Declare the variables
+! Declare the variables
 !================================================================================
-implicit none
+  implicit none
 
-integer       ::       nk_irr , nkmesh
+  integer :: nk_irr , nkmesh
 
-logical       ::       read_status, have_nnkp
+  logical :: read_status, have_nnkp
 
-logical       ::       k_points_consistent
+  logical :: k_points_consistent
 
+  character(256) :: nnkp_file
 
-character(256)::       nnkp_file, method
+  real(dp), allocatable :: kmesh(:,:)
 
-
-
-real(dp),allocatable::  kmesh(:,:)
-
-real(dp)            :: time1, time2
-
-real(dp),allocatable :: kpoints_irr  (:,:)
+  real(dp) :: time1, time2
 
 
-!--------------------------------------------------------------------------------
-call get_timing(time1)
-!================================================================================
-!       Talk to the user
-!================================================================================
-write(*,20) '====================================================='
-write(*,20) '|                  program intw2W90                 |'
-write(*,20) '|        ---------------------------------          |'
-write(*,20) '====================================================='
-write(*,20) '|    waiting for input file...                      |'
-
-
-!================================================================================
-!       read the input file
-!       Read in the necessary information from standard input
-!================================================================================
-call read_input(read_status)
-
-method = trim(intw2W_method)
-
-if (read_status ) then
-       stop
-end if
-
-!================================================================================
-!       read the parameters from the SCF QE calculation, in
-!       particular, read in the symmetry matrices!!!
-!================================================================================
-call read_parameters_data_file_xml()
-
-!-call test_symmetry_axis_angle()
-
-! JLB set the number of bands for the calculation
-call set_num_bands()
-
-
-!================================================================================
-!      set up the gvec array, which will contain the global
-!      G-vectors, as well as the FFT code, which is necessary to
-!      generate g_fft_map, which in turn is necessary in the
-!      wavefunction rotation code!
-!================================================================================
-
-call get_ngm ()
-call get_nGmax
-allocate (gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
-
-call get_gvec ()
-
-
-
-!allocate useful variables
-call allocate_fft()
-
-!generate some important indices for FFT
-call generate_nl()
-
-
-if (method == 'CONVOLUTION') then
-        write(*,20) '|       - intw2W_method   = CONVOLUTION             |'
-else if (method == 'FFT') then
-        write(*,20) '|       - intw2W_method   = FFT                     |'
-else
-        write(*,20) '***********************************************'
-        write(*,20) '* UNKNOWN COMPUTATION METHOD:'
-        write(*,20) '* Only "CONVOLUTION" and "FFT" available'
-        write(*,20) '***********************************************'
-        stop
-end if
-write(*,20) '|           ---------------------------------       |'
-
-!================================================================================
-!       Check that $prefix.nnkp is present
-!================================================================================
-nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
-
-inquire(file=nnkp_file,exist=have_nnkp)
-
-if(.not. have_nnkp) then
-   write(*,20)      '**********************************************************'
-   write(*,20)      '* Could not find the file '//trim(nnkp_file)
-   write(*,20)      '* Did you run W90 -pp $seed to get the parameter file?   '
-   write(*,20)      '**********************************************************'
-stop
-end if
-write(*,20) '|       - .nnkp file found                          |'
-write(*,20) '|           ---------------------------------       |'
-
-
-!================================================================================
-!       read the parameters in the .nnkp file
-!================================================================================
-
+  20 format(A)
+  30 format(A,F8.2,6X,A)
+  !
+  !
+  !================================================================================
+  ! Begining
+  !================================================================================
+  !
+  call get_timing(time1)
+  !
+  write(*,20) '====================================================='
+  write(*,20) '|                  program intw2W90                 |'
+  write(*,20) '|        ---------------------------------          |'
+  write(*,20) '====================================================='
+  !
+  !
+  !================================================================================
+  ! Read the necessary information from standard input
+  !================================================================================
+  !
+  write(*,20) '|    waiting for input file...                      |'
+  !
+  call read_input(read_status)
+  !
+  if (read_status ) stop
+  !
+  if (trim(intw2W_method) == 'CONVOLUTION') then
+    write(*,20) '|       - intw2W_method   = CONVOLUTION             |'
+  else if (trim(intw2W_method) == 'FFT') then
+    write(*,20) '|       - intw2W_method   = FFT                     |'
+  else
+    write(*,20) '***********************************************'
+    write(*,20) '* UNKNOWN COMPUTATION METHOD:'
+    write(*,20) '* Only "CONVOLUTION" and "FFT" available'
+    write(*,20) '***********************************************'
+    stop
+  end if
+  write(*,20) '|           ---------------------------------       |'
+  !
+  !
+  !================================================================================
+  ! Check that $prefix.nnkp is present
+  !================================================================================
+  !
+  nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
+  !
+  inquire(file=nnkp_file,exist=have_nnkp)
+  !
+  if(.not. have_nnkp) then
+    write(*,20) '**********************************************************'
+    write(*,20) '* Could not find the file '//trim(nnkp_file)
+    write(*,20) '* Did you run W90 -pp $seed to get the parameter file?   '
+    write(*,20) '**********************************************************'
+    stop
+  end if
+  write(*,20) '|       - .nnkp file found                          |'
+  write(*,20) '|           ---------------------------------       |'
+  !
+  !
+  !================================================================================
+  ! Read the parameters from the SCF QE calculation
+  !================================================================================
+  !
+  call read_parameters_data_file_xml()
+  !
+  !
+  !================================================================================
+  ! Set the number of wave functions
+  !================================================================================
+  !
+  call set_num_bands()
+  !
+  !
+  !================================================================================
+  ! Print spin information
+  !================================================================================
+  !
+  if (nspin==1) then
+    write(*,20) '|       - Paramagnetic calculation nspin=1          |'
+  elseif (nspin==2) then
+    write(*,20) '|       - Spin-polarized calculation nspin = 2      |'
+    if (noncolin) write(*,20) '|       - Non-collinear spin calculation            |'
+  else
+    write(*,20) '*****************************************************'
+    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
+    write(*,20) '*            program stops.                         *'
+    write(*,20) '*****************************************************'
+    stop
+  endif
+  !
+  write(*,20) '|           ---------------------------------       |'
+  !
+  !
+  !================================================================================
+  ! Set symmetry arrays
+  !================================================================================
+  !
+  write(*,20) '|       - Setting symmetry arrays...                |'
+  !
+  ! Compute the indices of the inverse rotation matrices
+  call find_inverse_symmetry_matrices_indices()
+  !
+  ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
+  call allocate_and_build_spin_symmetry_matrices(nsym)
+  !
+  write(*,20) '|           ---------------------------------       |'
+  !
+  !
+  !================================================================================
+  ! Read the .nnkp file
+  !================================================================================
+  !
+  write(*,20) '|       - Reading nnkp file...                      |'
+  !
   call read_nnkp_file(nnkp_file)
   !
-  !JLB: double-check
   if (nnkp_exclude_bands .ne. num_exclude_bands_intw) then
-        write(*,20)      '**********************************************************'
-        write(*,20)      '* Mismatch in number of excluded bands                    '
-        write(*,20)      '**********************************************************'
-        stop
+    write(*,20) '**********************************************************'
+    write(*,20) '* Mismatch in number of excluded bands                    '
+    write(*,20) '**********************************************************'
+    stop
   else if (nnkp_n_proj .ne. num_wann_intw) then
-        write(*,20)      '**********************************************************'
-        write(*,20)      '* Mismatch in number of projections/wannier functions     '
-        write(*,20)      '**********************************************************'
-        stop
+    write(*,20) '**********************************************************'
+    write(*,20) '* Mismatch in number of projections/wannier functions     '
+    write(*,20) '**********************************************************'
+    stop
   end if
   !
   ! just as a test; can be removed later
-  !
   call output_nnkp_file()
-!================================================================================
-!       read in the kpoints from the QE folders
-!================================================================================
-! read the koints information
-allocate(kpoints_QE(3,nkpoints_QE))
-call read_kpoints_data_file_xml(kpoints_QE)
+  !
+  !
+  !================================================================================
+  ! Set up the gvec array and all FFT variables
+  !================================================================================
+  !
+  write(*,20) '|       - Reading G vectors...                      |'
+  !
+  call get_gvec ()
+  !
+  ! Allocate useful variables
+  call allocate_fft()
+  !
+  ! Generate some important indices for FFT
+  call generate_nl()
+  !
+  !
+  !================================================================================
+  ! Read the kpoints from the calculation
+  !================================================================================
+  !
+  write(*,20) '|       - Reading k-points...                       |'
+  !
+  allocate(kpoints_QE(3,nkpoints_QE))
+  !
+  call read_kpoints_data_file_xml(kpoints_QE)
+  !
+  !
+  !================================================================================
+  ! Build the wave function's k-mesh
+  !================================================================================
+  !
+  write(*,20) '|       - Building k-mesh...                        |'
+  !
+  nkmesh = nk1*nk2*nk3
+  allocate(kmesh(3,nkmesh))
+  call generate_kmesh(kmesh,nk1,nk2,nk3)
+  !
+  ! Find the size of the irreducible set of k-points (IBZ)
+  call find_size_of_irreducible_k_set(nk1,nk2,nk3,kmesh,nk_irr)
+  !
+  !
+  !================================================================================
+  ! Check that kmesh and nnkp_kpoints are consistent
+  !================================================================================
+  !
+  call intw2W90_check_mesh(nkmesh,kmesh)
+  !
+  write(*,20) '|       - The mesh in the Wannier90 input.win file  |'
+  write(*,20) '|         and the intw mesh are equal.              |'
+  write(*,20) '|           ---------------------------------       |'
+  !
+  !
+  !================================================================================
+  ! Set symmetry relations between irreducible k-points and full k-mesh
+  !================================================================================
+  !
+  ! Allocate arrays
+  call allocate_symmetry_related_k(nk1,nk2,nk3,nsym)
+  !
+  ! Fill the symmetry arrays
+  call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
+                              QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, full_mesh, IBZ )
+  !
+  !
+  !================================================================================
+  ! Check that the number of kpoints corresponds to either a full mesh or the IBZ
+  !================================================================================
+  !
+  if (full_mesh .and. IBZ) then
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with a full 1BZ and a      |'
+    write(*,20) '|         IBZ has also been found.                  |'
+    write(*,20) '|           ---------------------------------       |'
+  else if(IBZ) then
+    write(*,20) '|       - the kpoints present in the QE folders     |'
+    write(*,20) '|         are consistent with an IBZ.               |'
+    write(*,20) '|           ---------------------------------       |'
+  else
+    write(*,20) '**********************************************************'
+    write(*,20) '* The kpoints present in the QE folders are not consistent'
+    write(*,20) '* with the parameters of the input file!                 '
+    write(*,20) '**********************************************************'
+    write(*,20) '* debug information:                                *'
+    write(*,*) '*        nkpoints_QE = ',nkpoints_QE
+    write(*,*) '*        nkmesh      = ',nkmesh
+    write(*,*) '*        nk_irr      = ',nk_irr
+    stop
+  end if
+  !
+  !
+  !================================================================================
+  ! Check that the requested calculation is possible
+  !================================================================================
+  !
+  if (intw2W_fullzone ) then
+    write(*,20) '|       - intw2W_fullzone = .true.                  |'
+    if ( full_mesh ) then
+      write(*,20) '|         all k-points are explicitely calculated   |'
+      write(*,20) '|         no symmetry is assumed.                   |'
+      write(*,20) '|             (This is mostly for testing)          |'
+      write(*,20) '|           ---------------------------------       |'
+    else
+      write(*,20)      '**********************************************************'
+      write(*,20)      '* A full mesh is not present in the QE folders!          '
+      write(*,20)      '* The requested calculation is impossible.               '
+      write(*,20)      '*                   program stops.                       '
+      write(*,20)      '**********************************************************'
+      stop
+    end if
+  else
+    write(*,20) '|       - intw2W_fullzone = .false.                 |'
+    write(*,20) '|         Symmetries will be utilized.              |'
+    write(*,20) '|           ---------------------------------       |'
+  end if
+  !
+  !
+  !================================================================================
+  ! Read all wave functions
+  !================================================================================
+  !
+  call allocate_and_get_all_irreducible_wfc()
+  !
+  !
+  !================================================================================
+  ! Compute the mmn file
+  !================================================================================
+  !
+  if (compute_mmn) then
+    write(*,20) '|       - writing the file prefix.eig and           |'
+    write(*,20) '|         computing the file prefix.mmn...          |'
+    write(*,20) '| (this is labor intensive and may  take some time) |'
+    write(*,20) '|           ---------------------------------       |'
 
-!================================================================================
-! Build the kmesh corresponding to the parameters in the input file
-!================================================================================
-nkmesh = nk1*nk2*nk3
-allocate(kmesh(3,nkmesh))
-call generate_kmesh(kmesh,nk1,nk2,nk3)
+    call generate_mmn_using_allwfc(intw2W_fullzone,intw2W_method)
+  end if
+  !
+  !
+  !================================================================================
+  ! Compute the amn file
+  !================================================================================
+  !
+  if (compute_amn) then
+    write(*,20) '|       - computing the file prefix.amn...          |'
+    write(*,20) '| (this is labor intensive and may  take some time) |'
+    write(*,20) '|           ---------------------------------       |'
 
-!================================================================================
-! check that kmesh and nnkp_kpoints are consistent with one another
-!       This insures that the Wannier data is consistent with intw data.
-!================================================================================
-call intw2W90_check_mesh(nkmesh,kmesh)
+    call generate_amn_using_allwfc(intw2W_fullzone,intw2W_method)
+  end if
+  !
+  !
+  !================================================================================
+  ! Clean up
+  !================================================================================
+  !
+  call deallocate_symmetry_related_k()
+  call deallocate_nnkp()
+  call deallocate_fft()
+  call deallocate_reading_variables()
+  call deallocate_spin_symmetry_matrices()
+  deallocate(kpoints_QE)
+  deallocate(kmesh)
+  !
+  !
+  !================================================================================
+  ! Finish
+  !================================================================================
+  !
+  call get_timing(time2)
+  !
+  write(*,20) '|                     ALL DONE                      |'
+  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,20) '====================================================='
 
-
-
-write(*,20) '|       - The mesh in the Wannier90 input.win file  |'
-write(*,20) '|         and the intw mesh are equal.              |'
-write(*,20) '|           ---------------------------------       |'
-
-if     (nspin==1) then
-   write(*,20) '|       - The calculation is paramagnetic nspin=1   |'
-   write(*,20) '|                                                   |'
-   write(*,20) '|           ---------------------------------       |'
-elseif (nspin==2) then
-   write(*,20) '|       - Spin calculation nspin = 2                |'
-   if (noncolin) then
-      write(*,20) '|         Non-collinear Spin calculation            |'
-   endif
-   write(*,20) '|           ---------------------------------       |'
-else
-   write(*,20) '*****************************************************'
-   write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-   write(*,20) '*            program stops.                         *'
-   write(*,20) '*****************************************************'
-   stop
-endif
-
-
-
-!================================================================================
-!    Find the size of the irreducible set of k-points (IBZ)
-!    and check that the number of kpoints corresponds to either
-!    a full mesh or the IBZ.
-!================================================================================
-call find_size_of_irreducible_k_set(nk1,nk2,nk3,kmesh,nk_irr)
-
-!This is only for testing: The result for nk_irr is different in both.
-allocate(kpoints_irr(3,nk1*nk2*nk3))
-call find_the_irreducible_k_set(nk1,nk2,nk3,kmesh,kpoints_irr,nk_irr)
-deallocate(kpoints_irr )
-
-if (nkpoints_QE /= nkmesh .and. nkpoints_QE /= nk_irr) then
-        ! the points in the folder are not consistent with the
-        ! input file. Stop the program!
-        write(*,20) '*****************************************************'
-        write(*,20) '*      The number of kpoints present in the QE      *'
-        write(*,20) '*      folders are not consistent with a full       *'
-        write(*,20) '*      Brillouin Zone or an irreducible Brillouin   *'
-        write(*,20) '*      zone! Review your input...                   *'
-        write(*,20) '*                   Program stops.                  *'
-        write(*,20) '*****************************************************'
-        write(*,20) '* debug information:                                *'
-        write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-        write(*,*) '*        nkmesh      = ',nkmesh
-        write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
-
-        stop
-else if (nkpoints_QE == nk_irr) then
-        ! The points in the QE folders *could* be a valid choice for the IBZ;
-        ! this must be checked!
-        full_mesh = .false.
-        IBZ       = .true.
-else if (nkpoints_QE == nkmesh ) then
-        ! The points in the QE folders *could* be consistent with a full mesh;
-        ! this must be checked!
-        full_mesh = .true.
-        IBZ       = .false.
-end if
-
-
-!================================================================================
-!      allocate the symmetry arrays
-!      CAREFUL! the subroutine needs to know the global value of "full_mesh",
-!      so it is crucial that this allocation occurs AFTER setting full_mesh
-!================================================================================
-call allocate_symmetry_related_k(nk1,nk2,nk3,nsym)
-
-!================================================================================
-!     Compute the indices of the inverse rotation matrices.
-!     This will be useful later in the exectution.
-!================================================================================
-call find_inverse_symmetry_matrices_indices()
-
-!================================================================================
-!     Set up the array spin_symmetry_matrices, which contain
-!     the matrices which must be used to rotate spin
-!================================================================================
-call allocate_and_build_spin_symmetry_matrices(nsym)
-
-
-
-!================================================================================
-!      Fill the symmetry arrays appropriately
-!================================================================================
-
-call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
-                            QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, full_mesh, IBZ )
-
-
-
-!================================================================================
-!       Tell the user what is in the QE folders
-!================================================================================
-if (full_mesh .and. IBZ) then
-        write(*,20) '|       - the kpoints present in the QE folders     |'
-        write(*,20) '|         are consistent with a full 1BZ and a      |'
-        write(*,20) '|         IBZ has also been found.                  |'
-        write(*,20) '|           ---------------------------------       |'
-else if(IBZ) then
-        write(*,20) '|       - the kpoints present in the QE folders     |'
-        write(*,20) '|         are consistent with an IBZ.               |'
-        write(*,20) '|           ---------------------------------       |'
-else
-        write(*,20)      '**********************************************************'
-        write(*,20)      '* The kpoints present in the QE folders are not consistent'
-        write(*,20)      '* with the parameters of the input file!                 '
-        write(*,20)      '**********************************************************'
-        write(*,20) '* debug information:                                *'
-        write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-        write(*,*) '*        nkmesh      = ',nkmesh
-        write(*,*) '*        nk_irr      = ',nk_irr, nsym, tr_symmetry
-        write(*,*) '*        IBZ         = ',IBZ
-        stop
-end if
-
-
-!================================================================================
-!       Check that the requested calculation is possible
-!================================================================================
-if (intw2W_fullzone ) then
-   write(*,20) '|       - intw2W_fullzone = .true.                  |'
-   if ( full_mesh ) then
-        write(*,20) '|         all k-points are explicitely calculated   |'
-        write(*,20) '|         no symmetry is assumed.                   |'
-        write(*,20) '|             (This is mostly for testing)          |'
-        write(*,20) '|           ---------------------------------       |'
-   else
-        write(*,20)      '**********************************************************'
-        write(*,20)      '* A full mesh is not present in the QE folders!          '
-        write(*,20)      '* The requested calculation is impossible.               '
-        write(*,20)      '*                   program stops.                       '
-        write(*,20)      '**********************************************************'
-        stop
-   end if
-else
-        write(*,20) '|       - intw2W_fullzone = .false.                 |'
-        write(*,20) '|         Symmetries will be utilized.              |'
-        write(*,20) '|           ---------------------------------       |'
-end if
-
-
-!================================================================================
-!       Compute all wfc and keep them in RAM memory
-!================================================================================
-
-call allocate_and_get_all_irreducible_wfc()
-
-!================================================================================
-!       Compute the mmn file
-!================================================================================
-
-if (compute_mmn) then
-     write(*,20) '|       - writing the file prefix.eig and           |'
-     write(*,20) '|         computing the file prefix.mmn...          |'
-     write(*,20) '| (this is labor intensive and may  take some time) |'
-     write(*,20) '|           ---------------------------------       |'
-
-      call generate_mmn_using_allwfc(intw2W_fullzone,method)
-end if
-!================================================================================
-!       Compute the amn file
-!================================================================================
-if (compute_amn) then
-     write(*,20) '|       - computing the file prefix.amn...          |'
-     write(*,20) '| (this is labor intensive and may  take some time) |'
-     write(*,20) '|           ---------------------------------       |'
-
-     call generate_amn_using_allwfc(intw2W_fullzone,method)
-end if
-
-!================================================================================
-!       clean up
-!================================================================================
-call deallocate_symmetry_related_k()
-call deallocate_nnkp()
-call deallocate_fft()
-call deallocate_reading_variables()
-call deallocate_spin_symmetry_matrices()
-
-deallocate(kpoints_QE)
-
-deallocate (gvec)
-deallocate(kmesh)
-!================================================================================
-!       Finish
-!================================================================================
-call get_timing(time2)
-write(*,20) '|                     ALL DONE                      |'
-write(*,30) '|     total time: ',time2-time1,' seconds            |'
-write(*,20) '====================================================='
-
-
-20 format(A)
-30 format(A,F8.2,6X,A)
-
-end program intw2W90_2
+end program intw2W90

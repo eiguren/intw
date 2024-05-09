@@ -1,0 +1,68 @@
+SystemName      Fe
+SystemLabel     fe
+
+#WaveFuncKPointsScale ReciprocalLatticeVectors
+#%block WaveFuncKPoints
+#0.0  0.0  0.0
+#0.5  0.5  0.5
+#%endblock WaveFuncKPoints
+
+NumberOfSpecies        1       
+NumberOfAtoms          1      
+%block ChemicalSpeciesLabel
+  1  26  Fe
+%endblock ChemicalSpeciesLabel
+
+Spin polarized
+
+PAO.EnergyShift       50 meV
+PAO.BasisSize         DZP
+%block PAO.Basis
+  Fe  2
+  0  2  P
+  6. 0.
+  2  2
+  0. 0.
+%endblock PAO.Basis
+
+LatticeConstant       2.87 Ang  
+
+%block LatticeVectors          
+ 0.50000   0.500000  0.500000
+ 0.50000  -0.500000  0.500000 
+ 0.50000   0.500000 -0.500000
+%endblock LatticeVectors
+
+KgridCutoff          15. Ang
+
+%block BandLines
+  1  0.00000   0.000000  0.000000  \Gamma
+ 40  2.00000   0.000000  0.000000  H
+ 28  1.00000   1.000000  0.000000  N
+ 28  0.00000   0.000000  0.000000  \Gamma
+ 34  1.00000   1.000000  1.000000  P
+%endblock BandLines
+
+xc.functional         GGA           # Exchange-correlation functional
+xc.authors            PBE           # Exchange-correlation version
+
+
+MeshCutoff           150. Ry        # Mesh cutoff. real space mesh 
+
+MaxSCFIterations       40           # Maximum number of SCF iter
+DM.MixingWeight       0.1           # New DM amount for next SCF cycle
+DM.Tolerance          1.d-4         # Tolerance in maximum difference
+                                    # between input and output DM
+DM.UseSaveDM          true          # to use continuation files
+DM.NumberPulay         3
+
+ElectronicTemperature  25 meV       # Temp. for Fermi smearing
+
+MD.TypeOfRun           cg           # Type of dynamics
+MD.NumCGsteps           0           # Number of CG steps for coordinate optimization
+
+AtomicCoordinatesFormat     Fractional    
+%block AtomicCoordinatesAndAtomicSpecies
+  0.000000000000    0.000000000000    0.000000000000  1 
+%endblock AtomicCoordinatesAndAtomicSpecies
+

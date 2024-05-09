@@ -38,22 +38,22 @@ contains
     ! which refer to the global list gvec(3,ngm), which should be defined
     ! BEFORE using this subroutine.
     !--------------------------------------------------------------------------------
-
+    
     use intw_useful_constants, only: zero, one, cmplx_0
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
     use intw_fft, only : find_iG
-
+    
     implicit none
-
-    !I/O variables
+    
+    ! I/O variables
 
     integer, intent(in) :: G(3), ngk1, ngk2
     integer, intent(in) :: list_iG_1(nG_max), list_iG_2(nG_max)
     complex(dp), intent(in) :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
     complex(dp), intent(out) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
-    !local variables
-
+    ! local variables
+    
     integer :: jd(1)
     integer :: i, ibnd, jbnd, is, js, iG_1
     complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
@@ -71,12 +71,12 @@ contains
     ! First, build the pw_mat_el_local arrays, on each thread.
     !
     pw_mat_el_local = cmplx_0
-
     !
     !$omp do
     do i=1,nGk1
       !
       call find_iG(gvec(:,list_iG_1(i)) + G, iG_1)
+      !
 #if __GFORTRAN__ & __GNUC__ < 9
       jd(1) = 0
       do j=1,nG_max
@@ -91,19 +91,19 @@ contains
 
       if (jd(1)==0) cycle
       !
-            do js=1,nspin
-                do is=1,nspin
-                  do jbnd=1,num_bands_intw
-                      do ibnd=1,num_bands_intw
-                        !
-                        pw_mat_el_local(ibnd,jbnd,is,js) = pw_mat_el_local(ibnd,jbnd,is,js) &
-                                                           + conjg(wfc_1(i,ibnd,is)) * wfc_2(jd(1),jbnd,js)
-                        !
-                      enddo !ibnd
-                  enddo !jbnd
-                enddo !is
-            enddo !js
-            !
+      do js=1,nspin
+        do is=1,nspin
+          do jbnd=1,num_bands_intw
+            do ibnd=1,num_bands_intw
+              !
+              pw_mat_el_local(ibnd,jbnd,is,js) = pw_mat_el_local(ibnd,jbnd,is,js) &
+                                                 + conjg(wfc_1(i,ibnd,is)) * wfc_2(jd(1),jbnd,js)
+              !
+            enddo !ibnd
+          enddo !jbnd
+        enddo !is
+      enddo !js
+      !
     enddo ! i loop
     !$omp end do
     !
@@ -116,17 +116,17 @@ contains
     !
     do js=1,nspin
       do is=1,nspin
-          do jbnd=1,num_bands_intw
-            do ibnd=1,num_bands_intw
-                !
-                ! make sure the update is atomic!
-                !$omp atomic
-                !
-                pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) &
-                                             + pw_mat_el_local(ibnd,jbnd,is,js)
-                !
-            enddo !ibnd
-          enddo !jbnd
+        do jbnd=1,num_bands_intw
+          do ibnd=1,num_bands_intw
+            !
+            ! make sure the update is atomic!
+            !$omp atomic
+            !
+            pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) &
+                                         + pw_mat_el_local(ibnd,jbnd,is,js)
+            !
+          enddo !ibnd
+        enddo !jbnd
       enddo !is
     enddo !js
     !
@@ -193,42 +193,42 @@ contains
     !
     do is=1,nspin
       do js=1,nspin
+        !
+        ! loop on bands
+        !
+        do ibnd=1,num_bands_intw
           !
-          ! loop on bands
+          ! fourier- transform the 1st wavefunction
           !
-          do ibnd=1,num_bands_intw
+          call wfc_from_g_to_r(list_iG_1, wfc_1(:,ibnd,is), wfc_r1)
+          !
+          do jbnd=1,num_bands_intw
             !
-            ! fourier- transform the 1st wavefunction
+            ! fourier- transform the 2nd wavefunction
             !
-            call wfc_from_g_to_r(list_iG_1, wfc_1(:,ibnd,is), wfc_r1)
+            call wfc_from_g_to_r(list_iG_2, wfc_2(:,jbnd,js), wfc_r2)
             !
-            do jbnd=1,num_bands_intw
-                !
-                ! fourier- transform the 2nd wavefunction
-                !
-                call wfc_from_g_to_r(list_iG_2, wfc_2(:,jbnd,js), wfc_r2)
-                !
-                ! compute the product in real space
-                !
-                do ir=1,nr1*nr2*nr3
-                  !
-                  uu(ir) = conjg(wfc_r1(ir))*wfc_r2(ir)
-                  !
-                enddo !ir
-                !
-                ! FFT to G in place
-                ! call cfftnd(3,nr,1,uu) ! CONVENTION BY ASIER
-                !
-                call cfftnd(3, (/nr1,nr2,nr3/), -1, uu) ! OPPOSITE CONVENTION
-                                                        ! this convention reproduces
-                                                        ! the results of pw2wannier EXACTLY
-                !
-                ! extract the desired component
-                !
-                pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) + uu(iG_fft) ! Sum is over the spin.
-                !
-            enddo !jbnd
-          enddo !ibnd
+            ! compute the product in real space
+            !
+            do ir=1,nr1*nr2*nr3
+              !
+              uu(ir) = conjg(wfc_r1(ir))*wfc_r2(ir)
+              !
+            enddo !ir
+            !
+            ! FFT to G in place
+            ! call cfftnd(3,nr,1,uu) ! CONVENTION BY ASIER
+            !
+            call cfftnd(3, (/nr1,nr2,nr3/), -1, uu) ! OPPOSITE CONVENTION
+                                                    ! this convention reproduces
+                                                    ! the results of pw2wannier EXACTLY
+            !
+            ! extract the desired component
+            !
+            pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) + uu(iG_fft) ! Sum is over the spin.
+            !
+          enddo !jbnd
+        enddo !ibnd
       enddo !js
     enddo !is
 
@@ -265,8 +265,6 @@ contains
 
     ! logical dummy variable, to go from triplet to scalar index and vice versa
     integer :: switch
-
-
 
     ! scalar indices
     integer :: ikpt1 ! scalar index for k1
@@ -306,33 +304,33 @@ contains
 
 
       do j_k=0,nk2+2
-          G1(2) = floor(1.0_dp*(j_k-1)/nk2)
-          j_k1  = j_k-nk2*G1(2)
-          j_kq  = j_k+j_q
-          G2(2) = floor(1.0_dp*(j_kq-1)/nk2)
-          j_k2  = j_kq-nk2*G2(2)
+        G1(2) = floor(1.0_dp*(j_k-1)/nk2)
+        j_k1  = j_k-nk2*G1(2)
+        j_kq  = j_k+j_q
+        G2(2) = floor(1.0_dp*(j_kq-1)/nk2)
+        j_k2  = j_kq-nk2*G2(2)
 
-          do k_k=0,nk3+2
-            G1(3) = floor(1.0_dp*(k_k-1)/nk3)
-            k_k1  = k_k-nk3*G1(3)
-            k_kq  = k_k+k_q
-            G2(3) = floor(1.0_dp*(k_kq-1)/nk3)
-            k_k2  = k_kq-nk3*G2(3)
+        do k_k=0,nk3+2
+          G1(3) = floor(1.0_dp*(k_k-1)/nk3)
+          k_k1  = k_k-nk3*G1(3)
+          k_kq  = k_k+k_q
+          G2(3) = floor(1.0_dp*(k_kq-1)/nk3)
+          k_k2  = k_kq-nk3*G2(3)
 
-            ! find the indices
-            call switch_indices(nk1,nk2,nk3,ikpt1,i_k1,j_k1,k_k1,switch)
-            call switch_indices(nk1,nk2,nk3,ikpt2,i_k2,j_k2,k_k2,switch)
+          ! find the indices
+          call switch_indices(nk1,nk2,nk3,ikpt1,i_k1,j_k1,k_k1,switch)
+          call switch_indices(nk1,nk2,nk3,ikpt2,i_k2,j_k2,k_k2,switch)
 
-            icm = icm + 1 ! increment the mesh index
+          icm = icm + 1 ! increment the mesh index
 
-            ! save
-            list_ikpt1(icm) = ikpt1
-            list_ikpt2(icm) = ikpt2
+          ! save
+          list_ikpt1(icm) = ikpt1
+          list_ikpt2(icm) = ikpt2
 
-            list_G1(:,icm) = G1
-            list_G2(:,icm) = G2
+          list_G1(:,icm) = G1
+          list_G2(:,icm) = G2
 
-          end do
+        end do
       end do
     end do
 
@@ -413,16 +411,16 @@ contains
       x = 1.0_dp*(i-1)/nk1
 
       do j=1,nk2+1
-          y = 1.0_dp*(j-1)/nk2
+        y = 1.0_dp*(j-1)/nk2
 
-          do k=1,nk3+1
-            z = 1.0_dp*(k-1)/nk3
+        do k=1,nk3+1
+          z = 1.0_dp*(k-1)/nk3
 
-            write(io_unit,"(5f12.8)") x, y, z, matrix_elements(nb1,nb2,i,j,k)
+          write(io_unit,"(5f12.8)") x, y, z, matrix_elements(nb1,nb2,i,j,k)
 
-          end do
         end do
       end do
+    end do
 
     close(io_unit)
 
@@ -467,20 +465,20 @@ contains
     ! loop on all G vectors in the array
 
     do i = 1,nG_max
-        ! identify the G vector by its index, as stored in list_iG
-        iG = list_iG(i)
+      ! identify the G vector by its index, as stored in list_iG
+      iG = list_iG(i)
 
-        if (iG == 0) exit
+      if (iG == 0) exit
 
-        ! extract the scalar FFT index of this G vector
-        i_singlet = nl(iG)
-        ! compute the triplet index corresponding to iG
-        call switch_indices(nr1,nr2,nr3,i_singlet,n1,n2,n3,switch)
+      ! extract the scalar FFT index of this G vector
+      i_singlet = nl(iG)
+      ! compute the triplet index corresponding to iG
+      call switch_indices(nr1,nr2,nr3,i_singlet,n1,n2,n3,switch)
 
-        ! dump 1D wavefunction in 3D array
+      ! dump 1D wavefunction in 3D array
 
-        ! careful! the wavefunction is indexed by i, not iG!
-        wfc_G_3D(n1,n2,n3,:,:) = wfc_G_1D(i,:,:)
+      ! careful! the wavefunction is indexed by i, not iG!
+      wfc_G_3D(n1,n2,n3,:,:) = wfc_G_1D(i,:,:)
     enddo
 
   end subroutine wfc_G_from_1D_to_3D

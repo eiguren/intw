@@ -1,0 +1,16 @@
+&input
+    mesh_dir = './'
+    prefix = 'gaas_irr'
+    nk1 = 4
+    nk2 = 4
+    nk3 = 4
+    TR_symmetry = .true.
+/
+
+&intw2W
+    intw2W_fullzone = .false.
+    intw2W_method = 'CONVOLUTION'
+/
+
+&ph
+/

@@ -1,31 +1,36 @@
 
 
 if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
-  # If QE is built with autotools
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90" "${QE_HOME}/PP/src/pw2intw.f90"
-    COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp"
-    COMMENT "Copying pw2intw.f90 to QE/PP"
+
+  set(QE2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw src directory." FORCE)
+  set(QE2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw build directory." FORCE)
+
+  # Add some debugging flags
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
+  if(BT STREQUAL "DEBUG")
+      set(QE2INTW_FFLAGS ${CMAKE_Fortran_FLAGS_DEBUG})
+      set(QE2INTW_DFLAGS -DDEBUG)
+  endif()
+
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/Makefile.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION}/Makefile" @ONLY)
+
+
+  add_custom_command(OUTPUT ${QE2INTW_BUILD_DIR}/pw2intw.x
+    COMMAND make -C ${QE2INTW_BUILD_DIR} pw2intw.x
+    COMMENT "Building pw2intw"
+    DEPENDS ${QE2INTW_SRC_FILES}
+    BYPRODUCTS ${QE2INTW_OBJ_FILES} ${QE2INTW_MOD_FILES}
     )
 
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/Makefile_intw.stamp
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/Makefile_intw" "${QE_HOME}/PP/src/Makefile_intw"
-    COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/Makefile_intw.stamp"
-    COMMENT "Copying Makefile_intw to QE/PP"
+  add_custom_target(pw2intw.x ALL
+    DEPENDS ${QE2INTW_BUILD_DIR}/pw2intw.x
     )
 
-  add_custom_target(pw2intw.x ALL make -C ${QE_HOME}/PP/src -f Makefile_intw pw2intw.x
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/Makefile_intw.stamp
-    BYPRODUCTS ${QE_HOME}/PP/src/pw2intw.o ${QE_HOME}/PP/src/pw2intw.x
-    )
-
-  add_custom_target(restore-qe
-    COMMAND rm -rf "${QE_HOME}/PP/src/pw2intw.o" "${QE_HOME}/PP/src/pw2intw.x"
-    COMMAND rm -rf "${QE_HOME}/PP/src/pw2intw.f90" "${QE_HOME}/PP/src/Makefile_intw"
-    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/Makefile_intw.stamp"
-    COMMENT "QE restored"
-    )
 else()
+
+  set(QE2INTW_BUILD_DIR ${QE_BUILD_DIR}/bin CACHE PATH "Path to the pw2intw build directory." FORCE)
+
   # If QE is built with CMake
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp
     COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90" "${QE_HOME}/PP/src/pw2intw.f90"
@@ -71,4 +76,3 @@ else()
     )
 
 endif()
-

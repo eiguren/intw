@@ -1,0 +1,120 @@
+SIESTA_BUILD_DIR=@SIESTA_BUILD_DIR@
+SIESTA2INTW_BUILD_DIR=@SIESTA2INTW_BUILD_DIR@
+W_BUILD_DIR=@W_BUILD_DIR@
+INTW_BUILD_DIR=@CMAKE_BINARY_DIR@
+
+#MPI_CMD=@MPI_CMD@
+
+all: w90pp_files siesta_files w90_1_files siesta2intw_files intw_files w90_2_files
+
+calculation: w90pp_files siesta_files w90_1_files run_siesta2intw run_intw run_w90_2
+
+
+.PHONY: all calculation clean run_w90pp run_ssta run_w90_1 run_siesta2intw run_intw run_w90_2 w90_2_files siesta2intw_files intw_files w90_files
+
+
+run_w90pp:
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp si
+
+run_siesta:
+	rm -rf fdf-*.log INPUT_TMP.*
+	$(SIESTA_BUILD_DIR)/siesta < si.fdf | tee si.out
+	( test -f 0_NORMAL_EXIT && echo "OK" || exit 1 )
+	cp si.mmn siesta_si.mmn
+	cp si.amn siesta_si.amn
+	cp si.eigW siesta_si.eig
+
+run_w90_1:
+	rm si.wout
+	cp siesta_si.eig si.eig
+	cp siesta_si.mmn si.mmn
+	cp siesta_si.amn si.amn
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x si
+	cp si.wout siesta_si.wout
+
+run_siesta2intw:
+	rm -rf si.save.intw
+	rm -rf fdf-*.log INPUT_TMP.*
+	$(SIESTA2INTW_BUILD_DIR)/siesta2intw.x < si.fdf | tee siesta2intw.out
+	( test -f 0_NORMAL_EXIT && echo "OK" || exit 1 )
+
+run_intw:
+	rm -rf si.mmn si.amn si.eig
+	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < intw.in | tee intw.out
+	cp si.mmn intw_si.mmn
+	cp si.amn intw_si.amn
+	cp si.eig intw_si.eig
+
+run_w90_2:
+	rm si.wout
+	cp intw_si.mmn si.mmn
+	cp intw_si.amn si.amn
+	cp intw_si.eig si.eig
+	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x si
+	cp si.wout intw_si.wout
+
+
+W90PP_FILES = si.nnkp
+SIESTA_FILES = si.out siesta_si.mmn siesta_si.amn siesta_si.eig
+W90_1_FILES = siesta_si.wout
+SIESTA2INTW_FILES = siesta2intw.out si.save.intw/crystal.dat si.save.intw/wfc00001.dat si.save.intw/iGlist.dat si.save.intw/1-KBPP.txt si.save.intw/kpoints.dat si.save.intw/gvectors.dat
+INTW_FILES = intw_si.mmn intw_si.amn intw_si.eig
+W90_2_FILES = intw_si.wout
+w90pp_files: $(W90PP_FILES)
+siesta_files: $(SIESTA_FILES)
+siesta2intw_files: $(SIESTA2INTW_FILES)
+intw_files: $(INTW_FILES)
+w90_1_files: $(W90_1_FILES)
+w90_2_files: $(W90_2_FILES)
+
+si.nnkp:
+	make run_w90pp
+
+si.out: $(W90PP_FILES)
+	make run_siesta
+siesta_si.mmn: $(W90PP_FILES)
+	make run_siesta
+siesta_si.amn: $(W90PP_FILES)
+	make run_siesta
+siesta_si.eig: $(W90PP_FILES)
+	make run_siesta
+
+siesta2intw.out:
+	make run_siesta2intw
+si.save.intw/crystal.dat:
+	make run_siesta2intw
+si.save.intw/wfc00001.dat:
+	make run_siesta2intw
+si.save.intw/iGlist.dat:
+	make run_siesta2intw
+si.save.intw/1-KBPP.txt:
+	make run_siesta2intw
+si.save.intw/kpoints.dat:
+	make run_siesta2intw
+si.save.intw/gvectors.dat:
+	make run_siesta2intw
+
+siesta_si.wout: $(SIESTA2WANNIER90_FILES)
+	make run_w90_1
+
+intw_si.mmn: $(SIESTA2INTW_FILES)
+	make run_intw
+intw_si.amn: $(SIESTA2INTW_FILES)
+	make run_intw
+intw_si.eig: $(SIESTA2INTW_FILES)
+	make run_intw
+
+intw_si.wout: $(INTW_FILES)
+	make run_w90_2
+
+
+clean:
+	rm -rf si.out siesta_si.mmn siesta_si.amn siesta_si.eig siesta_si.wout
+	rm -rf siesta2intw.out siesta2intw.siesta.out si.save.intw
+	rm -rf intw.out nnkp.test intw_si.mmn intw_si.amn intw_si.eig intw_si.wout
+	rm -rf si.amn si.eig si.mmn si.wout si_band.* si.chk si.nnkp
+	rm -rf 0_NORMAL_EXIT BASIS_ENTHALPY BASIS_HARRIS_ENTHALPY CLOCK FORCE_STRESS MESSAGES OUTVARS.yml PARALLEL_DIST
+	rm -rf si.bib si.BONDS si.BONDS_FINAL si.DM si.EIG si.eigW si.FA si.KP si.ORB_INDX si.selected.WFSX si.STRUCT_OUT si.XV
+	rm -rf Si.ion Si.ion.xml Si.kbcos
+	rm -rf INPUT_TMP.* fdf-*.log
+	rm -rf fort.*

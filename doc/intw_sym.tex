@@ -726,6 +726,55 @@ en los vectores del espacio real. Lo mejor es rotar siempre el $k$ y dejar las $
 la operación "central" $\mathcal{S}^{-1}$ esto ya no funciona. 
 No entiendo por qué hace falta en los $M_{mn}$ y no en e-ph...}
 
+
+\section{Sakuma's dmn files}
+
+The $D$ and $\tilde d$ matrices of Sakuma's paper, eqs. 15 and 17, respectively, are stored in the
+Wannier90 .dmn file. They are written in blocks for all symmetry elements and
+vectors $\mathbf{k}_s \in \mathcal{M}_{i}$.
+Note, the method is not implemented yet in W90 for the spinor case. It does neither consider TR symmetry.
+
+By definition, the $\tilde d$ matrices have elements
+\begin{equation}
+\tilde d_{mm'}(\mathcal{S},\mathbf{k}_s) = 
+   \braket{\mathcal{S} \psi_{m\mathbf{k}_s} | \mathcal{S} \psi_{m'\mathbf{k}_s} }
+\end{equation}
+with the wavefunctions in the Bloch gauge,
+for all $\mathcal{S}$ elements, not just the ones that leave $\mathbf{k}_s$ invariant.
+
+On the other hand, $D$ is for wavefunctions in the Wannier gauge. They can be calculated for the
+first iteration in W90 or the first trial, which is equivalent to using the wavefunctions
+obtained from the $A_{mn}$ projections:
+\begin{equation}
+A_{mn}(\mathbf{k}_s) = \braket{\psi_{m\mathbf{k}_s} | g_n}
+\end{equation}
+where $g_n$ is a projection function. The trial function in the Wannier gauge is obtained from
+\begin{equation}
+\ket{\phi_{n\mathbf{k}_s}} = \sum_m A_{mn}(\mathbf{k}_s) \ket{\psi_{m\mathbf{k}_s}}
+\end{equation}
+where L\"owdin orthogonalization is applied as explained in Souza {\it et al}, PRB 65, 0350109:
+\begin{equation}
+\ket{\psi_{m\mathbf{k}_s}^{(0)} } = \sum_m (S^{-1/2})_{mn} \ket{\phi_{n\mathbf{k}_s}} = 
+  \sum_m (AS^{-1/2})_{mn} \ket{\psi_{m\mathbf{k}_s}}
+\end{equation}
+Here, $AS^{-1/2}$, which is antiunitary, is obtained with SVD (zgesvd):
+\begin{equation}
+A = U \Sigma V^\dagger \quad \rightarrow \quad AS^{-1/2} = U 1 V^\dagger
+\end{equation}
+$A$ has dimensions $M \times N$, where $M$ is num\_bands\_intw and $N$ is num\_wann\_intw
+(equal to the number of projections).
+The $\psi_{m\mathbf{k}_s}^{(0)} (\mathbf{r})$ are used to calculate the $D$ matrix elements:
+\begin{align}
+D_{n'n}(\mathcal{S},\mathbf{k}_s) & =
+  \braket{ \psi_{n'\mathbf{k}_s}^{(0)} | \mathcal{S} \psi_{n\mathbf{k}_s}^{(0)} } = \\
+  & = \sum_{mm'} (U 1 V^\dagger)^*_{m'n'} (\mathcal{S} \mathbf{k}_s) (U 1 V^\dagger)_{mn} (\mathbf{k}_s)
+   \braket{ \psi_{m'\mathcal{S} \mathbf{k}_s} | \mathcal{S}  \psi_{m  \mathbf{k}_s} }
+\end{align}
+The pw2w90 implementation calculates this integral explicitely with the $g_n$ functions.
+Our method uses the $A_{mn}$ coefficients calculated previously in intw2w90.
+
+
+
 \bibliography{intw_sym}
 
 \end{document}

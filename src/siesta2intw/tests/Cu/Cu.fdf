@@ -1,0 +1,97 @@
+
+SystemName      bulk Cu
+SystemLabel     cu 
+
+NumberOfSpecies      1
+NumberOfAtoms	     1
+%block ChemicalSpeciesLabel
+    1    29    Cu
+%endblock ChemicalSpeciesLabel
+
+#Spin non-colinear
+
+XC.Functional LDA
+XC.Authors PZ
+
+PAO.BasisSize DZP
+
+MeshCutoff             620  Ry
+
+DM.UseSaveDM true
+DM.NumberPulay         3 
+DM.MixingWeight        0.05
+
+!MD.TypeOfRun CG
+!MD.NumCGsteps 100
+!MD.VariableCell true
+!MD.MaxStressTol 0.1 Gpa
+!MD.MaxForceTol 0.04 eV/Ang
+
+TimeReversalSymmetryForKpoints false
+%block kgrid_Monkhorst_Pack
+   4   0    0    0.
+   0   4    0    0.
+   0   0    4    0.
+%endblock kgrid_Monkhorst_Pack
+
+Siesta2Wannier90.WriteMmn true
+Siesta2Wannier90.WriteAmn true
+
+WaveFuncKPointsScale ReciprocalLatticeVectors
+%block WaveFuncKPoints
+0.000000    0.000000    0.000000
+0.000000    0.000000    0.125000
+0.000000    0.000000    0.250000
+0.000000    0.000000    0.375000
+0.000000    0.000000    0.500000
+0.000000    0.125000    0.125000
+0.000000    0.125000    0.250000
+0.000000    0.125000    0.375000
+0.000000    0.125000    0.500000
+0.000000    0.125000    0.625000
+0.000000    0.125000    0.750000
+0.000000    0.125000    0.875000
+0.000000    0.250000    0.250000
+0.000000    0.250000    0.375000
+0.000000    0.250000    0.500000
+0.000000    0.250000    0.625000
+0.000000    0.250000    0.750000
+0.000000    0.375000    0.375000
+0.000000    0.375000    0.500000
+0.000000    0.375000    0.625000
+0.000000    0.500000    0.500000
+0.125000    0.250000    0.375000
+0.125000    0.250000    0.500000
+0.125000    0.250000    0.625000
+0.125000    0.375000    0.500000
+0.125000    0.375000    0.625000
+0.125000    0.375000    0.750000
+0.125000    0.500000    0.625000
+0.250000    0.500000    0.750000
+%endblock WaveFuncKPoints
+
+#%block PS.lmax
+#   Cu   2
+#%endblock PS.lmax
+
+WriteDenchar true
+Denchar.PlotWaveFunctions true
+
+LatticeConstant      3.568237382 Ang
+%block LatticeVectors
+  -0.500000   0.000000   0.500000 
+   0.000000   0.500000   0.500000 
+  -0.500000   0.500000   0.000000 
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat	     ScaledCartesian
+%block AtomicCoordinatesAndAtomicSpecies
+        0.500000        0.50000        0.000000        1
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+#BandLinesScale ReciprocalLatticeVectors 
+#%block BandLines
+#1 0.0 0.0 0.0 \Gamma # Begin at \Gamma
+#22 0.5 0.0 0.0 X # 22 points from \Gamma to X
+#22 .5 .5 0.0 M # 22 points from X to M
+#%endblock BandLines

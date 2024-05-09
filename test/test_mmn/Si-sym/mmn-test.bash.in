@@ -6,6 +6,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Compare Mmn
+@Python3_EXECUTABLE@ compare_mmn_ibz2fullbz.py
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
 # Compare Amn
 @Python3_EXECUTABLE@ compare_amn_ibz2fullbz.py
 if [ $? -ne 0 ]; then

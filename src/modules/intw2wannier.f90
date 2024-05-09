@@ -34,7 +34,7 @@ module intw_intw2wannier
             generate_guiding_function, &
             get_guiding_function_overlap_FFT, &
             get_guiding_function_overlap_convolution, get_radial_part, &
-            get_angular_part, ylm_wannier
+            get_angular_part, ylm_wannier  !, get_bvec_list
   !
   private
   !
@@ -61,7 +61,7 @@ module intw_intw2wannier
 
   integer     :: nnkp_nnkpts            !the number near neighbor k-points
 
-  integer     :: nnkp_n_proj            !the number of projections specified
+  integer     :: nnkp_n_proj            !the number of projections specified 
                                         !(should be the same as number of Wannier functions)
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
@@ -83,6 +83,7 @@ module intw_intw2wannier
   integer,allocatable  :: nnkp_list_G(:,:,:)   ! the G vectors linking one point to another
 
   logical,allocatable  :: nnkp_excluded_bands(:) ! what bands are excluded
+
 
 contains
   !
@@ -267,7 +268,7 @@ contains
   read(nnkp_unit,*) nnkp_exclude_bands
   !
   ! JLB: Now this is done in reading.f90 -> set_num_bands
-  !      Here only poulating nnkp_* variables,
+  !      Here only poulating nnkp_* variables, 
   !      then check for consistency with intw_* in main program / utility
   !num_exclude_bands=nnkp_exclude_bands
   !allocate(exclude_bands(num_exclude_bands))
@@ -651,11 +652,6 @@ contains
 
   integer :: G_plus(3)
 
-!!Peio
-!!The variable we use instead of num_bands
-!  integer :: nbands_loc
-!!Peio
-!nbands_loc=num_bands
 
   nkmesh = nk1*nk2*nk3
 
@@ -801,13 +797,13 @@ contains
   !
   ! JLB: Expansion coefficients of this projection in lm-s (needed for hybrids)
   call projection_expansion(proj_l, proj_m, coef)
-  !
+  ! 
   ! get the part from the radial integration
   proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
   zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
   !
   ! MBR, JLB: radial integrals based on pw2wannier
-  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
+  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function) 
   call get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
   !
   do l=0, lmax
@@ -1041,7 +1037,7 @@ contains
    ! Numerical integration, c+p from pw2wannier for testing
    ! JLB: Extended to multiple l, needed for hybrid projections
    use intw_reading, only: ngm, volume0
-   USE intw_utility, ONLY : simpson
+   USE intw_utility, ONLY : simpson, sphb
    use intw_useful_constants, only: fpi, ZERO
 
    implicit none
@@ -1080,7 +1076,7 @@ contains
             + k_plus_G_cart(2,iG)**2 &
             + k_plus_G_cart(3,iG)**2 )
    !
-   enddo !iG
+   enddo !iG  
 
    !
    ! from pw2intw:
@@ -1116,8 +1112,7 @@ contains
       if ( any(coef(l**2+1:l**2+1+2*l) > 1.0d-8) ) then
          !
          do iG=1,ngm
-            call sph_bes (mesh_r, r, p(iG), l, bes)
-            aux = r*r*bes*func_r
+            aux = r*r*sphb(l,p(iG)*r)*func_r
             call simpson (mesh_r, aux, rij, rad_int)
             radial_l(iG, l) = rad_int * fpi/sqrt(volume0)
          end do
@@ -1327,7 +1322,7 @@ contains
 
    integer,intent(in) :: l, mr, nr
    real(dp), intent(in) :: r(3,nr)
-   real(dp),intent(out) :: ylm(nr)
+   real(dp),intent(out) :: ylm(nr) 
 
    !local variables
 
@@ -1494,7 +1489,7 @@ contains
 !----------------------------------------
 !
 !--------------------------------------------------------------------------
-!     Outputs expansion coefficients for hybrid projections,
+!     Outputs expansion coefficients for hybrid projections, 
 !     following wannier90 user guide table 3.2
 !--------------------------------------------------------------------------
 
@@ -1506,8 +1501,8 @@ contains
    integer, intent(in)  :: l, mr
    real(dp), intent(out) :: coef(:)
    !
-   !local variables
-   integer :: lm
+   !local variables  
+   integer :: lm 
    real(dp) :: fac1, fac2, fac3, fac4, fac5
 
    coef = ZERO
@@ -1542,7 +1537,7 @@ contains
          !
          write(*,*)' ylm_wannier: m out of range! '
          stop
-         !
+         !         
       end if
       !
       if (l==-1) then  !  sp hybrids
@@ -1672,6 +1667,35 @@ contains
    end if
 
    end subroutine
+
+
+
+!===================================================
+            ! MBR 18/04/24: currently unused!!!
+    subroutine get_bvec_list (bvec)
+! Reads the first k-vector and its neighbours shells from nnkp, and
+! returns the list of the nnkp_nnkpts b-vectors used by W90
+! in fractional coordinates
+
+  implicit none
+  real(dp) , intent(out) :: bvec(3,nnkp_nnkpts)
+  integer   :: nn, ik, G(3)
+  real(dp)  :: kpoint(3), kpoint_plus_b(3)
+
+  kpoint = nnkp_kpoints(:,1)
+  do nn = 1, nnkp_nnkpts
+      G = nnkp_list_G(:,nn,1)
+      ik = nnkp_list_ikpt_nn(nn,1)
+      kpoint_plus_b =  nnkp_kpoints(:,ik) + real(G,dp)
+      bvec(:,nn) = kpoint_plus_b - kpoint
+  end do
+
+  return
+  end subroutine get_bvec_list
+!===================================================
+
+
+   
 !----------------------------------------------------------------------------!
 !
 !

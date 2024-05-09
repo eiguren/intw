@@ -2,21 +2,22 @@ program nscf
 
   use kinds, only: dp
   use intw_input_parameters, only: intw2W_method, read_input
-  use intw_reading, only: nspin, noncolin, gvec, ngm, nsym, &
+  use intw_reading, only: nspin, noncolin, ngm, nsym, &
        spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
-       ntyp, amass, npol, tau, bg, nr1, nr2, nr3, &
-       get_ngm, get_gvec,nbands,&
-       read_parameters_data_file_xml, nkpoints_QE,&
-       read_kpoints_data_file_xml, get_K_folder_data_with_nG
-  use intw_pseudo, only: vkb, read_all_pseudo
+       ntyp, amass, nspin, tau, bg, nr1, nr2, nr3, nbands, nkpoints_QE, &
+       get_gvec, &
+       read_parameters_data_file_xml, &
+       read_kpoints_data_file_xml, &
+       get_K_folder_data_with_nG
+  use intw_pseudo, only: read_all_pseudo
   use intw_utility, only: get_timing, find_free_unit, switch_indices
 
   use intw_useful_constants, only: cmplx_0, cmplx_1
 
   use intw_fft, only: generate_nl, allocate_fft, nl
 
-  use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, get_psi_general_k_all_wfc
-  use intw_allwfcs, only: get_psi_general_k_all_wfc, wfc_k_irr_all, list_iG_all, QE_eig_irr_all
+  use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
+  use intw_allwfcs, only: wfc_k_irr_all, list_iG_all, QE_eig_irr_all
 
 
   !================================================================================
@@ -81,9 +82,6 @@ program nscf
   !
   call read_parameters_data_file_xml()
   !
-  call get_ngm()
-  allocate(gvec(3,ngm)) ! it is deallocated in the bottom of this main code.
-
   !
   call get_gvec()
   !
@@ -203,17 +201,17 @@ contains
     !local variables
     integer :: nbnd_l
     integer :: nG_max_l
-    integer :: npol_l
+    integer :: nspin_l
 
     integer :: G2pG1(3)
-    integer :: i,j,ibnd,jbnd,is,js,iG_1,iG_2, iG
+    integer :: i,j,ibnd,jbnd,iG_1,iG_2, iG
     integer :: nG_max_non_zero
     !complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
     logical :: found
 
     nG_max_l  = size(wfc_1,1) !
     nbnd_l    = size(wfc_1,2)
-    npol_l    = size(wfc_1,3)
+    nspin_l    = size(wfc_1,3)
 
     product_wfc =  (0.d0,0.0d0)
 
@@ -225,8 +223,8 @@ contains
 
           do ibnd=1, nbnd_l
              do jbnd=1, nbnd_l
-                do ipol=1,npol_l
-                   do jpol=1,npol_l
+                do ipol=1,nspin_l
+                   do jpol=1,nspin_l
 
                       product_wfc (ibnd,jbnd,ipol,jpol,iG) = product_wfc (ibnd,jbnd,ipol,jpol,iG) + &
                            conjg(wfc_2 (iG_2,jbnd,jpol)) * wfc_1 (iG_1,ibnd,ipol)

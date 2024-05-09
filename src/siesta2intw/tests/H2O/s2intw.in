@@ -1,0 +1,8 @@
+&inputpp
+ outdir="./"
+ prefix="h2o"
+ cutoff=80.0
+ nk1=1, nk2=1, nk3=1
+ nbnd_initial = 1
+ nbnd_final = 6
+/

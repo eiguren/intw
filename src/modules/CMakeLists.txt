@@ -3,48 +3,30 @@
 
 
 set(SOURCES
-  multiply_psi_by_dvKB.f90
-  multiply_psi_by_vKB.f90
-  add_m_nu_lambda_text.f90
-  add_q_m_nu.f90
-  allocate_nlpot.f90
-  allocate_phq.f90
   all_wfcs.f90
   cfftnd.f90
-  DM_q2Rp.f90
-  DM_Rp2q.f90
+  eliashberg.f90
   fft.f90
-  force_linearity_G.f90
-  gaussian.f90
-  gk_sort.f90
-  imselfen2reselfen_t0.f90
-  init_pp.f90
-  init_KB_projectors.f90
   kinds.f90
   input_parameters.f90
   intw2wannier.f90
-  intw_pseudo2.f90
-  lambda_calculate.f90
+  intw_pseudo.f90
+  intw_pseudo_local.f90
+  intw_pseudo_non_local.f90
+  lambda.f90
   matrix_elements.f90
   ph_module.f90
-  phq_init.f90
   reading.f90
-  rotaxis.f90
-  selfeliash_calculate.f90
-  selfen_add_terms.f90
   set_asr.f90
-  sph_bes.f90
-  setlocq.f90
-  sort.f90
-  spin_orb.f90
   symmetries.f90
   useful_constants.f90
   utility.f90
-  ylmr2.f90
   fft_interp.f90
-  splinelib.f90
   mcf_interpolacion.f90
   w90_setup.f90
+  selfen.f90
+  ph_interpolate.f90
+  nufft.f
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

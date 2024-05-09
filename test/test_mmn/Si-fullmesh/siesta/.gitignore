@@ -1,0 +1,11 @@
+*
+
+!.gitignore
+!compare_mmn.py
+!compare_wannier.py
+!intw.in
+!Makefile.in
+!s2intw.in
+!si.fdf
+!Si.psf
+!si.win

@@ -134,7 +134,7 @@ V_{local}(r)
 \sum_{l,m} |Y_{lm}(\theta,\phi)\rangle \delta V_l(r) \langle Y_{lm}(\theta,\phi)|
 ,\end{align*}
 where
-\begin{equation}
+\begin{equation}\label{eq:semi-local-potential}
 V_l(r)
 =
 V_{l,total}-(V_{Hartree}^{PS}(r)+V_{xc}^{PS}(r))
@@ -510,6 +510,7 @@ a\left[ e^{\beta(i-1)} - 1 \right]
 
 \subsubsection*{Semi-local potential}
 
+The PSF format contains the semi-local potential as defined in \eqref{eq:semi-local-potential}. However, $rV_l(r)$ is stored instead of $V_l(r)$.
 
 \subsubsection*{The core charge density}
 

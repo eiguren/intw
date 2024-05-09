@@ -3,11 +3,15 @@
 
 set(PROGS
   nscf
-  ep_melements_noW
+  ep_melements
   read_pp_test
   intw2W90
   w902intw
   interpolate
+  interpolate_phonons
+  ep_interp_on_trFS_wannier
+  ep_interp_on_trFS_nufft
+  a2F_on_trFS
 )
 
 list(REMOVE_DUPLICATES PROGS)

@@ -286,10 +286,10 @@ contains
   end subroutine generate_nl
 !*******************************************************************************************************
 !-------------------------------------------------------------------------------------------------------
-  subroutine  wfc_by_expigr (kpoint, nbands, npol, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
+  subroutine  wfc_by_expigr (kpoint, nbands, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
     !-------------------------------------------------------------------------------------------------------
 
-    use intw_reading, only: gvec, bg, nspin
+    use intw_reading, only: gvec, bg
     use intw_utility, only: HPSORT
     use intw_useful_constants, only: cmplx_0
 
@@ -297,20 +297,20 @@ contains
 
     !I/O variables
 
-    integer,intent(in) :: nbands,npol,ng_max,list_iG_k_irr(nG_max) ! G vector indices for k_irr
+    integer,intent(in) :: nbands,nspin,ng_max,list_iG_k_irr(nG_max) ! G vector indices for k_irr
     integer,intent(in) :: G_sym_l(3)                               ! G vector such that  R*k + G_sym_l = sym_l * k_irr
     real(dp),intent(in) :: kpoint(3)
-    complex(dp),intent(inout) :: wfc_k(ng_max,nbands,npol)
+    complex(dp),intent(inout) :: wfc_k(ng_max,nbands,nspin)
     integer,intent(out) :: list_iG_k(nG_max)                       ! G vector indices for k, sorted
 
     !local variables
 
-    complex(dp) :: wfc_k_irr(ng_max,nbands,npol)
+    complex(dp) :: wfc_k_irr(ng_max,nbands,nspin)
     integer :: list_iG(nG_max)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
-    integer :: nb, ipol, nG
+    integer :: nb, ispin, nG
     real(dp) :: kpoint_cart(1:3), gkmod (1:nG_max)
 
     !Initialization
@@ -350,9 +350,9 @@ contains
       ! compute the wfc element
       !
       do nb=1,nbands
-        do ipol=1,nspin
+        do ispin=1,nspin
           !
-          wfc_k(i,nb,ipol) = wfc_k_irr(p_i,nb,ipol)
+          wfc_k(i,nb,ispin) = wfc_k_irr(p_i,nb,ispin)
           !
         enddo
       enddo
@@ -373,8 +373,8 @@ contains
     !       list_iG_k(i) = list_iG(p_i)
     !       ! compute the wfc element
     !       do nb = 1,nbands
-    !          do ipol=1,nspin
-    !             wfc_k(i,nb,ipol) =  wfc_k_irr(p_i,nb,ipol)
+    !          do ispin=1,nspin
+    !             wfc_k(i,nb,ispin) =  wfc_k_irr(p_i,nb,ispin)
     !          enddo
     !       end do
     !
@@ -501,27 +501,27 @@ contains
     external :: cfftnd
 
     integer :: nG_max      !this is local here!
-    integer :: nfunc, mode, ig, ipol
+    integer :: nfunc, mode, ig, ispin
 
     complex(dp), intent(in) :: fg(nG_max,nspin,nfunc)
     complex(dp), intent(out) :: fr(nr1*nr2*nr3,nspin,nfunc)
     complex(dp) :: aux(nr1*nr2*nr3)
 
-    do ipol=1,nspin
+    do ispin=1,nspin
       do mode=1,nfunc
         ! initialize work array
         aux(:)= cmplx_0
 
         ! put fg in aux
         do ig=1,nG_max
-          aux(nl(ig)) = fg(ig, ipol, mode)
+          aux(nl(ig)) = fg(ig, ispin, mode)
         enddo
 
         ! perform fourier transform in place aux(fg) -> aux(fr)
         call cfftnd(3,(/nr1,nr2,nr3/),1,aux) ! This is the right convention
 
         ! put aux in fr
-        fr(:,ipol,mode)=aux(:)
+        fr(:,ispin,mode)=aux(:)
 
       enddo
     enddo
@@ -545,20 +545,20 @@ contains
     complex(dp),intent(out) :: fr_exp_igr(nr1*nr2*nr3,nspin,nfunc)
 
     integer :: i, j, k, ir
-    integer :: ipol
+    integer :: ispin
 
-    real(dp) :: phase
+    real(dp) :: gr
 
-    do ipol=1,nspin
+    do ispin=1,nspin
       do mode=1,nfunc
 
         do ir=1,nr1*nr2*nr3
 
           call switch_indices(nr1,nr2,nr3,ir,i,j,k,-1)
 
-          phase = tpi*(g(1) * (i-1)/nr1+g(1) * (j-1)/nr2+ g(1) * (k-1)/nr3)
+          gr = tpi*(g(1)*(i-1)/nr1 + g(1)*(j-1)/nr2 + g(1)*(k-1)/nr3)
 
-          fr_exp_igr(ir,ipol, mode) = fr (ir,ipol,mode) * exp ( cmplx_i * phase  )
+          fr_exp_igr(ir,ispin, mode) = fr(ir,ispin,mode) * exp( cmplx_i * gr )
 
         enddo
       enddo
@@ -581,25 +581,25 @@ contains
     external :: cfftnd
 
     integer :: nG_max_loc !this is local here!
-    integer :: nfunc, mode, ig, ir, ipol
+    integer :: nfunc, mode, ig, ir, ispin
 
     complex(dp), intent(out) :: fg(nG_max_loc,nspin,nfunc)
     complex(dp), intent(in) :: fr(nr1*nr2*nr3,nspin,nfunc)
     complex(dp) :: aux(nr1*nr2*nr3)
 
-    do ipol=1,nspin
+    do ispin=1,nspin
       do mode=1,nfunc
 
         aux(:)= cmplx_0
 
         do ir=1,nr1*nr2*nr3
-          aux(ir) = fr(ir, ipol,mode)
+          aux(ir) = fr(ir, ispin,mode)
         enddo
 
         call cfftnd(3,(/nr1,nr2,nr3/),-1,aux)  ! this is the right convention
 
         do ig=1,nG_max_loc
-          fg(ig,ipol,mode)=aux(nl(ig))
+          fg(ig,ispin,mode)=aux(nl(ig))
         enddo
       enddo
     enddo

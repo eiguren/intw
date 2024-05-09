@@ -1,0 +1,29 @@
+Time reversal in SIESTA:
+In the fdf you can specify one variable related to time reversal symmetry:
+ - TimeReversalSymmetryForKpoints: It is used to reduce the k-points by using only one of the (k, -k) pair.
+                                   It is true by default if unles:
+                                    a) the option Spin.Spiral is used.
+                                    b) non-colinear/spin-orbit calculations. In this case, the time reversal symmetry is not used to
+                                       avoid possible breakings due to subtle implementation details.
+Diving into the code I found that the k-points are reduced using time reversal always when it is specified in the fdf.
+When it is not specified, the k-point are reduceb if (.not. spiral) .and. TrSym. Which means: spiral=.false. and TrSym=.true.
+The variable TrSym is set in the init_spin subroutine defined in m_spin.F90:
+
+   if ( spin%SO ) then
+     TRSym = .false.
+   else if ( spin%NCol ) then
+     TRSym = .false.
+   else if ( spin%Col ) then
+     TRSym = .true.
+   else if ( spin%none ) then
+     TRSym = .true.
+   endif
+
+   ! Get true time reversal symmetry
+   TRSym = fdf_get('TimeReversalSymmetry', TRSym)
+
+Therefore, there is another input variable that does not mention the SIESTA manual, and can be used to set final value of the TrSym variable.
+I haven't found any other reference to time reversal symmetry within the code, therefore, unlike QE, in SIESTA the time reversal symmetry
+is used only to reduce the k-points.
+
+Time reversal in QE:

@@ -28,7 +28,7 @@ module intw_symmetries
   ! variables
   public :: symlink, sym_G, nosym_G, QE_folder_sym, QE_folder_nosym, inverse_indices, &
             identity_matrix_index, spin_symmetry_matrices, full_mesh, IBZ, rtau_index, &
-            tau_cryst, rtau, rtau_cryst, symtable
+            rtau, rtau_cryst, symtable
   !
   ! subroutines
   public :: allocate_symmetry_related_k, deallocate_spin_symmetry_matrices, &
@@ -38,9 +38,8 @@ module intw_symmetries
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, irr_kp_grid_to_full, calculate_star_r, &
             calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
-            get_psi_general_k, intw_check_mesh, get_G_shells, apply_TR_to_wfc, &
+            get_psi_general_k, intw_check_mesh, apply_TR_to_wfc, &
             find_size_of_irreducible_k_set, find_the_irreducible_k_set_irr, &
-            sort_G_vectors_in_symmetry_shells, output_sorted_G_vectors_in_symmetry_shells, &
             multable
   !
   ! functions
@@ -69,18 +68,14 @@ module intw_symmetries
   !Asier && Idoia 17 07 2014
   !Identy of atoms under symmetry operation
   integer, allocatable :: rtau_index(:,:)
-  real(kind=dp), allocatable :: tau_cryst(:,:)
   real(kind=dp), allocatable :: rtau(:,:,:)
   real(kind=dp), allocatable :: rtau_cryst(:,:,:)
 
   integer :: symtable(48,48)
 
 contains
-  !
-  !-----------------------------------------------------------
-  subroutine allocate_symmetry_related_k(nk1,nk2,nk3,nsym)
-    !-----------------------------------------------------------
-    !
+
+  subroutine allocate_symmetry_related_k(nk1, nk2, nk3, nsym)
     !------------------------------------------------------------------
     !   nk1, nk2, nk3 are the MP coefficient of the mesh, and nsym is
     !   the total number of point group operations.
@@ -136,7 +131,6 @@ contains
 
     nkmesh = nk1*nk2*nk3
     !
-    allocate(inverse_indices(nsym))
     allocate(QE_folder_sym(nkmesh))
     allocate(sym_G(3,nkmesh))
     allocate(symlink(nkmesh,2))
@@ -146,12 +140,9 @@ contains
     return
 
   end subroutine allocate_symmetry_related_k
-  !--------------------------------------------------
-  !**************************************************
-  !--------------------------------------------------
+
+
   subroutine deallocate_spin_symmetry_matrices()
-    !--------------------------------------------------
-    !
     !------------------------------------------------------------------
     ! This subroutine deallocates the array spin_symmetry_matrices
     !------------------------------------------------------------------
@@ -159,9 +150,8 @@ contains
     deallocate(spin_symmetry_matrices)
 
   end subroutine deallocate_spin_symmetry_matrices
-  !----------------------------------------------------
-  !****************************************************
-  !----------------------------------------------------
+
+
   subroutine deallocate_symmetry_related_k()
     !----------------------------------------------------
     !
@@ -184,12 +174,9 @@ contains
     return
 
   end subroutine deallocate_symmetry_related_k
-  !-------------------------------------------------------
-  !*******************************************************
-  !-------------------------------------------------------
+
+
   subroutine find_inverse_symmetry_matrices_indices()
-    !-------------------------------------------------------
-    !
     !------------------------------------------------------------------
     ! For every point group operation isym, this subroutine finds
     ! the index of the inverse point group operation.
@@ -201,7 +188,7 @@ contains
     ! (This extra layer of complication is QE's fault, not mine)
     !------------------------------------------------------------------
 
-    use intw_useful_constants, only: ZERO, eps_8, eps_5
+    use intw_useful_constants, only: ZERO, eps_5
     use intw_reading, only: nsym, s, at, bg
 
     implicit none
@@ -213,6 +200,8 @@ contains
 
     ! Find the rotation matrices in cartesian coordinates
     !
+
+    allocate(inverse_indices(nsym))
 
     rot_cart = zero
     !
@@ -270,10 +259,7 @@ contains
         !
         norm = sqrt(norm)
         !
-        ! IGG -- Sim hexagonalean bestela ez du topatzen
-        ! if (norm<eps_8*100 ) then
         if (norm<eps_5) then
-          !End IGG
           !
           inverse_indices(isym) = jsym
           found = .true.
@@ -309,23 +295,19 @@ contains
     return
 
   end subroutine find_inverse_symmetry_matrices_indices
-  !-------------------------------------------------------------
-  !*************************************************************
-  !-------------------------------------------------------------
+
+
   subroutine allocate_and_build_spin_symmetry_matrices(nsym)
-    !-------------------------------------------------------------
-    !
     !------------------------------------------------------------------
-    !
     ! This subroutine builds, once and for all, all the 2x2 spin
     ! rotation matrices needed by the program and tabulates them in the
     ! array spin_symmetry_matrices.
     !
     ! Some elementary testing is also implemented.
-    !
     !------------------------------------------------------------------
-    use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5, pi
+    use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
     use intw_reading, only: s, at, bg
+    use intw_utility, only: det
 
     implicit none
 
@@ -339,9 +321,8 @@ contains
     integer :: sym(3,3)
     real(kind=dp) :: sym_cart(3,3) !symmetry matrix in crystal coordinates
     complex(kind=dp) :: S_u(2,2) !the 2x2 spin rotation matrix
-    real(kind=dp) :: axis(3), angle, norm !axis and angle of a given rotation matrix
-    real(kind=dp) :: axis_cryst(3), det, I3(3,3)
-    integer :: is,js
+    real(kind=dp) :: axis(3), angle !axis and angle of a given rotation matrix
+    real(kind=dp) :: determinant, I3(3,3)
     real(kind=dp) :: bgtrans(3,3)
     integer :: i,j,k,h
 
@@ -370,17 +351,13 @@ contains
       !       call rotaxis_crystal(sym,axis,angle)
       !call rotaxis(sym,axis,angle)
 
-      det = sym(1,1)*sym(2,2)*sym(3,3) +  &
-            sym(1,2)*sym(2,3)*sym(3,1) +  &
-            sym(1,3)*sym(2,1)*sym(3,2) -  &
-            sym(1,3)*sym(2,2)*sym(3,1) -  &
-            sym(1,1)*sym(2,3)*sym(3,2) -  &
-            sym(1,2)*sym(2,1)*sym(3,3)
+      determinant = det(real(sym, kind=dp))
+
 
       !the inversion part does not affect the spin
       !we must remove this, otherwise the dimension of the
       !null space of sym-I is more than 1.
-      if (det<0) sym = -sym
+      if (determinant<0) sym = -sym
 
 
       sym_cart = 0.0_dp
@@ -421,7 +398,8 @@ contains
 
   end subroutine allocate_and_build_spin_symmetry_matrices
 
-  subroutine compute_rotation_axis(A,axis,angle)
+
+  subroutine compute_rotation_axis(A, axis, angle)
     !ASIER
     !This subrutine is new 15/03/2022
     !determines the null space of (R-I)
@@ -516,9 +494,8 @@ contains
 
   end subroutine compute_rotation_axis
 
-  !*************************************************************
-  !-------------------------------------------------------------
-  subroutine rotaxis_crystal(sym,axis,angle)
+
+  subroutine rotaxis_crystal(sym, axis, angle)
     !-------------------------------------------------------------
     ! ASIER: DO NOT USE THIS 15/03/2022 (BECAUSE WRONG)
     ! USE NEW COMPUTE_ROTATION_AXIS OR OLDER ROTAXIS
@@ -556,6 +533,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: ZERO, ONE, pi, eps_8
     use intw_reading, only: at, bg
+    use intw_utility, only: det
 
     implicit none
 
@@ -574,12 +552,7 @@ contains
 
     ! First, find the determinant
     !
-    determinant = sym(1,1)*sym(2,2)*sym(3,3) +  &
-                  sym(1,2)*sym(2,3)*sym(3,1) +  &
-                  sym(1,3)*sym(2,1)*sym(3,2) -  &
-                  sym(1,3)*sym(2,2)*sym(3,1) -  &
-                  sym(1,1)*sym(2,3)*sym(3,2) -  &
-                  sym(1,2)*sym(2,1)*sym(3,3)
+    determinant = det(real(sym, kind=dp))
     !
     ! Put the rotation part of the symmetry matrix in the Rotation array,
     ! multiplied by the appropriate coefficient to account for inversion
@@ -798,14 +771,11 @@ contains
     return
 
   end subroutine rotaxis_crystal
-  !-------------------------------------------------------------------------------------
-  !*************************************************************************************
-  !-------------------------------------------------------------------------------------
-  subroutine set_symmetry_relations(nk1_,nk2_,nk3_,nkpoints_QE_,kpoints_QE_,kmesh_, k_points_consistent_, &
-                                    QE_folder_nosym_, QE_folder_sym_, nosym_G_, sym_G_, &
-                                    symlink_, full_mesh_, IBZ_)
-    !-------------------------------------------------------------------------------------
-    !
+
+
+  subroutine set_symmetry_relations(nk1_, nk2_, nk3_, nkpoints_QE_, kpoints_QE_, kmesh_, &
+                                    k_points_consistent_, QE_folder_nosym_, QE_folder_sym_, &
+                                    nosym_G_, sym_G_, symlink_, full_mesh_, IBZ_)
     !--------------------------------------------------------------------------!
     !     This subroutine fills in the symmetry arrays allocated by
     !     the subroutine "allocate_symmetry_related_k", and tests if the
@@ -924,14 +894,11 @@ contains
       !
       if (possible_full_mesh) then
         !
-        ! if (sqrt(G(1)**2.0+G(2)**2+G(3)**2) < eps_8) then
-        !   !
           call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           kpoint_is_found_nosym(ikpt) = .true.
           QE_folder_nosym_(ikpt)       = i_folder
           nosym_G_(:,ikpt)             = G
-        ! endif
         !
       endif !possible_full_mesh
       !
@@ -1004,7 +971,6 @@ contains
             kpoint_is_found_sym(ikpt) = .true.
             QE_folder_sym_(ikpt)       = i_folder
             sym_G_(:,ikpt)             = -G
-            !ASIER, same as above
             symlink_(ikpt,1)           = isym
             !symlink(ikpt,1)           = inverse_indices(isym)
             symlink_(ikpt,2)           = 1
@@ -1030,7 +996,6 @@ contains
     return
 
   end subroutine set_symmetry_relations
-  !-----------------------------------------------
 
   subroutine find_the_irreducible_k_set_and_equiv2(nspt, k_entire, k_irr, nk_irr, equiv, symlink, sym_G)
     !------------------------------------------------------------------
@@ -1043,15 +1008,15 @@ contains
 
     !input
 
-    integer :: nspt
+    integer, intent(in) :: nspt
 
-    real(kind=dp) :: k_entire(3,nspt)
+    real(kind=dp), intent(in) :: k_entire(3,nspt)
 
     ! output
     integer :: nk_irr
     real(kind=dp) :: k_irr(3,nspt)
     integer :: equiv(nspt) ! which is the equivalent point
-    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
+    integer, intent(out) :: sym_G(1:3,nspt), symlink(nspt,1:2)
 
     !local variables
     real(kind=dp) :: k_rot(3), dist1, dist2
@@ -1165,17 +1130,17 @@ contains
 
     !input
 
-    integer  :: nspt
+    integer, intent(in):: nspt
 
-    real(kind=dp) :: k_entire(3,nspt)
+    real(kind=dp), intent(in) :: k_entire(3,nspt)
 
     ! output
-    integer  :: nk_irr
+    integer, intent(out):: nk_irr
     real(kind=dp) :: k_irr(3,nspt)
     integer :: equiv(nspt) ! which is the equivalent point
-    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
 
     !local variables
+    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
     real(kind=dp):: k_rot(3), dist1, dist2
 
     integer :: i, j ! triplet indices
@@ -1275,11 +1240,10 @@ contains
 
   end subroutine find_the_irreducible_k_set_and_equiv
 
-  subroutine find_the_irreducible_k_set(nk1,nk2,nk3,kmesh,kpoints_irr,nk_irr)
+  subroutine find_the_irreducible_k_set(nk1, nk2, nk3, kmesh, kpoints_irr, nk_irr)
     !------------------------------------------------------------------
     ! This subroutine finds the irreducible k set for the canonical
     ! 1BZ mesh.
-    !
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
@@ -1300,7 +1264,7 @@ contains
     ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
 
-    integer :: nk_irr
+    integer, intent(out) :: nk_irr
     ! How many points were found?
 
     !local variables
@@ -1393,8 +1357,8 @@ contains
 
   end subroutine find_the_irreducible_k_set
 
-  subroutine find_entire_nice_BZ(nk1, nk2, nk3, nspt, ksvec) !(kmesh, kpoints_irr,nk_irr)
 
+  subroutine find_entire_nice_BZ(nk1, nk2, nk3, nspt, ksvec)
     !------------------------------------------------------------------
     ! input: private nk1 nk2 nk3, output full BZ nk>nk1*nk2*nk3 for tria_diag by AE.&IGdG.
     !------------------------------------------------------------------
@@ -1568,15 +1532,13 @@ contains
   end subroutine find_entire_nice_BZ
 
 
-  subroutine irr_kp_grid_to_full(nk_1, nk_2, nk_3, nk_irr, k_irr, &
-                                 equiv_l, symlink_l)
+  subroutine irr_kp_grid_to_full(nk_1, nk_2, nk_3, nk_irr, k_irr, equiv_l, symlink_l)
     !-------------------------------------------------------------------------
     ! Given a irreducible k set, this subroutine finds the connection
     ! to the full BZ.
     !
     ! input  : nk1 nk2 nk3 nk_irr (n. of irr k points) and k_irr(3,nk_irr)
     ! output : equiv_l, symlink_l
-    !
     !-------------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_utility, only: switch_indices
@@ -1585,18 +1547,18 @@ contains
     implicit none
 
     !input
-    integer :: nk_1, nk_2, nk_3
+    integer, intent(in) :: nk_1, nk_2, nk_3
 
-    integer :: nk_irr                  ! N. of irreducible k points
+    integer, intent(in) :: nk_irr                  ! N. of irreducible k points
 
-    integer :: k_irr(3,nk_irr)         ! triplet indices of the irreducible k-points
+    integer, intent(in) :: k_irr(3,nk_irr)         ! triplet indices of the irreducible k-points
 
     !output
     integer :: equiv_l(nk_1* nk_2* nk_3)   ! For a given k point in the entire BZ,
     ! gives the symmetry related
     ! k point index in the irreducible k set
 
-    integer :: symlink_l(nk_1* nk_2* nk_3,2) ! Symmetry link .
+    integer, intent(out) :: symlink_l(nk_1* nk_2* nk_3,2) ! Symmetry link .
 
 
     !local
@@ -1706,6 +1668,7 @@ contains
 
   end subroutine irr_kp_grid_to_full
 
+
   subroutine calculate_star_r(v, vstar, nstar, symop)
 
     use intw_reading, only: nsym, s
@@ -1715,6 +1678,7 @@ contains
     real(kind=dp), intent(in) :: v(3)
     real(kind=dp), intent(out) :: vstar(3,48)
     integer, intent(out) :: nstar, symop(48)
+
     integer :: isym, i
     real(kind=dp) :: vrot(3)
 
@@ -1741,6 +1705,7 @@ contains
 
 
   end subroutine calculate_star_r
+
 
   subroutine calculate_star(v, vstar, nstar, symop)
 
@@ -1788,12 +1753,12 @@ contains
 
     implicit none
 
-    integer :: nk_1, nk_2, nk_3, nkr, nk_irr
-    integer :: io_unit
-    integer :: i
+    integer, intent(in) :: nk_1, nk_2, nk_3, nk_irr
+    integer, intent(in) :: equiv(nk_1*nk_2*nk_3)
+    integer, intent(in) :: symlink(nk_1*nk_2*nk_3,2)
 
-    integer :: equiv(nk_1*nk_2*nk_3)
-    integer :: symlink(nk_1*nk_2*nk_3,2)
+    integer :: io_unit
+    integer :: i, nkr
 
     nkr = nk_1*nk_2*nk_3
 
@@ -1815,18 +1780,17 @@ contains
 100 format(i10,12x,i10,12x,i10,12x,i10)
   end subroutine echo_symmetry_1BZ
 
-  subroutine rot_atoms(nat,nsym,tau)
-    use intw_utility, only: ainv
-    use intw_reading, only: nr1, nr2, nr3
-    use intw_reading, only: s, ftau, at, bg
+  subroutine rot_atoms(nat, nsym, tau)
+
+    use intw_reading, only: nr1, nr2, nr3, s, ftau, at, bg, tau_cryst
 
     implicit none
+
     integer, intent(in) :: nat, nsym
     real(kind=dp), intent(in) :: tau(3,nat)
     !out global
     !    integer, intent(out) :: rtau_index(nat,nsym)
     !    real(kind=dp), intent(out) :: rtau(3,nsym,nat)
-    !    real(kind=dp), intent(out) :: tau_cryst(3,nat)
     !    real(kind=dp), intent(out) :: rtau_cryst(3,nsym,nat)
 
     integer :: i, j, h
@@ -1857,10 +1821,6 @@ contains
     nr = (/nr1,nr2,nr3/)
 
     rtau_index = -11
-
-    do i=1,nat
-      tau_cryst(:,i) = matmul(ainv(at), tau(:,i))
-    enddo
 
     do i=1,nat
       do isym=1,nsym
@@ -1907,13 +1867,9 @@ contains
     enddo
 
   end subroutine rot_atoms
-  !-----------------------------------------------------------------------------
-  !*****************************************************************************
-  !-----------------------------------------------------------------------------
-  subroutine rotate_wfc_test(wfc_k_irr,list_iG,wfc_k,list_iG_k, &
-                             i_sym,sym,ftau,G_sym)
-    !-----------------------------------------------------------------------------
-    !
+
+
+  subroutine rotate_wfc_test(wfc_k_irr, list_iG, wfc_k, list_iG_k, i_sym, sym, ftau, G_sym)
     !--------------------------------------------------------------------------------------------------------
     ! This subroutine takes in the periodic part of a wavefunction psi_{nk} and
     ! returns the periodic part of psi_{n Rk}, where Rk is the rotated k-vector.
@@ -1956,7 +1912,7 @@ contains
     !--------------------------------------------------------------------------------------------------------
     use intw_fft, only: find_iG
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-    use intw_utility, only: HPSORT, cmplx_ainv_2
+    use intw_utility, only: HPSORT
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
     implicit none
@@ -1975,12 +1931,12 @@ contains
     !local variables
 
     complex(kind=dp) :: wfc_k_aux(nG_max,num_bands_intw,nspin)
-    integer :: p_i, i, alpha, iGk, iG_k
+    integer :: p_i, i, iGk, iG_k
     integer :: Gk(3) ! a vector for k in the IBZ
     integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
-    integer :: ibnd, is, js
+    integer :: ibnd, ispin, jspin
     integer :: nG  ! counter on the number of G vectors in the array
     complex(kind=dp) :: phases(nG_max)
 
@@ -2024,11 +1980,11 @@ contains
       p_i = permutations(i)
       !
       do ibnd=1,num_bands_intw
-        do is=1,nspin
+        do ispin=1,nspin
           !
-          wfc_k(i,ibnd,is) = wfc_k_irr(p_i,ibnd,is) * phases(p_i)
+          wfc_k(i,ibnd,ispin) = wfc_k_irr(p_i,ibnd,ispin) * phases(p_i)
           !
-        enddo !is
+        enddo !ispin
       enddo !ibnd
       !
     enddo !i
@@ -2036,25 +1992,20 @@ contains
     !
     if (nspin==2) then
       !
-      !print*, "spin matrix--------------------", i_sym
-      !do is=1,nspin
-      !  write(*,"(100f6.2)") (spin_symmetry_matrices(is,js,i_sym), js=1,nspin)
-      !end do
-      !
       wfc_k_aux = wfc_k
       wfc_k     = cmplx_0
       !
       do i=1,nG
         do ibnd=1,num_bands_intw
-          do is=1,nspin
-            do js=1,nspin
+          do ispin=1,nspin
+            do jspin=1,nspin
               !
               ! JLB, MBR 29/06/2023
-              !wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,i_sym) * wfc_k_aux(i,ibnd,js)
-              wfc_k(i,ibnd,is) = wfc_k(i,ibnd,is) + spin_symmetry_matrices(is,js,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,js)
+              ! wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,i_sym) * wfc_k_aux(i,ibnd,jspin)
+              wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,jspin)
               !
-            enddo !js
-          enddo !is
+            enddo !jspin
+          enddo !ispin
         enddo !ibnd
       enddo !i
       !
@@ -2063,11 +2014,9 @@ contains
     return
 
   end subroutine rotate_wfc_test
-  !---------------------------------------------------------------------
-  !*********************************************************************
-  !---------------------------------------------------------------------
-  subroutine get_psi_general_k(kpoint,use_IBZ,list_iG,wfc_k,QE_eig)
 
+
+  subroutine get_psi_general_k(kpoint, use_IBZ, list_iG, wfc_k, QE_eig)
     !----------------------------------------------------------------------------!
     !     This subroutine is a driver which performs all the necessary operations
     !     to obtain the periodic part of the wavefunction at the specified k point.
@@ -2085,7 +2034,7 @@ contains
     !----------------------------------------------------------------------------!
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_reading, only: get_K_folder_data
-    use intw_reading, only: s, ftau, nG_max, npol, nspin, num_bands_intw
+    use intw_reading, only: s, ftau, nG_max, nspin, num_bands_intw
     use intw_useful_constants, only: ZERO
     use intw_fft, only: wfc_by_expigr
     use intw_utility, only: find_k_1BZ_and_G, switch_indices
@@ -2095,15 +2044,11 @@ contains
     real(kind=dp), intent(in) :: kpoint(3)
     logical, intent(in) :: use_IBZ
 
-
     complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
-    ! complex(kind=dp), intent(out) :: wfc_k(nG_max,nbands,nspin)
     integer, intent(out) :: list_iG(nG_max)
     real(kind=dp), intent(out) :: QE_eig(num_bands_intw)
-    ! real(kind=dp), intent(out) :: QE_eig(nbands)
 
     complex(kind=dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
-    ! complex(kind=dp) :: wfc_k_irr(nG_max,nbands,nspin)
     integer :: list_iG_irr(nG_max)
 
 
@@ -2119,12 +2064,6 @@ contains
 
     real(kind=dp) :: kpoint_1BZ(3)
 
-
-    !!Peio
-    !!The variable we use instead of num_bands
-    !integer :: nbands_loc
-    !!Peio
-    !nbands_loc = num_bands_intw
 
     if (.not. use_IBZ .and. .not. full_mesh) then
       ! the parameters are not consistent
@@ -2169,10 +2108,6 @@ contains
       ftau_sym = ftau(:,i_sym)
       sym      = s(:,:,inverse_indices(i_sym))
 
-      ! debugging test
-      ! call rotate_wfc(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
-      !                  inverse_indices(i_sym), sym, ftau_sym, G_sym)
-
       call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
                            i_sym, sym, ftau_sym, G_sym)
 
@@ -2187,16 +2122,12 @@ contains
 
     list_iG_irr = list_iG
 
-    call wfc_by_expigr(kpoint, num_bands_intw, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-
-    !    call wfc_by_expigr(kpoint, nbands, npol, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-    !(list_iG_irr, list_iG, G_plus)
+    call wfc_by_expigr(kpoint, num_bands_intw, nspin, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
 
   end subroutine get_psi_general_k
-  !---------------------------------------------------------------------------
-  !***************************************************************************
-  !---------------------------------------------------------------------------
-  subroutine intw_check_mesh(nk_1,nk_2,nk_3,kmesh,k_irr,nk_irr,kpoints_QE)
+
+
+  subroutine intw_check_mesh(nk_1, nk_2, nk_3, kmesh, nk_irr, k_irr, nkpoints_QE, kpoints_QE)
     !----------------------------------------------------------------------------!
     !     This subroutine compares the mesh points kmesh to the global array
     !     kpoints (which comes from the QE folders) in order to determine if
@@ -2205,20 +2136,18 @@ contains
     !             3) none of the above
     !----------------------------------------------------------------------------!
     use intw_useful_constants, only: eps_8
-    use intw_reading, only: nkpoints_QE
 
     implicit none
 
-    integer :: nk_1,nk_2,nk_3, nkmesh
-    real(kind=dp) :: kmesh(3,nk_1*nk_2*nk_3)
-
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    real(kind=dp), intent(in) :: kmesh(3,nk_1*nk_2*nk_3)
+    integer, intent(in) :: nk_irr
+    integer, intent(in) :: k_irr(3,nk_irr)
+    integer, intent(in) :: nkpoints_QE
     real(kind=dp), intent(in) :: kpoints_QE(3,nkpoints_QE)
 
-    integer :: nk_irr
-    integer :: k_irr(3,nk_irr)
-
     real(kind=dp) :: kpt(3)
-    integer :: ikpt
+    integer :: ikpt, nkmesh
     real(kind=dp) :: norm
 
     nkmesh = nk_1*nk_2*nk_3
@@ -2268,64 +2197,8 @@ contains
 
   end subroutine intw_check_mesh
 
-  subroutine get_G_shells(number_G_shells,nG_shell_max)
-    !----------------------------------------------------------------------------!
-    !     This subroutine computes the index nG_shell_max such that
-    !     gvec(1:nG_shell_max) represents the first number_G_shells shells.
-    !
-    !     It is assumed that gvec is already sorted according to the length
-    !     of the G vectors.
-    !----------------------------------------------------------------------------!
-    use intw_useful_constants, only: ZERO, eps_8
-    use intw_utility, only: cryst_to_cart
-    use intw_reading, only: bg, ngm, gvec
 
-    implicit none
-
-    integer :: number_G_shells, nG_shell_max
-
-    integer :: nshell
-    integer :: iG
-
-    integer :: iflag, nvec
-
-    real(kind=dp) :: G_cart(3)
-
-    real(kind=dp) :: norm2, old_norm2
-
-    nshell       = 1
-    nG_shell_max = 1
-
-    nvec = 1
-    iflag = 1
-
-    old_norm2 = ZERO
-
-    do iG=2,ngm
-
-      G_cart = dble(gvec(:,iG))
-      call cryst_to_cart(nvec, G_cart, bg, iflag)
-
-      norm2 = G_cart(1)**2 + G_cart(2)**2 + G_cart(3)**2
-
-      if (abs(norm2-old_norm2) < eps_8) then
-        nG_shell_max = nG_shell_max + 1
-      else
-        nshell = nshell + 1
-        if (nshell == number_G_shells + 1) return
-        nG_shell_max = nG_shell_max + 1
-        old_norm2 = norm2
-      end if
-
-    end do
-
-  end subroutine get_G_shells
-  !--------------------------------------------
-  !********************************************
-  !--------------------------------------------
-  subroutine apply_TR_to_wfc(wfc,list_iG)
-    !--------------------------------------------
-    !
+  subroutine apply_TR_to_wfc(wfc, list_iG)
     !-----------------------------------------------------------------------------
     ! This subroutine takes in a wavefunction wfc = u_{n-k} and
     ! returns, in the same array, wfc^* = u_{n-k}^*, which is equal to
@@ -2450,10 +2323,9 @@ contains
     enddo !i
 
   end subroutine apply_TR_to_wfc
-  !----------------------------------------------------------------------
-  !**********************************************************************
-  !----------------------------------------------------------------------
-  subroutine find_size_of_irreducible_k_set(nk1,nk2,nk3,kmesh,nk_irr)
+
+
+  subroutine find_size_of_irreducible_k_set(nk1, nk2, nk3, kmesh, nk_irr)
     !------------------------------------------------------------------
     ! This subroutine finds the number of k-points in the IBZ, based
     ! on the symmetry operations to be used.
@@ -2565,11 +2437,11 @@ contains
 
   end subroutine find_size_of_irreducible_k_set
 
-  subroutine find_the_irreducible_k_set_irr(nk1,nk2,nk3,kmesh,nk_irr,list_ik_irr,kpoints_irr,weight_irr)
+
+  subroutine find_the_irreducible_k_set_irr(nk1, nk2, nk3, kmesh, nk_irr, list_ik_irr, kpoints_irr, weight_irr)
     !------------------------------------------------------------------
     ! This subroutine finds the irreducible k set for the canonical
     ! 1BZ mesh.
-    !
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
@@ -2628,9 +2500,6 @@ contains
             list_ik_irr(ik_irr) = ikpt
             !
             kpoints_irr(:,ik_irr) = kmesh(:,ikpt)
-            !                kpoints_irr(1,ik_irr)=dble(i-1)/nk1
-            !                kpoints_irr(2,ik_irr)=dble(j-1)/nk2
-            !                kpoints_irr(3,ik_irr)=dble(k-1)/nk3
             !
             ! loop on all symmetry operations
             do isym=1,nsym
@@ -2696,225 +2565,14 @@ contains
 
   end subroutine find_the_irreducible_k_set_irr
 
-  subroutine sort_G_vectors_in_symmetry_shells(nG_shell_max,q_direction,shells_table)
-    !----------------------------------------------------------------------------!
-    !	This subroutine determines what set of point group operations leave
-    !	q_direction invariant. Using this restricted set of symmetries,
-    !     the subroutine groups together G vectors belonging to a same
-    !	rotational shell, namely in groups such that all rotations of
-    !	the G vector are present.
-    !
-    !     gvec(1:nG_shell_max) represents the first number_G_shells shells.
-    !
-    !     It is assumed that gvec is already sorted according to the length
-    !     of the G vectors.
-    !----------------------------------------------------------------------------!
-    use intw_useful_constants, only: eps_8, ONE
-    use intw_reading, only: nsym, s, can_use_TR, gvec
 
-    implicit none
-
-    ! input
-    integer :: nG_shell_max
-    real(kind=dp) :: q_direction(3)
-    ! output
-    integer :: shells_table(nG_shell_max,nsym)
-
-    ! local
-    integer :: iG, iG2
-    integer :: isym
-
-    real(kind=dp) :: rot_q(3)
-    integer :: restricted_nsym
-
-    integer :: ishell, iG_shell
-
-    logical :: G_vector_found(nG_shell_max)
-
-    integer :: G(3), G2(3), RG(3)
-    real(kind=dp) :: dG(3)
-
-    real(kind=dp) :: norm
-
-    real(kind=dp) :: local_rotations(3,3,nsym)
-    logical :: local_TR(nsym)
-
-
-    ! first, find which symmetries can be used
-
-    restricted_nsym = 0
-
-    do isym=1,nsym
-      rot_q(:) = matmul(s(:,:,isym),q_direction)
-
-      if (can_use_TR(isym)) rot_q(:) = -rot_q(:)
-
-
-      norm = sqrt(dot_product(rot_q-q_direction,rot_q-q_direction))
-      if (norm < eps_8) then
-        ! add the symmetry to the  set
-        restricted_nsym = restricted_nsym + 1
-
-        local_rotations(:,:,restricted_nsym) = s(:,:,isym)
-        local_TR(restricted_nsym) = can_use_TR(isym)
-
-      end if
-
-    end do
-
-
-    ! second, populate the table which contains the G vectors in shells!
-
-
-    G_vector_found(:) = .false.
-
-    ! This variable will contain the G vector indices, where each row
-    ! will represent a rotation shell.
-    shells_table(:,:) = 0
-
-    ishell = 0
-    iG_shell = 0
-
-    do iG=1,nG_shell_max
-
-      ! If the G vector has already been found, skip the rest and move
-      ! on to the next index
-      if ( G_vector_found(iG) ) cycle
-
-      ! Start a new shell
-      ishell   = ishell+1
-      iG_shell = 1
-
-      shells_table(ishell,iG_shell) = iG
-
-      G(:) = gvec(:,iG)
-
-      G_vector_found(iG) = .true. ! it is found now!
-
-      ! apply all symmetries to this G vector!
-      do isym=1,restricted_nsym
-        RG(:) = matmul(local_rotations(:,:,isym),G)
-
-        if (local_TR(isym)) RG(:) = -RG(:)
-
-        ! look for this vector in the G vectors not yet found
-        do iG2=1,nG_shell_max
-
-          if ( G_vector_found(iG2) ) cycle
-
-          G2(:) = gvec(:,iG2)
-
-          dG(:) = ONE*(RG(:) - G2(:))
-          norm = sqrt(dot_product(dG,dG))
-
-          if (norm < eps_8) then
-            ! add the new vector to the shell
-            G_vector_found(iG2) = .true. ! it is found now!
-
-            iG_shell = iG_shell + 1
-
-            shells_table(ishell,iG_shell) = iG2
-          end if
-
-        end do ! iG2
-
-      end do ! isym
-
-    end do
-
-  end subroutine sort_G_vectors_in_symmetry_shells
-
-  subroutine output_sorted_G_vectors_in_symmetry_shells(nG_shell_max,q_direction,shells_table)
-    !----------------------------------------------------------------------------!
-    !	This subroutine writes the G-vector shells to an ASCII file
-    !	for testing and checking purposes.
-    !----------------------------------------------------------------------------!
-    use intw_utility, only: find_free_unit
-    use intw_reading, only: nsym, bg, gvec
-
-    implicit none
-
-    ! input
-    integer :: nG_shell_max
-    real(kind=dp) :: q_direction(3)
-    ! output
-    integer :: shells_table(nG_shell_max,nsym)
-
-    ! local
-    integer :: io_unit
-
-    integer :: ishell, iG_shell, iG1
-
-    integer :: G(3)
-
-
-    real(kind=dp) :: q_cart(3), G_cart(3)
-
-    q_cart(:) = matmul(bg,dble(q_direction))
-
-    io_unit = find_free_unit()
-    open(unit = io_unit, file ='Symmetry_sorted_G_shells.dat')
-
-    write(io_unit,5) '#=========================================================='
-    write(io_unit,5) '#   This file contains the G-vectors sorted in symmetry shells.'
-    write(io_unit,5) '#   These shells are obtained by applying all symmetry operations'
-    write(io_unit,5) '#   which leaves the following q-vector invariant.  '
-    write(io_unit,5) '#                                             '
-    write(io_unit,5) '#   The q vector, in crystal coordinates:     '
-    write(io_unit,5) '#                                             '
-    write(io_unit,10)'#         q(1)  = ', q_direction(1)
-    write(io_unit,10)'#         q(2)  = ', q_direction(2)
-    write(io_unit,10)'#         q(3)  = ', q_direction(3)
-    write(io_unit,5) '#                                             '
-    write(io_unit,5) '#   which corresponds to, in cartesian 2pi/a coordinates: '
-    write(io_unit,5) '#                                             '
-    write(io_unit,10)'#         q_cart(1)  = ', q_cart(1)
-    write(io_unit,10)'#         q_cart(2)  = ', q_cart(2)
-    write(io_unit,10)'#         q_cart(3)  = ', q_cart(3)
-    write(io_unit,5) '#                                             '
-    write(io_unit,5) '#=========================================================='
-    write(io_unit,5) '# shell number      iG     iG1 iG2 iG3   G vector (2pi/a)'
-    write(io_unit,5) '#=========================================================='
-
-
-
-    do ishell=1,nG_shell_max
-
-      iG1 = shells_table(ishell,1)
-
-      if (iG1 == 0) exit
-      write(io_unit,5) '                                             '
-
-      do iG_shell=1,nsym
-        iG1 = shells_table(ishell,iG_shell)
-        if (iG1 == 0) exit
-
-        G(:) = gvec(:,iG1)
-
-        G_cart(:) = matmul(bg,dble(G))
-
-        write(io_unit,15) ishell,iG1,G(:), G_cart
-
-      end do
-
-    end do
-
-    close(unit = io_unit)
-
-5   format(A)
-10  format(A,3G18.8E3)
-15  format(I8,8X,I6,5X,3I4,1x,3F8.2)
-
-
-  end subroutine output_sorted_G_vectors_in_symmetry_shells
-
-  logical function eqvect(x,y,f)
+  logical function eqvect(x, y, f)
     !-----------------------------------------------------------------------
     !
     use kinds, only: dp
 
     implicit none
-    real(kind=dp) :: x(3), y(3), f(3)
+    real(kind=dp), intent(in) :: x(3), y(3), f(3)
     ! input: input vector
     ! input: second input vector
     ! input: fractionary translation
@@ -2927,10 +2585,8 @@ contains
     return
   end function eqvect
 
-  !----------------------------------------
-  subroutine multable(nsym,s,table)
-    !----------------------------------------
-    !
+
+  subroutine multable(nsym, s, table)
     !--------------------------------------------------------------------
     !  sets up the multiplication table for a group represented by 3x3
     !  integer matrices and checks that {s} is a group indeed:
