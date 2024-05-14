@@ -8,26 +8,33 @@ module intw_useful_constants
   ! I/O variables
   public :: stdout, stdin
   !
+  ! Useful numbers
+  public :: ZERO, ONE, TWO, sqrt2, pi, tpi, fpi, sqrt_pi, &
+            eps_2, eps_5, eps_6, eps_7, eps_8, eps_10, eps_14, &
+            cmplx_i, cmplx_1, cmplx_0
+  !
+  ! Phisical constants
+  public :: bohr, boltzmann
+  !
   ! Energy conversion factors
   public :: eV_to_Ha, eV_to_Ry, Ha_to_eV, Ha_to_Ry, Ry_to_eV, Ry_to_Ha
   !
-  public :: ZERO, ONE, TWO, sqrt2, pi, tpi, fpi, sqrt_pi, &
-            eps_2, eps_5, eps_6, eps_7, eps_8, eps_10, eps_14, &
-            bohr, boltzmann, cmplx_i, cmplx_1, cmplx_0, &
-            direct_io_factor, direct_io_factor_cmplx, double_complex, double_real, &
-            I2, sig_x, sig_y, sig_z
+  ! Pauli matrices
+  public :: I2, sig_x, sig_y, sig_z
   !
   private
   !
   save
   !
   !
-  !NOTE: haritz 26/11/2021
-  ! All this variables should be parameters, but if they are defined as parameters
-  ! OpenMP gives an error in some points
+  ! I/O variables
+  integer, parameter :: stdout = 6 ! standard output unit
+  integer, parameter :: stdin = 5 ! standard input unit
+  !
+  ! Useful numbers
   real(kind=dp), parameter :: ZERO       = 0.0_dp
   real(kind=dp), parameter :: ONE        = 1.0_dp
-  real(kind=dp), parameter :: TWO         = 2.0_dp
+  real(kind=dp), parameter :: TWO        = 2.0_dp
   real(kind=dp), parameter :: sqrt2      = sqrt(2.0_dp)
   real(kind=dp), parameter :: pi         = dacos(-1.0_dp)
   real(kind=dp), parameter :: tpi        = 2.0_dp*pi
@@ -40,11 +47,13 @@ module intw_useful_constants
   real(kind=dp), parameter :: eps_8      = 1.0e-8_dp
   real(kind=dp), parameter :: eps_10     = 1.0e-10_dp
   real(kind=dp), parameter :: eps_14     = 1.0e-14_dp
-  real(kind=dp), parameter :: bohr       = 0.52917720859_dp
-  real(kind=dp), parameter :: boltzmann  = 8.6173324*0.00001_dp
   complex(kind=dp), parameter :: cmplx_i = (0.0_dp, 1.0_dp)
   complex(kind=dp), parameter :: cmplx_1 = (1.0_dp, 0.0_dp)
   complex(kind=dp), parameter :: cmplx_0 = (0.0_dp, 0.0_dp)
+  !
+  ! Physical constants
+  real(kind=dp), parameter :: bohr       = 0.52917720859_dp
+  real(kind=dp), parameter :: boltzmann  = 8.6173324*0.00001_dp
   !
   ! Energy conversion factors
   real(kind=dp), parameter :: Ha_to_eV = 27.211383860484776_dp
@@ -54,23 +63,14 @@ module intw_useful_constants
   real(kind=dp), parameter :: Ry_to_eV = Ry_to_Ha*Ha_to_eV
   real(kind=dp), parameter :: eV_to_Ry = 1.0_dp/Ry_to_eV
   !
-  ! I/O variables
-  integer, parameter :: stdout = 6 ! standard output unit
-  integer, parameter :: stdin = 5 ! standard input unit
-  !
-  !-Pauli matrices
-  complex(kind=dp) :: I2(2,2), sig_x(2,2), sig_y(2,2), sig_z(2,2)
-
-  !TODO: haritz 26/11/2021
-  ! As the following parameters could be compiler dependent they should be
-  ! removed from the code and use inquire to obtain the record legth
-  ! this is for a real double
-  integer, parameter :: direct_io_factor = 2
-  ! this is for a complex double
-  integer, parameter :: direct_io_factor_cmplx = 4
-  ! what is the size in bytes of a complex double
-  integer, parameter :: double_complex = 16
-  ! what is the size in bytes of a complex real
-  integer, parameter :: double_real = 8
+  ! Pauli matrices
+  complex(kind=dp), dimension(2,2), parameter ::    I2 = transpose(reshape((/ cmplx_1, cmplx_0, &
+                                                                              cmplx_0, cmplx_1 /), (/2, 2/)))
+  complex(kind=dp), dimension(2,2), parameter :: sig_x = transpose(reshape((/ cmplx_0, cmplx_1, &
+                                                                              cmplx_1, cmplx_0 /), (/2, 2/)))
+  complex(kind=dp), dimension(2,2), parameter :: sig_y = transpose(reshape((/ cmplx_0,-cmplx_i, &
+                                                                              cmplx_i, cmplx_0 /), (/2, 2/)))
+  complex(kind=dp), dimension(2,2), parameter :: sig_z = transpose(reshape((/ cmplx_1, cmplx_0, &
+                                                                              cmplx_0,-cmplx_1 /), (/2, 2/)))
 
 end module  intw_useful_constants

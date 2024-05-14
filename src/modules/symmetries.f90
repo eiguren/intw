@@ -324,12 +324,8 @@ contains
     real(kind=dp) :: axis(3), angle !axis and angle of a given rotation matrix
     real(kind=dp) :: determinant, I3(3,3)
     real(kind=dp) :: bgtrans(3,3)
-    integer :: i,j,k,h
+    integer :: i, j, k, h
 
-       I2(1,1) = cmplx_1 ;    I2(1,2) = cmplx_0 ;    I2(2,1) = cmplx_0  ;    I2(2,2) = cmplx_1
-    sig_x(1,1) = cmplx_0 ; sig_x(1,2) = cmplx_1 ; sig_x(2,1) = cmplx_1  ; sig_x(2,2) = cmplx_0
-    sig_y(1,1) = cmplx_0 ; sig_y(1,2) =-cmplx_i ; sig_y(2,1) = cmplx_i  ; sig_y(2,2) = cmplx_0
-    sig_z(1,1) = cmplx_1 ; sig_z(1,2) = cmplx_0 ; sig_z(2,1) = cmplx_0  ; sig_z(2,2) =-cmplx_1
 
     I3(1,:) = (/1.0_DP,0.0_DP,0.0_DP/)
     I3(2,:) = (/0.0_DP,1.0_DP,0.0_DP/)
