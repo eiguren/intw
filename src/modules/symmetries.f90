@@ -2053,6 +2053,7 @@ contains
     integer :: i_sym, TR
     integer :: G_sym(3), G_plus(3)
     integer :: sym(3,3)
+    integer :: nG
 
 
     real(kind=dp) :: ftau_sym(3)
@@ -2084,7 +2085,7 @@ contains
       G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
       ftau_sym = ZERO
       sym      = s(:,:,identity_matrix_index)
-      call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
+      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
 
       call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG,         &
                            identity_matrix_index, sym, ftau_sym, G_sym)
@@ -2095,7 +2096,7 @@ contains
       ! identify the right folder
       i_folder = QE_folder_sym(ikpt)
 
-      call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
+      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
 
       ! The symmetry which takes k_irr to k
       i_sym    = symlink(ikpt,1)

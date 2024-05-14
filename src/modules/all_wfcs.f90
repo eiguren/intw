@@ -25,7 +25,7 @@ contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, num_bands_intw
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data, nspin, num_bands_intw
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -69,7 +69,7 @@ contains
 
     do i_folder=1,nkpoints_QE
       !
-      call get_K_folder_data_with_nG(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
+      call get_K_folder_data(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
       !
       !QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
       QE_eig_irr_all(i_folder,:)=QE_eig(:)
@@ -94,7 +94,7 @@ contains
   end subroutine allocate_and_get_all_irreducible_wfc
 
 
-  subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
+  subroutine get_psi_general_k_all_wfc(kpoint, list_iG, wfc_k, QE_eig)
 
     use intw_reading, only: s, ftau, nG_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3

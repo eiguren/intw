@@ -8,7 +8,7 @@ program nscf
        get_gvec, &
        read_parameters_data_file_xml, &
        read_kpoints_data_file_xml, &
-       get_K_folder_data_with_nG
+       get_K_folder_data
   use intw_pseudo, only: read_all_pseudo
   use intw_utility, only: get_timing, find_free_unit, switch_indices
 
@@ -143,7 +143,7 @@ program nscf
   write(*,20) '|      k point list (crystal)                       |'
   do ik=1, nkpoints_QE
      write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,i),'           |'
-     call get_K_folder_data_with_nG(ik,list_iGk(:,ik),wfc_k(:,:,:,ik),QE_eig_k(:,ik),ngk(ik))
+     call get_K_folder_data(ik,list_iGk(:,ik),wfc_k(:,:,:,ik),QE_eig_k(:,ik),ngk(ik))
      write(*,20) '|      Energies are:                                |'
      !write(*,"(5f10.2)")QE_eig_k
      write(*,*)maxval(list_iGk(:,ik)), "ngk", ngk(ik)
