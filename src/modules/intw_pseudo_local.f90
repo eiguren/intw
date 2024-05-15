@@ -7,7 +7,7 @@ module intw_pseudo_local
   public :: vlocq
 
   public :: init_local_PP, init_vlocq, deallocate_vlocq, &
-            calculate_local_part_dv, &
+            calculate_local_part_v, calculate_local_part_dv, &
             dvqpsi_local
 
   private
@@ -66,6 +66,50 @@ contains
     deallocate(vlocq)
 
   end subroutine deallocate_vlocq
+
+
+  subroutine calculate_local_part_v(v_local)
+    !======================================================================
+    ! Add the local part of the PP (V_loc) to v_local                     !
+    !======================================================================
+
+    use intw_reading, only: nat, nr1, nr2, nr3, ngm, ityp
+    use intw_fft, only: eigts1, eigts2, eigts3, nl, mill
+    use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
+
+
+    implicit none
+
+    external :: cfftnd
+
+    !I/O variables
+
+    complex(kind=dp), intent(inout) :: v_local(nr1*nr2*nr3) ! spin idependentea da baina koherentzia mantenduko dugu.
+
+    !local variables
+    integer :: na, nt, ig
+    complex(kind=dp) :: aux(nr1*nr2*nr3), gtau
+
+
+    aux = cmplx_0
+    do na = 1, nat
+      !
+      nt = ityp(na)
+      !
+      do ig = 1, ngm
+        !
+        gtau = eigts1(mill(1,ig),na) * eigts2(mill(2,ig),na) * eigts3(mill(3,ig),na)
+        aux(nl(ig)) = aux(nl(ig)) + gtau * vlocq(ig,nt)
+        !
+      enddo !ig
+      !
+    end do
+    !
+    call cfftnd(3, (/nr1,nr2,nr3/), 1, aux)
+    !
+    v_local = v_local + aux
+
+  end subroutine calculate_local_part_v
 
 
   subroutine calculate_local_part_dv(q_cryst, dvq_local)
