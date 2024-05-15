@@ -82,7 +82,7 @@ contains
 
       if ( nt>=1 .and. nt<=9 ) then
         write(tag1,"(i1)") nt
-        write(*,20)"|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
+        write(*,"(a)") "|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
         file_pseudo=trim(mesh_dir)//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
       else if ( nt>=10 .and. nt<=nt_max ) then
         write(tag2,"(i2)") nt
@@ -95,7 +95,7 @@ contains
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%psd
-      write(*,20)"|                 .. for the specie "//trim(upf(nt)%psd)//"              |"
+      write(*,"(a)") "|                 .. for the specie "//trim(upf(nt)%psd)//"              |"
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum
       read(unit=io_unit,fmt=*,iostat=ierr) upf(nt)%rel
@@ -168,10 +168,6 @@ contains
       close(io_unit)
 
     end do !nt
-    !
-
-20 format(A)
-30 format(A,F8.2,6X,A)
 
   end subroutine read_all_pseudo
 
