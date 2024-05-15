@@ -10,7 +10,7 @@ program nscf
        read_kpoints_data_file_xml, &
        get_K_folder_data
   use intw_pseudo, only: read_all_pseudo
-  use intw_utility, only: get_timing, find_free_unit, switch_indices
+  use intw_utility, only: get_timing, find_free_unit
 
   use intw_useful_constants, only: cmplx_0, cmplx_1
 

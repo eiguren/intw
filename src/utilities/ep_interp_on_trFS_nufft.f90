@@ -54,7 +54,7 @@ program ep_on_trFS_nufft
         use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
         use intw_utility, only: find_free_unit, cryst_to_cart, generate_kmesh, ainv, &
-                switch_indices_zyx, area_vec
+                                joint_to_triple_index_r, area_vec
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
                 intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
                 nq1, nq2, nq3, nqirr, ph_dir, fc_mat
@@ -535,7 +535,7 @@ end if ! have_nscf
 
           !ir to (ir1,ir2,ir3), 3rd index fastest
           ir_p = ir
-          call switch_indices_zyx(nr1,nr2,nr3,ir_p,ir1,ir2,ir3,-1)
+          call joint_to_triple_index_r(nr1,nr2,nr3,ir_p,ir1,ir2,ir3)
           rvec(1) = real(ir1-1,dp)/real(nr1,dp)
           rvec(2) = real(ir2-1,dp)/real(nr2,dp)
           rvec(3) = real(ir3-1,dp)/real(nr3,dp)
@@ -608,7 +608,7 @@ end if ! have_nscf
 !  dvq_local_interp=dvq_local_interp/real(nr1*nr2*nr3,dp) ! don't ask...
 !  ! print dvq_local_interp vs. dvq_local_ref
 !   do ir=1,nr1*nr2*nr3
-!          call switch_indices_zyx(nr1,nr2,nr3,ir,ir1,ir2,ir3,-1)
+!          call joint_to_triple_index_r(nr1,nr2,nr3,ir,ir1,ir2,ir3)
 !          ik=1000+iq
 !          write(unit=ik,fmt="(3i4,50e12.4)") ir1,ir2,ir3, (dvq_local_ref(ir,iat,1,1),iat=1,3*nat)
 !          ik=2000+iq

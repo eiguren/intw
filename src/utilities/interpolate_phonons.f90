@@ -10,7 +10,7 @@ program interpolatephonons
 
     use kinds, only: dp
     use intw_useful_constants, only: cmplx_0
-    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, switch_indices, &
+    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, &
             generate_kmesh, cryst_to_cart
     use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input, &
             nq1, nq2, nq3, ph_dir, fc_mat
@@ -49,7 +49,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !       Read in the necessary information from standard input
 !================================================================================
     call read_input(read_status)
- 
+
     if (read_status ) then
        stop
     end if
@@ -58,7 +58,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 !       read the parameters from the SCF QE calculation
 !================================================================================
-    call read_parameters_data_file_xml()  
+    call read_parameters_data_file_xml()
 
 !================================================================================
 !   Phonon mesh and interpolation meshes

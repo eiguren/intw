@@ -1,16 +1,16 @@
       ! MBR 24/04/2024
 
-      ! This utility reads the electron-phonon matrix elements calculated by the utility 
+      ! This utility reads the electron-phonon matrix elements calculated by the utility
       ! ep_melements.f90 of INTW and interpolates them on a triangulated Fermi surface,
       ! following the method of:
       ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
       ! Finally, elements are printed to file.
-     
+
 program ep_on_trFS_wannier
 
         use kinds, only: dp
     use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
-    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, switch_indices, &
+    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
             generate_kmesh, cryst_to_cart, area_vec
     use intw_w90_setup, only: nrpts, irvec, ndegen, &
             allocate_and_read_ham_r, allocate_and_read_u_mesh, &
@@ -170,7 +170,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
             ! elements k+q,k are: ep_mat_el_coarse(iq,ik,:,:,is1,is2,imode)
             ! locate (k+q)-point index ikq in the kmesh
             call find_k_1BZ_and_G(kqpoint,nk1,nk2,nk3,i,j,k,kq_1bz,Gkq_1bz)
-            call switch_indices(nk1,nk2,nk3,ikq,i,j,k,+1)
+            call triple_to_joint_index_g(nk1,nk2,nk3,ikq,i,j,k)
             kqmap(iq,ik) = ikq
         end do
     end do
@@ -247,10 +247,10 @@ do is=1,nfs_sheets_tot
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges) 
+   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
    close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is). 
+   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
    !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
@@ -436,19 +436,19 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
 
 
 !================================================================================
-! Interpolate elements 
+! Interpolate elements
 !================================================================================
 
  ! the interpolation grid is formed by the triangulated FS points
  ! In principle, in the trianglulated k-point list up to nkpt_tr_tot
  ! the index carries the information about the band implicitly.
- ! We will retrieve U rotation matrices and eigenvalues on the 
+ ! We will retrieve U rotation matrices and eigenvalues on the
  ! full num_wann_intw list for those k-points, as the w90_setup
  ! routines give that info, but then we will intepolate the ep element only
  ! for the bands index at Fermi given by nfs_sheet().
 
 
- ! interpolated bands in nkpt_tr_tot vertices 
+ ! interpolated bands in nkpt_tr_tot vertices
  ! u_kint_all, contains the rotation matrices (row is bloch and column is wannier,
  ! i.e. the "orbital weights" for each band is in the columns)
  ! Store frequencies in Ry.
@@ -458,7 +458,7 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
 
  do ik=1,nkpt_tr_tot
      ! this is cartesians x 2pi/alat. Transform to crystal before interpolation
-     kpoint = kpts_tr(:,ik)     
+     kpoint = kpts_tr(:,ik)
      call cryst_to_cart (1, kpoint, at, -1)
      call interpolate_1k (kpoint, eig_kint, u_kint)
      eig_kint = eig_kint * 2.0_dp / Ha_to_eV
@@ -471,7 +471,7 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
  ! i.e., the read-in coarse mesh ep elements should be retrieved
  !================================================================================
 
-goto 666 ! skip tests 
+goto 666 ! skip tests
 
  ! check band interp
  open (16, file='cu_band.kpt', status='old')
@@ -508,20 +508,20 @@ goto 666 ! skip tests
  js=1
  qpoint = qmesh(:,iq)
  do ik=8,8 !1,nkmesh
-    ikp = kqmap(iq,ik)  !k+q index 
+    ikp = kqmap(iq,ik)  !k+q index
     kpoint = kmesh(:,ik)
     call interpolate_1k (kpoint, eig_kint, u_kint)
     call interpolate_1k (kpoint+qpoint, eig_kint, u_kqint)
     do iat=1,3*nat
          gmat_aux1 = cmplx_0
          gmat_int = cmplx_0
-         gmat_int_rot = cmplx_0 
+         gmat_int_rot = cmplx_0
          do irq=1,nrpts_q
             facq = exp(cmplx_i*tpi*dot_product(qpoint(:),irvec_q(:,irq)))/real(ndegen_q(irq),dp)
             gmat_aux1(:,:,:) = gmat_aux1(:,:,:) + facq*gmatL_wann(iat,:,:,irq,:)
          end do
-         call wann_FT_1index_1k (kpoint, gmat_aux1(:,:,:), gmat_int(:,:)) 
-         gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, transpose(conjg(u_kint)) ))   ! TODO spins 
+         call wann_FT_1index_1k (kpoint, gmat_aux1(:,:,:), gmat_int(:,:))
+         gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, transpose(conjg(u_kint)) ))   ! TODO spins
          !do ib=1,num_wann_intw
          !  ibp=ib
          !  write(999,fmt="(5i6,6e16.6)") ikp, ik, ibp, ib, iat, gmat_int_rot(ibp,ib), &
@@ -586,7 +586,7 @@ goto 666 ! skip tests
   ik = 0  ! kpoint
   do ish = 1, nfs_sheets_tot
       ib = nfs_sheet(ish) !band index for k
-  do iks = 1, nkpt_tr_ibz(ish) 
+  do iks = 1, nkpt_tr_ibz(ish)
       ik = ik + 1   !k-index over nkpt_tr_tot in the Irreducible BZ
 
       kpoint = kpts_tr(:,ik)  ! this is cartesians x 2pi/alat. Transform to cryst.
@@ -632,7 +632,7 @@ goto 666 ! skip tests
       end do
 
       ! TODO spin
-      write(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpts_tr(:,ikp),  & 
+      write(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpts_tr(:,ikp),  &
               (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
 
    end do  ! k'
@@ -659,4 +659,3 @@ write(*,'(A)') '|================================================== |'
 stop
 
 end program ep_on_trFS_wannier
-

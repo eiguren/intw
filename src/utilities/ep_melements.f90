@@ -20,7 +20,6 @@ program ep_melements
                                    multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
                           find_free_unit, &
-                          switch_indices, &
                           generate_kmesh, &
                           conmesurate_and_coarser, &
                           ainv, &
