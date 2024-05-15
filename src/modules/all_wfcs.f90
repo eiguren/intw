@@ -100,7 +100,7 @@ contains
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: full_mesh, symlink, QE_folder_sym, QE_folder_nosym, &
                                apply_TR_to_wfc, rotate_wfc_test
-    use intw_utility, only: find_k_1BZ_and_G, switch_indices
+    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
     use intw_fft, only: wfc_by_expigr
     use intw_useful_constants, only : eps_5, ZERO
 
@@ -125,7 +125,7 @@ contains
 
     call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz,k_1bz,kpoint_1bz,G_plus)
     !
-    call switch_indices(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz,+1)
+    call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz)
     !
     if (full_mesh) then
       !
