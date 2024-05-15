@@ -380,7 +380,7 @@ contains
 
     real(kind=dp), allocatable :: aux(:), xdata(:)
     real(kind=dp) ::  vqint
-    integer :: iq, ndm, nt, nb, l, ir
+    integer :: iq, ndm, nt, nb, l
 
 
     !
