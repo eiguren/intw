@@ -11,6 +11,6 @@ Provide links to the related issues or feature requests.
 Include any extra information or considerations for reviewers, such as impacted areas of the codebase.
 
 ### Pull Request Checklists
-- [ ] Code follows project coding guidelines.
-- [ ] Documentation reflects the changes made.
-- [ ] I have already covered the unit testing.
+- [ ] Compiles with ifort.
+- [ ] Compiles with gfortran.
+- [ ] Passes all tests.
