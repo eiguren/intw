@@ -17,7 +17,7 @@ program interpolatephonons
             nq1, nq2, nq3, ph_dir, fc_mat, &
             read_cards, exist_qpath, nqpath, nqspecial, qspecial, exist_kpath, &
             nq1_dosph, nq2_dosph, nq3_dosph, &
-            nomega, omega_ini, omega_fin, osmear_q
+            nomega, omega_ini, omega_fin, osmear_q, read_for_dynmat
     use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                             nat, nspin, bg, at, alat, tpiba
     use intw_ph, only: nqmesh, qmesh, read_ph_information_xml
@@ -107,15 +107,16 @@ write(*,'(A)') '|    waiting for input file...                      |'
   !
   ! two options to get dyn_q:
   !
-  ! 1. read force constants
-!  fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
-!  call allocate_and_build_dyn_qmesh(fc_file_name)
-  ! 2. read dyn files
-  call allocate_and_build_dyn_qmesh2()
-
+  if (read_for_dynmat == 'fc' ) then ! read force constants
+          fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
+          call allocate_and_build_dyn_qmesh(fc_file_name)
+  else if (read_for_dynmat == 'dynq' ) then ! read dyn files        
+          call allocate_and_build_dyn_qmesh2()
+  end if        
+  !
   ! transform to R space
   call dyn_q_to_dyn_r()
-
+  
   !do iq=1,nqmesh
   !   print *, iq, qmesh(:,iq), w2_q(:,iq)
   !end do

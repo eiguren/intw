@@ -15,7 +15,6 @@ set(SOURCES
   matrix_elements.f90
   ph_module.f90
   reading.f90
-  set_asr.f90
   symmetries.f90
   useful_constants.f90
   utility.f90
@@ -23,6 +22,7 @@ set(SOURCES
   mcf_interpolacion.f90
   w90_setup.f90
   ph_interpolate.f90
+  nufft.f
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

@@ -25,8 +25,8 @@ module intw_input_parameters
   public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
             use_exclude_bands, include_bands_initial, include_bands_final
   public :: intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
-  public :: ph_dir, qlist, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
-            nq1, nq2, nq3, nqirr
+  public :: ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
+            nq1, nq2, nq3, nqirr, apply_asr
   ! MBR 06/05/2024
   ! add namelists for bands and DOS, electron and phonon
   public :: ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos, &
@@ -99,6 +99,12 @@ module intw_input_parameters
   character(256) :: dvscf_name = 'dvscf_q'
   character(256) :: qlist = 'qlist.txt'
   character(256) :: fc_mat = '--.fc'
+  !MBR 21/05/2024 
+  !New options for dynamical matrix
+  character(256) :: read_for_dynmat = 'dynq'
+  !  read_for_dynmat = 'fc' --> this will read force constants from fc_mat file
+  !  read_for_dynmat = 'dynq' --> this will read .dyn files from the phonon calculations
+  logical :: apply_asr = .true.
 
   character(256) :: ep_mat_file = "ep_mat.dat"
 
@@ -168,8 +174,8 @@ module intw_input_parameters
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, compute_mmn, &
                       compute_amn
 
-  NAMELIST / ph / ph_dir, qlist, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
-                  nq1, nq2, nq3, nqirr
+  NAMELIST / ph / ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
+                  nq1, nq2, nq3, nqirr, apply_asr
 
   NAMELIST / DOS / nk1_dos, nk2_dos, nk3_dos, ne_dos, &
                    eini_dos, efin_dos, esmear_dos, ktsmear
@@ -262,21 +268,21 @@ contains
     if ( use_exclude_bands .eq. 'custom' .and. &
        (include_bands_final*include_bands_initial .le. 0  .or. &
         include_bands_final .lt. include_bands_initial ) ) then
-        write(*,*) 'Invalid use_exclude_bands custom selection. Stopping.'
+        write(*,*) 'Error: Invalid use_exclude_bands custom selection. Stopping.'
         stop
     end if
 
     if (ep_bands == 'custom' .and. &
        (ep_bands_initial*ep_bands_final .le. 0  .or. &
         ep_bands_final .lt. ep_bands_initial) ) then
-        write(*,*) 'Invalid ep_bands custom selection. Stopping.'
+        write(*,*) 'Error: Invalid ep_bands custom selection. Stopping.'
         stop
     end if
   
     if (ep_interp_bands == 'ef_crossing' .and. &
         (nfs_sheets_initial*nfs_sheets_final .le. 0  .or. &
          nfs_sheets_final .lt. nfs_sheets_initial) ) then
-       write(*,*) 'Invalid ep_interp_bands custom selection. Stopping.'
+       write(*,*) 'Error: Invalid ep_interp_bands custom selection. Stopping.'
        stop
     end if  
 
@@ -309,6 +315,7 @@ contains
       write(*,*) "&ph"
       write(*,*) "             ph_dir = 'directory'"
       write(*,*) "             qlist = 'file'"
+      write(*,*) "             read_for_dynmat = 'fc' or 'dynq' (D) "
       write(*,*) "             fc_mat = 'file'"
       write(*,*) "             dvscf_dir = 'directory'"
       write(*,*) "             dvscf_name = 'file'"
@@ -317,6 +324,7 @@ contains
       write(*,*) "             nq2 = integer"
       write(*,*) "             nq3 = integer"
       write(*,*) "             nqirr = integer"
+      write(*,*) "             apply_asr = T(D) or F"
       write(*,*) "/"
       write(*,*) "&DOS"
       write(*,*) "             nk1_dos = integer"

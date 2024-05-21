@@ -25,7 +25,7 @@ module intw_ph
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
-            read_dynq
+            read_dynq, set_asr_frc,  set_asr_dynq
   !
   ! functions
   public :: wsweight, rot_k_index
@@ -228,10 +228,10 @@ contains
 
   SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat, alat, at, ntyp, amass )
 
-    use intw_set_asr, only: set_asr
+    !use intw_set_asr, only: set_asr
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_1
-    use intw_input_parameters, only: nq1, nq2, nq3
+    use intw_input_parameters, only: nq1, nq2, nq3, apply_asr
 
     IMPLICIT NONE
 
@@ -327,7 +327,15 @@ contains
        write(*,*)
        write(*,*) 'Applying ASR : ' ,asr
 
-       call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,ibrav,tau_fc)
+       !call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,ibrav,tau_fc)
+
+       !MBR 21/05/2024
+       ! Instead of that set_asr module, use only the "simple" method
+       ! (worked in the routine as real)
+       if (apply_asr) then
+          write(*,*)' Applying ASR (simple) to force constant matrix'
+          call set_asr_frc(nq1, nq2, nq3, nat, frc_R)
+       end if   
 
        frc=frc_R*cmplx_1                   ! make it complex again
        deallocate (zeu)
@@ -335,6 +343,78 @@ contains
        ! End IGG
 
   END SUBROUTINE readfc
+
+
+  !====================================================================
+  ! MBR 21/05/24
+  ! Apply ASR "simple" method:
+  !   set_asr_frc --> to the real-space force constant matrix 
+  !                   (real elements)
+  !   set_asr_dynr --> to the dynamical matrices after doing dynq_to_dynr
+  !====================================================================
+
+   subroutine set_asr_frc(n1, n2, n3, nat, frc_R)
+
+   implicit none
+
+   integer , intent(in) :: n1, n2, n3, nat 
+   real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
+
+   ! Internal
+   integer :: i,j, iat, jat, i1,i2,i3
+   real(dp) :: suma
+
+   do i=1,3  !coords.
+   do j=1,3  
+        do iat=1,nat  !atom
+           suma=0.0_dp
+           do jat=1,nat  !atom
+              do i1=1,n1  !lattice vectors
+              do i2=1,n2
+              do i3=1,n3
+                   suma=suma+frc_R(i1,i2,i3,i,j,iat,jat)
+              end do
+              end do
+              end do !lattice vectors
+           end do !jat atom
+           frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
+        end do !iat atom
+   end do 
+   end do !coords.
+
+   return 
+   end subroutine set_asr_frc         
+
+
+
+   subroutine set_asr_dynq(nq, iq, nat, dynq)
+
+   use intw_useful_constants, only: cmplx_1
+   implicit none
+
+   integer , intent(in) :: nq, iq, nat
+   complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
+
+   ! Internal
+   integer :: i,j, iat, jat,ir
+   complex(dp) :: suma
+
+      do i=1,3  !coords.
+      do j=1,3
+          do iat=1,nat  !atom
+             suma=0.0_dp
+             do jat=1,nat  !atom !sum over cells
+                 suma=suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  !iq is the q=0 index
+             end do !jat atom
+             dynq( (iat-1)*3+i, (iat-1)*3+j, : ) = dynq( (iat-1)*3+i, (iat-1)*3+j, : ) - suma
+          end do !iat atom
+      end do
+      end do !coords.
+
+
+   return
+   end subroutine set_asr_dynq
+
 
   !====================================================================
       ! MBR 14/02/24
@@ -349,7 +429,8 @@ contains
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
       use intw_utility, only: cryst_to_cart, find_free_unit, &
               switch_indices, find_k_1BZ_and_G
-      use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3
+      use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
+              apply_asr
 
       implicit none
 
@@ -484,6 +565,14 @@ contains
          end if
       end do
       if ( not(all_done) ) stop
+
+      ! Apply ASR to q=0 matrix:
+      ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0
+      if (apply_asr) then 
+           write(*,*)' Applying ASR to all q vector indices'
+           iq = 1 !q=0 index in mesh
+           call set_asr_dynq(nqmesh, iq, nat, dynq)
+      end if        
 
       return
       end subroutine read_dynq
