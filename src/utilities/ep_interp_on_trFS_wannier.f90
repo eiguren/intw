@@ -31,7 +31,7 @@ program ep_on_trFS_wannier
 
     use intw_ph, only: nqmesh, qmesh,  read_ph_information_xml
     use intw_ph_interpolate, only: allocate_and_build_ws_irvec_q, &
-            allocate_and_build_dyn_qmesh2, dyn_q_to_dyn_r, &
+            !allocate_and_build_dyn_qmesh, allocate_and_build_dyn_qmesh2, dyn_q_to_dyn_r, &
             irvec_q, nrpts_q, ndegen_q
 
 implicit none
@@ -65,11 +65,10 @@ implicit none
     integer , allocatable :: kqmap(:,:), kqmap_int(:,:)
     real(dp) :: kpoint(3), qpoint(3), kqpoint(3), kq_1bz(3), qpoint_cart(3), rcart(3)
     real(dp), allocatable :: kmesh(:,:), kqmesh(:,:,:), kmesh_int(:,:), qmesh_int(:,:), kqmesh_int(:,:,:)
-    real(dp) , allocatable :: w2_qint(:), w_qint(:), eig_kint(:), eig_kqint(:), &
-            eig_kint_all(:,:), eig_kint_all_smeared(:,:), alpha2F(:,:), w_q(:,:), dosphon(:), lambda(:)
+    real(dp) , allocatable :: eig_kint(:), eig_kqint(:), eig_kint_all(:,:)
     real(dp) :: ener
     complex(dp) :: fac, facq, fack, gep_ij, cdum
-    complex(dp) , allocatable :: dyn_qint(:,:), u_qint(:,:), u_kint(:,:), u_kqint(:,:), u_kint_all(:,:,:)
+    complex(dp) , allocatable ::  u_kint(:,:), u_kqint(:,:), u_kint_all(:,:,:)
     complex(dp), allocatable :: gmatkqk_wann(:,:,:,:), gmatL_wann(:,:,:,:,:,:,:), gmat_aux(:,:,:,:), &
             gmat_int(:,:), gmat_int_rot(:,:), gmat_aux1(:,:,:), gep_int(:,:)
     complex(dp), allocatable :: ep_mat_el_coarse(:,:,:,:,:,:,:)
@@ -223,20 +222,6 @@ write(*,'(A)') '|    waiting for input file...                      |'
 
   ! get the WS vectors for the coarse q-mesh Wannier interpolation
   call allocate_and_build_ws_irvec_q()
-
-  ! two options to get dyn_q:
-  !
-  ! 1. read force constants and call allocate_and_build_dyn_qmesh
-  ! 2. read dyn_q files directly with allocate_and_build_dyn_qmesh2
-
-  !fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
-  !call allocate_and_build_dyn_qmesh(fc_file_name)
-
-  call allocate_and_build_dyn_qmesh2()
-
-  call dyn_q_to_dyn_r()
-
-  write(*,*) 'dyn_r done'
 
 !================================================================================
 !   open and read ep files
@@ -467,9 +452,6 @@ allocate (gmat_int(num_wann_intw,num_wann_intw) )
 allocate (gmat_int_rot(num_wann_intw,num_wann_intw) )
 allocate (gep_int(num_wann_intw,num_wann_intw) )
 allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
-
-!phonon arrays
-allocate( dyn_qint(3*nat,3*nat), u_qint(3*nat,3*nat), w2_qint(3*nat), w_qint(3*nat) )
 
 !band arrays
 allocate (eig_kint(num_wann_intw), eig_kqint(num_wann_intw))
