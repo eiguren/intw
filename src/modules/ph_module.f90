@@ -142,7 +142,7 @@ contains
   function rot_k_index(s_index, k_index, nk1, nk2, nk3, kmesh )
 
     use intw_reading, only: s
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
 
     implicit none
 
@@ -159,7 +159,7 @@ contains
 
     call find_k_1BZ_and_G(kpoint_rot,nk1,nk2,nk3,i ,j, k, kpoint_1bz, GKQ_bz)
 
-    call triple_to_joint_index_g(nk1, nk2, nk3, rot_k_index, i, j, k)
+    call switch_indices (nk1, nk2, nk3, rot_k_index, i, j, k, +1)
 
   end function rot_k_index
 
@@ -348,7 +348,7 @@ contains
       use intw_reading, only: ntyp, nat, at, amass, ityp
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
       use intw_utility, only: cryst_to_cart, find_free_unit, &
-                              triple_to_joint_index_g, find_k_1BZ_and_G
+              switch_indices, find_k_1BZ_and_G
       use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3
 
       implicit none
@@ -436,7 +436,7 @@ contains
          call cryst_to_cart (1, qpoint, at, -1)
          ! find index in full list: iq
          call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
-         call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
+         call switch_indices(nq1,nq2,nq3,iq,i,j,k,+1)
 
          ! block: dynq matrix
          ! loop over atoms
@@ -483,19 +483,12 @@ contains
             write(*,*)' Failed to read dynq for iq= ',iq
          end if
       end do
-
-      !if ( not(all_done) ) stop
-      !ASIER 9/5/2024 gfortran does not admit the above with
-      !  486 |       if ( not(all_done) ) stop
-      !      |               1
-      !Error: ‘i’ argument of ‘not’ intrinsic at (1) must be INTEGER
-      !
-       if(.not.all_done) stop
+      if ( not(all_done) ) stop
 
       return
       end subroutine read_dynq
   !====================================================================
-
+      
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
@@ -725,7 +718,7 @@ contains
   subroutine get_dv(qpoint, nmode, nspin, dv)
 !-------------------------------------------------------------------
 
-    use intw_utility, only: cmplx_trace, triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_utility, only: cmplx_trace, switch_indices, find_k_1BZ_and_G
     use intw_reading, only: s, nr1, nr2,nr3
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
     use intw_input_parameters, only: nq1, nq2, nq3
@@ -752,7 +745,7 @@ contains
     ! We find the associated of qpoint in 1BZ (it usually is itself!)
     !
     call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint_1bz,GKQ_bz)
-    call triple_to_joint_index_g(nq1,nq2,nq3,q_index,i,j,k)
+    call switch_indices(nq1,nq2,nq3,q_index,i,j,k,+1)
     !
     ! We search the irr q related with qpoint and the sym.op. which gives
     ! qpoint from irr q
@@ -818,7 +811,7 @@ contains
   subroutine rot_dvq(q_point_crys,q_point_crys_irr,nr1,nr2,nr3,nmode,s_index,GKQ,dv_in,dv_out)
 !--------------------------------------------------------------------------------------------------------
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
-    use intw_utility, only: cmplx_ainv, triple_to_joint_index_r
+    use intw_utility, only: cmplx_ainv, switch_indices_zyx
     use intw_reading, only: s, ftau, nspin, spinorb_mag, at, bg, tau, nat
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
@@ -909,8 +902,8 @@ contains
                    if (rrj < 1) rrj=rrj+nr2
                    if (rri < 1) rri=rri+nr1
                    !
-                   call triple_to_joint_index_r(nr1,nr2,nr3,r_index,i,j,k)
-                   call triple_to_joint_index_r(nr1,nr2,nr3,rr_index,rri,rrj,rrk)
+                   call switch_indices_zyx(nr1,nr2,nr3,r_index,i,j,k,+1)
+                   call switch_indices_zyx(nr1,nr2,nr3,rr_index,rri,rrj,rrk,+1)
                    !
                    do na = 1, nat
                       !
@@ -980,7 +973,7 @@ contains
 
     use intw_reading, only: nspin
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
-    use intw_utility, only: joint_to_triple_index_r
+    use intw_utility, only: switch_indices_zyx
 
     implicit none
 
@@ -997,7 +990,7 @@ contains
 
     do ir=1,nr1*nr2*nr3
        !
-       call joint_to_triple_index_r(nr1,nr2,nr3,ir,i,j,k)
+       call switch_indices_zyx(nr1,nr2,nr3,ir,i,j,k,-1)
        !
        phase=tpi*(q(1)*real(i-1,dp)/nr1 + q(2)*real(j-1,dp)/nr2 + q(3)*real(k-1,dp)/nr3)
        !

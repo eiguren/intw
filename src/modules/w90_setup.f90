@@ -239,8 +239,9 @@ contains
           n1 = n1 + 1
           do n2=1,num_wann_intw
             do i=1,num_wann_intw
-               u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)   
-               ! DUDA: no deberia ser: u_mesh(nb1,n2,ik) = u_mesh(nb1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
+               !u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)   
+               !MBR 10/05/24. I think it should be:
+               u_mesh(nb1,n2,ik) = u_mesh(nb1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
             enddo !i
           enddo !n2
        enddo !nb1
@@ -691,7 +692,7 @@ contains
 
 
 
-!!! Finally, TODO modules for interpolation utilities
+!!! Finally, modules for interpolation utilities
 
   subroutine interpolate_1k (kpoint, eig_int, u_interp)
   !
@@ -815,6 +816,8 @@ contains
   end do
   end do
   end do
+  DOS = DOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
+  PDOS = PDOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
   !
   end subroutine interpolated_DOS        
 

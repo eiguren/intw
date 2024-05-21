@@ -18,9 +18,12 @@ program a2F_on_trFS
                 generate_kmesh
 
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
-                nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir !, fc_mat
-        use intw_reading, only: read_parameters_data_file_xml, &
-                nspin, at, bg, volume0, alat, nat, ntyp, ityp, amass
+                nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir, & !, fc_mat
+                nomega, omega_ini, omega_fin, osmear_q, &
+                ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
+        use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
+                nspin, at, bg, volume0, alat, nat, ntyp, ityp, amass, &
+                num_bands_intw
         use intw_ph, only: nqmesh, qmesh, frc, readfc, read_ph_information_xml, &
                 q_irr, q_irr_cryst
 
@@ -33,15 +36,16 @@ program a2F_on_trFS
         logical :: read_status
         character(5) :: is_loc, ik_loc, comenta
         character(70) :: linea, lleft
-        character(100) :: file_off, dir_scf, dir_nscf
+        character(100) :: file_off, dir_scf, dir_nscf, file_a2f
         character(200) :: comando
-        integer :: unit_off
-        integer :: nfs_sheets_tot, nkpt_tr_tot, nkpt_tr_ibz_tot
+        integer :: unit_off, unit_a2f
+        integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
         integer :: is, js, ikpt, ik, ik1, i,j,k, iface, ir, ir1, ir2, ir3
-        integer , allocatable :: nkpt_tr(:), &  ! number of kpoints in each FS sheet
+        integer  :: nfs_sheets_tot ! number of sheets considered
+        integer , allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+                                 nkpt_tr(:), &  ! number of kpoints in each FS sheet
                                  nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
-                                 nface_tr(:), &  ! number of faces in each FS sheet
-                                 nfs_sheet(:)   ! indices of FS sheets
+                                 nface_tr(:)  ! number of faces in each FS sheet
         real(dp) :: k1(3), k2(3), k3(3), kwei, vol1bz
         real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
         real(dp) , allocatable :: area_ibz(:), area_fbz(:), factor_area_ibz(:)
@@ -52,10 +56,10 @@ program a2F_on_trFS
 
         real(dp) , allocatable :: w_q(:,:)
 
-        integer :: nener, nomega, iomega, iks, ish,  iksp, ishp, ibp
-        real(dp) :: omega, omega_ini, omega_fin, omega_step, ktsmear_q, rfacq, dosef, dsk_vk_2
+        integer :: nener, iomega, iks, ish,  iksp, ishp, ibp
+        real(dp) :: omega, omega_step, rfacq, dosef, dsk_vk_2
         real(dp) :: qpoint(3), kpoint(3), kpoint_p(3)
-        real(dp) , allocatable :: alpha2F(:,:), w2_qint(:), w_qint(:), lambda(:)
+        real(dp) , allocatable :: alpha2F(:,:,:,:), w2_qint(:), w_qint(:), lambda(:)
         complex(dp), allocatable :: gep_int(:)
         complex(dp), allocatable :: dyn_qint(:,:), u_qint(:,:)
         complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
@@ -74,6 +78,7 @@ program a2F_on_trFS
 !================================================================================
 write(*,'(A)') '====================================================='
 write(*,'(A)') '|         Eliashberg function calculation           |'
+write(*,'(A)') '|    from interpolated ep elements on the FS        |'
 write(*,'(A)') '|        ---------------------------------          |'
 write(*,'(A)') '====================================================='
 write(*,'(A)') '|    waiting for input file...                      |'
@@ -90,11 +95,23 @@ write(*,'(A)') '|    waiting for input file...                      |'
        stop
     end if
 
-!================================================================================
-!       read the parameters file (for nat, ntyp)
-!================================================================================
-
+    ! read the parameters file (for nat, ntyp)
     call read_parameters_data_file_xml()
+
+    ! choose Fermi surface sheets according to ep_interp_bands
+    if ( ep_interp_bands == 'intw_bands' ) then
+       nfs_sheets_tot = num_bands_intw
+       allocate ( nfs_sheet(nfs_sheets_tot) )
+       do ib = 1, num_bands_intw
+           nfs_sheet(ib) = ib
+       end do
+    else if ( ep_interp_bands == 'ef_crossing' ) then
+       nfs_sheets_tot = nfs_sheets_final - nfs_sheets_initial + 1
+       allocate ( nfs_sheet(nfs_sheets_tot) )
+       do ib = 1, nfs_sheets_tot
+           nfs_sheet(ib) = nfs_sheets_initial + ib-1
+       end do
+    end if
 
 !================================================================================
 !       Read prefix.off and velocity file(s)
@@ -104,12 +121,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
 write(*,'(A)') '====================================================='
 write(*,'(A)') '|    reading .off and v_k files...                  |'
 
-! TODO De momento, esto a mano
-nfs_sheets_tot = 1
-allocate (nfs_sheet(nfs_sheets_tot), nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
+allocate (nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
 allocate (nkpt_tr_ibz(nfs_sheets_tot))
-! labels of FS sheets
-nfs_sheet(1)=6
 
 !open all sheet files just to see dimensions of kpoint lists
 unit_off=find_free_unit()
@@ -265,7 +278,7 @@ end do
 
 
 !================================================================================
-! Read ep elements
+! Read ep elements file
 !================================================================================
 
   unit_ep=find_free_unit()
@@ -282,6 +295,7 @@ end do
 
   else       
 
+    ! Note, indices ikp,ik include all the calculated sheets
     allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
 
     open(unit_ep, file=file_ep, status='old')
@@ -289,8 +303,12 @@ end do
 
     do i = 1,nkpt_tr_tot*nspin
     do j = 1,nkpt_tr_ibz_tot*nspin
-        read(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpoint, &
-             (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
+        do js=1,nspin
+        do is=1,nspin
+           read(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpoint, &
+                 (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
+        end do
+        end do 
     end do
     end do        
 
@@ -334,19 +352,10 @@ end do
   w_q=sign(sqrt(abs(w2_q)),w2_q) * 0.002_dp / Ha_to_eV !meV to Ry
 
 
-!================================================================================
-! Energy range for Eliashberg (TODO esto esta puesto a mano)
-!===============================================================================
-
-! Ry units throughout
-
-!  for integrals in phonon energy
-omega_ini = 0.0_dp
-omega_fin = 0.003_dp
-nomega = 500
-omega_step = (omega_fin-omega_ini)/real(nomega-1,dp)
-!ktsmear_q =  .000367647058823529411 !0.005eV
-ktsmear_q = 0.000075
+!  Energy range for Eliashberg is read from intw.in
+!  with Ry units throughout.
+!  Step in energy for integrals and phonon DOS:
+  omega_step = (omega_fin-omega_ini)/real(nomega-1,dp)
 
   write(*,'(A)') '|    .... done reading                              |'
   write(*,'(A)') '|================================================== |'
@@ -354,10 +363,7 @@ ktsmear_q = 0.000075
 
 !================================================================================
 ! Calculate a2F integral
-! TODO spins!!!
-! Right now,
-  is=1
-  js=1
+! TODO duda spin index in a2F??
 !================================================================================
 
 
@@ -366,10 +372,16 @@ ktsmear_q = 0.000075
   ! ep elements
   allocate (gep_int(3*nat) )
   ! integrals
-  allocate (alpha2F(3*nat,nomega), lambda(3*nat))
+  allocate (alpha2F(nspin,nspin,3*nat,nomega), lambda(3*nat))
 
-alpha2F = 0.0_dp
-lambda = 0.0_dp
+  ! output file for a2F
+  unit_a2f=find_free_unit()
+  file_a2f=trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+  open(unit_a2f, file=file_a2f, status='unknown')
+  write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
+
+  alpha2F = 0.0_dp
+  lambda = 0.0_dp
 
   write(*,'(A)') '!     Calculating a2F...                            !'
 
@@ -413,31 +425,37 @@ do iks = 1, nkpt_tr_ibz(ish)
       ! band indices to be used are the FS sheet indices given at the beginning of the loop.
       ! I select only those ones for the interpolated elements
 
-      gep_int = cmplx_0
-      do imode = 1,3*nat
-         if (w_qint(imode)>eps_8) then !stable mode frequency
-            do iat=1,3*nat
-                k=((iat-1)/3)+1  !atom index
-                rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * pmass
-                gep_int(imode) = gep_int(imode)  +  &
+      do is=1,nspin
+      do js=1,nspin
+
+         gep_int = cmplx_0
+         do imode = 1,3*nat
+            if (w_qint(imode)>eps_8) then !stable mode frequency
+               do iat=1,3*nat
+                  k=((iat-1)/3)+1  !atom index
+                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * pmass
+                  gep_int(imode) = gep_int(imode)  +  &
                        aep_mat_el(ikp,ik,is,js,iat) * u_qint(iat,imode) / sqrt(rfacq)
-            end do
-         end if
-      end do
+               end do
+            end if
+         end do
 
-      ! Sum over modes and weight with areas and velocities v_k * v_k' for contribution of k',k pair to a2F.
-      ! Mind, the areas were in (tpi/alat)**2 units.
+        ! Sum over modes and weight with areas and velocities v_k * v_k' for contribution of k',k pair to a2F.
+        ! Mind, the areas were in (tpi/alat)**2 units.
 
-      dsk_vk_2 = kpts_tr_area(ik) * kpts_tr_area(ikp) * (tpi/alat)**4 / (vabsk_tr(ik) * vabsk_tr(ikp) )
-      dsk_vk_2 = dsk_vk_2 * factor_area_ibz(ish) ! adds weight of this irreducible wedge (IBZ) to the integral
-      do iomega = 1, nomega  !frequencies
-          omega = omega_ini + omega_step*real(iomega-1,dp)
-          do imode = 1,3*nat
-            rfacq = smeared_delta(omega-w_qint(imode), ktsmear_q)  !smear omega(q)
-            alpha2F(imode,iomega) = alpha2F(imode,iomega) + &
+        dsk_vk_2 = kpts_tr_area(ik) * kpts_tr_area(ikp) * (tpi/alat)**4 / (vabsk_tr(ik) * vabsk_tr(ikp) )
+        dsk_vk_2 = dsk_vk_2 * factor_area_ibz(ish) ! adds weight of this irreducible wedge (IBZ) to the integral
+        do iomega = 1, nomega  !frequencies
+           omega = omega_ini + omega_step*real(iomega-1,dp)
+           do imode = 1,3*nat
+              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)  !smear omega(q)
+              alpha2F(is,js,imode,iomega) = alpha2F(is,js,imode,iomega) + &
                       (abs(gep_int(imode)))**2 * rfacq * dsk_vk_2
-          end do !imode
-      end do !iomega
+           end do !imode
+        end do !iomega
+
+      end do !spin js
+      end do !spin is
 
     end do !k' (kpoint)
     end do !k' (sheet)
@@ -446,28 +464,46 @@ end do !k  (kpoint)
 end do !k  (sheet)
 
   ! divide by N(E_F) and 1BZ volume
+  ! TODO:
   ! DUDA con la normalizacion... para variar...
+  ! DUDA con el spin... 
   alpha2F=alpha2F/dosef/vol1bz
 
-    ! print a2F
-  omega = omega_ini
-   do iomega=1, nomega  !frequencies
-      write(521,'(e16.4,2x,15e16.4)') omega,  sum(alpha2F(:,iomega)), alpha2F(:,iomega)
-      omega = omega + omega_step
-  end do
+  !  print out by spin blocks
+  do is=1,nspin 
+  do js=1,nspin 
 
-  ! lambda = 2 \int dw a2F(w)/w for each mode
-  do imode = 1,3*nat
-      lambda(imode) = 0.0_dp
-      omega = omega_ini + omega_step
-      do iomega=2,nomega !skip omega=0 value
-         lambda(imode) = lambda(imode) + alpha2F(imode,iomega) / omega
-         omega = omega + omega_step
-      end do
-      lambda(imode) = lambda(imode) * 2.0_dp * omega_step
-      write(*,*) 'imode = ', imode, ', lambda = ', lambda(imode)
-  end do
-  write(*,*) 'total lambda = ', sum(lambda)
+     write(unit_a2f,*) '#spins = ', is,js
+
+     ! print a2F(omega)
+     omega = omega_ini
+     do iomega=1, nomega  !frequencies
+        write(unit_a2f,'(e16.4,2x,15e16.4)') omega,  sum(alpha2F(is,js,:,iomega)), &
+                alpha2F(is,js,:,iomega)
+        omega = omega + omega_step
+     end do
+
+     ! calculate lambda 
+     write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
+     do imode = 1,3*nat
+        lambda(imode) = 0.0_dp
+        omega = omega_ini + omega_step
+        do iomega=2,nomega !skip omega=0 value
+           lambda(imode) = lambda(imode) + alpha2F(is,js,imode,iomega) / omega
+           omega = omega + omega_step
+        end do
+        lambda(imode) = lambda(imode) * 2.0_dp * omega_step
+        write(unit_a2f,*) '#imode = ', imode, ', lambda = ', lambda(imode)
+     end do
+     write(unit_a2f,*) '#total lambda = ', sum(lambda)
+
+     write(unit_a2f,*) ' '
+     write(unit_a2f,*) ' '
+
+   end do    !js
+   end do    !is
+
+  close(unit_a2f)
 
 !================================================================================
 !   Finish

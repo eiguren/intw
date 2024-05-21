@@ -5,7 +5,6 @@
 set(SOURCES
   all_wfcs.f90
   cfftnd.f90
-  eliashberg.f90
   fft.f90
   kinds.f90
   input_parameters.f90
@@ -13,7 +12,6 @@ set(SOURCES
   intw_pseudo.f90
   intw_pseudo_local.f90
   intw_pseudo_non_local.f90
-  lambda.f90
   matrix_elements.f90
   ph_module.f90
   reading.f90
@@ -24,9 +22,7 @@ set(SOURCES
   fft_interp.f90
   mcf_interpolacion.f90
   w90_setup.f90
-  selfen.f90
   ph_interpolate.f90
-  nufft.f
 )
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

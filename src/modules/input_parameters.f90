@@ -22,13 +22,28 @@ module intw_input_parameters
   save
   !
   ! variables
-  public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential
+  public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
+            use_exclude_bands, include_bands_initial, include_bands_final
   public :: intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
   public :: ph_dir, qlist, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
-            nq1, nq2, nq3, nqirr, calc_epmat
+            nq1, nq2, nq3, nqirr
+  ! MBR 06/05/2024
+  ! add namelists for bands and DOS, electron and phonon
+  public :: ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos, &
+          nq1_dosph, nq2_dosph, nq3_dosph, nomega,  omega_ini, omega_fin, osmear_q
+  ! MBR 10/05/2024
+  ! add namelists for electron-phonon elements calculation and interpolation on the FS and 
+  ! Eliashberg function calculation
+  public ::  ep_bands, ep_bands_initial, ep_bands_final
+  public ::  ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir
+
+  ! MBR 03/05/2024
+  ! add cards for paths in the 1BZ, both electron and phonon (k and q, resp.)
+  public :: exist_kpath, exist_qpath, nkpath, nkspecial, nqpath, nqspecial, &
+            kspecial, qspecial
 
   ! subroutines
-  public :: read_input
+  public :: read_input, read_cards
   !
   private
 
@@ -57,6 +72,18 @@ module intw_input_parameters
   logical :: compute_amn = .true.
   ! If  True, the code produces the $prefix.amn file.
 
+  ! MBR 20/05/2024. Three options to exclude bands from INTW
+  character(256) :: use_exclude_bands="unassigned"
+  ! This flags is to control the bands used in various utilities:
+  !     use_exclude_bands="qe": we use all bands (nbands) from the QE output.
+  !          (Error if nnkp file is present)
+  !     use_exclude_bands="wannier": we  remove the bands indicated by Wannier90 in nnkp file
+  !          (Error if nnkp file is NOT present)
+  !     use_exclude_bands="custom": will read a range of allow bands out of the whole nbands list
+  !          (Error if include_bands_initial, include_bands_final not present)
+  integer ::  include_bands_initial = 0, include_bands_final = 0
+
+
   logical :: intw2W_fullzone = .False.
   ! If  True, the code wil assume that a full zone QE calculation
   ! has been performed and that wavefunctions for every k-point
@@ -66,9 +93,6 @@ module intw_input_parameters
   character(256) :: intw2W_method = 'CONVOLUTION'
   ! What method should be used to compute matrix elements;
   ! CONVOLUTION or FFT?
-
-  logical :: calc_epmat = .false.
-  !Indicates if we want to calculate ep matrix elements
 
   character(256) :: ph_dir = './'
   character(256) :: dvscf_dir = './'
@@ -80,18 +104,82 @@ module intw_input_parameters
 
   integer :: nq1 = -1, nq2 = -1, nq3 = -1, nqirr = -1
 
+  ! MBR 06/05/2024
+  ! For DOS plot with Wannier interpolation:
+  integer :: nk1_dos = 20, nk2_dos = 20, nk3_dos = 20
+  ! interpolation k-grid for DOS plot
+  integer :: ne_dos = 100
+  ! number of energy points in DOS plot
+  real(dp) :: eini_dos = -10.0_dp, efin_dos = 10.0_dp, esmear_dos = 0.05_dp, ktsmear = 0.01_dp
+  ! energy range and smearing width, Fermi level smearing (kT). In eV!!!
+
+  ! MBR 06/05/2024
+  ! For intepolaterd phonon DOS plot, also used for the Eliashberg function plot
+  integer :: nq1_dosph = 20, nq2_dosph = 20, nq3_dosph = 20
+  ! interpolation q-grid for phonon DOS plot
+  integer :: nomega = 100
+  ! number of energy points in DOS plot
+  real(dp) :: omega_ini = 0.0_dp, omega_fin = 0.005_dp, osmear_q = 0.000075 
+  ! energy range and smearing width for phonon DOS plot. In Ry !!
+
+  ! MBR 10/05/2024
+  ! For ep elements calculation:
+  character(256) :: ep_bands = 'unassigned'
+  ! will calculate ep elements for all bands (num_bands_intw, as by set_num_bands) or a
+  ! selected substet.
+  !   all bands: ep_bands = 'intw'
+  !   selected subset: ep_bands = 'custom'
+  integer ::  ep_bands_initial = 0, ep_bands_final = 0
+  ! If ep_bands = 'custom', use the range ep_bands_initial:ep_bands_final subset
+  ! from the num_bands_intw set.
+
+  ! MBR 10/05/2024
+  ! For ep elements interpolation utilities:
+  character(256) :: ep_interp_method = 'unassigned'
+  !    ep_interp_method = 'wannier'
+  !    ep_interp_method = 'dV_interpolate'
+  character(256) :: ep_interp_bands = 'intw_bands'
+  ! will interpolate ep elements for all bands (num_bands_intw, as by set_num_bands) or a
+  ! selected substet formed by those that cross the Fermi level (note, these indices 
+  ! must be provided by the user)
+  !   all bands: ep_interp_bands = 'intw_bands'
+  !   selected subset: ep_interp_bands = 'ef_crossing'
+  integer :: nfs_sheets_initial=0, nfs_sheets_final=0
+  ! If ef_crossing, use the range nfs_sheets_initial:nfs_sheets_final 
+  ! subset from the num_bands_intw set.
+  character(len=256) :: pwx_dir = 'unassigned'
+  ! directory where pw.x and pw2intw.x are to be found (only needed if 
+  ! ep_interp_method = 'dV_interpolate' is chosen and there are no nscf 
+  ! calculations on the triangulated k-points are present)
+
+
+  ! MBR 03/05/2024
+  ! For cards on 1BZ path for plotting electron and phonons bands (K_PATH, Q_PATH)
+  logical :: exist_kpath, exist_qpath
+  integer :: nkpath, nkspecial, nqpath, nqspecial
+  real(dp) , allocatable :: kspecial(:,:), qspecial(:,:)
+
 
   NAMELIST / input / mesh_dir, prefix, nk1, nk2, nk3, &
                      TR_symmetry, &
-                     chemical_potential
+                     chemical_potential, &
+                     use_exclude_bands, include_bands_initial, include_bands_final
 
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, compute_mmn, &
                       compute_amn
 
   NAMELIST / ph / ph_dir, qlist, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
-                  nq1, nq2, nq3, nqirr, calc_epmat
+                  nq1, nq2, nq3, nqirr
 
+  NAMELIST / DOS / nk1_dos, nk2_dos, nk3_dos, ne_dos, &
+                   eini_dos, efin_dos, esmear_dos, ktsmear
 
+  NAMELIST / DOS_ph / nq1_dosph, nq2_dosph, nq3_dosph, nomega, &
+                      omega_ini, omega_fin, osmear_q
+
+  NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
+                      ep_interp_method, ep_interp_bands, &
+                      nfs_sheets_initial, nfs_sheets_final, pwx_dir  
 
   ! ----------------------------------------------------------------------
   !  END namelist
@@ -127,6 +215,15 @@ contains
     read( 5, ph, iostat = ios)
     write(*,22) '|           &ph                ',ios,'                   |'
 
+    read( 5, DOS, iostat = ios)
+    write(*,22) '|           &DOS               ',ios,'                   |'
+
+    read( 5, DOS_ph, iostat = ios)
+    write(*,22) '|           &DOS_ph            ',ios,'                   |'
+
+    read( 5, elphon, iostat = ios)
+    write(*,22) '|           &elphon            ',ios,'                   |'
+
     write(*,20) '====================================================='
 
 
@@ -157,6 +254,37 @@ contains
       write(*,*) 'MISSING nk3'
     end if
 
+    if ( use_exclude_bands .eq. 'unassigned' ) then
+      read_status = .true.
+      write(*,*) 'MISSING use_exclude_bands'
+    end if
+
+    if ( use_exclude_bands .eq. 'custom' .and. &
+       (include_bands_final*include_bands_initial .le. 0  .or. &
+        include_bands_final .lt. include_bands_initial ) ) then
+        write(*,*) 'Invalid use_exclude_bands custom selection. Stopping.'
+        stop
+    end if
+
+    if (ep_bands == 'custom' .and. &
+       (ep_bands_initial*ep_bands_final .le. 0  .or. &
+        ep_bands_final .lt. ep_bands_initial) ) then
+        write(*,*) 'Invalid ep_bands custom selection. Stopping.'
+        stop
+    end if
+  
+    if (ep_interp_bands == 'ef_crossing' .and. &
+        (nfs_sheets_initial*nfs_sheets_final .le. 0  .or. &
+         nfs_sheets_final .lt. nfs_sheets_initial) ) then
+       write(*,*) 'Invalid ep_interp_bands custom selection. Stopping.'
+       stop
+    end if  
+
+    if (ep_interp_method == 'dV_interpolate' .and. &
+       pwx_dir == 'unassigned' ) then
+       write(*,*) 'Warning: dV_interpolate method chosen, but no pwx_dir specified!'
+    end if
+
 
     if ( read_status ) then
       write(*,*) "PROBLEM!: the input should be of the form:"
@@ -167,6 +295,10 @@ contains
       write(*,*) "             nk2             = integer "
       write(*,*) "             nk3             = integer "
       write(*,*) "             TR_symmetry     = T or F  "
+      write(*,*) "             chemical_potential     = real  "
+      write(*,*) "             use_exclude_bands   = 'qe', 'wannier' or 'custom' "
+      write(*,*) "             include_bands_initial = integer"
+      write(*,*) "             include_bands_final = integer"
       write(*,*) "/"
       write(*,*) "&intw2W"
       write(*,*) "             intw2W_fullzone = T or F"
@@ -185,7 +317,35 @@ contains
       write(*,*) "             nq2 = integer"
       write(*,*) "             nq3 = integer"
       write(*,*) "             nqirr = integer"
-      write(*,*) "             calc_epmat = T or F"
+      write(*,*) "/"
+      write(*,*) "&DOS"
+      write(*,*) "             nk1_dos = integer"
+      write(*,*) "             nk2_dos = integer"
+      write(*,*) "             nk3_dos = integer"
+      write(*,*) "             ne_dos = integer"
+      write(*,*) "             eini_dos = real"
+      write(*,*) "             efin_dos = real"
+      write(*,*) "             esmear_dos = real"
+      write(*,*) "             kTsmear = real"
+      write(*,*) "/"
+      write(*,*) "&DOS_ph"
+      write(*,*) "             nk1_dosph = integer"
+      write(*,*) "             nk2_dosph = integer"
+      write(*,*) "             nk3_dosph = integer"
+      write(*,*) "             nomega = integer"
+      write(*,*) "             omega_ini = real"
+      write(*,*) "             omega_fin = real"
+      write(*,*) "             osmear_q = real"
+      write(*,*) "/"
+      write(*,*) "&elphon"
+      write(*,*) "             ep_bands = 'intw' or 'custom'"
+      write(*,*) "             ep_bands_initial = integer"
+      write(*,*) "             ep_bands_final = integer"
+      write(*,*) "             ep_interp_method = 'wannier' or 'dV_interpolate'"
+      write(*,*) "             ep_interp_bands = 'intw_bands' or 'ef_crossing' "
+      write(*,*) "             nfs_sheets_initial_initial = integer"
+      write(*,*) "             nfs_sheets_initial_final = integer"
+      write(*,*) "             pw.x_dir        = 'directory'"
       write(*,*) "/"
     end if
 
@@ -195,6 +355,8 @@ contains
     if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
     strlen = len_trim(dvscf_dir)
     if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
+    strlen = len_trim(pwx_dir)
+    if ( pwx_dir(strlen:strlen+1) .ne. "/" ) pwx_dir(strlen+1:strlen+2) = "/"
 
     return
 
@@ -203,5 +365,84 @@ contains
 
   end subroutine read_input
 
+
+   subroutine read_cards ()
+      ! MBR 03/05/2024
+
+      ! Namelists have already been read from unit 5.
+      ! Continue parsing unit until finding cards.
+
+      ! IMPORTANT: some cards may be missing, but the present
+      ! ones must be ordered as described below.
+
+      ! Format:
+      !   K_PATH
+      !      nkpath  nkspecial
+      !      k1 k2 k3
+      !      k1 k2 k3
+      !      .... 
+      !   Q_PATH
+      !      nqpath  nqspecial
+      !      q1 q2 q3
+      !      q1 q2 q3
+      !      ....
+      ! where nkpath are the # points sought and nkspecial are
+      ! the number ofintermediate special points, given below in 
+      ! FRACTIONAL coordinates.
+
+      implicit none
+
+      character(80) :: cardname
+      character(1) :: klabel, qlabel
+      integer :: i
+
+      exist_kpath = .false.
+      exist_qpath = .false.
+
+      write(*,20) '|       - Reading standard input file...            |'
+      write(*,20) '|         card:                                     |'
+
+      ! parse until K_PATH, Q_PATH
+      do
+
+         read(5,*,end=100) cardname
+
+         if ( trim(cardname) == 'K_PATH') then
+            write(*,20) '|             K_PATH                                |'
+            exist_kpath = .true.
+            read(5,*) nkpath, nkspecial
+            if (nkspecial .lt. 2) then
+                    write(*,20) 'More than 2 k-points are needed to set up the path. Stopping.'
+                    stop
+            end if        
+            allocate (kspecial(3,nkspecial))
+            do i=1,nkspecial
+               read(5,*) klabel, kspecial(:,i)
+            end do
+         else if ( trim(cardname) == 'Q_PATH') then
+            write(*,20) '|             Q_PATH                                |'
+            exist_qpath = .true.
+            read(5,*) nqpath, nqspecial
+            if (nqspecial .lt. 2) then
+                    write(*,20) 'More than 2 q-points are needed to set up the path. Stopping.'
+                    stop
+            end if        
+            allocate (qspecial(3,nqspecial))
+            do i=1,nqspecial
+               read(5,*) qlabel, qspecial(:,i)
+            end do
+         end if
+
+      end do
+
+100   write(*,20) '|        EOF reached                                |'
+      if ( .not. exist_kpath .and. .not. exist_qpath) then
+         write(*,20) '|        no cards found                             |'     
+      end if   
+
+      20 format(A)
+      return
+
+   end subroutine read_cards
 
 END MODULE intw_input_parameters

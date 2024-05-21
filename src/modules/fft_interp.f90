@@ -6,7 +6,7 @@ module intw_fft_interp
   implicit none
   !
   ! subroutines
-  public :: fft_interp_3d_real, nufft_interp_3d_cmplx
+  public :: fft_interp_3d_real
   !
   private
 
@@ -192,59 +192,6 @@ contains
     !
     !
   end subroutine fft_interp_3d_real
-
-    ! MBR 29/02/2024
-    subroutine nufft_interp_3d_cmplx(nk1, nk2, nk3, kpoint, cfr, cfkG)
-
-    ! module variables
-    use intw_useful_constants, only : tpi
-    use intw_reading, only: ngm, gvec,  nr1, nr2, nr3
-    !
-    implicit none
-
-    external :: nufft3d2f90
-    !
-    ! input variables
-    integer, intent(in)  :: nk1, nk2, nk3
-    real(kind=dp), intent(in) :: kpoint(3) ! cryst coordinates in the conventional 1BZ
-    complex(kind=dp), intent(in) :: cfr(nr1*nk1,nr2*nk2,nr3*nk3) ! original function in equispaced fractional r+R grid
-    ! output variables
-    complex(kind=dp), intent(out) :: cfkG(ngm) ! inverse FT at k+G for all G in gvec
-    ! internal
-    integer :: ierr, iG, G(3)
-    real(kind=dp) :: kpG(3), kG1(ngm), kG2(ngm), kG3(ngm)
-    !
-    ! Prepare list of k+G vectors
-    do iG = 1,ngm
-      G = gvec(:,iG)
-      !Fold G vector from -nr/2:nr/2 to 0:nr
-      if (G(1)<0) G(1)=G(1)+nr1
-      if (G(2)<0) G(2)=G(2)+nr2
-      if (G(3)<0) G(3)=G(3)+nr3
-      ! kpoint in 0:1 already. So kpG = (kpoint+G)/nr1 is in 0:1. Finally,
-      ! k+G must be in -pi:pi range
-      kpG = kpoint(:) + real(G(:),dp)
-      kpG(1) =  kpG(1) / real(nr1,dp)
-      kpG(2) =  kpG(2) / real(nr2,dp)
-      kpG(3) =  kpG(3) / real(nr3,dp)
-      if ( kpG(1) > 0.5_dp) kpG(1) = kpG(1) - 1.0_dp
-      if ( kpG(2) > 0.5_dp) kpG(2) = kpG(2) - 1.0_dp
-      if ( kpG(3) > 0.5_dp) kpG(3) = kpG(3) - 1.0_dp
-      kpG = kpG * tpi
-      ! Add to list of reciprocal 1,2,3 coordinates
-      kG1(iG) = kpG(1)
-      kG2(iG) = kpG(2)
-      kG3(iG) = kpG(3)
-    end do
-    !
-    call nufft3d2f90 (ngm, kG1, kG2, kG3, cfkG, -1, 1.0d-12, nr1*nk1,nr2*nk2,nr3*nk3, cfr, ierr)
-    if (ierr .gt. 0) then
-            print *, 'Error ', ierr, 'in nufft3d2f90. Stopping.'
-            stop
-    end if
-    !
-  return
-  end  subroutine nufft_interp_3d_cmplx
 
 
 end module intw_fft_interp

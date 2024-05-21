@@ -81,7 +81,7 @@ contains
     !   the total number of point group operations.
     !
     !   Define kpt to be a vector in the 1BZ, and ikpt to be its
-    !   joint index. Let kpt_irr be a symmetry equivalent k-point to kpt.
+    !   singlet index. Let kpt_irr be a symmetry equivalent k-point to kpt.
     !   Finally, let i_folder be an index which represents the QE folders.
     !
     !   This subroutine allocates the arrays
@@ -324,8 +324,12 @@ contains
     real(kind=dp) :: axis(3), angle !axis and angle of a given rotation matrix
     real(kind=dp) :: determinant, I3(3,3)
     real(kind=dp) :: bgtrans(3,3)
-    integer :: i, j, k, h
+    integer :: i,j,k,h
 
+       I2(1,1) = cmplx_1 ;    I2(1,2) = cmplx_0 ;    I2(2,1) = cmplx_0  ;    I2(2,2) = cmplx_1
+    sig_x(1,1) = cmplx_0 ; sig_x(1,2) = cmplx_1 ; sig_x(2,1) = cmplx_1  ; sig_x(2,2) = cmplx_0
+    sig_y(1,1) = cmplx_0 ; sig_y(1,2) =-cmplx_i ; sig_y(2,1) = cmplx_i  ; sig_y(2,2) = cmplx_0
+    sig_z(1,1) = cmplx_1 ; sig_z(1,2) = cmplx_0 ; sig_z(2,1) = cmplx_0  ; sig_z(2,2) =-cmplx_1
 
     I3(1,:) = (/1.0_DP,0.0_DP,0.0_DP/)
     I3(2,:) = (/0.0_DP,1.0_DP,0.0_DP/)
@@ -782,7 +786,7 @@ contains
     !     and the canonical k-points. This will be useful for testing.
     !--------------------------------------------------------------------------
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_reading, only: nsym, s, can_use_TR
 
     implicit none
@@ -814,7 +818,7 @@ contains
     logical :: kpoint_is_found_sym(nk1_*nk2_*nk3_), kpoint_is_found_nosym(nk1_*nk2_*nk3_)
     logical :: possible_full_mesh
     integer :: nkmesh, G(3)
-    integer :: ikpt, i, j, k, i_folder, isym
+    integer :: ikpt, switch, i, j, k, i_folder, isym
 
     ! initialize arrays to a negative number: if there is a bug
     ! in the code, it will thus look for inexistent folders. It
@@ -842,6 +846,7 @@ contains
       !
     endif
     !
+    switch = 1 ! triplet to singlet
     !
     do i_folder=1,nkpoints_QE_
       !
@@ -849,12 +854,12 @@ contains
       !
       kpt = kpoints_QE_(:,i_folder)
       !
-      ! extract the triple coordinates, the kpt in the 1BZ and
+      ! extract the triplet coordinates, the kpt in the 1BZ and
       ! the G vector
       !
       call find_k_1BZ_and_G(kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
       !
-      ! test that this triple index indeed produces the k-point.
+      ! test that this triplet index indeed produces the k-point.
       ! This tests that the kpoint is indeed on a mesh consistent
       ! with the input file.
       !
@@ -889,7 +894,7 @@ contains
       !
       if (possible_full_mesh) then
         !
-          call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
+          call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           kpoint_is_found_nosym(ikpt) = .true.
           QE_folder_nosym_(ikpt)       = i_folder
@@ -917,16 +922,16 @@ contains
         !  in the case of a non-symmorphic group.
         !  Find the corresponding k-point in the canonical 1BZ.
         !
-        ! extract the triple coordinates, the kpt in the 1BZ and
+        ! extract the triplet coordinates, the kpt in the 1BZ and
         ! the G vector
         !
         call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
         !
         ! Tabulate this point as found, but only if allowed to do so!
         !
-        ! find its joint coordinate
+        ! find its singlet coordinate
         !
-        call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
+        call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,+1)
         !
         ! if this point hasn't been found before, well, it's found now!
         !
@@ -957,9 +962,9 @@ contains
           !
           call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
           !
-          ! find its joint coordinate
+          ! find its singlet coordinate
           !
-          call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
+          call switch_indices(nk1_,nk2_,nk3_,ikpt,i,j,k,switch)
           !
           if (.not.kpoint_is_found_sym(ikpt)) then
             !
@@ -1016,13 +1021,13 @@ contains
     !local variables
     real(kind=dp) :: k_rot(3), dist1, dist2
 
-    integer :: i, j ! triple indices
+    integer :: i, j ! triplet indices
 
     integer :: ns
 
-    integer :: ikpt ! joint index, joint index obtained by symmetry
+    integer :: ikpt ! singlet index, singlet index obtained by symmetry
 
-    integer :: ii, jj, kk
+    integer :: switch, ii, jj, kk
 
     logical :: found(nspt)
     real(kind=dp), parameter :: eps = 10E-7
@@ -1030,6 +1035,7 @@ contains
     ! Find which symmetry operation is the identity
     ! most likely always the first element, but let's be sure
 
+    switch = 1 ! triplet-to-singlet coordinate
 
     found  = .false.
     nk_irr = 0
@@ -1137,13 +1143,13 @@ contains
     integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
     real(kind=dp):: k_rot(3), dist1, dist2
 
-    integer :: i, j ! triple indices
+    integer :: i, j ! triplet indices
 
     integer :: ns
 
-    integer :: ikpt ! joint index, joint index obtained by symmetry
+    integer :: ikpt ! singlet index, singlet index obtained by symmetry
 
-    integer :: ii, jj, kk
+    integer :: switch, ii, jj, kk
 
     logical :: found(nspt)
     real(kind=dp), parameter :: eps = 10E-7
@@ -1151,6 +1157,7 @@ contains
     ! Find which symmetry operation is the identity
     ! most likely always the first element, but let's be sure
 
+    switch = 1 ! triplet-to-singlet coordinate
 
     found  = .false.
     nk_irr = 0
@@ -1240,7 +1247,7 @@ contains
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_reading, only: nsym, s
 
     implicit none
@@ -1253,7 +1260,7 @@ contains
 
     !output
     real(kind=dp), intent(out) :: kpoints_irr(3,nk1*nk2*nk3)
-    ! The irreducible kpoints in crystal triple coordinates.
+    ! The irreducible kpoints in crystal triplet coordinates.
     ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
 
@@ -1263,11 +1270,11 @@ contains
     !local variables
     real(kind=dp) :: k_rot(3), k_1BZ(3), dk(3)
     integer :: nkpt ! The total number of points
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
+    integer :: i, j, k ! triplet indices
+    integer :: is, js, ks ! triplet indices  obtained by symmetry
     integer :: G(3)
     integer :: isym
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: ikpt, ikpts ! singlet index, singlet index obtained by symmetry
     logical :: found(nk1*nk2*nk3)
 
     nkpt = nk1*nk2*nk3
@@ -1280,7 +1287,7 @@ contains
         do k=1,nk3
           !
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i,j,k)
+          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,+1)
           !
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
@@ -1313,7 +1320,7 @@ contains
               if (sqrt(dot_product(dk,dk))<eps_8) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                 !
                 if (.not. found(ikpts)) found(ikpts) = .true.
                 !
@@ -1332,7 +1339,7 @@ contains
                 if (sqrt(dot_product(dk,dk))<eps_8) then
                   !
                   ! what is the scalar index
-                  call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                  call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                   !
                   if (.not.found(ikpts)) found(ikpts) = .true.
                   !
@@ -1357,7 +1364,7 @@ contains
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_reading, only: nsym, s, at, bg
 
     implicit none
@@ -1374,14 +1381,16 @@ contains
     real(kind=dp) :: k_rot(3), k_1BZ(3), dk(3)
 
     integer :: nkpt ! The total number of points
-    integer :: i, j, k, ii, jj, kk ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
+    integer :: i, j, k, ii, jj, kk ! triplet indices
+    integer :: is, js, ks ! triplet indices  obtained by symmetry
 
     integer :: G(3)
 
     integer :: ns
 
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: ikpt, ikpts ! singlet index, singlet index obtained by symmetry
+
+    integer :: switch
 
     logical :: found(nk1*nk2*nk3)
 
@@ -1399,6 +1408,7 @@ contains
     ! Find which symmetry operation is the identity
     ! most likely always the first element, but let's be sure
 
+    switch = 1 ! triplet-to-singlet coordinate
 
     found = .false.
     nk_irr = 0
@@ -1409,7 +1419,7 @@ contains
       do j=1,nk2
         do k=1,nk3
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i,j,k)
+          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,switch)
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
 
@@ -1440,7 +1450,7 @@ contains
 
               if (sqrt(dot_product(dk,dk)) < eps_8) then
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,switch)
 
                 if (.not. found(ikpts)) found(ikpts) = .true.
 
@@ -1458,7 +1468,7 @@ contains
 
                 if (sqrt(dot_product(dk,dk)) < eps_8) then
                   ! what is the scalar index
-                  call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                  call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,switch)
 
                   if (.not. found(ikpts)) found(ikpts) = .true.
                 end if ! dk
@@ -1531,7 +1541,7 @@ contains
     ! output : equiv_l, symlink_l
     !-------------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
-    use intw_utility, only: triple_to_joint_index_g
+    use intw_utility, only: switch_indices
     use intw_reading, only: nsym, s
 
     implicit none
@@ -1541,7 +1551,7 @@ contains
 
     integer, intent(in) :: nk_irr                  ! N. of irreducible k points
 
-    integer, intent(in) :: k_irr(3,nk_irr)         ! triple indices of the irreducible k-points
+    integer, intent(in) :: k_irr(3,nk_irr)         ! triplet indices of the irreducible k-points
 
     !output
     integer :: equiv_l(nk_1* nk_2* nk_3)   ! For a given k point in the entire BZ,
@@ -1565,10 +1575,12 @@ contains
     integer :: aux_sym(3)
 
     integer :: ns
+    integer :: switch
 
     logical :: done(nk_1*nk_2*nk_3)
 
 
+    switch = 1 ! tripet - to - singlet
     nkpt = nk_1*nk_2*nk_3
 
     n1n3 = nk_1*nk_3
@@ -1581,22 +1593,22 @@ contains
     ! CAREFUL!!!
     !
     ! There is great potential for confusion here.
-    ! The kpoints are well labeled by either a triple or a joint
+    ! The kpoints are well labeled by either a triplet or a singlet
     ! index, and one can switch between them using switch_indices.
     ! HOWEVER, when we consider a set of irreducible points, these
     ! points may be listed sequentially, but the index of these
-    ! points have NOTHING to do with the joint index!
+    ! points have NOTHING to do with the singlet index!
     !
     ! an example to make this clear: Consider an 8 x 8 x 8 mesh.
     ! there are 512 k-points in the zone, and (say) 29 irreducible
     ! k-points. If one performs a nscf QE computation to obtain the
     ! wavefunctions of only these 29 k-points, the QE data folders
     ! will be labeled K0001, K0002, .., K00029. These numbers (1..29)
-    ! however, are NOT the joint indices of the points!
+    ! however, are NOT the singlet indices of the points!
     !
-    ! below, "k_irr" is the triple index of a given irreducible k-point
-    ! "irr" is a sequential index and ikpt is the joint index
-    ! corresponding to the triple index.
+    ! below, "k_irr" is the triplet index of a given irreducible k-point
+    ! "irr" is a sequential index and ikpt is the singlet index
+    ! corresponding to the triplet index.
     !
     ! This subroutine will thus return the array
     ! equiv(ikpt)   = irr
@@ -1623,7 +1635,7 @@ contains
         js = modulo( aux_sym(2), nkpt )/n1n3 + 1
         ks = modulo( aux_sym(3), nkpt )/n1n2 + 1
 
-        call triple_to_joint_index_g(nk_1,nk_2,nk_3,ikpts,is,js,ks)
+        call switch_indices(nk_1,nk_2,nk_3,ikpts,is,js,ks,switch)
 
         if (.not.done(ikpts)) then
           done(ikpts) = .true.
@@ -1638,7 +1650,7 @@ contains
           is = -is
           js = -js
           ks = -ks
-          call triple_to_joint_index_g(nk_1,nk_2,nk_3,ikpts,is,js,ks)
+          call switch_indices(nk_1,nk_2,nk_3,ikpts,is,js,ks,switch)
 
           if (.not.done(ikpts)) then
             done(ikpts) = .true.
@@ -2025,7 +2037,7 @@ contains
     use intw_reading, only: s, ftau, nG_max, nspin, num_bands_intw
     use intw_useful_constants, only: ZERO
     use intw_fft, only: wfc_by_expigr
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
 
     implicit none
 
@@ -2045,7 +2057,6 @@ contains
     integer :: i_sym, TR
     integer :: G_sym(3), G_plus(3)
     integer :: sym(3,3)
-    integer :: nG
 
 
     real(kind=dp) :: ftau_sym(3)
@@ -2069,7 +2080,7 @@ contains
 
     call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz, k_1bz, kpoint_1bz, G_plus)
 
-    call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz)
+    call switch_indices(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz, +1)
 
     if (.not.use_IBZ) then
       ! do not use the IBZ; just fetch the wavefunction from the QE folders
@@ -2077,7 +2088,7 @@ contains
       G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
       ftau_sym = ZERO
       sym      = s(:,:,identity_matrix_index)
-      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
+      call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
 
       call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG,         &
                            identity_matrix_index, sym, ftau_sym, G_sym)
@@ -2088,7 +2099,7 @@ contains
       ! identify the right folder
       i_folder = QE_folder_sym(ikpt)
 
-      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
+      call get_K_folder_data(i_folder,list_iG_irr,wfc_k_irr,QE_eig)
 
       ! The symmetry which takes k_irr to k
       i_sym    = symlink(ikpt,1)
@@ -2321,7 +2332,7 @@ contains
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_reading, only: nsym, s
 
     implicit none
@@ -2339,11 +2350,11 @@ contains
     !local variables
     real(kind=dp) :: k_rot(3), k_1BZ(3), dk(3), k_irr(3)
     integer :: nkpt ! The total number of points
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
+    integer :: i, j, k ! triplet indices
+    integer :: is, js, ks ! triplet indices  obtained by symmetry
     integer :: G(3)
     integer :: isym
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: ikpt, ikpts ! singlet index, singlet index obtained by symmetry
     logical :: found(nk1*nk2*nk3)
 
     nkpt = nk1*nk2*nk3
@@ -2356,7 +2367,7 @@ contains
         do k=1,nk3
           !
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i,j,k)
+          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,+1)
           !
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
@@ -2389,7 +2400,7 @@ contains
               if (sqrt(dot_product(dk,dk))<eps_8) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                 !
                 if (.not. found(ikpts)) found(ikpts) = .true.
                 !
@@ -2408,7 +2419,7 @@ contains
                 if (sqrt(dot_product(dk,dk))<eps_8) then
                   !
                   ! what is the scalar index
-                  call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                  call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                   !
                   if (.not.found(ikpts)) found(ikpts) = .true.
                   !
@@ -2434,7 +2445,7 @@ contains
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_utility, only: find_k_1BZ_and_G, switch_indices
     use intw_reading, only: nsym, s
 
     implicit none
@@ -2448,7 +2459,7 @@ contains
     !output
     integer, intent(out) :: list_ik_irr(nk_irr)
     real(kind=dp), intent(out) :: kpoints_irr(3,nk_irr)
-    ! The irreducible kpoints in crystal triple coordinates.
+    ! The irreducible kpoints in crystal triplet coordinates.
     ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
     real(kind=dp), intent(out) :: weight_irr(nk_irr)
@@ -2456,11 +2467,11 @@ contains
     !local variables
     real(kind=dp) :: k_rot(3), k_1BZ(3), dk(3)
     integer :: nkpt ! The total number of points
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
+    integer :: i, j, k ! triplet indices
+    integer :: is, js, ks ! triplet indices  obtained by symmetry
     integer :: G(3)
     integer :: isym, ik_irr
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: ikpt, ikpts ! singlet index, singlet index obtained by symmetry
     logical :: found(nk1*nk2*nk3)
 
     nkpt = nk1*nk2*nk3
@@ -2474,7 +2485,7 @@ contains
         do k=1,nk3
           !
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i,j,k)
+          call switch_indices(nk1,nk2,nk3,ikpt,i,j,k,+1)
           !
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
@@ -2509,7 +2520,7 @@ contains
               if (sqrt(dot_product(dk,dk))<eps_8) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                 !
                 if (.not. found(ikpts)) then
                     found(ikpts) = .true.
@@ -2531,7 +2542,7 @@ contains
                 if (sqrt(dot_product(dk,dk))<eps_8) then
                   !
                   ! what is the scalar index
-                  call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
+                  call switch_indices(nk1,nk2,nk3,ikpts,is,js,ks,+1)
                   !
                   if (.not.found(ikpts)) then
                     found(ikpts) = .true.
