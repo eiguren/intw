@@ -25,7 +25,7 @@ run_pw2intw:
 
 run_intw:
 	rm -rf gaas.mmn
-	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < intw.in | tee intw.out
+	$(INTW_BUILD_DIR)/src/utilities/intw2W90.x < intw.in | tee intw2W90.out
 	( test -f CRASH && exit 1 || echo "OK" )
 
 run_w90:
@@ -34,7 +34,7 @@ run_w90:
 
 run_intw_2:
 	rm -rf gaas.u_mesh gaas_hr_intw.dat
-	$(INTW_BUILD_DIR)/src/utilities/w902intw.x < intw.in | tee intw_w902intw.out
+	$(INTW_BUILD_DIR)/src/utilities/w902intw.x < intw.in | tee w902intw.out
 
 
 PW_FILES = gaas.scf.out gaas.save/data-file-schema.xml gaas.save/charge-density.dat
