@@ -38,13 +38,13 @@ contains
     ! which refer to the global list gvec(3,ngm), which should be defined
     ! BEFORE using this subroutine.
     !--------------------------------------------------------------------------------
-    
+
     use intw_useful_constants, only: zero, one, cmplx_0
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
     use intw_fft, only : find_iG
-    
+
     implicit none
-    
+
     ! I/O variables
 
     integer, intent(in) :: G(3), ngk1, ngk2
@@ -53,7 +53,7 @@ contains
     complex(dp), intent(out) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
     ! local variables
-    
+
     integer :: jd(1)
     integer :: i, ibnd, jbnd, is, js, iG_1
     complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
@@ -252,19 +252,16 @@ contains
 
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_useful_constants, only: zero, one
-    use intw_utility, only: switch_indices
+    use intw_utility, only: triple_to_joint_index_g, joint_to_triple_index_g
 
     implicit none
 
-    ! triplet indices
-    integer :: i_k,  j_k,  k_k  ! triplet indices for k
-    integer :: i_k1, j_k1, k_k1 ! triplet indices for k1
-    integer :: i_k2, j_k2, k_k2 ! triplet indices for k2
-    integer :: i_kq, j_kq, k_kq ! triplet indices for k+q
-    integer :: i_q,  j_q,  k_q  ! triplet indices for q
-
-    ! logical dummy variable, to go from triplet to scalar index and vice versa
-    integer :: switch
+    ! triple indices
+    integer :: i_k,  j_k,  k_k  ! triple indices for k
+    integer :: i_k1, j_k1, k_k1 ! triple indices for k1
+    integer :: i_k2, j_k2, k_k2 ! triple indices for k2
+    integer :: i_kq, j_kq, k_kq ! triple indices for k+q
+    integer :: i_q,  j_q,  k_q  ! triple indices for q
 
     ! scalar indices
     integer :: ikpt1 ! scalar index for k1
@@ -282,15 +279,13 @@ contains
     integer :: list_ikpt2((nk1+3)*(nk2+3)*(nk3+3))
 
 
-    ! find the triplet of indices which corresponds to iqpt
-    switch = -1
-    call switch_indices(nk1,nk2,nk3,iqpt,i_q,j_q,k_q,switch)
+    ! find the triple of indices which corresponds to iqpt
+    call joint_to_triple_index_g(nk1,nk2,nk3,iqpt,i_q,j_q,k_q)
 
     ! loop over the mesh points for a cubic interpolation,
     ! including the extra layers.
     ! the third index, k, loops fastest!
 
-    switch = 1
     ! loop over the extended mesh, indentifying G1,G2, ikpt1 ikpt2
     icm = 0
 
@@ -318,8 +313,8 @@ contains
           k_k2  = k_kq-nk3*G2(3)
 
           ! find the indices
-          call switch_indices(nk1,nk2,nk3,ikpt1,i_k1,j_k1,k_k1,switch)
-          call switch_indices(nk1,nk2,nk3,ikpt2,i_k2,j_k2,k_k2,switch)
+          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt1,i_k1,j_k1,k_k1)
+          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt2,i_k2,j_k2,k_k2)
 
           icm = icm + 1 ! increment the mesh index
 
@@ -385,7 +380,7 @@ contains
   end subroutine get_spin_component
 
 
-  subroutine write_matrix_elements(filename, matrix_elements, num_bands_intw, nb1, nb2)
+  subroutine write_matrix_elements(filename, matrix_elements, num_bands, nb1, nb2)
     !------------------------------------------------------------------
     ! This subroutine writes out the matrix elements in a file
     !------------------------------------------------------------------
@@ -395,8 +390,8 @@ contains
 
     implicit none
 
-    complex(kind=dp), intent(in) :: matrix_elements(num_bands_intw,num_bands_intw,0:nk1+2,0:nk2+2,0:nk3+2)
-    integer, intent(in) :: num_bands_intw, nb1, nb2
+    complex(kind=dp), intent(in) :: matrix_elements(num_bands,num_bands,0:nk1+2,0:nk2+2,0:nk3+2)
+    integer, intent(in) :: num_bands, nb1, nb2
 
     integer :: io_unit
     integer :: i, j, k
@@ -431,12 +426,12 @@ contains
     !--------------------------------------------------------
     ! This subroutine puts a wavefunction, which is indexed
     ! by a scalar iG index, into a 3D array where the G
-    ! vector is identified by a triplet index.
+    ! vector is identified by a triple index.
     !--------------------------------------------------------
 
     use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
     use intw_useful_constants, only: zero, one, cmplx_0
-    use intw_utility, only: switch_indices
+    use intw_utility, only: joint_to_triple_index_g
     use intw_fft, only: nl
 
     implicit none
@@ -451,16 +446,12 @@ contains
     ! computation variables
     integer :: i, iG
 
-    integer :: i_singlet
+    integer :: i_joint
     integer :: n1, n2, n3
-
-    integer :: switch
 
 
     ! initialize output array
     wfc_G_3D = cmplx_0
-
-    switch = -1 ! singlet to triplet
 
     ! loop on all G vectors in the array
 
@@ -471,9 +462,9 @@ contains
       if (iG == 0) exit
 
       ! extract the scalar FFT index of this G vector
-      i_singlet = nl(iG)
-      ! compute the triplet index corresponding to iG
-      call switch_indices(nr1,nr2,nr3,i_singlet,n1,n2,n3,switch)
+      i_joint = nl(iG)
+      ! compute the triple index corresponding to iG
+      call joint_to_triple_index_g(nr1,nr2,nr3,i_joint,n1,n2,n3)
 
       ! dump 1D wavefunction in 3D array
 

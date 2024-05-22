@@ -21,7 +21,6 @@ program ep_melements
                                    multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
                           find_free_unit, &
-                          switch_indices, &
                           generate_kmesh, &
                           conmesurate_and_coarser, &
                           ainv, &
@@ -54,7 +53,7 @@ program ep_melements
   !k point related variables
   logical                  :: k_points_consistent
   integer                  :: ik, nk_irr, nkmesh
-  integer                  :: num_bands_ep  
+  integer                  :: num_bands_ep
   real(dp),allocatable     :: kmesh(:,:)
   real(dp)                 :: kpoint(3), kpoint_cart(3), kqpoint_cart(3)
 
@@ -153,24 +152,24 @@ program ep_melements
   ! MBR 13/05/2024
   ! Check consistency with input flag use_exclude_bands
   !
-  write(*,*)' nbands = ', nbands
-  write(*,*)' num_bands_intw = ', num_bands_intw
-  if (use_exclude_bands .eq. 'qe' .and. num_bands_intw .lt. nbands) then
-     write(*,*)' use_exclude_bands == qe chosen, but bands have been excluded previously.'
-     write(*,*)' This is an inconsistency. Stopping.'
-     stop
-  end if   
+  if (trim(use_exclude_bands) .eq. 'all' .and. num_bands_intw .lt. nbands) then
+    write(*,*) ' use_exclude_bands == all chosen, but bands have been excluded previously.'
+    write(*,*) ' nbands = ', nbands
+    write(*,*) ' num_bands_intw = ', num_bands_intw
+    write(*,*) ' This is an inconsistency. Stopping.'
+    stop
+  end if
   !
   ! Information about bands for which ep elements will be calculated
   !
-  if (ep_bands .eq. 'custom') then ! only a handful of bands
-     num_bands_ep = ep_bands_final-ep_bands_initial+1
-     write(*,*)' ep_bands == custom chosen.'
-     write(*,*)' ep elements to be calculated for bands ', ep_bands_initial, &
-             ' to ', ep_bands_final, ' of the num_bands_intw list'
+  if (trim(ep_bands) .eq. 'custom') then ! only a handful of bands
+    num_bands_ep = ep_bands_final-ep_bands_initial+1
+    write(*,*) ' ep_bands == custom chosen.'
+    write(*,*) ' ep elements to be calculated for bands ', ep_bands_initial, &
+               ' to ', ep_bands_final, ' of the num_bands_intw list'
   else ! all available bands
-    num_bands_ep = num_bands_intw   
-  end if   
+    num_bands_ep = num_bands_intw
+  end if
   !
   !================================================================================
   ! Print spin information
@@ -444,8 +443,8 @@ program ep_melements
     ep_unit = find_free_unit()
     inquire(iolength=record_lengh) ep_mat_el
     open(unit=ep_unit, iostat=ierr, &
-          file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
-          form='unformatted', status='unknown', access='direct', recl=record_lengh)
+         file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
+         form='unformatted', status='unknown', access='direct', recl=record_lengh)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
@@ -496,15 +495,15 @@ program ep_melements
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
       !
-      if ( ep_bands .eq. 'intw_bands') then
-         call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
-         call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iGk, list_iGkq, wfc_k, dvpsi)
-      else if ( ep_bands .eq. 'custom_bands') then
-         call dvqpsi_local(num_bands_ep, list_iGk, list_iGkq, &
-                           wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
-         call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_ep, list_iGk, list_iGkq, &
-                           wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
-      end if   
+      if ( trim(ep_bands) .eq. 'intw') then
+        call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iGk, list_iGkq, wfc_k, dvpsi)
+      else if ( trim(ep_bands) .eq. 'custom') then
+        call dvqpsi_local(num_bands_ep, list_iGk, list_iGkq, &
+                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_ep, list_iGk, list_iGkq, &
+                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
+      end if
       !
       do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz
         !

@@ -37,8 +37,6 @@ module intw_reading
             read_kpoints_data_file_xml, &
             get_gvec, &
             get_K_folder_data, &
-            get_K_folder_data_with_nG, &
-            get_K_folder_data_with_nG_MBR, &
             write_tag, &
             deallocate_reading_variables, &
             set_num_bands, &
@@ -500,9 +498,8 @@ contains
 
   end subroutine get_gvec
 
-  subroutine get_K_folder_data(ik,list_iG,wfc,QE_eig)
-    !-------------------------------------------------------------------------
 
+  subroutine get_K_folder_data(ik, list_iG, wfc, QE_eig, nG, altprefix)
     !------------------------------------------------------------------------
     ! For the kpoint labeled by ik, this subroutine reads in all the
     ! wavefunctions for bands 1,.., nbands and stores them in the array
@@ -530,269 +527,67 @@ contains
     !      Only relevant "num_bands_intw" wave functions are stored on output.
     !      This subroutine is only called in symmetries.f90,
     !      where only the wfc-s within "num_bands_intw" are rotated.
-    !
     !------------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix
     use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: cmplx_0
-
-    implicit none
-
-    !I/O variables
-
-    integer,intent(in) :: ik
-    integer,intent(out) :: list_iG(nG_max)
-    complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
-    real(dp),intent(out) :: QE_eig(nbands)
-
-    !local variables
-
-    integer :: nG
-    character(256) :: wfc_file, datafile
-    integer :: io_unit, ispin, n_yes, ibnd
-    complex(dp) :: wfc_all(nG_max,nbands,nspin)
-    real(dp) :: QE_eig_all(nbands)
-
-
-    100 format('wfc'I5.5'.dat')!
-
-    list_iG(:) = 0
-    wfc_all(:,:,:) = cmplx_0
-    wfc    (:,:,:) = cmplx_0
-    !
-    write(wfc_file,100) ik
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
-    io_unit = find_free_unit()
-    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG !
-
-    read(unit=io_unit)list_iG(1:nG)
-    read(unit=io_unit)QE_eig_all(1:nbands)
-
-    do ibnd=1,nbands
-      read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd,ispin),ispin=1,nspin)
-    enddo
-
-    n_yes = 0
-    !
-    do ibnd=1,nbands
-      !
-      if (band_excluded_intw(ibnd)) cycle
-      !
-      n_yes=n_yes+1
-      wfc(:,n_yes,:) = wfc_all(:,ibnd,:)
-      QE_eig(n_yes) = QE_eig_all(ibnd)
-      !
-    enddo
-    close(io_unit)
-
-  end subroutine get_K_folder_data
-
-  subroutine get_K_folder_data_with_nG(ik,list_iG,wfc,QE_eig,nG)
-    !-------------------------------------------------------------------------
-
-    !------------------------------------------------------------------------
-    ! For the kpoint labeled by ik, this subroutine reads in all the
-    ! wavefunctions for bands 1,.., nbands and stores them in the array
-    ! wfc(nG_max_k,nbands). It reads the G vectors index array list_iG,
-    ! which refers to the global list of G vectors gvecs, from the folder ./K%ik
-    ! using the iotk library. It also reads the QE eigenvalues.
-    !
-    ! Do not be confused! G means "reciprocal lattice vector".
-    !                     K means "point in the 1BZ"
-    !
-    ! NOTE: In fortran, "the first index varies fastest". I take this to mean
-    ! that arrays are stored column-wise, namely, for a matrix
-    !
-    ! M = [ m_{11}   m_{12}   m_{13}]
-    ! [ m_{21}   m_{22}   m_{23}]
-    ! [ m_{31}   m_{32}   m_{33}]
-    !
-    ! m_{21} is closer in memory to m_{11} than m_{12}, and in fact
-    ! M is stored as
-    ! M ~ [ m_{11} m_{21} m_{31} m_{12} m_{22} m_{32} m_{13} m_{23} m_{33}]
-    ! Thus, it makes GOOD SENSE to put the G index first, as this is
-    ! the index that will be used to perform inner products.
-    !
-    ! JLB 07/2023: Shouldn't output wfc have dimensions num_bands_intw instead of nbands?
-    !
-    !------------------------------------------------------------------------
-    use intw_input_parameters, only: mesh_dir, prefix
-    use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: cmplx_0
-
-    implicit none
-
-    !I/O variables
-
-    integer, intent(in) :: ik
-    integer, intent(out) :: list_iG(nG_max)
-    complex(dp), intent(out) :: wfc(nG_max,num_bands_intw,nspin)
-    real(dp), intent(out) :: QE_eig(num_bands_intw)
-    integer, intent(out) :: nG
-
-    !local variables
-
-    character(256) :: wfc_file, datafile
-    integer :: io_unit, ispin, n_yes, ibnd
-    complex(dp) :: wfc_all(nG_max*nspin,nbands)
-    real(dp) :: QE_eig_all(nbands)
-    integer :: iG
-
-
-    100 format('wfc'I5.5'.dat')!
-
-    ! initialize the arrays to zero (zero will be broadcasted)
-    list_iG(:) = 0
-    wfc_all(:,:  ) = cmplx_0
-    wfc    (:,:,:) = cmplx_0
-    !
-    write(wfc_file,100) ik
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
-    io_unit = find_free_unit()
-    open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG !
-    read(unit=io_unit)list_iG(1:nG)
-    read(unit=io_unit)QE_eig_all(1:nbands)
-
-    do ibnd=1,nbands
-      read(unit=io_unit) (wfc_all((ispin-1)*nG+1:ispin*nG,ibnd),ispin=1,nspin)
-    enddo
-
-    n_yes = 0
-    !
-    do ibnd=1,nbands
-      !
-      if (band_excluded_intw(ibnd)) cycle
-      !
-      n_yes=n_yes+1
-      do ispin=1,nspin
-        do iG=1,nG
-          wfc(iG,n_yes,ispin) = wfc_all((ispin-1)*nG+iG,ibnd)
-        end do !iG
-      end do!ispin
-      QE_eig(n_yes) = QE_eig_all(ibnd)
-      !
-    enddo
-    close(io_unit)
-
-  end subroutine get_K_folder_data_with_nG
-
-    subroutine get_K_folder_data_with_nG_MBR (ik,list_iG,wfc,QE_eig,nG, altprefix)
-    !-------------------------------------------------------------------------
-
-    !------------------------------------------------------------------------
-    ! MBR 17/02/24
-    ! Same as get_K_folder_data_with_nG with an alternative prefix as an option
-    ! (useful if you want to read a wfc in a different .save file)
-    ! MBR 18/04/24
-    ! I propose replacing get_K_folder_data_with_nG with this
-    !------------------------------------------------------------------------
-
-    !------------------------------------------------------------------------
-    ! For the kpoint labeled by ik, this subroutine reads in all the
-    ! wavefunctions for bands 1,.., nbands and stores them in the array
-    ! wfc(nG_max_k,nbands). It reads the G vectors index array list_iG,
-    ! which refers to the global list of G vectors gvecs, from the folder ./K%ik
-    ! using the iotk library. It also reads the QE eigenvalues.
-    !
-    ! Do not be confused! G means "reciprocal lattice vector".
-    !                     K means "point in the 1BZ"
-    !
-    ! NOTE: In fortran, "the first index varies fastest". I take this to mean
-    ! that arrays are stored column-wise, namely, for a matrix
-    !
-    ! M = [ m_{11}   m_{12}   m_{13}]
-    ! [ m_{21}   m_{22}   m_{23}]
-    ! [ m_{31}   m_{32}   m_{33}]
-    !
-    ! m_{21} is closer in memory to m_{11} than m_{12}, and in fact
-    ! M is stored as
-    ! M ~ [ m_{11} m_{21} m_{31} m_{12} m_{22} m_{32} m_{13} m_{23} m_{33}]
-    ! Thus, it makes GOOD SENSE to put the G index first, as this is
-    ! the index that will be used to perform inner products.
-    !
-    ! JLB 07/2023: Shouldn't output wfc have dimensions num_bands_intw instead of nbands?
-    !
-    !------------------------------------------------------------------------
-        use intw_input_parameters, only: mesh_dir, prefix
-    use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: cmplx_0
+    use intw_useful_constants, only: ZERO, cmplx_0
 
     implicit none
 
     !I/O variables
     integer,intent(in) :: ik
     integer,intent(out) :: list_iG(nG_max)
-    !real(dp),intent(out) :: QE_eig(nbands)
     real(dp),intent(out) :: QE_eig(num_bands_intw)
-    !complex(dp),intent(out) :: wfc(nG_max,nbands,nspin)
     complex(dp),intent(out) :: wfc(nG_max,num_bands_intw,nspin)
     integer, intent(out) :: nG
-
-    character(256) , optional, intent(in) :: altprefix
+    character(256), optional, intent(in) :: altprefix
 
     !logical variables
 
     character(256) :: wfc_file, datafile
-    integer :: io_unit,is,i,n_yes,ibnd
-    integer :: nexclude
-    real(dp), parameter :: ha_to_ev = 27.211383860484784
-    complex(dp) :: wfc_all(nG_max*nspin,nbands)
+    integer :: io_unit, ibnd, is, n_yes
     real(dp) :: QE_eig_all(nbands)
-    integer :: iG
 
-    !band_excluded(:) = .false.
-    !!
-    !do i=1,num_exclude_bands
-    !   !
-    !   nexclude = exclude_bands(i)
-    !   band_excluded(nexclude) = .true.
-    !   !
-    !enddo
     !
-    ! initialize the arrays to zero (zero will be broadcasted)
-    !
+    ! Initialize the arrays to zero (zero will be broadcasted)
     list_iG(:) = 0
-    wfc_all(:,:  ) = cmplx_0
-    wfc    (:,:,:) = cmplx_0
+    wfc(:,:,:) = cmplx_0
+    QE_eig(:) = ZERO
     !
     write(wfc_file,100) ik
+    100 format('wfc'I5.5'.dat')
+    !
     if (present(altprefix)) then
-       datafile = trim(trim(mesh_dir)//trim(altprefix)//".save.intw/"//trim(wfc_file))
+      datafile = trim(trim(mesh_dir)//trim(altprefix)//".save.intw/"//trim(wfc_file))
     else
-       datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+      datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
     end if
     io_unit = find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="read",form="unformatted")
-    read(unit=io_unit)nG !
-    read(unit=io_unit)list_iG(1:nG)
-    read(unit=io_unit)QE_eig_all(1:nbands)
-
-    do ibnd=1,nbands
-            read(unit=io_unit) (wfc_all((is-1)*nG+1:is*nG,ibnd),is=1,nspin)
-    enddo
-    n_yes = 0
     !
+    ! Read data
+    read(unit=io_unit) nG
+    !
+    read(unit=io_unit) list_iG(1:nG)
+    !
+    read(unit=io_unit) QE_eig_all(1:nbands)
+    !
+    n_yes = 0
     do ibnd=1,nbands
       !
-      if (band_excluded_intw(ibnd)) cycle
-      !
-      n_yes=n_yes+1
-      do is=1,nspin
-        do iG=1,nG
-          wfc(iG,n_yes,is) = wfc_all((is-1)*nG+iG,ibnd)
-        end do !iG
-      end do!is
-      QE_eig(n_yes) = QE_eig_all(ibnd)
-      !
+      if (band_excluded_intw(ibnd)) then
+        read(unit=io_unit)
+      else
+        n_yes=n_yes+1
+        read(unit=io_unit) ( wfc(1:nG,n_yes,is), is=1,nspin )
+        QE_eig(n_yes) = QE_eig_all(ibnd)
+      endif
+        !
     enddo
+    !
     close(io_unit)
 
-100 format('wfc'I5.5'.dat')!
-    return
-
-  end subroutine get_K_folder_data_with_nG_MBR
+  end subroutine get_K_folder_data
 
 
   subroutine write_tag(string,i,tag)
@@ -916,7 +711,7 @@ contains
 
     use intw_utility, only: find_free_unit
     use intw_input_parameters, only: prefix, use_exclude_bands, &
-        include_bands_initial, include_bands_final
+                                     include_bands_initial, include_bands_final
 
     implicit none
 
@@ -929,30 +724,30 @@ contains
     inquire (file=nnkp_filename,exist=have_nnkp)
 
     ! control consistency with use_exclude_bands flag
-    if (have_nnkp .and. use_exclude_bands .eq. 'qe') then
-            write(*,'(A)') '|  -  use_exclude_bands = qe in input but           |'
+    if (have_nnkp .and. trim(use_exclude_bands) .eq. 'all') then
+            write(*,'(A)') '|  -  use_exclude_bands = all in input but          |'
             write(*,'(A)') '|       - .nnkp file found. Inconsistency!!         |'
             write(*,'(A)') ' Stopping '
             stop
-    else if (have_nnkp .and. use_exclude_bands .eq. 'custom') then
+    else if (have_nnkp .and. trim(use_exclude_bands) .eq. 'custom') then
             write(*,'(A)') '|  -  use_exclude_bands = custom in input but       |'
             write(*,'(A)') '|       - .nnkp file found. Inconsistency!!         |'
             write(*,'(A)') ' Stopping '
             stop
-    else if ( .not. have_nnkp .and. use_exclude_bands .eq. 'wannier' ) then
+    else if ( .not. have_nnkp .and. trim(use_exclude_bands) .eq. 'wannier' ) then
             write(*,'(A)') '|  -  use_exclude_bands = wannier in input but      |'
             write(*,'(A)') '|       - .nnkp file not found. Inconsistency!!     |'
             write(*,'(A)') ' Stopping '
             stop
-    end if        
+    end if
 
     ! Set number of bands
 
     ! from .nnkp
-    if(have_nnkp) then
+    if( trim(use_exclude_bands) .eq. 'wannier' ) then
       !
       write(*,'(A)') '|       - .nnkp file found                          |'
-      write(*,'(A)') '|         Setting the number of bands from .nnkp    |'
+      write(*,'(A)') '|       - Setting number of bands from .nnkp        |'
       write(*,'(A)') '|           ---------------------------------       |'
       !
       nnkp_unit=find_free_unit()
@@ -981,21 +776,19 @@ contains
       ! Number of bands (before disentanglement)
       num_bands_intw = nbands - num_exclude_bands_intw
       !
-    ! all bands from QE
-    else if ( .not. have_nnkp .and. use_exclude_bands .eq. 'qe') then
-      write(*,'(A)') '|       - .nnkp file NOT found                      |'
-      write(*,'(A)') '|         Setting the number of bands from QE       |'
+    ! all bands from DFT
+    else if ( trim(use_exclude_bands) .eq. 'all' ) then
+      write(*,'(A)') '|       - Setting number of bands from calculation  |'
       write(*,'(A)') '|           ---------------------------------       |'
       !
       allocate(band_excluded_intw(nbands))
       band_excluded_intw(:) = .false.
       num_bands_intw = nbands
-      num_wann_intw = nbands  
+      num_wann_intw = nbands
       !
-    ! read custom bands from input
-    else if ( .not. have_nnkp .and. use_exclude_bands .eq. 'custom') then
-      write(*,'(A)') '|       - .nnkp file NOT found                      |'
-      write(*,'(A)') '|         Setting custom number of bands from:      |'
+    ! custom bands from input
+    else if ( trim(use_exclude_bands) .eq. 'custom' ) then
+      write(*,'(A)') '|       - Setting custom number of bands from:      |'
       write(*,'(A)') '|', include_bands_initial, ' to ', include_bands_final
       write(*,'(A)') '|           ---------------------------------       |'
       allocate(band_excluded_intw(nbands))

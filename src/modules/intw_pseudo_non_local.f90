@@ -380,7 +380,7 @@ contains
 
     real(kind=dp), allocatable :: aux(:), xdata(:)
     real(kind=dp) ::  vqint
-    integer :: iq, ndm, nt, nb, l, ir
+    integer :: iq, ndm, nt, nb, l
 
 
     !
@@ -589,7 +589,7 @@ contains
   end subroutine init_KB_projectors
 
 
-  subroutine multiply_psi_by_vKB(num_bands_intw, psi, vnl_psi)
+  subroutine multiply_psi_by_vKB(num_bands, psi, vnl_psi)
     !INTW project: KB projection by wave functions.
     !
 
@@ -598,14 +598,14 @@ contains
 
     implicit none
 
-    integer, intent(in)             :: num_bands_intw
-    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands_intw,nspin), vnl_psi(nG_max,num_bands_intw,nspin)
+    integer, intent(in)             :: num_bands
+    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands,nspin), vnl_psi(nG_max,num_bands,nspin)
 
     complex(kind=dp)                :: projec_d(nkb,nspin), DKB_projec_d(nkb,nspin)
     integer                         :: iband, ikb, ispin, jspin, ig
 
 
-    do iband = 1, num_bands_intw
+    do iband = 1, num_bands
       !
       projec_d = cmplx_0
       !
@@ -648,7 +648,7 @@ contains
   end subroutine multiply_psi_by_vKB
 
 
-  subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, num_bands_intw, list_iGk, list_iGkq, psi, dvnl_psi)
+  subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, num_bands, list_iGk, list_iGkq, psi, dvnl_psi)
 
     use intw_useful_constants, only: cmplx_0, cmplx_i
     use intw_reading, only: nat, nspin, nG_max, tpiba, bg
@@ -657,8 +657,8 @@ contains
     implicit none
 
     real(kind=dp), intent(in)       :: k_cryst(3), q_cryst(3)
-    integer, intent(in)             :: num_bands_intw, list_iGk(nG_max), list_iGkq(nG_max)
-    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands_intw,nspin), dvnl_psi(nG_max,num_bands_intw,nspin,nspin,3*nat)
+    integer, intent(in)             :: num_bands, list_iGk(nG_max), list_iGkq(nG_max)
+    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands,nspin), dvnl_psi(nG_max,num_bands,nspin,nspin,3*nat)
 
     complex(kind=dp)                :: projec_1(nkb,3,nspin), projec_2(nkb,3,nspin)
     complex(kind=dp)                :: DKB_projec_1(nkb,3,nspin,nspin), DKB_projec_2(nkb,3,nspin,nspin)
@@ -670,7 +670,7 @@ contains
     k_cart = matmul(bg, k_cryst)
     q_cart = matmul(bg, q_cryst)
 
-    do iband = 1, num_bands_intw
+    do iband = 1, num_bands
 
       projec_1 = cmplx_0
       projec_2 = cmplx_0

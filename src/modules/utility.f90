@@ -16,12 +16,14 @@ use kinds, only: dp
   implicit none
   !
   ! subroutines
-  public :: get_timing, switch_indices, switch_indices_zyx, generate_kmesh, &
-            generate_and_allocate_kpath, &
+  public :: get_timing, &
+            joint_to_triple_index_g, triple_to_joint_index_g, &
+            joint_to_triple_index_r, triple_to_joint_index_r, &
+            generate_kmesh, generate_and_allocate_kpath, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
             HPSORT, HPSORT_real, hpsort_eps, &
-            find_r_in_WS_cell, errore, simpson,  sphb, & ! gaussian
+            find_r_in_WS_cell, errore, simpson, sphb, &
             real_ylmr2
   !
   ! functions
@@ -344,153 +346,124 @@ end function intgr_spline_gaussq
 
   end function  multiple
 
-  subroutine switch_indices(nk_1,nk_2,nk_3,ikpt,i,j,k,switch)
+
+  subroutine joint_to_triple_index_g(n1, n2, n3, i_joint, i, j, k)
     !----------------------------------------------------------------------------!
-    !     This subroutine efficiently computes the scalar kpoint index from
-    !     the triplet index, or vice versa. The mesh is described by nk_1,
-    !     nk_2, nk_3, which can be the coarse or the smooth mesh.
+    ! Compute the triple indices i, j, k of a point in a n1, n2, n3 mesh on
+    ! reciprocal space from the joint index i_joint.
     !
-    !     ikpt is the scalar index, namely a single integer from 1 to nkpoints
-    !     which uniquely labels all the kpoints in the full 1BZ.
+    ! i_joint is a single integer from 1 to n1*n2*n3, which uniquely
+    ! labels all the points of the mesh.
     !
-    !     i,j,k are the triplet index, which labels the kpoints according to
-    !     their coordinates in the MP mesh.
+    ! i, j, k are the triple indices, which uniquely label all the points
+    ! of the mesh according to their coordinates in the mesh.
     !
-    !     Following Asier's convention, the 3rd triplet index will loop
-    !     fastest. The convention is:
-    !
-    !             ikpt = (k-1) + (j-1)*nk_3 + (i-1)*nk_2*nk_3 + 1
-    !
-    !     in general:
-    !
-    !     switch = +1   :  ikpt    =       1+ (k-1) + (j-1)*nk_3 + (i-1)*nk_2*nk_3
-    !
-    !     switch = -1   :   i      =       1 + (ikpt-1) / (nk_2*nk_3)
-    !                       j      =       1 + (ikpt-1) / nk_3-(i-1)*nk_2
-    !                       k      =      ikpt -(j-1)*nk_3-(i-1)*nk_2*nk_3
+    ! The 3rd triple index loops fastest:
+    !   i_joint = k + (j-1)*n3 + (i-1)*n2*n3
     !----------------------------------------------------------------------------!
+
     implicit none
 
-    integer, intent(in) :: nk_1, nk_2, nk_3
-    integer, intent(inout) :: ikpt
-    integer, intent(inout) :: i, j, k
-    integer, intent(in) :: switch
-
-    integer :: i_m_1, j_m_1
-    integer :: ikpt_m_1
-    integer :: n2n3
+    integer, intent(in) :: n1, n2, n3
+    integer, intent(in) :: i_joint
+    integer, intent(out) :: i, j, k
 
 
-    if (switch .eq. 1) then
+    i = (i_joint - 1)/(n2*n3) + 1
+    j = (i_joint - 1)/n3 - (i-1)*n2 + 1
+    k = i_joint - int((i_joint-1)/n3) * n3 ! k = mod(i_joint-1, n3) + 1
 
-      ! efficient implementation; 3 +/-,  2 */.
-      ikpt = k + nk_3*(j-1 + (i-1)*nk_2)
 
-    else if (switch .eq. -1) then
+  end subroutine joint_to_triple_index_g
 
-      ! define useful variables to minimize the number of
-      ! operations.
 
-      ! The scheme below involves 6 +- and 6 */
-
-      n2n3     = nk_2*nk_3
-      ikpt_m_1 = ikpt-1
-
-      i_m_1 = ikpt_m_1/n2n3
-      i     = i_m_1 + 1
-
-      j_m_1 = ikpt_m_1/nk_3-i_m_1*nk_2
-      j     = j_m_1+1
-
-      k     = ikpt - j_m_1*nk_3-i_m_1*n2n3
-
-    end if
-
-  end subroutine switch_indices
-
-  subroutine switch_indices_zyx(nk_1,nk_2,nk_3,ikpt,i,j,k,switch)
+  subroutine triple_to_joint_index_g(n1, n2, n3, i_joint, i, j, k)
     !----------------------------------------------------------------------------!
-    !     This subroutine efficiently computes the scalar kpoint index from
-    !     the triplet index, or vice versa. The mesh is described by nk_1,
-    !     nk_2, nk_3, which can be the coarse or the smooth mesh.
+    ! Compute the joint index i_joint of a point in a n1, n2, n3 mesh on
+    ! reciprocal space from the triple indices i, j, k.
     !
-    !     ikpt is the scalar index, namely a single integer from 1 to nkpoints
-    !     which uniquely labels all the kpoints in the full 1BZ.
+    ! i_joint is a single integer from 1 to n1*n2*n3, which uniquely
+    ! labels all the points of the mesh.
     !
-    !     i,j,k are the triplet index, which labels the kpoints according to
-    !     their coordinates in the MP mesh.
+    ! i, j, k are the triple indices, which uniquely label all the points
+    ! of the mesh according to their coordinates in the mesh.
     !
-    !     Following Asier's convention, the 3rd triplet index will loop
-    !     fastest. The convention is:
-    !
-    !     New convention (Asier&Idoia 20 06 2014) for a coherence with our cfftd code:
-    !
-    !         Old
-    !             ikpt = (k-1) + (j-1)*nk_3 + (i-1)*nk_2*nk_3 + 1
-    !         New 20 06 2014
-    !             ikpt = (i-1) + (j-1)*nk_1 + (k-1)*nk_1*nk2 + 1
-    !
-    !     in general:
-    !
-    !New (20 06 2014):
-    !     switch = +1   :  ikpt    =       1+ (i-1) + (j-1)*nk_1 + (k-1)*nk_1*nk_2
-    !
-    !     switch = -1   :   i      =       1 + (ikpt-1) / (nk_1*nk_2)
-    !                       j      =       1 + (ikpt-1) / nk_1-(k-1)*nk_2
-    !                       k      =      ikpt -(j-1)*nk_1-(k-1)*nk_1*nk_2
-
-    !Old:
-    !     switch = +1   :  ikpt    =       1+ (k-1) + (j-1)*nk_3 + (i-1)*nk_2*nk_3
-    !
-    !     switch = -1   :   i      =       1 + (ikpt-1) / (nk_2*nk_3)
-    !                       j      =       1 + (ikpt-1) / nk_3-(i-1)*nk_2
-    !                       k      =      ikpt -(j-1)*nk_3-(i-1)*nk_2*nk_3
-
+    ! The 3rd triple index loops fastest:
+    !   i_joint = k + (j-1)*n3 + (i-1)*n2*n3
     !----------------------------------------------------------------------------!
+
     implicit none
 
-    integer, intent(in) :: nk_1, nk_2, nk_3
-    integer, intent(inout) :: ikpt
-    integer, intent(inout) :: i, j, k
-    integer, intent(in) :: switch
-
-    integer :: j_m_1, k_m_1
-    integer :: ikpt_m_1
-    integer :: n1n2
+    integer, intent(in) :: n1, n2, n3
+    integer, intent(out) :: i_joint
+    integer, intent(in) :: i, j, k
 
 
-    if (switch .eq. 1) then
+    i_joint = k + (j-1 + (i-1)*n2)*n3
 
-      ikpt = i + (j-1)*nk_1 + (k-1)*nk_1*nk_2
-
-    else if (switch .eq. -1) then
-
-      ! define useful variables to minimize the number of
-      ! operations.
-
-      ! The scheme below involves 6 +- and 6 */
+  end subroutine triple_to_joint_index_g
 
 
-      n1n2     = nk_1*nk_2
-      ikpt_m_1 = ikpt-1
+  subroutine joint_to_triple_index_r(n1, n2, n3, i_joint, i, j, k)
+    !----------------------------------------------------------------------------!
+    ! Compute the triple indices i, j, k of a point in a n1, n2, n3 mesh on
+    ! real space from the joint index i_joint.
+    !
+    ! i_joint is a single integer from 1 to n1*n2*n3, which uniquely
+    ! labels all the points of the mesh.
+    !
+    ! i, j, k are the triple indices, which uniquely label all the points
+    ! of the mesh according to their coordinates in the mesh.
+    !
+    ! The 1st triple index loops fastest:
+    !   i_joint = i + (j-1)*n2 + (k-1)*n1*n2
+    !----------------------------------------------------------------------------!
+
+    implicit none
+
+    integer, intent(in) :: n1, n2, n3
+    integer, intent(in) :: i_joint
+    integer, intent(out) :: i, j, k
 
 
-      k_m_1 = ikpt_m_1/n1n2
-      k     = k_m_1 + 1
+    k = (i_joint - 1)/(n1*n2) + 1
+    j = (i_joint - 1)/n1 - (k-1)*n2 + 1
+    i = i_joint - int((i_joint-1)/n1) * n1 ! k = mod(i_joint-1, n1) + 1
 
-      j_m_1 = ikpt_m_1/nk_1-k_m_1*nk_2
-      j     = j_m_1+1
+  end subroutine joint_to_triple_index_r
 
-      i     = ikpt - j_m_1*nk_1-k_m_1*n1n2
 
-    end if
+  subroutine triple_to_joint_index_r(n1, n2, n3, i_joint, i, j, k)
+    !----------------------------------------------------------------------------!
+    ! Compute the triple indices i, j, k of a point in a n1, n2, n3 mesh on
+    ! real space from the joint index i_joint.
+    !
+    ! i_joint is a single integer from 1 to n1*n2*n3, which uniquely
+    ! labels all the points of the mesh.
+    !
+    ! i, j, k are the triple indices, which uniquely label all the points
+    ! of the mesh according to their coordinates in the mesh.
+    !
+    ! The 1st triple index loops fastest:
+    !   i_joint = i + (j-1)*n2 + (k-1)*n1*n2
+    !----------------------------------------------------------------------------!
 
-  end subroutine switch_indices_zyx
+    implicit none
+
+    integer, intent(in) :: n1, n2, n3
+    integer, intent(out) :: i_joint
+    integer, intent(in) :: i, j, k
+
+
+    i_joint = i + (j-1 + (k-1)*n2)*n1
+
+  end subroutine triple_to_joint_index_r
+
 
   subroutine generate_kmesh(kmesh,nk_1,nk_2,nk_3)
     !----------------------------------------------------------------------------!
     !     This subroutine builds the array of k vectors corresponding
-    !     to MP indices nk_1,nk_2,nk_3, ordered according to their singlet
+    !     to MP indices nk_1,nk_2,nk_3, ordered according to their joint
     !     index.
     !----------------------------------------------------------------------------!
     implicit none
@@ -500,15 +473,13 @@ end function intgr_spline_gaussq
 
     integer :: i, j, k
     integer :: ikpt, nkmesh
-    integer :: switch
+
 
     ! Build kmesh
     nkmesh = nk_1*nk_2*nk_3
 
-    switch = -1 ! singlet to triplet
-
     do ikpt = 1, nkmesh
-      call switch_indices(nk_1,nk_2,nk_3,ikpt,i,j,k,switch)
+      call joint_to_triple_index_g(nk_1,nk_2,nk_3,ikpt,i,j,k)
 
       kmesh(1, ikpt) = dble(i-1)/nk_1
       kmesh(2, ikpt) = dble(j-1)/nk_2
@@ -518,15 +489,16 @@ end function intgr_spline_gaussq
 
   end subroutine generate_kmesh
 
-  subroutine generate_and_allocate_kpath (at, bg, tpiba, nkpath, nkspecial, kspecial, kpath, dkpath)
+
+  subroutine generate_and_allocate_kpath(at, bg, tpiba, nkpath, nkspecial, kspecial, kpath, dkpath)
     ! --------------------------------------------------
     ! MBR 03/05/2024
     ! This generates the path of nearly equispaced k-points in cartesians
-    ! and convert to cryst at the end. 
+    ! and convert to cryst at the end.
     ! It works similar to Asier's method:
-    ! The total length of the path is calculated and a 
+    ! The total length of the path is calculated and a
     ! number of points per stage is assigned proportional
-    ! to the stage length. 
+    ! to the stage length.
     ! Each stage starts with a kspecial point.
     ! In the end it may happen that this routine generates a few less points
     ! in total than nkpath. In that case, this value is corrected and returned,
@@ -553,12 +525,12 @@ end function intgr_spline_gaussq
 
     ! total length (lpath) of the path by adding stages of length (lstage)
     do i=2,nkspecial
-       vec = kspecial_cart(:,i) - kspecial_cart(:,i-1) 
-       lstage(i-1) = sqrt( dot_product(vec,vec) ) 
-    end do   
+       vec = kspecial_cart(:,i) - kspecial_cart(:,i-1)
+       lstage(i-1) = sqrt( dot_product(vec,vec) )
+    end do
     lpath = sum(lstage)
 
-    ! number of points in the path per stage 
+    ! number of points in the path per stage
     do i=2,nkspecial
         nkstage(i-1) = int( real(nkpath-1,dp) * lstage(i-1) / lpath)
     end do
@@ -576,8 +548,8 @@ end function intgr_spline_gaussq
     do i=2,nkspecial
        ! stage i-1 starts in i-1-th, ends in i-th special point,
        ! but this i-th point is not included.
-       ! It contains nkstage(i-1) points 
-       do j=1, nkstage(i-1) 
+       ! It contains nkstage(i-1) points
+       do j=1, nkstage(i-1)
           ik = ik+1
           kpath(:,ik) = kspecial_cart(:,i-1) + &
                       (kspecial_cart(:,i) - kspecial_cart(:,i-1) ) * real(j-1,dp) / real(nkstage(i-1),dp)
@@ -717,7 +689,7 @@ end function intgr_spline_gaussq
     ! generates:
     !            - k_1BZ(3),   with 0 <= k_1BZ(i) < 1
     !            - G(3),       G(i) an integer
-    !            - i,j,k       the triplet coordinates of the point in the mesh.
+    !            - i,j,k       the triple coordinates of the point in the mesh.
     !
     ! It it EXTREMELY important to have a subroutine which performs this
     ! task in a defensive way. The fortran internal functions nint, floor,
@@ -743,7 +715,7 @@ end function intgr_spline_gaussq
     real(dp), intent(in) :: kpoint(3)                ! the kpoint of interest
 
     ! output
-    integer, intent(out) :: i, j, k                  ! the triplet coordinates of k_1BZ
+    integer, intent(out) :: i, j, k                  ! the triple coordinates of k_1BZ
     real(dp), intent(out) :: kpt_in_1BZ(3)           ! the k point in the 1BZ
     integer, intent(out) :: G(3)                     ! the translation vector
 
@@ -767,7 +739,7 @@ end function intgr_spline_gaussq
     G(2) = (nG_jm1 - jm1)/nk2
     G(3) = (nG_km1 - km1)/nk3
 
-    ! finally we have the triplet coordinates
+    ! finally we have the triple coordinates
     i = im1 + 1
     j = jm1 + 1
     k = km1 + 1
@@ -1206,7 +1178,7 @@ end function intgr_spline_gaussq
     real(dp), intent(out) :: rvec_WS_cryst(3)         ! vector in the WS cell
 
     ! internal variables
-    integer :: i, j, k                   ! the triplet coordinates of k_1BZ
+    integer :: i, j, k                   ! the triple coordinates of k_1BZ
     integer :: Rlat(3)                   ! the translation vector
 
 

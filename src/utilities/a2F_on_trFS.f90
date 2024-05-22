@@ -12,13 +12,13 @@
 
 program a2F_on_trFS
 
-        use kinds, only: dp    
+        use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
         use intw_utility, only: find_free_unit, cryst_to_cart, area_vec, smeared_delta, &
                 generate_kmesh
 
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
-                nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir, & !, fc_mat
+                nk1, nk2, nk3, nq1, nq2, nq3, nqirr, &
                 nomega, omega_ini, omega_fin, osmear_q, &
                 ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
         use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
@@ -85,7 +85,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 
 !================================================================================
 !       read the input file
-!       Read in the necessary information from standard input 
+!       Read in the necessary information from standard input
 !       (for this utility, only prefix needed, really)
 !================================================================================
 
@@ -132,17 +132,17 @@ do is=1,nfs_sheets_tot
    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+   file_off=trim(mesh_dir)//trim(prefix)//'.'//trim(adjustl(is_loc))//'_FS_tri.off'
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges) 
+   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
    close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is). 
+   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
    !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+   file_off=trim(mesh_dir)//trim(prefix)//'.'//trim(adjustl(is_loc))//'_newton_IBZ_FS_tri.off'
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
@@ -177,7 +177,7 @@ do is=1,nfs_sheets_tot
 
    ! .off file for this sheet
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+   file_off=trim(mesh_dir)//trim(prefix)//'.'//trim(adjustl(is_loc))//'_FS_tri.off'
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) comenta
@@ -220,7 +220,7 @@ do is=1,nfs_sheets_tot
    close(unit_off)
    ! velocity for this sheet (use same unit)
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
+   file_off=trim(mesh_dir)//trim(prefix)//'.'//trim(adjustl(is_loc))//'_FS_v_k.dat'
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) i
@@ -282,7 +282,7 @@ end do
 !================================================================================
 
   unit_ep=find_free_unit()
-  file_ep=trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
+  file_ep=trim(mesh_dir)//trim(prefix)//'_ep_interp.dat'
   inquire(file=file_ep,exist=have_ep)
 
   if (.not.have_ep) then
@@ -293,7 +293,7 @@ end do
      write(*,*) '!      Stopping                                               !'
      stop
 
-  else       
+  else
 
     ! Note, indices ikp,ik include all the calculated sheets
     allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
@@ -308,16 +308,16 @@ end do
            read(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpoint, &
                  (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
         end do
-        end do 
+        end do
     end do
-    end do        
+    end do
 
     close(unit_ep)
 
     write(*,*) '!     interpolated e-p elements read from file:               !'
-    write(*,*) file_ep         
+    write(*,*) file_ep
 
-  end if  
+  end if
 
 !================================================================================
 ! Read all the information about phonons and prepare for interpolation of phonons:
@@ -376,7 +376,7 @@ end do
 
   ! output file for a2F
   unit_a2f=find_free_unit()
-  file_a2f=trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+  file_a2f=trim(mesh_dir)//trim(prefix)//'_a2F_interp.dat'
   open(unit_a2f, file=file_a2f, status='unknown')
   write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
 
@@ -466,12 +466,12 @@ end do !k  (sheet)
   ! divide by N(E_F) and 1BZ volume
   ! TODO:
   ! DUDA con la normalizacion... para variar...
-  ! DUDA con el spin... 
+  ! DUDA con el spin...
   alpha2F=alpha2F/dosef/vol1bz
 
   !  print out by spin blocks
-  do is=1,nspin 
-  do js=1,nspin 
+  do is=1,nspin
+  do js=1,nspin
 
      write(unit_a2f,*) '#spins = ', is,js
 
@@ -483,7 +483,7 @@ end do !k  (sheet)
         omega = omega + omega_step
      end do
 
-     ! calculate lambda 
+     ! calculate lambda
      write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
      do imode = 1,3*nat
         lambda(imode) = 0.0_dp
@@ -511,5 +511,5 @@ end do !k  (sheet)
 
     deallocate(aep_mat_el)
 
-    stop     
+    stop
 end program a2F_on_trFS

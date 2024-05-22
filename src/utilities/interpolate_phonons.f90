@@ -2,103 +2,107 @@
 
 
 program interpolatephonons
-        ! Uses nnkp and ham_r files to write an interpolated band structure.
-        ! Additionally a .qpt with the path for band plotting is needed.
-        ! In principle, only those 4 files are needed by this utility,
-        ! with additional details for DOS given here explicitely.
+  ! Uses nnkp and ham_r files to write an interpolated band structure.
+  ! Additionally a .qpt with the path for band plotting is needed.
+  ! In principle, only those 4 files are needed by this utility,
+  ! with additional details for DOS given here explicitely.
 
-    use kinds, only: dp
-    use intw_useful_constants, only: cmplx_0, Ha_to_eV
-    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, switch_indices, &
-            generate_kmesh, cryst_to_cart, smeared_delta, &
-            generate_and_allocate_kpath
-    use intw_input_parameters, only: read_input, read_cards, &
-            nk1, nk2, nk3, mesh_dir, prefix, &
-            nq1, nq2, nq3, ph_dir, fc_mat, &
-            read_cards, exist_qpath, nqpath, nqspecial, qspecial, exist_kpath, &
-            nq1_dosph, nq2_dosph, nq3_dosph, &
-            nomega, omega_ini, omega_fin, osmear_q, read_for_dynmat
-    use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                            nat, nspin, bg, at, alat, tpiba
-    use intw_ph, only: nqmesh, qmesh, read_ph_information_xml
-    use intw_ph_interpolate
+  use kinds, only: dp
+  use intw_useful_constants, only: cmplx_0, Ha_to_eV
+  use intw_utility, only: find_free_unit, find_k_1BZ_and_G, &
+                          generate_kmesh, cryst_to_cart, smeared_delta, &
+                          generate_and_allocate_kpath
+  use intw_input_parameters, only: read_input, read_cards, &
+                                   nk1, nk2, nk3, mesh_dir, prefix, &
+                                   nq1, nq2, nq3, ph_dir, fc_mat, &
+                                   read_cards, exist_qpath, nqpath, nqspecial, qspecial, exist_kpath, &
+                                   nq1_dosph, nq2_dosph, nq3_dosph, &
+                                   nomega, omega_ini, omega_fin, osmear_q, read_for_dynmat
+  use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
+                          nat, nspin, bg, at, alat, tpiba
+  use intw_ph, only: nqmesh, qmesh, read_ph_information_xml
+  use intw_ph_interpolate
+
+  implicit none
+
+  character(256) :: fc_file_name, phband_file_name
+  logical        :: read_status
+  integer :: iq, nq, ir, iq1, iq2, iq3, iomega, imode
+  integer :: ph_unit, dos_unit
+  real(dp) :: omega_step, omega, rfacq
+  real(dp) :: qpoint(3), qpoint_cart(3), rcart(3)
+  real(dp) , allocatable :: qpath(:,:), dqpath(:), dosph(:,:)
+  real(dp) , allocatable :: qmesh_int(:,:), w2_qint(:), w_qint(:)
+  complex(dp) , allocatable :: dyn_qint(:,:), u_qint(:,:)
 
 
-!================================================================================
-!       Declare the variables
-!================================================================================
-    implicit none
+  !================================================================================
+  !       Talk to the user
+  !================================================================================
 
-    character(256) :: fc_file_name, phband_file_name
-    logical        :: read_status
-    integer :: iq, nq, ir, iq1, iq2, iq3, iomega, imode
-    integer :: ph_unit, dos_unit
-    real(dp) :: omega_step, omega, rfacq
-    real(dp) :: qpoint(3), qpoint_cart(3), rcart(3)
-    real(dp) , allocatable :: qpath(:,:), dqpath(:), dosph(:,:)
-    real(dp) , allocatable :: qmesh_int(:,:), w2_qint(:), w_qint(:)
-    complex(dp) , allocatable :: dyn_qint(:,:), u_qint(:,:)
+  write(*,'(A)') '====================================================='
+  write(*,'(A)') '|         program phonons interpolate               |'
+  write(*,'(A)') '|        ---------------------------------          |'
+  write(*,'(A)') '====================================================='
+  write(*,'(A)') '|    waiting for input file...                      |'
 
-!--------------------------------------------------------------------------------
-!================================================================================
-!       Talk to the user
-!================================================================================
-write(*,'(A)') '====================================================='
-write(*,'(A)') '|         program phonons interpolate               |'
-write(*,'(A)') '|        ---------------------------------          |'
-write(*,'(A)') '====================================================='
-write(*,'(A)') '|    waiting for input file...                      |'
 
-!================================================================================
-!       read the input file
-!       Read in the necessary information from standard input
-!================================================================================
-    call read_input(read_status)
- 
-    if (read_status ) then
-       stop
-    end if
+  !================================================================================
+  !       read the input file
+  !       Read in the necessary information from standard input
+  !================================================================================
 
-    ! generate q-list for phonon bands plot with special points in Q_PATH
-    call read_cards
-    if ( .not. exist_qpath) then
-       write(*,*)' Q_PATH not found. Phonon bands/DOS cannot be interpolated. Stopping.'
-       stop
-    end if        
+  call read_input(read_status)
 
-!================================================================================
-!       read the parameters from the SCF QE calculation
-!================================================================================
-    call read_parameters_data_file_xml()  
+  if (read_status ) stop
 
-!================================================================================
-!   Build qpoint path to plot bands.
-!   The nqpath number of points from the input might fluctuate.
-!================================================================================
+  ! generate q-list for phonon bands plot with special points in Q_PATH
+  call read_cards
+  if ( .not. exist_qpath) then
+    write(*,*)' Q_PATH not found. Phonon bands/DOS cannot be interpolated. Stopping.'
+    stop
+  end if
 
-    call generate_and_allocate_kpath (at, bg, tpiba, nqpath, nqspecial, qspecial, qpath, dqpath)
-    !write(*,*) nqpath
-    !do iq=1,nqpath
-    !   print *,  qpath(:,iq), dqpath
-    !end do
 
-!================================================================================
-!   Phonon meshes
-!================================================================================
+  !================================================================================
+  !       read the parameters from the SCF QE calculation
+  !================================================================================
 
-    nqmesh=nq1*nq2*nq3
-    allocate(qmesh(3,nqmesh))
-    call generate_kmesh(qmesh, nq1,nq2,nq3)
+  call read_parameters_data_file_xml()
 
-    ! Wigner-Seitz
-    call allocate_and_build_ws_irvec_q()
 
-    write(*,*) 'Meshes generated'
+  !================================================================================
+  !   Build qpoint path to plot bands.
+  !   The nqpath number of points from the input might fluctuate.
+  !================================================================================
+
+  call generate_and_allocate_kpath (at, bg, tpiba, nqpath, nqspecial, qspecial, qpath, dqpath)
+  !write(*,*) nqpath
+  !do iq=1,nqpath
+  !   print *,  qpath(:,iq), dqpath
+  !end do
+
+
+  !================================================================================
+  !   Phonon meshes
+  !================================================================================
+
+  nqmesh=nq1*nq2*nq3
+  allocate(qmesh(3,nqmesh))
+  call generate_kmesh(qmesh, nq1,nq2,nq3)
+
+  ! Wigner-Seitz
+  call allocate_and_build_ws_irvec_q()
+
+  write(*,*) 'Meshes generated'
+
 
   !================================================================================
   !       Read all the information about phonons and pseudopotentials
   !================================================================================
+
   call read_ph_information_xml()
+
 
   !================================================================================
   ! Read the force constant matrix from this file.
@@ -107,16 +111,16 @@ write(*,'(A)') '|    waiting for input file...                      |'
   !
   ! two options to get dyn_q:
   !
-  if (read_for_dynmat == 'fc' ) then ! read force constants
-          fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
-          call allocate_and_build_dyn_qmesh(fc_file_name)
-  else if (read_for_dynmat == 'dynq' ) then ! read dyn files        
-          call allocate_and_build_dyn_qmesh2()
-  end if        
+  if (trim(read_for_dynmat) == 'fc' ) then ! read force constants
+    fc_file_name = trim(mesh_dir)//trim(ph_dir)//trim(fc_mat)
+    call allocate_and_build_dyn_qmesh(fc_file_name)
+  else if (trim(read_for_dynmat) == 'dynq' ) then ! read dyn files
+    call allocate_and_build_dyn_qmesh2()
+  end if
   !
   ! transform to R space
   call dyn_q_to_dyn_r()
-  
+
   !do iq=1,nqmesh
   !   print *, iq, qmesh(:,iq), w2_q(:,iq)
   !end do
@@ -170,17 +174,17 @@ write(*,'(A)') '|    waiting for input file...                      |'
         ! Interpolate frequency in qpoint
         call dyn_interp_1q(qpoint, dyn_qint)
         call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
-        w_qint=sign(sqrt(abs(w2_qint)),w2_qint) 
+        w_qint=sign(sqrt(abs(w2_qint)),w2_qint)
         !phonon frequency in meV units: pass to Ry
         w_qint= w_qint*0.002_dp / Ha_to_eV
         ! Smear omega(q) for DOS (gaussian)
         do imode = 1,3*nat
            do iomega=1, nomega  !frequencies in Ry
               omega = omega_ini + omega_step*real(iomega-1,dp)
-              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)  
+              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)
               dosph(imode,iomega) = dosph(imode,iomega) + rfacq
-           end do   
-       end do    
+           end do
+       end do
 
    end do
    end do
@@ -198,8 +202,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
    end do
    close(ph_unit)
 
-   write(*,'(A)') '|  DOS sum test:                                    |' 
-   write(*,*)'       DOS integral (trapeze) = ', omega_step*sum(dosph(:,:)) 
+   write(*,'(A)') '|  DOS sum test:                                    |'
+   write(*,*)'       DOS integral (trapeze) = ', omega_step*sum(dosph(:,:))
    write(*,*)'       Number of modes =', 3*nat
    write(*,*)' Phonon DOS interpolation finished and written to file', phband_file_name
 

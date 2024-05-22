@@ -145,7 +145,7 @@ contains
     !                                        corresponds to G_fft(n1,n2,n3)
     !
     !             - It creates an array nl(ng), which returns the scalar
-    !               index "nl" corresponding to the triplet index (n1,n2,n3)
+    !               index "nl" corresponding to the triple index (n1,n2,n3)
     !               of the G vector gvec(ng).
     !
     !             - It computes the phases
@@ -153,7 +153,7 @@ contains
     !
     !------------------------------------------------------------------------
     use intw_reading, only: ngm, gvec, bg, nat, tau, ntyp, ityp, nr1, nr2, nr3
-    use intw_utility, only: switch_indices_zyx, cryst_to_cart
+    use intw_utility, only: triple_to_joint_index_r, cryst_to_cart
     use intw_useful_constants, only: tpi, cmplx_i
 
     implicit none
@@ -162,8 +162,6 @@ contains
 
     integer :: n1, n2, n3
     integer :: ng, na
-
-    integer :: switch
 
     logical :: assigned(nr1,nr2,nr3)
 
@@ -176,13 +174,11 @@ contains
     nl(:) = 0
     assigned = .false.
 
-    switch = 1   ! triplet - to - singlet index
-
 
 
     ! loop on all G vectors in the global array gvec
     do ng = 1, ngm
-      ! find the triplet index corresponding to the G_fft mesh
+      ! find the triple index corresponding to the G_fft mesh
       ! NOTE: the function "modulo" always returns a positive number in FORTRAN90
       !       the function "mod" is more dangerous.
 
@@ -211,12 +207,12 @@ contains
         ! compute the scalar index corresponding to n1,n2,n3 and
         ! assign it to nl(ng)
 
-        call switch_indices_zyx(nr1,nr2,nr3,nl(ng),n1,n2,n3,switch)
+        call triple_to_joint_index_r(nr1,nr2,nr3,nl(ng),n1,n2,n3)
 
       else
         write(*,*) 'ERROR in generate_nl. FFT mesh too small?'
         write(*,*) '    More than one G-vector in the gvec array are being'
-        write(*,*) '    assigned to the same FFT triplet (n1,n2,n3);      '
+        write(*,*) '    assigned to the same FFT triple (n1,n2,n3);       '
         write(*,*) '    this suggests that the FFT mesh (nr1,nr2,nr3) is  '
         write(*,*) '    too small.                                        '
 
@@ -286,7 +282,7 @@ contains
   end subroutine generate_nl
 !*******************************************************************************************************
 !-------------------------------------------------------------------------------------------------------
-  subroutine  wfc_by_expigr (kpoint, num_bands_intw, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
+  subroutine  wfc_by_expigr (kpoint, num_bands, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
     !-------------------------------------------------------------------------------------------------------
 
     use intw_reading, only: gvec, bg
@@ -297,15 +293,15 @@ contains
 
     !I/O variables
 
-    integer,intent(in) :: num_bands_intw,nspin,ng_max,list_iG_k_irr(nG_max) ! G vector indices for k_irr
+    integer,intent(in) :: num_bands, nspin, ng_max, list_iG_k_irr(nG_max) ! G vector indices for k_irr
     integer,intent(in) :: G_sym_l(3)                               ! G vector such that  R*k + G_sym_l = sym_l * k_irr
     real(dp),intent(in) :: kpoint(3)
-    complex(dp),intent(inout) :: wfc_k(ng_max,num_bands_intw,nspin)
+    complex(dp),intent(inout) :: wfc_k(ng_max,num_bands,nspin)
     integer,intent(out) :: list_iG_k(nG_max)                       ! G vector indices for k, sorted
 
     !local variables
 
-    complex(dp) :: wfc_k_irr(ng_max,num_bands_intw,nspin)
+    complex(dp) :: wfc_k_irr(ng_max,num_bands,nspin)
     integer :: list_iG(nG_max)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
@@ -349,7 +345,7 @@ contains
       !
       ! compute the wfc element
       !
-      do nb=1,num_bands_intw
+      do nb=1,num_bands
         do ispin=1,nspin
           !
           wfc_k(i,nb,ispin) = wfc_k_irr(p_i,nb,ispin)
@@ -372,7 +368,7 @@ contains
     !       p_i          = permutations(i)
     !       list_iG_k(i) = list_iG(p_i)
     !       ! compute the wfc element
-    !       do nb = 1,num_bands_intw
+    !       do nb = 1,num_bands
     !          do ispin=1,nspin
     !             wfc_k(i,nb,ispin) =  wfc_k_irr(p_i,nb,ispin)
     !          enddo
@@ -533,7 +529,7 @@ contains
   subroutine r_function_by_exp_igr (g, nfunc, nr1, nr2, nr3, fr, fr_exp_igr)
 
     use intw_reading, only: nspin
-    use intw_utility, only: switch_indices
+    use intw_utility, only: joint_to_triple_index_g
     use intw_useful_constants, only: tpi, cmplx_i
 
     implicit none
@@ -554,7 +550,7 @@ contains
 
         do ir=1,nr1*nr2*nr3
 
-          call switch_indices(nr1,nr2,nr3,ir,i,j,k,-1)
+          call joint_to_triple_index_g(nr1,nr2,nr3,ir,i,j,k)
 
           gr = tpi*(g(1)*(i-1)/nr1 + g(1)*(j-1)/nr2 + g(1)*(k-1)/nr3)
 

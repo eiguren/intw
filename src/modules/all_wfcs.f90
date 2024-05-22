@@ -25,7 +25,7 @@ contains
   !
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data_with_nG, nspin, num_bands_intw
+    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data, nspin, num_bands_intw
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -69,7 +69,7 @@ contains
 
     do i_folder=1,nkpoints_QE
       !
-      call get_K_folder_data_with_nG(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
+      call get_K_folder_data(i_folder,list_iG,wfc_g,QE_eig, ngk_all(i_folder))
       !
       !QE_eig_irr_all(i_folder,1:nbands)=QE_eig(1:nbands)
       QE_eig_irr_all(i_folder,:)=QE_eig(:)
@@ -94,13 +94,13 @@ contains
   end subroutine allocate_and_get_all_irreducible_wfc
 
 
-  subroutine get_psi_general_k_all_wfc(kpoint,list_iG,wfc_k,QE_eig)
+  subroutine get_psi_general_k_all_wfc(kpoint, list_iG, wfc_k, QE_eig)
 
     use intw_reading, only: s, ftau, nG_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: full_mesh, symlink, QE_folder_sym, QE_folder_nosym, &
                                apply_TR_to_wfc, rotate_wfc_test
-    use intw_utility, only: find_k_1BZ_and_G, switch_indices
+    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
     use intw_fft, only: wfc_by_expigr
     use intw_useful_constants, only : eps_5, ZERO
 
@@ -125,7 +125,7 @@ contains
 
     call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz,k_1bz,kpoint_1bz,G_plus)
     !
-    call switch_indices(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz,+1)
+    call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz)
     !
     if (full_mesh) then
       !

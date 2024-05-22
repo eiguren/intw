@@ -142,7 +142,7 @@ contains
   function rot_k_index(s_index, k_index, nk1, nk2, nk3, kmesh )
 
     use intw_reading, only: s
-    use intw_utility, only: find_k_1BZ_and_G, switch_indices
+    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
 
     implicit none
 
@@ -159,7 +159,7 @@ contains
 
     call find_k_1BZ_and_G(kpoint_rot,nk1,nk2,nk3,i ,j, k, kpoint_1bz, GKQ_bz)
 
-    call switch_indices (nk1, nk2, nk3, rot_k_index, i, j, k, +1)
+    call triple_to_joint_index_g(nk1, nk2, nk3, rot_k_index, i, j, k)
 
   end function rot_k_index
 
@@ -228,7 +228,6 @@ contains
 
   SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat, alat, at, ntyp, amass )
 
-    !use intw_set_asr, only: set_asr
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_1
     use intw_input_parameters, only: nq1, nq2, nq3, apply_asr
@@ -327,17 +326,15 @@ contains
        write(*,*)
        write(*,*) 'Applying ASR : ' ,asr
 
-       !call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,ibrav,tau_fc)
-
        !MBR 21/05/2024
        ! Instead of that set_asr module, use only the "simple" method
        ! (worked in the routine as real)
        if (apply_asr) then
           write(*,*)' Applying ASR (simple) to force constant matrix'
           call set_asr_frc(nq1, nq2, nq3, nat, frc_R)
-       end if   
+       end if
 
-       frc=frc_R*cmplx_1                   ! make it complex again
+       frc = frc_R*cmplx_1 ! make it complex again
        deallocate (zeu)
        deallocate(frc_R)
        ! End IGG
@@ -345,92 +342,88 @@ contains
   END SUBROUTINE readfc
 
 
-  !====================================================================
-  ! MBR 21/05/24
-  ! Apply ASR "simple" method:
-  !   set_asr_frc --> to the real-space force constant matrix 
-  !                   (real elements)
-  !   set_asr_dynr --> to the dynamical matrices after doing dynq_to_dynr
-  !====================================================================
+  subroutine set_asr_frc(n1, n2, n3, nat, frc_R)
+    !====================================================================
+    ! MBR 21/05/24
+    ! Apply ASR "simple" method to the real-space force constant matrix
+    !====================================================================
 
-   subroutine set_asr_frc(n1, n2, n3, nat, frc_R)
+    implicit none
 
-   implicit none
+    integer , intent(in) :: n1, n2, n3, nat
+    real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
 
-   integer , intent(in) :: n1, n2, n3, nat 
-   real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
+    ! Internal
+    integer :: i,j, iat, jat, i1,i2,i3
+    real(dp) :: suma
 
-   ! Internal
-   integer :: i,j, iat, jat, i1,i2,i3
-   real(dp) :: suma
+    do i=1,3  !coords.
+    do j=1,3
+      do iat=1,nat  !atom
+        suma = 0.0_dp
+        do jat=1,nat  !atom
+          do i1=1,n1  !lattice vectors
+          do i2=1,n2
+          do i3=1,n3
+            suma = suma + frc_R(i1,i2,i3,i,j,iat,jat)
+          end do
+          end do
+          end do !lattice vectors
+        end do !jat atom
+        frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
+      end do !iat atom
+    end do
+    end do !coords.
 
-   do i=1,3  !coords.
-   do j=1,3  
-        do iat=1,nat  !atom
-           suma=0.0_dp
-           do jat=1,nat  !atom
-              do i1=1,n1  !lattice vectors
-              do i2=1,n2
-              do i3=1,n3
-                   suma=suma+frc_R(i1,i2,i3,i,j,iat,jat)
-              end do
-              end do
-              end do !lattice vectors
-           end do !jat atom
-           frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
-        end do !iat atom
-   end do 
-   end do !coords.
-
-   return 
-   end subroutine set_asr_frc         
-
+   end subroutine set_asr_frc
 
 
    subroutine set_asr_dynq(nq, iq, nat, dynq)
+    !====================================================================
+    ! MBR 21/05/24
+    ! Apply ASR "simple" method to the dynamical matrices
+    !====================================================================
 
-   use intw_useful_constants, only: cmplx_1
-   implicit none
+    use intw_useful_constants, only: cmplx_1
 
-   integer , intent(in) :: nq, iq, nat
-   complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
+    implicit none
 
-   ! Internal
-   integer :: i,j, iat, jat,ir
-   complex(dp) :: suma
+    integer , intent(in) :: nq, iq, nat
+    complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
 
-      do i=1,3  !coords.
-      do j=1,3
-          do iat=1,nat  !atom
-             suma=0.0_dp
-             do jat=1,nat  !atom !sum over cells
-                 suma=suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  !iq is the q=0 index
-             end do !jat atom
-             dynq( (iat-1)*3+i, (iat-1)*3+j, : ) = dynq( (iat-1)*3+i, (iat-1)*3+j, : ) - suma
-          end do !iat atom
-      end do
-      end do !coords.
+    ! Internal
+    integer :: i,j, iat, jat,ir
+    complex(dp) :: suma
 
+    do i=1,3  !coords.
+    do j=1,3
+      do iat=1,nat  !atom
+        suma = 0.0_dp
+        do jat=1,nat  !atom !sum over cells
+          suma = suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  !iq is the q=0 index
+        end do !jat atom
+        dynq( (iat-1)*3+i, (iat-1)*3+j, : ) = dynq( (iat-1)*3+i, (iat-1)*3+j, : ) - suma
+      end do !iat atom
+    end do
+    end do !coords.
 
-   return
    end subroutine set_asr_dynq
 
 
-  !====================================================================
-      ! MBR 14/02/24
-      ! read dynamical matrices info from prefix.dyn_q(iq) files in
-      ! prefix.save.intw and store into dynq for all q-points
-      ! (each files contains the info of an irreducible q-point)
-  !====================================================================
-
-      subroutine read_dynq (dynq)
+  subroutine read_dynq (dynq)
+    !====================================================================
+    ! MBR 14/02/24
+    ! read dynamical matrices info from prefix.dyn_q(iq) files in
+    ! prefix.save.intw and store into dynq for all q-points
+    ! (each files contains the info of an irreducible q-point)
+    !====================================================================
 
       use intw_reading, only: ntyp, nat, at, amass, ityp
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
       use intw_utility, only: cryst_to_cart, find_free_unit, &
-              switch_indices, find_k_1BZ_and_G
+                              triple_to_joint_index_g, find_k_1BZ_and_G
       use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
-              apply_asr
+                                       apply_asr
 
       implicit none
 
@@ -517,7 +510,7 @@ contains
          call cryst_to_cart (1, qpoint, at, -1)
          ! find index in full list: iq
          call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
-         call switch_indices(nq1,nq2,nq3,iq,i,j,k,+1)
+         call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
 
          ! block: dynq matrix
          ! loop over atoms
@@ -564,20 +557,25 @@ contains
             write(*,*)' Failed to read dynq for iq= ',iq
          end if
       end do
-      if ( not(all_done) ) stop
 
+      !if ( not(all_done) ) stop
+      !ASIER 9/5/2024 gfortran does not admit the above with
+      !  486 |       if ( not(all_done) ) stop
+      !      |               1
+      !Error: ‘i’ argument of ‘not’ intrinsic at (1) must be INTEGER
+      !
+       if(.not.all_done) stop
+       !
+       !
       ! Apply ASR to q=0 matrix:
       ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0
-      if (apply_asr) then 
+      if (apply_asr) then
            write(*,*)' Applying ASR to all q vector indices'
            iq = 1 !q=0 index in mesh
            call set_asr_dynq(nqmesh, iq, nat, dynq)
-      end if        
+      end if
 
-      return
-      end subroutine read_dynq
-  !====================================================================
-      
+  end subroutine read_dynq
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
@@ -807,7 +805,7 @@ contains
   subroutine get_dv(qpoint, nmode, nspin, dv)
 !-------------------------------------------------------------------
 
-    use intw_utility, only: cmplx_trace, switch_indices, find_k_1BZ_and_G
+    use intw_utility, only: cmplx_trace, triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_reading, only: s, nr1, nr2,nr3
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
     use intw_input_parameters, only: nq1, nq2, nq3
@@ -834,7 +832,7 @@ contains
     ! We find the associated of qpoint in 1BZ (it usually is itself!)
     !
     call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint_1bz,GKQ_bz)
-    call switch_indices(nq1,nq2,nq3,q_index,i,j,k,+1)
+    call triple_to_joint_index_g(nq1,nq2,nq3,q_index,i,j,k)
     !
     ! We search the irr q related with qpoint and the sym.op. which gives
     ! qpoint from irr q
@@ -900,7 +898,7 @@ contains
   subroutine rot_dvq(q_point_crys,q_point_crys_irr,nr1,nr2,nr3,nmode,s_index,GKQ,dv_in,dv_out)
 !--------------------------------------------------------------------------------------------------------
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
-    use intw_utility, only: cmplx_ainv, switch_indices_zyx
+    use intw_utility, only: cmplx_ainv, triple_to_joint_index_r
     use intw_reading, only: s, ftau, nspin, spinorb_mag, at, bg, tau, nat
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
@@ -991,8 +989,8 @@ contains
                    if (rrj < 1) rrj=rrj+nr2
                    if (rri < 1) rri=rri+nr1
                    !
-                   call switch_indices_zyx(nr1,nr2,nr3,r_index,i,j,k,+1)
-                   call switch_indices_zyx(nr1,nr2,nr3,rr_index,rri,rrj,rrk,+1)
+                   call triple_to_joint_index_r(nr1,nr2,nr3,r_index,i,j,k)
+                   call triple_to_joint_index_r(nr1,nr2,nr3,rr_index,rri,rrj,rrk)
                    !
                    do na = 1, nat
                       !
@@ -1062,7 +1060,7 @@ contains
 
     use intw_reading, only: nspin
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
-    use intw_utility, only: switch_indices_zyx
+    use intw_utility, only: joint_to_triple_index_r
 
     implicit none
 
@@ -1079,7 +1077,7 @@ contains
 
     do ir=1,nr1*nr2*nr3
        !
-       call switch_indices_zyx(nr1,nr2,nr3,ir,i,j,k,-1)
+       call joint_to_triple_index_r(nr1,nr2,nr3,ir,i,j,k)
        !
        phase=tpi*(q(1)*real(i-1,dp)/nr1 + q(2)*real(j-1,dp)/nr2 + q(3)*real(k-1,dp)/nr3)
        !

@@ -580,8 +580,6 @@ contains
       if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
                         ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
-          !call get_plane_wave_matrix_element_convolution      &
-          !(G,list_iG_1,list_iG_2,wfc_1,wfc_2,pw_mat_el)
 
 
       else if ( trim(method) == 'FFT' ) then
