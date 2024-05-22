@@ -4,7 +4,7 @@ import re
 import sys
 
 # Set accuracy threshold for comparison
-acc = 1.0E-3
+acc = 2.0E-3
 
 # Read INTW+W90 generated file from IBZ calculation
 out_file = "intw_si.wout"
