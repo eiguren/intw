@@ -122,6 +122,7 @@ if (USE_QE)
 endif()
 if (USE_SIESTA)
   add_subdirectory(src/siesta2intw)
+  add_subdirectory(src/siesta2ph)
 endif()
 
 

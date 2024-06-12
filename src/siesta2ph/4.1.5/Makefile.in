@@ -1,0 +1,76 @@
+#
+#  Makefile for siesta2ph
+#
+
+VPATH=@SIESTA2PH_SRC_DIR@
+
+OBJDIR=@SIESTA_BUILD_DIR@
+
+SPGLIB=@SPGLIB@
+
+# ---------------------------------
+
+.SUFFIXES:
+.SUFFIXES: .f .F .o .a  .f90 .F90
+
+default: all
+ARCH_MAKE=$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
+
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL) # Make it non-recursive
+
+INCFLAGS += -I$(OBJDIR)
+
+FFLAGS += @SIESTA2INTW_FFLAGS@
+
+FPPFLAGS += @SIESTA2INTW_FPPFLAGS@
+
+# ---------------------------------
+
+PROGS = siesta2ph.x siesta2fc.x siesta2dv.x
+OBJS = siesta2ph_io.o siesta2ph_linalg.o siesta2ph_utils.o siesta2ph_system.o siesta2ph_symmetry.o \
+       spglib_f08.o
+
+
+SIESTA_LIB=$(OBJDIR)/libSiestaForces.a
+
+# Find all static libraries in OBJDIR
+OBJ_LIBS=$(shell find $(OBJDIR) -maxdepth 1 -name '*.a' ! -name 'libSiestaForces.a')
+# Group the libraries to be searched repeatedly until all possible references are resolved.
+# This helps to fix problems when the libraries are not in the correct order.
+OBJ_LIBS:=-Wl,--start-group $(OBJ_LIBS) -Wl,--end-group
+ALL_LIBS = $(OBJ_LIBS) $(LIBS) $(SPGLIB)
+
+all: $(PROGS)
+
+siesta2ph.x: siesta2ph.o $(OBJS) $(SIESTA_LIB)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
+
+siesta2fc.x: siesta2fc.o $(OBJS) $(SIESTA_LIB)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
+
+siesta2dv.x: siesta2dv.o $(OBJS) $(SIESTA_LIB)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
+
+$(SIESTA_LIB):
+	@( echo "Build libSiestaForces.a" \
+	 ; cd $(OBJDIR) \
+	 ; make \
+	 ; make lib )
+
+clean:
+	@echo " Cleaning up"
+	rm -f $(PROGS) *.o *.mod
+
+# Dependencies
+siesta2ph_io.o: siesta2ph_utils.o
+siesta2ph_linalg.o:
+siesta2ph_utils.o:
+siesta2ph_system.o: siesta2ph_io.o siesta2ph_linalg.o
+siesta2ph_symmetry.o: siesta2ph_io.o siesta2ph_system.o siesta2ph_linalg.o spglib_f08.o
+spglib_f08.o:
+siesta2ph.o: $(OBJS)
+siesta2fc.o: $(OBJS)
+siesta2dv.o: $(OBJS)
