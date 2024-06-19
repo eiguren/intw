@@ -118,7 +118,7 @@ contains
     use m_iorho, only: read_rho
     !
     use siesta2ph_io, only: outdir, v0dir, phdir, dx, nr1, nr2, nr3, dv_precision, lpm, phdir, dvscfdir, &
-                            pauli, irreducible_q, xsf, full_xsf
+                            irreducible_q, xsf, full_xsf
     use siesta2ph_system, only: nat, slabel, tau, tau_cryst, at, alat, ityp, atom_labels
     use siesta2ph_symmetry, only: nsite_sym, nsite_rot, irred_atm, irred_disp, site_atm, atom_mapping, site_s_cart, site_sinv, &
                                   nsym, s, ftau, s_cart, rtau_index
@@ -320,7 +320,7 @@ contains
         Node = 1 ! turn off again all siesta output
         !
         ! Transform to Pauli matrix representation on the NC case (as in QE)
-        if (pauli .and. nspin>=2) then
+        if (nspin>=2) then
           write(stdout,"(a)") "Pauli matrices representation"
           !
           call rho_from_spin_components_2_pauli_matrices(rhop)

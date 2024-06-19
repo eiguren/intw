@@ -5,8 +5,8 @@ module siesta2ph_io
   implicit none
 
   public :: stdin, stdout
-  public :: outdir, prefix, phdir, v0dir, dvscfdir, fc_file, kpath_file, &
-            nr1, nr2, nr3, dx, lpm, pauli, dv_precision, &
+  public :: outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
+            nr1, nr2, nr3, dx, lpm, dv_precision, &
             irreducible_q, xsf, full_xsf, verbose, use_sym
 
   public :: read_input, write_fdf, find_free_unit
@@ -18,18 +18,18 @@ module siesta2ph_io
   integer, parameter :: stdout = 6
 
   ! input variables
-  character(len=256) :: outdir, prefix, phdir, v0dir, dvscfdir, fc_file, kpath_file
+  character(len=256) :: outdir, prefix, phdir, v0dir, dvscfdir, kpath_file
   integer :: nr1, nr2, nr3
   real(kind=dp) :: dx
   logical :: lpm
   logical :: use_sym
   logical :: irreducible_q
-  logical :: xsf, full_xsf, pauli
+  logical :: xsf, full_xsf
   character(len=2) :: dv_precision
   logical :: verbose
   !
-  namelist / input / outdir, prefix, phdir, v0dir, dvscfdir, fc_file, kpath_file, &
-                     nr1, nr2, nr3, dx, lpm, pauli, dv_precision, &
+  namelist / input / outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
+                     nr1, nr2, nr3, dx, lpm, dv_precision, &
                      use_sym, irreducible_q, xsf, full_xsf, verbose
 
 
@@ -50,7 +50,6 @@ contains
     phdir = "ph/"
     v0dir = "v0/"
     dvscfdir = "dvscf/"
-    fc_file = "FORCE_CONSTANTS"
     kpath_file = ""
     nr1 = 1
     nr2 = 1
@@ -61,7 +60,6 @@ contains
     irreducible_q = .true.
     xsf = .false.
     full_xsf = .false.
-    pauli = .true.
     dv_precision = "dp"
     verbose = .false.
     !
@@ -78,7 +76,7 @@ contains
     !
     if (outdir(len(trim(outdir)):len(trim(outdir))+1) /= "/") outdir(len(trim(outdir))+1:len(trim(outdir))+2) = "/"
     if (phdir(len(trim(phdir)):len(trim(phdir))+1) /= "/") phdir(len(trim(phdir))+1:len(trim(phdir))+2) = "/"
-    if (phdir(len(trim(v0dir)):len(trim(v0dir))+1) /= "/") v0dir(len(trim(v0dir))+1:len(trim(v0dir))+2) = "/"
+    if (v0dir(len(trim(v0dir)):len(trim(v0dir))+1) /= "/") v0dir(len(trim(v0dir))+1:len(trim(v0dir))+2) = "/"
     if (dvscfdir(len(trim(dvscfdir)):len(trim(dvscfdir))+1) /= "/") dvscfdir(len(trim(dvscfdir))+1:len(trim(dvscfdir))+2) = "/"
 
   end subroutine read_input
