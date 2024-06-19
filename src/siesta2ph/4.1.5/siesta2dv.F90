@@ -420,20 +420,20 @@ contains
             do j=1,mesh_uc(2)
               do i=1,mesh_uc(1)
                 !
-                ! r on crystal coordinates
-                R(1) = real(i-1,dp)/mesh_uc(1)
-                R(2) = real(j-1,dp)/mesh_uc(2)
-                R(3) = real(k-1,dp)/mesh_uc(3)
+                ! r in supercell crystal coordinates
+                R(1) = real(i-1,dp)/mesh(1)
+                R(2) = real(j-1,dp)/mesh(2)
+                R(3) = real(k-1,dp)/mesh(3)
                 !
-                ! Rotate and translate the r vector
+                ! Rotate and translate the r vector in supercell crystal coordinates (s is in supercell crystal coordinates)
                 SR = matmul(s(:,:,isym), R) - ftau(:,isym)
                 !
-                ! Find the (i,j,k) indices of the rotated r
-                Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh(1)) + 1
-                Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh(2)) + 1
-                Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh(3)) + 1
-                ir = i + mesh(1)*(j-1) + mesh(1)*mesh(2)*(k-1)
-                Sir = Si + mesh(1)*(Sj-1) + mesh(1)*mesh(2)*(Sk-1)
+                ! Find the (i,j,k) indices of the rotated r in the unit cell
+                Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh_uc(1)) + 1
+                Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh_uc(2)) + 1
+                Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh_uc(3)) + 1
+                ir = i + mesh_uc(1)*(j-1) + mesh_uc(1)*mesh_uc(2)*(k-1)
+                Sir = Si + mesh_uc(1)*(Sj-1) + mesh_uc(1)*mesh_uc(2)*(Sk-1)
                 !
                 dvq_write(Sir,:,1) = coefx_cart(1)*dvq(ir,:,1) + coefx_cart(2)*dvq(ir,:,2) + coefx_cart(3)*dvq(ir,:,3)
                 dvq_write(Sir,:,2) = coefy_cart(1)*dvq(ir,:,1) + coefy_cart(2)*dvq(ir,:,2) + coefy_cart(3)*dvq(ir,:,3)
@@ -508,26 +508,28 @@ contains
                 do j=1,mesh(2)
                   do i=1,mesh(1)
                     !
-                    ! r on crystal coordinates
+                    ! r in supercell crystal coordinates
                     R(1) = real(i-1,dp)/mesh(1)
                     R(2) = real(j-1,dp)/mesh(2)
                     R(3) = real(k-1,dp)/mesh(3)
                     !
-                    ! Rotate and translate the r vector
+                   ! Rotate and translate the r vector in supercell crystal coordinates (s is in supercell crystal coordinates)
                     SR = matmul(s(:,:,isym), R) - ftau(:,isym)
                     !
-                    ! Find the (i,j,k) indices of the rotated r
+                    ! Find the (i,j,k) indices of the rotated r in the supercell
                     Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh(1)) + 1
                     Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh(2)) + 1
                     Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh(3)) + 1
                     ir = i + mesh(1)*(j-1) + mesh(1)*mesh(2)*(k-1)
                     Sir = Si + mesh(1)*(Sj-1) + mesh(1)*mesh(2)*(Sk-1)
                     !
-                    if (Sk.ne.kind) cycle
-                    !
-                    if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*dv_rot(ir,ispin,1) + coefx_cart(2)*dv_rot(ir,ispin,2) + coefx_cart(3)*dv_rot(ir,ispin,3)
-                    if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*dv_rot(ir,ispin,1) + coefy_cart(2)*dv_rot(ir,ispin,2) + coefy_cart(3)*dv_rot(ir,ispin,3)
-                    if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*dv_rot(ir,ispin,1) + coefz_cart(2)*dv_rot(ir,ispin,2) + coefz_cart(3)*dv_rot(ir,ispin,3)
+                    if (Sk==kind) then
+                      !
+                      if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*dv_rot(ir,ispin,1) + coefx_cart(2)*dv_rot(ir,ispin,2) + coefx_cart(3)*dv_rot(ir,ispin,3)
+                      if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*dv_rot(ir,ispin,1) + coefy_cart(2)*dv_rot(ir,ispin,2) + coefy_cart(3)*dv_rot(ir,ispin,3)
+                      if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*dv_rot(ir,ispin,1) + coefz_cart(2)*dv_rot(ir,ispin,2) + coefz_cart(3)*dv_rot(ir,ispin,3)
+                      !
+                    endif
                     !
                   enddo
                 enddo
@@ -594,26 +596,28 @@ contains
                   do j=1,mesh(2)
                     do i=1,mesh(1)
                       !
-                      ! r on crystal coordinates
+                      ! r in supercell crystal coordinates
                       R(1) = real(i-1,dp)/mesh(1)
                       R(2) = real(j-1,dp)/mesh(2)
                       R(3) = real(k-1,dp)/mesh(3)
                       !
-                      ! Rotate and translate the r vector
+                      ! Rotate and translate the r vector in supercell crystal coordinates (s is in supercell crystal coordinates)
                       SR = matmul(s(:,:,isym), R) - ftau(:,isym)
                       !
-                      ! Find the (i,j,k) indices of the rotated r
+                      ! Find the (i,j,k) indices of the rotated r in the the supercell
                       Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh(1)) + 1
                       Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh(2)) + 1
                       Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh(3)) + 1
                       ir = i + mesh(1)*(j-1) + mesh(1)*mesh(2)*(k-1)
                       Sir = Si + mesh(1)*(Sj-1) + mesh(1)*mesh(2)*(Sk-1)
                       !
-                      if (Sk.ne.kind) cycle
-                      !
-                      if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*dvvq(ir,ispin,1) + coefx_cart(2)*dvvq(ir,ispin,2) + coefx_cart(3)*dvvq(ir,ispin,3)
-                      if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*dvvq(ir,ispin,1) + coefy_cart(2)*dvvq(ir,ispin,2) + coefy_cart(3)*dvvq(ir,ispin,3)
-                      if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*dvvq(ir,ispin,1) + coefz_cart(2)*dvvq(ir,ispin,2) + coefz_cart(3)*dvvq(ir,ispin,3)
+                      if (Sk==kind) then
+                        !
+                        if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*dvvq(ir,ispin,1) + coefx_cart(2)*dvvq(ir,ispin,2) + coefx_cart(3)*dvvq(ir,ispin,3)
+                        if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*dvvq(ir,ispin,1) + coefy_cart(2)*dvvq(ir,ispin,2) + coefy_cart(3)*dvvq(ir,ispin,3)
+                        if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*dvvq(ir,ispin,1) + coefz_cart(2)*dvvq(ir,ispin,2) + coefz_cart(3)*dvvq(ir,ispin,3)
+                        !
+                      endif
                       !
                     enddo
                   enddo
@@ -630,6 +634,9 @@ contains
         enddo ! iq
         !
         write(stdout,*) "- Writing dvq xsf files..."
+        !
+        deallocate(rho_xsf)
+        allocate(rho_xsf(mesh_uc(1),mesh_uc(2)))
         !
         do iq = 1, nqirr
           !
@@ -672,42 +679,44 @@ contains
                 !
                 kind = nint( x0(3)*mesh(3) ) + 1
                 !
-                x0 = matmul(at, x0) ! we need x0 in cartesian coordinates
+                x0 = matmul(at_uc, x0) ! we need x0 in cartesian coordinates
                 !
-                e1 = at(:,1)
-                e2 = at(:,2)
+                e1 = at_uc(:,1)
+                e2 = at_uc(:,2)
                 !
                 rho_xsf = 0.0_dp
                 do k=1,mesh_uc(3)
                   do j=1,mesh_uc(2)
                     do i=1,mesh_uc(1)
                       !
-                      ! r on crystal coordinates
-                      R(1) = real(i-1,dp)/mesh_uc(1)
-                      R(2) = real(j-1,dp)/mesh_uc(2)
-                      R(3) = real(k-1,dp)/mesh_uc(3)
+                      ! r in supercell crystal coordinates
+                      R(1) = real(i-1,dp)/mesh(1)
+                      R(2) = real(j-1,dp)/mesh(2)
+                      R(3) = real(k-1,dp)/mesh(3)
                       !
-                      ! Rotate and translate the r vector
+                      ! Rotate and translate the r vector in supercell crystal coordinates (s is in supercell crystal coordinates)
                       SR = matmul(s(:,:,isym), R) - ftau(:,isym)
                       !
-                      ! Find the (i,j,k) indices of the rotated r
-                      Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh(1)) + 1
-                      Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh(2)) + 1
-                      Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh(3)) + 1
-                      ir = i + mesh(1)*(j-1) + mesh(1)*mesh(2)*(k-1)
-                      Sir = Si + mesh(1)*(Sj-1) + mesh(1)*mesh(2)*(Sk-1)
+                      ! Find the (i,j,k) indices of the rotated r in the unit cell
+                      Si = mod(nint(mod(SR(1)+1.0_dp,1.0_dp)*mesh(1)), mesh_uc(1)) + 1
+                      Sj = mod(nint(mod(SR(2)+1.0_dp,1.0_dp)*mesh(2)), mesh_uc(2)) + 1
+                      Sk = mod(nint(mod(SR(3)+1.0_dp,1.0_dp)*mesh(3)), mesh_uc(3)) + 1
+                      ir = i + mesh_uc(1)*(j-1) + mesh_uc(1)*mesh_uc(2)*(k-1)
+                      Sir = Si + mesh_uc(1)*(Sj-1) + mesh_uc(1)*mesh_uc(2)*(Sk-1)
                       !
-                      if (Sk.ne.kind) cycle
-                      !
-                      if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*real(dvq(ir,ispin,1)) + coefx_cart(2)*real(dvq(ir,ispin,2)) + coefx_cart(3)*real(dvq(ir,ispin,3))
-                      if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*real(dvq(ir,ispin,1)) + coefy_cart(2)*real(dvq(ir,ispin,2)) + coefy_cart(3)*real(dvq(ir,ispin,3))
-                      if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*real(dvq(ir,ispin,1)) + coefz_cart(2)*real(dvq(ir,ispin,2)) + coefz_cart(3)*real(dvq(ir,ispin,3))
+                      if (Sk==kind) then
+                        !
+                        if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*real(dvq(ir,ispin,1)) + coefx_cart(2)*real(dvq(ir,ispin,2)) + coefx_cart(3)*real(dvq(ir,ispin,3))
+                        if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*real(dvq(ir,ispin,1)) + coefy_cart(2)*real(dvq(ir,ispin,2)) + coefy_cart(3)*real(dvq(ir,ispin,3))
+                        if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*real(dvq(ir,ispin,1)) + coefz_cart(2)*real(dvq(ir,ispin,2)) + coefz_cart(3)*real(dvq(ir,ispin,3))
+                        !
+                      endif
                       !
                     enddo
                   enddo
                 enddo
                 !
-                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh(1), mesh(2), at, alat, nat, tau, atom_labels, ityp, xsfiounit, trim(outdir)//trim(phdir)//trim(xsf_file))
+                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh_uc(1), mesh_uc(2), at_uc, alat, nat_uc, tau(:,1:nat_uc), atom_labels(1:nat_uc), ityp(1:nat_uc), xsfiounit, trim(outdir)//trim(phdir)//trim(xsf_file))
                 !
               enddo ! id
               !
