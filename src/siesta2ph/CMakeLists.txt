@@ -106,4 +106,7 @@ if(USE_SIESTA)
     DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
     )
 
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/utils/run-disps.bash.in"
+                 "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/run-disps.x" @ONLY)
+
 endif()
