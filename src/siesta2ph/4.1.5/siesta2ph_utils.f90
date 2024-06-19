@@ -148,6 +148,8 @@ contains
     write(iounit,"(a)") "END_DATAGRID_2D"
     write(iounit,"(a)") "END_BLOCK_DATAGRID_2D"
 
+    close(iounit)
+
   END subroutine xsf_datagrid_2d
 
 
