@@ -3,6 +3,7 @@
   prefix="si"
   nk1=8, nk2=8, nk3=8
   cutoff=40.0
+  nbnd_final=1
   nbnd_final=4
   use_sym=.true.
 /

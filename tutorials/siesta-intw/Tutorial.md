@@ -6,8 +6,8 @@
 ### Table of contents
 - [Silicon band structure with SIESTA and Wannier](#silicon-band-structure-with-siesta-and-wannier)
    - [Band structure Calculation with SIESTA](#band-structure-calculation-with-siesta)
-   - [SIESTA's Wannier90 interface](#siestas-wannier90-interface)
    - [intw's Wannier90 interface](#intws-wannier90-interface)
+   - [SIESTA's Wannier90 interface](#siestas-wannier90-interface)
 - [Graphene phonon dispersion](#graphene-phonon-dispersion)
 - [Copper electron-phonon matrix elements](#copper-electron-phonon-matrix-elements)
 
@@ -21,12 +21,12 @@ The input for the calculation is given in Flexible Data Format (FDF).
 
 ## Silicon band structure with SIESTA and Wannier
 
-In this example, first of all, we will do a small introduction to a band structure calculation with SIESTA. In second place, we will see how is used SIESTA's interface to `wannier90.x`, comparing the wannierized band structure with the original SIESTA calculation. And finally, we will show how to use the interface `siesta2intw.x`, doing the wannierization using intw's `intw2W90.x` utility and, comparing the band structure wannierized with intw and the SIESTA's one.
+In this example, first of all, we will do a small introduction to a band structure calculation with SIESTA. And in second place, we will see how to use the interface `siesta2intw.x` and intw's `intw2W90.x` utility to construct the Wannier functions, comparing the Wannier interpolated band structure with SIESTA's band structure. At the end, we will also show how can be used SIESTA's own interface to `wannier90.x`.
 
 All files to run this example can be found in the `1-silicon` directory.
 
 ```
-$ ls
+$ ls 1-silicon/
 intw.in                 s2intw.in    si.win
 bands_siesta2nxy.bash   silicon.fdf
 bands_wannier2nxy.bash  Si.psf
@@ -36,7 +36,7 @@ bands_wannier2nxy.bash  Si.psf
 
 ### Band structure calculation with SIESTA
 
-First, lets check the `silicon.fdf` input file:
+First, let's take a look at the input `silicon.fdf` file where the system and the different calculation parameters are specified:
 
 - System name and label:
 
@@ -80,7 +80,6 @@ First, lets check the `silicon.fdf` input file:
 
    ```
    PAO.BasisSize          DZ
-   # PAO.EnergyShift        300 meV
    ```
 
 - Self-consistent loop:
@@ -89,7 +88,7 @@ First, lets check the `silicon.fdf` input file:
    DM.UseSaveDM           true
    DM.MixingWeight        0.3
    DM.NumberPulay         3
-   DM.Tolerance           1.d-4
+   DM.Tolerance           1.d-5
    ```
 
 - Electronic structure parameters:
@@ -126,97 +125,37 @@ First, lets check the `silicon.fdf` input file:
    %endblock BandPoints
    ```
 
-After this small introduction of some of the fdf parameters we will run the calculation:
+After taking a look at the parameters used in the fdf, we can run the calculation by typing:
 
 ```
 siesta < silicon.fdf | tee silicon.out
 ```
 
-SIESTA produces many output files:
-
-```
-0_NORMAL_EXIT
-BASIS_ENTHALPY
-BASIS_HARRIS_ENTHALPY
-CLOCK
-fdf-40145.log
-FORCE_STRESS
-INPUT_TMP.40124
-MESSAGES
-NON_TRIMMED_KP_LIST
-OUTVARS.yml
-PARALLEL_DIST
-si.bands
-si.bib
-si.BONDS
-si.BONDS_FINAL
-si.DM
-si.EIG
-si.FA
-Si.ion
-Si.ion.xml
-si.KP
-si.ORB_INDX
-si.STRUCT_OUT
-si.XV
-```
-
-Files that might be important for us are `si.bands` (band structure), `si.DM` (density matrix), `si.EIG` (eigenvalues), `si.FA` (forces), `Si.ion` and `Si.ion.xml` (basis orbitals and non-local PP) and `si.KP` (k-points).
-
-Now that we know what contains each output file, let's plot the band structure. SIESTA has it's own code to transform `si.bands` into a format suitable for plotting, but for this tutorial I have prepared a script to do it in a faster way using `xmgrace`:
+SIESTA produces many output files, such as `si.DM` for the density matrix, `si.EIG` for the eigenvalues, `si.FA` for the atomic forces, `Si.ion` and `Si.ion.xml` for the basis orbitals and non-local pseudo-potential, or `si.KP` for the k-points (see SIESTA's documentation for more information). But, for this example, we are interested in the `si.bands` file, which contains the band structure. However, in order to plot the band structure the `si.bands` file needs to be transformed to a format suitable for plotting. Although SIESTA has its own code for that (`gnubands`), in this tutorial we have prepared a script for simplicity:
 
 ```
 ./bands_siesta2nxy.bash > bands_siesta.dat
+```
+
+This script transforms the `si.bands` file into a format that can be easily plotted with different programs:
+
+```
 xmgrace -nxy bands_siesta.dat
 ```
 
+or
+
+```
+gnuplot -p -e "p for [c=2:*] 'bands_siesta.dat' u 1:c w l lc 'black'"
+```
+
+
 [Back to top :arrow_heading_up:](#using-intw-with-siesta)
 
-
-### SIESTA's Wannier90 interface
-
-```
-wannier90.x -pp si
-```
-
-To run `wannier90.x`, we just have to add the following lines to the fdf:
-
-```
-Siesta2Wannier90.WriteMmn true
-Siesta2Wannier90.WriteAmn true
-Siesta2Wannier90.WriteEig true
-```
-
-Then, run SIESTA again:
-
-```
-siesta < silicon.fdf | tee silicon.out
-```
-
-And rename `si.eigW`:
-
-```
-mv si.eigW si.eig
-```
-
-Finally, run `wannier90.x`:
-
-```
-wannier90.x si
-```
-
-and compare the bands:
-
-```
-./bands_wannier2nxy.bash > bands_wannier_siesta.dat
-xmgrace -nxy bands_siesta.dat bands_wannier_siesta.dat
-```
-
-[Back to top :arrow_heading_up:](#using-intw-with-siesta)
 
 ### intw's Wannier90 interface
 
-First of all, we have to run `siesta2intw.x`. For that, let's check the `s2intw.in` file:
+In this second part, we will learn how to interpolate the band structure using intw and `wannier90.x`. In order to constructing the Wannier functions with `wannier90.x` the `si.amn`, `si.mmn` and `si.eig` files are needed. intw's `intw2W90.x` utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for intw by running the interface `siesta2intw.x`. So, let's check the `s2intw.in` input file:
 
 ```
 $ cat s2intw.in
@@ -225,6 +164,7 @@ $ cat s2intw.in
   prefix="si"
   nk1=8, nk2=8, nk3=8
   cutoff=40.0
+  nbnd_initial=1
   nbnd_final=4
   use_sym=.true.
 /
@@ -232,15 +172,17 @@ $ cat s2intw.in
 
 :heavy_exclamation_mark:WARNING: `s2intw.in` can't have any other name.
 
-:heavy_exclamation_mark:NOTE: `nk1`, `nk2` and `nk3` don't need to match the k-points of the SIESTA calculation. `siesa2intw.x` will execute a normal self-consistent SIESTA calculation, and it will run a non self-consistent at the end for the k-mesh specified by `nk1`, `nk2` and `nk3`.
+The `outdir` and `prefix` variables specify where will be placed the `si.save.intw` directory and the label used in the siesta calculation, respectively. `nk1`, `nk2` and `nk3` indicate the k-mesh where the Fourier transform of the wave functions will be computed, being `cutoff` the plane-wave cut-off for the wave functions. `nbnd_initial` and `nbnd_final` can be specified to reduce the amount of wave functions to be transformed. And finally, the `use_sym` variable is used to reduce the number of k-points by using the symmetry of the system.
 
-Now we can run `siesta2intw.x`:
+:heavy_exclamation_mark:NOTE: `nk1`, `nk2` and `nk3` don't need to match the k-points of the SIESTA calculation. `siesa2intw.x` will execute a normal self-consistent SIESTA calculation, and then, it will run a non self-consistent calculation to compute the wave functions for the k-points specified by `nk1`, `nk2` and `nk3`.
+
+Now we can run `siesta2intw.x` by typing:
 
 ```
 siesta2intw.x < silicon.fdf | tee siesta2intw.out
 ```
 
-This creates the `si.save.intw` directory:
+This creates the `si.save.intw` directory with all the information about the system in a format readable by intw:
 
 ```
 $ tree si.save.intw
@@ -257,9 +199,20 @@ si.save.intw/
 └── wfc00029.dat
 ```
 
-All the data read by intw is written here, and therefore, now we can already run intw in the same way as if we were using Quantum Espresso.
+`1-KBPP.txt` contains the pseudo-potential in its Kleyman-Bylander form. `crystal.dat` stores all the information related to the unit cell, symmetries, etc. `wfc00001.dat` to `wfc00029.dat` contain the Fourier transform of the wave functions for each k-point, where the list of k-points is given in `kpoints.dat`. Finally, `gvectors.dat` contains the global list of G-vectors used in the Fourier transform and `iGlist.dat` has the lists of G-vectors for each k-point.
 
-First, lets check the input file for intw:
+All the data read by intw is written here, and therefore, now we can already run intw in the same way as if we were using Quantum Espresso and `pw2intw.x`.
+
+To create the `si.amn`, `si.mmn` and `si.eig` files we have to run `wannier90.x` in pre-processing mode first to create the nnkp file:
+
+```
+wannier90.x -pp si
+```
+
+Since the aim of this tutorial is not to show how to use wannier, we will not analyze the `si.win` file, but for the curious, since we have specified the band range from `nbnd_initial=1` to `nbnd_final=4` in `siesta2intw.x` we will use four s-orbitals, centered in the bonds, as our initial guess.
+
+Now, that we have the `si.save.intw` and the `si.nnkp` file, we can run `intw2W90.x` to generate the `si.amn`, etc. But
+first, let's check the input file for intw:
 
 ```
 $ cat intw.in
@@ -281,45 +234,79 @@ $ cat intw.in
 /
 ```
 
-To create the `si.amn`, `si.mmn` and `si.eig` files:
+In the `input` namelist, `mesh_dir` indicates where is placed the `si.save.intw` directory, and `prefix` the label used in SIESTA. `nk1`, `nk2` and `nk3` indicate the k-mesh, which must be the same used for `siesta2intw.x`, and `TR_symmetry` indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not. In the `intw2W` namelist, `intw2W_fullzone` indicates wether the full Brillouin zone is present in the `si.save.intw` directory or not, while `intw2W_method` specifies the method used to compute the amm's. Finally, the `ph` namelist is empty in this example, but it is used to specify information about the phonon structure.
+
+Now, we can run `intw2W90.x` by tying:
 
 ```
-rm si.amn si.mmn si.eig
 intw2W90.x < intw.in | tee intw2W90.out
 ```
 
-And finally run `wannier90.x`:
+Which will create `si.amn`, `si.mmn` and `si.eig` files, and finally we can run `wannier90.x`:
 
 ```
-rm si_band.dat
 wannier90.x si
 ```
 
-and compare the bands:
+This will construct the Wannier functions, and use them to interpolate the band structure. The interpolated band structure can be found in `si_bands.dat` and can be plotted using the `gnuplot` script `si_bands.gnu`. However, in order to compare the interpolated bands with the original bands calculated with SIESTA, for simplicity, we have prepared an script to write the bands in the same format used previously:
 
 ```
 ./bands_wannier2nxy.bash > bands_wannier_intw.dat
-xmgrace bands_wannier_siesta.dat bands_wannier_intw.dat
-gvimdiff bands_wannier_siesta.dat bands_wannier_intw.dat
 ```
+
+And therefore, the band structure can be compared directly by
+
+```
+xmgrace -nxy bands_siesta.dat -nxy bands_wannier_intw.dat
+```
+
+or by
+
+```
+gnuplot -p -e "p for [c=2:*] 'bands_siesta.dat' u 1:c w l lc 'black', for [c=2:*] 'bands_wannier_intw.dat' u 1:c w l lc 'red'"
+```
+
+
+[Back to top :arrow_heading_up:](#using-intw-with-siesta)
+
+
+### SIESTA's Wannier90 interface
+
+
+SIESTA has its own interface to `wannier90.x`, so `si.mmn`, `si.amn` and `si.eig` files can be generated adding the following lines to the input fdf file:
+
+```
+Siesta2Wannier90.WriteMmn true
+Siesta2Wannier90.WriteAmn true
+Siesta2Wannier90.WriteEig true
+```
+
+:heavy_exclamation_mark:NOTE: Remember executing `wannier90.x` in pre-processing mode to create the `si.nnkp` file before executing SIESTA.
+
 
 [Back to top :arrow_heading_up:](#using-intw-with-siesta)
 
 
 ## Graphene phonon dispersion
 
-:heavy_exclamation_mark:NOTE: It is important to first relax the structure, and then use `MD.Steps 0` for the relaxed structure.
+intw contains set of utilities to compute phonon structures using SIESTA and finite differences, `siesta2ph`, which consists of three independent utilities: `siesta2ph.x`, `siesta2fc.x` and `siesta2dv.x`.
 
-:heavy_exclamation_mark:NOTE: In order to compute the induced potential `SaveTotalPotential T` must be added to de fdf (if you only want to compute the force constants it's not needed).
+The first one, `siesta2ph.x`, reads SIESTA's fdf file, creates a super-cell of the system and computes the minimum set of atomic displacements needed to compute the phonon structure (the irreducible displacements), creating all the fdf input files to run SIESTA.
 
-Folder `2-graphene` has all the files needed to compute the phonon dispersion of graphene:
+Then, once SIESTA has been executed for all the irreducible displacements, `siesta2fc.x` can be used to compute the interatomic force constants and dynamical matrices of the system, or, optionally, to compute the phonon dispersion along a path, and `siesta2dv.x` can be used to compute the potential induced by the displacement of the atoms from their equilibrium positions, which is an essential quantity to compute electron-phonon matrix elements.
+
+
+In this example we will learn how to use this utilities to compute the interatomic force constants, the dynamical matrices and the phonon dispersion of graphene, together with the induced potential.
+
+Folder `2-graphene` has all the files needed to run this example:
 
 ```
-$ ls
+$ ls 2-graphene
 C.psf  graphene.fdf  path.dat  siesta2ph.in
 ```
 
-Let's check the `siesta2ph.in` file:
+
+First of all, let's check the input file for all the three utilities of `siesta2ph`:
 
 ```
 $ cat siesta2ph.in
@@ -342,14 +329,15 @@ $ cat siesta2ph.in
 /
 ```
 
+`prefix` specifies the actual fdf file of the system being studied. `v0dir` and `phdir` can be used to properly organize all the files generated by `siesta2ph.x`. `v0dir` and `phdir` specify where will be located the fdf of the super-cell used in the phonon structure calculation, and where will be created the fdf files for the irreducible displacements, respectively. `nr1`, `nr2` and `nr3` indicate the size of the super-cell to be used, while `dx` is the amplitude used for the atomic displacements in Bohr atomic units. `lpm` can be used to displace the atoms also in the negative direction in order to use a more precise second order centered finite difference formula. `use_sym` is used to specify whether symmetries will be used to calculate irreducible displacements or whether all atoms will be displaced in all directions. On the other hand, `irreducible_q` is used to indicate if the dynamical matrices and induced potentials will be computed for the whole q-points commensurate with `nr1`, `nr2` and `nr3`, or just for the irreducible q-points. The `kpath_file` variable designates the name of the file where the k-path for computing the phonon dispersion is stored. While `xsf` indicates if the induced potentials are stored in a 2D XSF file to be plotted by XCrysDen, `full_xsf` determines if the xsf files are stored only for the irreducible displacements, or for all possible atomic displacements. Additionally, `dv_precision` specifies the precision used to compute the induced potentials, and can be used to reduce the amount of disk space used. And finally, `verbose` specifies the level of verbosity of the output.
 
-1. The first step is to create the fdf files for the irreducible displacements:
+1. The first step to compute the phonon structure with `siesta2ph` is to create the fdf files for the irreducible displacements using `siesta2ph.x`:
 
    ```
    siesta2ph.x < siesta2ph.in | tee siesta2ph.out
    ```
 
-   This creates all the directory structure and the fdf files:
+   This creates all the directory structure and the fdf files needed:
 
    ```
    $ tree 441/
@@ -364,12 +352,14 @@ $ cat siesta2ph.in
    │   └── disp-0004
    │       └── supercell-graphene.fdf
    └── v0
-       └── supercell-graphene.fdf
+         └── supercell-graphene.fdf
    ```
 
-2. The next step is to run all the supercell calculations.
+   :heavy_exclamation_mark:NOTE: Notice that even if only two irreducible displacements have been found by `siesta2ph.x`, four displacement files have been created because `lpm=.true.` has been specified in the input.
 
-   Usually, it is very convenient to run first the calculation of the supercell with the atoms in the equilibrium position (`v0`), in order to use the density matrix of this calculation as starting point for the displaced atoms calculations:
+2. Once that all the fdf files have been created for all the irreducible displacements, the next step is to execute a SIESTA calculation for each of them.
+
+   Usually, it is very convenient to run first the calculation of the super-cell with the atoms in their equilibrium positions (the fdf in `v0`), in order to use the density matrix of this calculation as starting point for the displaced atoms calculations:
 
    ```
    cp C.psf 441/v0/
@@ -377,47 +367,37 @@ $ cat siesta2ph.in
    mpirun -n 4 siesta < supercell-graphene.fdf | tee out
    ```
 
-   And after this, I wrote a bash script to run all the calculations easily:
+   And after this, we can execute the calculations for all the displacements by using an script included in `siesta2ph` for this purpose:
 
    ```
    cd ../../
    run-disps.x --dm 441/v0/g.DM -n 4 -v 441/0.01/
    ```
 
-   :heavy_exclamation_mark:NOTE: At this moment, running the `v0` calculation is mandatory, as some of it's output is read by `siesta2dv.x`
+    You can type `run-disps.x --help` for all the information about the command line arguments of the script.
 
-3. And now we already can compute the force constants, dynamical matrices and phonon dispersion with `siesta2fc.x`:
+   :heavy_exclamation_mark:NOTE: Remember to include `DM.UseSaveDM true` in the original fdf file in order to take advantage of the close-to-convergence charge density as a starting point for the calculations.
+
+   :heavy_exclamation_mark:NOTE: Since in this calculations the atoms are displaced from their equilibrium positions, it is important to use `MD.Steps 0` in the input fdf to avoid relaxing the system.
+
+3. Now that all SIESTA calculations have been executed, we already can compute the force constants, dynamical matrices and phonon dispersion with `siesta2fc.x`:
 
    ```
    siesta2fc.x < siesta2ph.in | tee siesta2fc.out
    ```
 
-   This will generate:
+   This will generate the interatomic force constants file `fc.dat`, the phonon dispersion file `phonons.dat` and the dynamical matrices files `dyn0001.dat` to `dyn0004.dat` for each q-point in the `phdir` directory.
+
+   To plot the phonon dispersion we can use:
 
    ```
-   $ ls 441/0.01
-   disp-0001
-   disp-0002
-   disp-0003
-   disp-0004
-   dyn0001.dat
-   dyn0002.dat
-   dyn0003.dat
-   dyn0004.dat
-   g.FC_1
-   g.FC_2
-   g.FC_3
-   g.FC_4
-   g.FC_5
-   g.FC_6
-   g.FC_7
-   g.PH
+   xmgrace -nxy 441/0.01/phonons.dat
    ```
 
-   `g.PH` contains the phonon dispersion:
+   or
 
    ```
-   xmgrace -nxy 441/0.01/g.PH
+   gnuplot -p -e "p for [c=2:*] '441/0.01/phonons.dat' u 1:c w l lc 'black'"
    ```
 
 4. And finally, the induced potential can be computed by `siesta2dv.x`:
@@ -426,39 +406,68 @@ $ cat siesta2ph.in
    siesta2dv.x < siesta2ph.in | tee siesta2dv.out
    ```
 
-   The xsf files created can be plotted with XCrySDen:
+   This creates the folder `dvscf` inside `phdir`, where induced potentials for each q-point are stored in files `dvscf0001.dat` to `dvscf0004.dat`. Since `xsf=.true.` was specified, the xsf files are also created in `phdir`. This files can be plotted with XCrySDen:
 
    ```
    xcrysden --xsf 441/0.01/dVR_ia001_id1.xsf
    ```
 
+   `dVR_ia001_id1.xsf` file contains the potential induced in the super-cell by the displacement of the first atom along the first Cartesian direction $x$: $\partial V_{I\alpha} = dV/du_{I}^{\alpha}$ for the atomic index $I=1$ and the Cartesian index $\alpha=x$. In a similar way, `dVq_iq01_ia001_id1.xsf` contains the potential induced in the super-cell, but for the displacement pattern with the periodicity of the first q-point: $\partial V_{I\alpha}(\mathbf{q}) = dV/(u_{1}^{x} e^{i\mathbf{q}\cdot\mathbf{R}})$, being $\mathbf{R}$ a lattice vector. And finally, `dvq_iq01_ia001_id1.xsf` contains the periodic part of the same induced potential: $\partial v_{I\alpha}(\mathbf{q}) = \partial V_{I\alpha}(\mathbf{q}) e^{-i\mathbf{q}\cdot\mathbf{r}}$, which is the same induced potential stored in `dvscf0001.dat`.
+
+   :heavy_exclamation_mark:NOTE: In order to compute the induced potential `SaveTotalPotential T` must be added to de fdf (if you only want to compute the force constants it's not needed).
+
+   :heavy_exclamation_mark:NOTE: At this moment, running the `v0` calculation is mandatory, as some of its output is read by `siesta2dv.x`
 
 [Back to top :arrow_heading_up:](#using-intw-with-siesta)
 
 
 ## Copper electron-phonon matrix elements
 
-Folder `3-copper` has all the files needed to compute the electron-phonon matrix elements of copper:
+In this third example we will show how to calculate the electron-phonon matrix elements for copper using intw's `ep_melements.x` utility. For that, first of all, we will compute the electronic and phonon structures of cooper using SIESTA and `siesta2ph`. In a second step, we will transforming all the calculation data to a format readable by intw with `siesta2intw.x`. And finally, we will execute `ep_melements.x` to compute the electron-phonon matrix elements.
+
+Folder `3-copper` has all the files needed to run the example:
 
 ```
 $ ls
 copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
 ```
 
-1. The first step is to compute the dynamical matrices and the induced potentials with `siesta2ph.x`, `siesta2fc.x` and `siesta2dv.x`:
+1. The first step for a calculation of this type would be computing the electronic structure of the system to be studied:
 
    ```
-   siesta2ph.x < siesta2ph.in | tee siesta2ph.out
-   cp Cu.psf 222/v0/
-   cd 222/v0/
-   mpirun -n 4 siesta < supercell-copper.fdf | tee out
-   cd ../../
-   run-disps.x --dm 222/v0/cu.DM -n 4 -v 222/0.02/
-   siesta2fc.x < siesta2ph.in | tee siesta2fc.out
-   siesta2dv.x < siesta2ph.in | tee siesta2dv.out
+   mpirun -n 4 siesta < copper.fdf | tee copper.fdf
    ```
 
-2. The second step is to run `siesta2intw.x`. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `s2intw.in`:
+   :heavy_exclamation_mark:NOTE: Before continuing with the calculation of the phonon structure, users should ensure that the parameters used in the fdf yield an electronic structure that is accurate enough for the requirements of their calculations.
+
+   After the electronic structure, we will calculate the dynamical matrices and the induced potentials with `siesta2ph.x`, `siesta2fc.x` and `siesta2dv.x`. Following the procedure that we have seen in the previous example:
+
+   - Create the input files of the irreducible displacements:
+
+     ```
+     siesta2ph.x < siesta2ph.in | tee siesta2ph.out
+     ```
+
+   - Execute all SIESTA calculations:
+
+     ```
+     cp Cu.psf 222/v0/
+     cd 222/v0/
+     mpirun -n 4 siesta < supercell-copper.fdf | tee out
+     cd ../../
+     run-disps.x --dm 222/v0/cu.DM -n 4 -v 222/0.02/
+     ```
+
+   - Compute the dynamical matrices and induced potentials:
+
+     ```
+     siesta2fc.x < siesta2ph.in | tee siesta2fc.out
+     siesta2dv.x < siesta2ph.in | tee siesta2dv.out
+     ```
+
+   After this steps, we already have computed all the information about the electronic and phonon structures that we will need to calculate the electron-phonon matrix elements.
+
+2. Then, the second step is to run `siesta2intw.x` to store all the data in a format that intw can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `s2intw.in`:
 
    ```
    $ cat s2intw.in
@@ -474,17 +483,17 @@ copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
    /
    ```
 
-   `phonons=.true.` indicates that also the phonon structure has to be copied to the `save.intw` directory,`phdir` specifies where are placed the dynamical matrices and induced potentials, and `nqirr` indicates the number of irreducible q-points to be copied.
+   `phonons=.true.` indicates that also the phonon structure has to be copied to the `cu.save.intw` directory, `phdir` specifies where are placed the dynamical matrices and induced potentials, and `nqirr` indicates the number of irreducible q-points to be copied.
 
-   So, let's run `siesta2intw.x`:
+   So, let's run `siesta2intw.x` by typing:
 
    ```
    siesta2intw.x < copper.fdf | tee siesta2intw.out
    ```
 
-   This will create `cu.dvscf_q*`, `cu.dyn_q*` and `irrq_patterns.dat` files inside `cu.save.intw`, and it will also create automatically `qlist.txt`, which is needed by intw.
+   This will create the same files that we have seen in the first examples inside `cu.save.intw`, plus `cu.dyn_q*` files for the dynamical matrices, and `cu.dvscf_q*` and `irrq_patterns.dat` files for the induced potentials and the displacement patterns related to them, respectively. Additionally, `qlist.txt` file will also be created, which is needed by intw and contains a list of the irreducible q-points in Cartesian coordinates.
 
-3. Now that we have all the required information to compute the electron-phonon matrix elements, we can run intw's `ep_melements.x` utility. But first, let's check `intw.in` file:
+3. Now that we have all the required information in a format that intw can read, we can run intw's `ep_melements.x` utility to compute the electron-phonon matrix elements. But first, let's check `intw.in` file:
 
    ```
    $ cat intw.in
@@ -508,13 +517,15 @@ copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
    /
    ```
 
-   And now, let's run `ep_melements.x`:
+   In addition to the parameters that we have already seen in the first example, in this case we also need to specfy the `ph` namelist, where `nq1`, `nq2` and `nq3` indicate the q-mesh, and `nqirr` the number of irreducible q-points.
+
+   So, let's run `ep_melements.x` by typing:
 
    ```
    ep_melements.x < intw.in | tee ep_melements.out
    ```
 
-   And check that the matrix elements have been calculated:
+   And as you can see, the electron-phonon matrix elements for each q-point have been calculated and saved into files `ep_mat.dat_1` to `ep_mat.dat_8`:
 
    ```
    $ ls ep_mat.*
