@@ -11,7 +11,6 @@ program siesta2fc
   use parallel, only: Node, Nodes
   !
   use siesta2ph_io, only: stdout, outdir, prefix, v0dir, kpath_file, verbose
-  use siesta2ph_system, only: slabel
   !
   use siesta2ph_io, only: read_input
   use siesta2ph_system, only: read_unit_cell_data, print_unit_cell_data
@@ -96,7 +95,7 @@ program siesta2fc
   call compute_force_constants()
   !
   ! Save FC to a file
-  call write_fc_phonopy(trim(slabel)//".FC_1")
+  call write_fc_phonopy("fc.dat_1")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -104,7 +103,7 @@ program siesta2fc
   call apply_permutation_sym()
   !
   ! Save FC to a file
-  call write_fc_phonopy(trim(slabel)//".FC_2")
+  call write_fc_phonopy("fc.dat_2")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -112,7 +111,7 @@ program siesta2fc
   call apply_sym()
   !
   ! Save FC to a file
-  call write_fc_phonopy(trim(slabel)//".FC_3")
+  call write_fc_phonopy("fc.dat_3")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -136,24 +135,24 @@ program siesta2fc
   !
   call apply_sym()
   !
-  call write_fc_phonopy(trim(slabel)//".FC_4")
+  call write_fc_phonopy("fc.dat_4")
   !
   !
   call apply_asr()
   !
-  call write_fc_phonopy(trim(slabel)//".FC_5")
+  call write_fc_phonopy("fc.dat_5")
   !
   !
   call apply_asr()
   !
-  call write_fc_phonopy(trim(slabel)//".FC_6")
+  call write_fc_phonopy("fc.dat_6")
   !
   !
   call apply_permutation_sym()
   call apply_sym()
   call apply_permutation_sym()
   !
-  call write_fc_phonopy(trim(slabel)//".FC_7")
+  call write_fc_phonopy("fc.dat_7")
   !
   !
 #ifdef MPI
@@ -642,7 +641,6 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_system, only: slabel
     use siesta2ph_io, only: outdir, phdir, kpath_file, nr1, nr2, nr3
     use siesta2ph_system, only: nat, at, tau_cryst, amass, ityp, bg, alat
     use siesta2ph_utils, only: tpi, cmplx_0, cmplx_i, pmass, Hartree2meV, au2cm1, au2THz
@@ -699,7 +697,7 @@ contains
     dm = cmplx_0
     !
     iounit = find_free_unit()
-    filename = trim(outdir)//trim(phdir)//trim(slabel)//".PH"
+    filename = trim(outdir)//trim(phdir)//"phonons.dat"
     open(unit=iounit, file=trim(filename), action="write", status="replace", iostat=iostat)
     if (iostat .ne. 0) stop "ERROR: phonon_bands: Error opening phonons.dat."
     !
