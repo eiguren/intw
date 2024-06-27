@@ -33,7 +33,6 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   include_directories(${CPATH})
 endif()
 
-option(USE_MPI "Use the MPI library for parallelization" OFF)
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
 
@@ -56,16 +55,6 @@ set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>"
 
 include(SetFortranFlags)
 
-# Find MPI if needed
-if(USE_MPI)
-  message(WARNING "intw does not use MPI yet")
-  find_package(MPI REQUIRED)
-  add_definitions(-DMPI)
-  # Instead of ussing target_include_directories (which it is prefered), I am ussing include_directories, because all the targets will depend on MPI,
-  # and include_directories will add the include directories to all new targets.
-  include_directories(${MPI_Fortran_INCLUDE_PATH})
-  add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
-endif()
 
 # Find OpenMP flag
 if(USE_OPENMP)
@@ -159,13 +148,6 @@ message("-- Fortran compiler vendor: ${CMAKE_Fortran_COMPILER_ID}")
 message("-- Archive: ${CMAKE_AR}")
 message("-- Ranlib: ${CMAKE_RANLIB}")
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX} (Use -DCMAKE_INSTALL_PREFIX=/install/prefix to change the default value)")
-if (USE_MPI)
-  message("-- MPI C compiler: ${MPI_C_COMPILER}")
-  message("-- MPI Fortran compiler: ${MPI_Fortran_COMPILER}")
-  message("-- MPI include dirs: ${MPI_Fortran_INCLUDE_DIRS}")
-  message("-- MPI link flags: ${MPI_Fortran_LINK_FLAGS}")
-  message("-- MPI library: ${MPI_Fortran_LIBRARIES}")
-endif()
 message("-- BLAS flags: ${BLAS_LINKER_FLAGS}")
 message("-- BLAS library: ${BLAS_LIBRARIES}")
 message("-- LAPACK flags: ${LAPACK_LINKER_FLAGS}")
