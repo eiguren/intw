@@ -1063,7 +1063,7 @@ contains
     ! We make Kramers-Kronig relation by means of Asier's trick
     !
     !$omp parallel default(none) &
-    !$omp shared(epts,e_min,d_e,dimselfen_w,reselfen_w,pi,cmplx_0) &
+    !$omp shared(epts,e_min,d_e,dimselfen_w,reselfen_w) &
     !$omp private(ipts,i,omega,integral,jpts,oomega,z,modz,tita)
     !
     !$omp do

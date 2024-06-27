@@ -380,7 +380,7 @@ contains
     real(dp) :: delta_eplus(wpts), delta_eminus(wpts)
 
     !$omp parallel default(none) &
-    !$omp shared(nmode,w_min,w_max,wpts,sigma_w,ekk,ekq,sigma_e,eps_5,eps_6,g_me,eliash_fplus,eliash_fminus,omega_phon) &
+    !$omp shared(nmode,w_min,w_max,wpts,sigma_w,ekk,ekq,sigma_e,g_me,eliash_fplus,eliash_fminus,omega_phon) &
     !$omp private(imode,wqv,delta_omega,delta_eplus,delta_eminus,g2)
     !
     !$omp do
