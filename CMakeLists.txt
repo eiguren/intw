@@ -58,10 +58,7 @@ include(SetFortranFlags)
 
 # Find OpenMP flag
 if(USE_OPENMP)
-  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                   Fortran REQUIRED "-qopenmp"        # Intel
-                                    "-fopenmp"        # GNU
-                  )
+  find_package(OpenMP REQUIRED)
 endif()
 
 
@@ -148,6 +145,24 @@ message("-- Fortran compiler vendor: ${CMAKE_Fortran_COMPILER_ID}")
 message("-- Archive: ${CMAKE_AR}")
 message("-- Ranlib: ${CMAKE_RANLIB}")
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX} (Use -DCMAKE_INSTALL_PREFIX=/install/prefix to change the default value)")
+if (USE_OPENMP)
+  if(OpenMP_C_FOUND)
+    if(OpenMP_C_FLAGS)
+      message("-- OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
+    else()
+      message("-- OpenMP_C_INCLUDE_DIRS: ${OpenMP_C_INCLUDE_DIRS}")
+      message("-- OpenMP_C_LIBRARIES: ${OpenMP_C_LIBRARIES}")
+    endif()
+  endif()
+  if(OpenMP_Fortran_FOUND)
+    if(OpenMP_Fortran_FLAGS)
+    message("-- OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
+  else()
+    message("-- OpenMP_Fortran_INCLUDE_DIRS: ${OpenMP_Fortran_INCLUDE_DIRS}")
+    message("-- OpenMP_Fortran_LIBRARIES: ${OpenMP_Fortran_LIBRARIES}")
+  endif()
+  endif()
+endif()
 message("-- BLAS flags: ${BLAS_LINKER_FLAGS}")
 message("-- BLAS library: ${BLAS_LIBRARIES}")
 message("-- LAPACK flags: ${LAPACK_LINKER_FLAGS}")

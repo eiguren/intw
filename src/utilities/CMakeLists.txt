@@ -24,4 +24,7 @@ foreach(prog IN ITEMS ${PROGS})
 
   target_link_libraries(${prog}.x PRIVATE intw_modules)
   target_link_libraries(${prog}.x PRIVATE ${LAPACK_LIBRARIES})
+  if(USE_OPENMP)
+    target_link_libraries(${prog}.x PRIVATE OpenMP::OpenMP_Fortran)
+  endif()
 endforeach()
