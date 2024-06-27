@@ -1361,7 +1361,7 @@ end function intgr_spline_gaussq
 
     integer, intent(in) :: n
     real(kind=dp), intent(in) :: e0, e_min, e_max, sigma
-    real(kind=dp), intent(inout) :: gauss(n)
+    real(kind=dp), intent(out) :: gauss(n)
 
     !local variables
 
