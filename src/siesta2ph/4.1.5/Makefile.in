@@ -6,7 +6,7 @@ VPATH=@SIESTA2PH_SRC_DIR@
 
 OBJDIR=@SIESTA_BUILD_DIR@
 
-SPGLIB=@SPGLIB@
+SPGLIB=@SPGLIB_LIBRARIES_STR@
 
 # ---------------------------------
 
