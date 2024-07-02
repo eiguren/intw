@@ -4,16 +4,7 @@ cmake_minimum_required(VERSION 3.12)
 # Add our local modlues to the module path
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-#set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 include(PreventInSourceBuilds)
-#include(PreventInBuildInstalls)
-#if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-#  message(FATAL_ERROR "In-source builds are not allowed.")
-#endif()
-
-
-#set(CMAKE_RULE_MESSAGES OFF)
-#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(intw
   VERSION 0.1
@@ -36,22 +27,10 @@ endif()
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
 
-#message("CMAKE_Fortran_CREATE_SHARED_LIBRARY: ${CMAKE_Fortran_CREATE_SHARED_LIBRARY}")
-#message("CMAKE_Fortran_CREATE_SHARED_MODULE: ${CMAKE_Fortran_CREATE_SHARED_MODULE}")
-#message("CMAKE_Fortran_CREATE_STATIC_LIBRARY: ${CMAKE_Fortran_CREATE_STATIC_LIBRARY}")
-#message("CMAKE_Fortran_COMPILE_OBJECT: ${CMAKE_Fortran_COMPILE_OBJECT}")
-#message("CMAKE_Fortran_LINK_EXECUTABLE: ${CMAKE_Fortran_COMPILE_OBJECT}")
-#message("CMAKE_Fortran_ARCHIVE_CREATE: ${CMAKE_Fortran_ARCHIVE_CREATE}")
-#message("CMAKE_Fortran_ARCHIVE_APPEND: ${CMAKE_Fortran_ARCHIVE_APPEND}")
-#message("CMAKE_Fortran_ARCHIVE_FINISH: ${CMAKE_Fortran_ARCHIVE_FINISH}")
 
-
-#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> ruv <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in QE and wannier
-#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cru <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in fftw3 and siesta
 set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in OpenBLAS and netlib lapack
 # cr should be correct, c for crate, and r for replace (cmake uses q for quick-append instead of r).
-# v adds verbose output.
-# And I don't know how works u, and I'm getting a warning also...
+
 
 include(SetFortranFlags)
 
@@ -172,7 +151,7 @@ message("-- FFLAGS: ${CMAKE_Fortran_FLAGS}")
 message("-- FFLAGS_RELEASE: ${CMAKE_Fortran_FLAGS_RELEASE}")
 message("-- FFLAGS_DEBUG: ${CMAKE_Fortran_FLAGS_DEBUG}")
 message("-- FFLAGS_RELWITHDEBINFO: ${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}")
-# message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
+message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
 if(Python3_Interpreter_FOUND)
   message("-- Python3: ${Python3_EXECUTABLE}")
 else()
