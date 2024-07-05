@@ -119,7 +119,7 @@ else()
 endif()
 
 # Find libsymspg(.so|.a)
-find_library(SPGLIB_LIBRARY NAMES symspg PATHS ${_extaddlibdir})
+find_library(SPGLIB_LIBRARY NAMES symspg PATHS ${_extaddlibdir} REQUIRED)
 set(SPGLIB_LIBRARIES "${SPGLIB_LIBRARY}")
 
 # Check if library can be linked

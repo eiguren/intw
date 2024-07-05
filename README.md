@@ -88,12 +88,19 @@ When intw is used in conjunction with SIESTA, Spglib is used to find crystal sym
 - `siesta2ph`: Symmetries are used to reduce the required number of atomic displacements to completely determine the interatomic force constants and the induced potentials.
 - `siesta2intw`: Symmetries are used to reduce the Brillouin zone sampling to the irreducible q-points.
 
-
-CMake will attempt to find Spglib using `pkg-config` first, or by searching for `libsymspg(.so|.a)` in the paths specified in the `LD_LIBRARY_PATH` environmental variable second. If the automatic search fails, `SPGLIB` variable can be used to set the library:
+CMake will attempt to find Spglib by searching for `libsymspg(.so|.a)` in the paths specified in the `LD_LIBRARY_PATH` environmental variable second. If the automatic search fails, `SPGLIB_LIBRARY` variable can be used to set the library:
 
 ```bash
-cmake -DSPGLIB=/path/to/libspglib(.so|a) ..
+cmake -DSPGLIB_LIBRARY=/path/to/libspglib(.so|a) ..
 ```
+
+Alternatively, if it is supported by the installed Spglib version, `pkg-config` can be used to find the library:
+
+```bash
+cmake -DSPGLIB_PREFER_PKGCONFIG=ON ..
+```
+
+Remember adjusting the `PKG_CONFIG_PATH` environmental variable if you installed Spglib in a non-standard location.
 
 
 ### OpenMP (optional experimental)
