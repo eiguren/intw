@@ -29,7 +29,7 @@ use kinds, only: dp
   ! functions
   public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
-            smeared_delta, fermi_dirac, area_vec
+            smeared_delta, smeared_lorentz, fermi_dirac, area_vec
   !
   private
   !
@@ -1617,6 +1617,17 @@ end function intgr_spline_gaussq
     smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
   return
   end function smeared_delta
+
+  function smeared_lorentz(x,s)
+          ! MBR 280624
+    use kinds, only: dp
+    use intw_useful_constants, only: pi
+    implicit none
+    real(dp) :: x,s, smeared_lorentz
+    !lorentz
+    smeared_lorentz = s / (pi*(s*s+x*x))
+  return
+  end function smeared_lorentz
 
   function fermi_dirac(x, kt)
           ! x = energy - e_fermi, kT = Boltzmann * temp, same units
