@@ -228,6 +228,7 @@ contains
 
   SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat, alat, at, ntyp, amass )
 
+    !use intw_set_asr, only: set_asr
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_1
     use intw_input_parameters, only: nq1, nq2, nq3, apply_asr
@@ -326,15 +327,17 @@ contains
        write(*,*)
        write(*,*) 'Applying ASR : ' ,asr
 
+       !call set_asr(asr,nq1,nq2,nq3,frc_R,zeu,nat,ibrav,tau_fc)
+
        !MBR 21/05/2024
        ! Instead of that set_asr module, use only the "simple" method
        ! (worked in the routine as real)
        if (apply_asr) then
           write(*,*)' Applying ASR (simple) to force constant matrix'
           call set_asr_frc(nq1, nq2, nq3, nat, frc_R)
-       end if
+       end if   
 
-       frc = frc_R*cmplx_1 ! make it complex again
+       frc=frc_R*cmplx_1                   ! make it complex again
        deallocate (zeu)
        deallocate(frc_R)
        ! End IGG
@@ -342,88 +345,98 @@ contains
   END SUBROUTINE readfc
 
 
-  subroutine set_asr_frc(n1, n2, n3, nat, frc_R)
-    !====================================================================
-    ! MBR 21/05/24
-    ! Apply ASR "simple" method to the real-space force constant matrix
-    !====================================================================
+  !====================================================================
+  ! MBR 21/05/24
+  ! Apply ASR "simple" method:
+  !   set_asr_frc --> to the real-space force constant matrix 
+  !                   (real elements)
+  !   set_asr_dynr --> to the dynamical matrices after doing dynq_to_dynr
+  !====================================================================
 
-    implicit none
+   subroutine set_asr_frc(n1, n2, n3, nat, frc_R)
 
-    integer , intent(in) :: n1, n2, n3, nat
-    real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
+   implicit none
 
-    ! Internal
-    integer :: i,j, iat, jat, i1,i2,i3
-    real(dp) :: suma
+   integer , intent(in) :: n1, n2, n3, nat 
+   real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
 
-    do i=1,3  !coords.
-    do j=1,3
-      do iat=1,nat  !atom
-        suma = 0.0_dp
-        do jat=1,nat  !atom
-          do i1=1,n1  !lattice vectors
-          do i2=1,n2
-          do i3=1,n3
-            suma = suma + frc_R(i1,i2,i3,i,j,iat,jat)
-          end do
-          end do
-          end do !lattice vectors
-        end do !jat atom
-        frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
-      end do !iat atom
-    end do
-    end do !coords.
+   ! Internal
+   integer :: i,j, iat, jat, i1,i2,i3
+   real(dp) :: suma
 
-   end subroutine set_asr_frc
+   do i=1,3  !coords.
+   do j=1,3  
+        do iat=1,nat  !atom
+           suma=0.0_dp
+           do jat=1,nat  !atom
+              do i1=1,n1  !lattice vectors
+              do i2=1,n2
+              do i3=1,n3
+                   suma=suma+frc_R(i1,i2,i3,i,j,iat,jat)
+              end do
+              end do
+              end do !lattice vectors
+           end do !jat atom
+           frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
+        end do !iat atom
+   end do 
+   end do !coords.
+
+   return 
+   end subroutine set_asr_frc         
+
 
 
    subroutine set_asr_dynq(nq, iq, nat, dynq)
-    !====================================================================
-    ! MBR 21/05/24
-    ! Apply ASR "simple" method to the dynamical matrices
-    !====================================================================
+           ! iq is the q=0 index in the mesh
 
-    use intw_useful_constants, only: cmplx_1
+   use intw_useful_constants, only: cmplx_1
+   implicit none
 
-    implicit none
+   integer , intent(in) :: nq, iq, nat
+   complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
 
-    integer , intent(in) :: nq, iq, nat
-    complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
+   ! Internal
+   integer :: i,j, iat, jat,ir
+   complex(dp) :: suma
+   complex(dp) :: dynq_aux(3*nat,3*nat, nq)
 
-    ! Internal
-    integer :: i,j, iat, jat,ir
-    complex(dp) :: suma
+   dynq_aux = dynq
+      do i=1,3  !coords.
+      do j=1,3
+          do iat=1,nat  !atom
+             suma=0.0_dp
+             do jat=1,nat  !atom !sum over cells
+                 suma=suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  
+             end do !jat atom
+             ! option 1 : apply only to q=0:
+             ! dynq_aux( (iat-1)*3+i, (iat-1)*3+j, iq ) = dynq( (iat-1)*3+i, (iat-1)*3+j, iq ) - suma
+             ! option 2 : generalize to all q:
+             dynq_aux( (iat-1)*3+i, (iat-1)*3+j, : ) = dynq( (iat-1)*3+i, (iat-1)*3+j, : ) - suma
+          end do !iat atom
+      end do
+      end do !coords.
+   dynq = dynq_aux
 
-    do i=1,3  !coords.
-    do j=1,3
-      do iat=1,nat  !atom
-        suma = 0.0_dp
-        do jat=1,nat  !atom !sum over cells
-          suma = suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  !iq is the q=0 index
-        end do !jat atom
-        dynq( (iat-1)*3+i, (iat-1)*3+j, : ) = dynq( (iat-1)*3+i, (iat-1)*3+j, : ) - suma
-      end do !iat atom
-    end do
-    end do !coords.
-
+   return
    end subroutine set_asr_dynq
 
 
-  subroutine read_dynq (dynq)
-    !====================================================================
-    ! MBR 14/02/24
-    ! read dynamical matrices info from prefix.dyn_q(iq) files in
-    ! prefix.save.intw and store into dynq for all q-points
-    ! (each files contains the info of an irreducible q-point)
-    !====================================================================
+  !====================================================================
+      ! MBR 14/02/24
+      ! read dynamical matrices info from prefix.dyn_q(iq) files in
+      ! prefix.save.intw and store into dynq for all q-points
+      ! (each files contains the info of an irreducible q-point)
+  !====================================================================
+
+      subroutine read_dynq (dynq)
 
       use intw_reading, only: ntyp, nat, at, amass, ityp
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
       use intw_utility, only: cryst_to_cart, find_free_unit, &
-                              triple_to_joint_index_g, find_k_1BZ_and_G
+              triple_to_joint_index_g, find_k_1BZ_and_G
       use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
-                                       apply_asr
+              apply_asr
 
       implicit none
 
@@ -531,7 +544,7 @@ contains
               ! (this will give the same as mat_inv_four_t)
               dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
                      ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) &
-                     / massfac &  !sqrt(m1*m2)
+          !           / massfac &  !sqrt(m1*m2)
                      / (pmass/2.d0) & !Up to this in Ry.
                      * (aumev/2.d0)**2 !Now in meV.
 
@@ -557,25 +570,33 @@ contains
             write(*,*)' Failed to read dynq for iq= ',iq
          end if
       end do
+      if ( not(all_done) ) stop
 
-      !if ( not(all_done) ) stop
-      !ASIER 9/5/2024 gfortran does not admit the above with
-      !  486 |       if ( not(all_done) ) stop
-      !      |               1
-      !Error: ‘i’ argument of ‘not’ intrinsic at (1) must be INTEGER
-      !
-       if(.not.all_done) stop
-       !
-       !
       ! Apply ASR to q=0 matrix:
       ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0
-      if (apply_asr) then
+      if (apply_asr) then 
            write(*,*)' Applying ASR to all q vector indices'
-           iq = 1 !q=0 index in mesh
+           !iq = 1 !q=0 index in mesh
+           ! just in case, find q=0 index in mesh 
+           qpoint = (/ 0._dp, 0._dp, 0._dp /)
+           call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
+           call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
            call set_asr_dynq(nqmesh, iq, nat, dynq)
-      end if
+      end if        
 
-  end subroutine read_dynq
+      !add mass factor
+      do iat1 = 1,nat
+           do iat2 = 1,nat
+              massfac = sqrt( amass(ityp(iat1)) * amass(ityp(iat2))  )
+              dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, : ) = &
+                      dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, : ) / massfac  !sqrt(m1*m2)
+           end do   
+      end do   
+
+      return
+      end subroutine read_dynq
+  !====================================================================
+      
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
@@ -622,7 +643,7 @@ contains
     do na=1, nat
        do nb=1, nat
           total_weight=0.0d0
-          do n1=-16,16
+          do n1=-16,16   ! TODO we will need a wider range if the q-grid is very fine
              do n2=-16,16
                 do n3=-16,16
                    !
