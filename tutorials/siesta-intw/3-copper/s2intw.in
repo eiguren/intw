@@ -1,0 +1,10 @@
+&inputpp
+  outdir="./"
+  prefix="cu"
+  nk1=4, nk2=4, nk3=4
+  nbnd_final=10
+  cutoff=80.0
+  phonons=.true.
+  phdir="./222/0.02/"
+  nqirr=3
+/

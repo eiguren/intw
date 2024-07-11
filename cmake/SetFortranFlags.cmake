@@ -23,21 +23,21 @@ ELSEIF(BT STREQUAL "RELWITHDEBINFO")
       "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
       FORCE)
 ELSEIF(NOT BT)
-    SET(CMAKE_BUILD_TYPE RELEASE CACHE STRING
-      "Choose the type of build, options are DEBUG, RELEASE, or RELWITHDEBINFO."
+    SET(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Specifies the build type on single-configuration generators, options are Debug, Release, RelWithDebInfo and MinSizeRel."
       FORCE)
-    MESSAGE(STATUS "CMAKE_BUILD_TYPE not given, defaulting to RELEASE")
+    MESSAGE(STATUS "CMAKE_BUILD_TYPE not given, defaulting to Release")
 ELSE()
-    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are DEBUG, RELEASE, or RELWITHDEBINFO")
+    MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE not valid, choices are Debug, Release, RelWithDebInfo and MinSizeRel")
 ENDIF(BT STREQUAL "RELEASE")
 
 #########################################################
 # If the compiler flags have already been set, return now
 #########################################################
 
-IF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND CMAKE_Fortran_FLAGS_DEBUG AND SET_FORTRAN_FLAGS)
+IF(CMAKE_Fortran_FLAGS_DEBUG AND CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_MINSIZEREL AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND SET_FORTRAN_FLAGS)
     RETURN ()
-ENDIF(CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND CMAKE_Fortran_FLAGS_DEBUG AND SET_FORTRAN_FLAGS)
+ENDIF(CMAKE_Fortran_FLAGS_DEBUG AND CMAKE_Fortran_FLAGS_RELEASE AND CMAKE_Fortran_FLAGS_MINSIZEREL AND CMAKE_Fortran_FLAGS_RELWITHDEBINFO AND SET_FORTRAN_FLAGS)
 
 SET(SET_FORTRAN_FLAGS ON CACHE BOOL "If set, Fortran flags are already configured." FORCE)
 message(STATUS "Setting Fortran flags")
@@ -57,7 +57,7 @@ message(STATUS "Setting Fortran flags")
 #      to avoid the use of this flag
 # Allow argument mismatch
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-fallow-argument-mismatch"    # GNU
+                 Fortran "-fallow-argument-mismatch" # GNU
                 )
 
 # There is some bug where -march=native doesn't work on Mac
@@ -68,43 +68,43 @@ ELSE()
 ENDIF()
 # Optimize for the host's architecture
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-xHost"        # Intel
-                         "/QxHost"       # Intel Windows
-                         ${GNUNATIVE}    # GNU
-                         "-ta=host"      # Portland Group
+                 Fortran "-xHost"     # Intel
+                         "/QxHost"    # Intel Windows
+                         ${GNUNATIVE} # GNU
+                         "-ta=host"   # Portland Group
                 )
 
 # Allow any line length in free format
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-ffree-line-length-none"    # GNU
+                 Fortran "-ffree-line-length-none" # GNU
                 )
 
 # Enable pre-processing
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran REQUIRED "-fpp"        # Intel
-                                  "-cpp"        # GNU
+                 Fortran REQUIRED "-fpp" # Intel
+                                  "-cpp" # GNU
                 )
 
 # Puts automatic arrays and arrays created for temporary computations on the heap instead of the stack
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-heap-arrays"        # Intel
+                 Fortran "-heap-arrays" # Intel
                 )
 
 # Improves floating-point precision and consistency
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-mp1"  # Intel
+                 Fortran "-mp1" # Intel
                 )
 
 # Set record length units to bytes
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-assume byterecl"  # Intel
+                 Fortran "-assume byterecl" # Intel
                 )
 
 ###################
 ### DEBUG FLAGS ###
 ###################
 
-# NOTE: debugging symbols (-g or /debug:full) are already on by default
+# NOTE: debugging symbols (-g) are already on by default
 
 # Traceback
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
@@ -140,18 +140,19 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
 
 # Enables all check options except arg_temp_created
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran "-check all,noarg_temp_created"  # Intel
+                 Fortran "-check all,noarg_temp_created" # Intel
+                         "-fcheck=all,no-array-temps"    # GNU (New style)
                 )
 
 # Generate complete debugging information
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran "-debug extended"  # Intel
+                 Fortran "-debug extended" # Intel
                 )
 
 # Disable floating-point exception
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-fpe0"              # Intel
-	            	         "-mno-fp-exceptions" # GNU
+                         "-mno-fp-exceptions" # GNU
                 )
 
 #####################
@@ -178,10 +179,10 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 
 # Interprocedural (link-time) optimizations
 #SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
-#                 Fortran "-ipo"     # Intel
-#                         "/Qipo"    # Intel Windows
-#                         "-flto"    # GNU
-#                         "-Mipa"    # Portland Group
+#                 Fortran "-ipo"  # Intel
+#                         "/Qipo" # Intel Windows
+#                         "-flto" # GNU
+#                         "-Mipa" # Portland Group
 #                )
 
 # Single-file optimizations
@@ -208,3 +209,9 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWI
                          "-fbacktrace"  # GNU (gfortran)
                          "-ftrace=full" # GNU (g95)
                 )
+
+########################
+### MINSIZEREL FLAGS ###
+########################
+
+# NOTE: optimizations that do not increase code size (-Os) are already turned on by default

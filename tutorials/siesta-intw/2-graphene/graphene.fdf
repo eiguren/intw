@@ -1,0 +1,81 @@
+SystemName       graphene          # Descriptive name of the system
+SystemLabel      g                 # Short name for naming files
+#
+# Output options
+#
+SaveTotalPotential T
+WriteForces T
+#
+# Species
+#
+NumberOfSpecies       1
+%block ChemicalSpeciesLabel
+ 1  6  C
+%endblock ChemicalSpeciesLabel
+#
+# Basis
+#
+#PAO.EnergyShift       50 meV
+PAO.BasisSize         DZ
+#
+# Brillouin zone sampling
+#
+%block kgrid_Monkhorst_Pack
+  8  0  0    0.
+  0  8  0    0.
+  0  0  1    0.
+%endblock kgrid_Monkhorst_Pack
+#
+# XC
+#
+xc.functional         GGA          # Exchange-correlation functional
+xc.authors            PBE          # Exchange-correlation version
+#
+# Spin polarization
+#
+Spin non-polarized
+#
+# Real space grid
+#
+MeshCutoff            300. Ry      # Mesh cutoff. real space mesh
+#Grid.CellSampling [4 4 1]
+#
+# SCF options
+#
+DM.NumberPulay        5
+DM.MixingWeight       0.5
+MaxSCFIterations      500
+DM.Tolerance          1.d-5
+#
+DM.UseSaveDM          true
+#
+SolutionMethod        diagon       # OrderN or Diagon
+#ElectronicTemperature 25 meV       # Temp. for Fermi smearing
+#
+# MD options
+#
+MD.TypeOfRun          fire           # Type of dynamics
+MD.VariableCell       true
+MD.RelaxCellOnly      true
+MD.Steps              0            # Number of steps in minimization steps
+MD.MaxCGDispl         0.1 Ang      # Maximum atomic displacement in one CG step (Bohr)
+MD.MaxForceTol        0.01 eV/Ang  # Tolerance in the maximum atomic force (Ry/Bohr)
+MD.MaxStressTol       0.00001 eV/Ang**3
+#
+# Unit cell vectors and atomic coordinates
+#
+NumberOfAtoms  2
+#
+LatticeConstant  1.0  Ang
+#
+%block LatticeVectors
+   2.494146    0.000000    0.000000
+  -1.247073    2.159993    0.000000
+   0.000000    0.000000   12.000000
+%endblock LatticeVectors
+#
+AtomicCoordinatesFormat  ScaledByLatticeVectors
+%block AtomicCoordinatesAndAtomicSpecies
+   0.3333333333    0.6666666667    0.0000000000   1
+   0.6666666667    0.3333333333    0.0000000000   1
+%endblock AtomicCoordinatesAndAtomicSpecies

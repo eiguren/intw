@@ -1,0 +1,18 @@
+&input
+  mesh_dir =	'./'
+  prefix = 'cu'
+  nk1 = 4
+  nk2 = 4
+  nk3 = 4
+  TR_symmetry = .false.
+/
+&intw2W
+  intw2W_fullzone = .false.
+  intw2W_method   = 'CONVOLUTION'
+/
+&ph
+  nq1 = 2
+  nq2 = 2
+  nq3 = 2
+  nqirr = 3
+/

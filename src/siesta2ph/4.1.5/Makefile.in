@@ -1,8 +1,8 @@
 #
-#  Makefile for siesta2intw
+#  Makefile for siesta2ph
 #
 
-VPATH=@SIESTA2INTW_SRC_DIR@
+VPATH=@SIESTA2PH_SRC_DIR@
 
 OBJDIR=@SIESTA_BUILD_DIR@
 
@@ -29,10 +29,10 @@ FPPFLAGS += @SIESTA2INTW_FPPFLAGS@
 
 # ---------------------------------
 
-EXECS = siesta2intw.x
-OBJS = siesta2intw_write.o siesta2intw_io.o siesta2intw_utils.o siesta2intw_pp.o \
-       siesta2intw_fft.o siesta2intw_ph.o cfftnd.o siesta2intw_symmetry.o \
+PROGS = siesta2ph.x siesta2fc.x siesta2dv.x
+OBJS = siesta2ph_io.o siesta2ph_linalg.o siesta2ph_utils.o siesta2ph_system.o siesta2ph_symmetry.o \
        spglib_f08.o
+
 
 SIESTA_LIB=$(OBJDIR)/libSiestaForces.a
 
@@ -43,9 +43,15 @@ OBJ_LIBS=$(shell find $(OBJDIR) -maxdepth 1 -name '*.a' ! -name 'libSiestaForces
 OBJ_LIBS:=-Wl,--start-group $(OBJ_LIBS) -Wl,--end-group
 ALL_LIBS = $(OBJ_LIBS) $(LIBS) $(SPGLIB)
 
-all: $(EXECS)
+all: $(PROGS)
 
-siesta2intw.x: siesta2intw.o $(OBJS) $(SIESTA_LIB)
+siesta2ph.x: siesta2ph.o $(OBJS) $(SIESTA_LIB)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
+
+siesta2fc.x: siesta2fc.o $(OBJS) $(SIESTA_LIB)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
+
+siesta2dv.x: siesta2dv.o $(OBJS) $(SIESTA_LIB)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $@ $^ $(ALL_LIBS)
 
 $(SIESTA_LIB):
@@ -56,17 +62,15 @@ $(SIESTA_LIB):
 
 clean:
 	@echo " Cleaning up"
-	rm -f $(EXECS) *.o *.mod
+	rm -f $(PROGS) *.o *.mod
 
-# dependencies
-cfftnd.o :
-siesta2intw_io.o :
-siesta2intw_utils.o : siesta2intw_io.o
-spglib_f08.o :
-siesta2intw_symmetry.o : spglib_f08.o
-siesta2intw_pp.o : siesta2intw_io.o
-siesta2intw_fft.o : siesta2intw_io.o siesta2intw_utils.o
-siesta2intw_ph.o : siesta2intw_io.o siesta2intw_utils.o siesta2intw_fft.o cfftnd.o
-siesta2intw_write.o : siesta2intw_io.o siesta2intw_utils.o siesta2intw_fft.o siesta2intw_pp.o \
-                      siesta2intw_ph.o siesta2intw_symmetry.o
-siesta2intw.o : siesta2intw_io.o siesta2intw_write.o
+# Dependencies
+siesta2ph_io.o: siesta2ph_utils.o
+siesta2ph_linalg.o:
+siesta2ph_utils.o:
+siesta2ph_system.o: siesta2ph_io.o siesta2ph_linalg.o
+siesta2ph_symmetry.o: siesta2ph_io.o siesta2ph_system.o siesta2ph_linalg.o spglib_f08.o
+spglib_f08.o:
+siesta2ph.o: $(OBJS)
+siesta2fc.o: $(OBJS)
+siesta2dv.o: $(OBJS)

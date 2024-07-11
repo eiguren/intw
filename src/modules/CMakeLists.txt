@@ -30,13 +30,14 @@ add_library(intw_modules STATIC ${SOURCES})
 
 # With PRIVATE, the include directories are added only for this target.
 # Using PUBLIC, the include directories will also be added for the targets that depend on intw_modules.
-# As the utilities also need the QE and Wannier *.mod files, I could use PUBLIC, and this will add this include directories also to the utilities, which depend on intw_modules.
-# But in this case I prefer to add them explicitly when the utilities targets are declared, that is why I use PRIVATE.
-
-
-
 # And with INTERFACE, the include directories are only added to the targets that depend on intw_modules, but will not be added for the target intw_modules itself.
-target_include_directories( intw_modules INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
+
+target_include_directories(intw_modules INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
+
+if(USE_OPENMP)
+  target_link_libraries(intw_modules PUBLIC OpenMP::OpenMP_Fortran)
+endif()
+
 
 
 install(TARGETS intw_modules

@@ -988,9 +988,8 @@ contains
      !
   enddo !i
   !
-  !$omp parallel default(none)                          &
-  !$omp shared(nG_max_non_zero,nG_max,list_iG,list_iG1,cmplx_0)  &
-  !$omp shared(nbands,num_bands_intw,nspin,wfc,amn,guiding_function)   &
+  !$omp parallel default(none) &
+  !$omp shared(nG_max_non_zero,list_iG1,num_bands_intw,nspin,wfc,amn,guiding_function) &
   !$omp private(i,iG,ibnd,is,amn_local)
   !
   amn_local = cmplx_0

@@ -1426,7 +1426,6 @@ end function intgr_spline_gaussq
   end function qe_erfc
 
 
-
   recursive function sphb(n,x) result(sphb_)
     !
     ! Spherical bessel functions
@@ -1506,7 +1505,9 @@ end function intgr_spline_gaussq
     !
     !  theta and phi are polar angles, cost = cos(theta)
     !
-!$omp parallel default(shared), private(ig,gmod,lm,l,c,m)
+!$omp parallel default(none) &
+!$omp shared(ng,g,gg,cost,phi,sent) &
+!$omp private(ig,gmod)
 !$omp do
     do ig = 1, ng
       gmod = sqrt(gg(ig))

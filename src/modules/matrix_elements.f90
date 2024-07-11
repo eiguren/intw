@@ -62,11 +62,8 @@ contains
     pw_mat_el = cmplx_0
 
     !$omp parallel default(none) &
-    !$omp shared(list_iG_1,list_iG_2,ngk1,ngk2) &
-    !$omp shared(num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nG_max) &
-    !$omp shared(cmplx_0) &
-    !$omp private(i,jd,ibnd,jbnd,is,js) &
-    !$omp private( pw_mat_el_local)
+    !$omp shared(list_iG_1,list_iG_2,ngk1,num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nG_max,gvec,G) &
+    !$omp private(i,iG_1,jd,ibnd,jbnd,is,js,pw_mat_el_local)
     !
     ! First, build the pw_mat_el_local arrays, on each thread.
     !

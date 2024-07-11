@@ -370,8 +370,9 @@ contains
     !
 
     ! variables
-    use siesta_geom, only: na_u
+    use siesta_geom, only: na_u, isa, xa
     use m_ntm, only: ntm
+    use atm_types, only: nspecies, species
     use siesta2intw_io, only: stdout, intwdir, outdir, prefix, phdir, dvscfdir, &
                               nqirr
     use siesta2intw_utils, only: cmplx_0
@@ -386,44 +387,102 @@ contains
     character(len=6) :: iq_str
 
     integer :: io_unit, io_unit_read, io_unit_write, ios, rl
-    integer :: imode, jmode, ispin
+    integer :: imode, jmode, ispin, i, j, ia, ja
     complex(kind=dp) :: u_irr(3*na_u)
     character(len=256) :: filename_read, filename_write
 
     character(len=2) :: dv_precision
-    integer :: nspin_dv
+    integer :: nspin_dv, nq_star, iq_star
     complex(kind=dp), allocatable :: dv_local(:), dvq(:, :)
     real(kind=dp), allocatable :: q_irr_cryst(:, :), q_irr_cart(:, :)
     real(kind=dp) :: qpoint(3)
+    real(kind=dp) :: dynq_re(3,3), dynq_im(3,3)
 
+    real(kind=dp), parameter :: pmass = 1822.88848426_dp, Ha2Ry = 2.0_dp
 
     ! Read the dynamical matrix and q points
     allocate(q_irr_cryst(3, nqirr))
     allocate(q_irr_cart(3, nqirr))
     q_irr_cryst = 0.0_dp
     q_irr_cart = 0.0_dp
-    io_unit = find_free_unit()
+    io_unit_read = find_free_unit()
+    io_unit_write = find_free_unit()
     do iq = 1, nqirr
       !
       write(filename_read,"(a3,i4.4,a4)") "dyn", iq, ".dat"
-      open( unit=io_unit, file=trim(outdir)//trim(phdir)//trim(filename_read), iostat=ios, &
+      open( unit=io_unit_read, file=trim(outdir)//trim(phdir)//trim(filename_read), iostat=ios, &
             action="read", status="old" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening dynamical matrix file."
 
-      read(io_unit, *) q_irr_cryst(:, iq)
-      read(io_unit, *) q_irr_cart(:, iq)
-
-      close(unit=io_unit)
-      !
       if (                iq <   10) write(iq_str,"(a2,i1)") "_q", iq
       if ( 10 <= iq .and. iq <  100) write(iq_str,"(a2,i2)") "_q", iq
       if (100 <= iq .and. iq < 1000) write(iq_str,"(a2,i3)") "_q", iq
       filename_write = trim(prefix)//".dyn"//trim(iq_str)
-      call system("cp " // &
-                  trim(outdir)//trim(phdir)//trim(filename_read)//" " // &
-                  trim(intwdir)//trim(filename_write) )
+      open( unit=io_unit_write, file=trim(intwdir)//trim(filename_write), iostat=ios, &
+            action="write", status="replace" )
+      if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening intw's dynamical matrix file."
+
+      ! header
+      write(io_unit_write, "(a)") "Dynamical matrix file"
+      write(io_unit_write, "(a)") ""
+      write(io_unit_write, "(3i5,6f12.7)") nspecies, na_u, 0, (/alat, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp, 0.0_dp/)
+      write(io_unit_write, "(a)") "Basis vectors"
+      write(io_unit_write, "(3f12.7)") at
+
+      ! atoms
+      do i = 1, nspecies
+        write(io_unit_write, *) i, trim(species(i)%symbol), species(i)%mass*pmass/2.0_dp ! trim(species(i)%label)
+      end do
+
+      ! positions
+      do i = 1, na_u
+        write(io_unit_write, "(2i5,3f12.8)") i, isa(i), xa(:,i) ! i,j, fracpos(:)  !not used, not stored
+      end do
+
+      ! Read number of q-points in the star
+      read(io_unit_read, "(10x,i3)") nq_star
+
       !
-    enddo
+      do iq_star=1,nq_star
+        !
+        read(io_unit_read, "(10x,3f10.6)") qpoint
+        if(iq_star==1) then
+          q_irr_cryst(:, iq) = qpoint
+          q_irr_cart(:, iq) = matmul(bg, qpoint)
+        endif
+        !
+        write(io_unit_write, "(a)") ""
+        write(io_unit_write, "(5x,a)") "Dynamical  Matrix in cartesian axes"
+        write(io_unit_write, "(a)") ""
+        !
+        ! write(io_unit_write,"(a11,3f14.9,a2)") "q_cart = ( ", matmul(bg, qpoint), " )"
+        write(io_unit_write,"(a11,3f14.9,a3)") "     q = ( ", matmul(bg, qpoint), " ) "
+        write(io_unit_write, "(a)") ""
+        !
+        ! FC
+        do ia=1,na_u
+          do ja=1,na_u
+            read(io_unit_read, *) !ia, ja
+            read(io_unit_read, "(3(2f12.8),2x)") ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3)
+
+            write(io_unit_write, "(2i5)") ia, ja
+            write(io_unit_write, "(3(f12.8,1x,f12.8,3x))") ( (dynq_re(i,j)*Ha2Ry, dynq_im(i,j)*Ha2Ry, j=1,3),i=1,3)
+          enddo
+        enddo
+        !
+      enddo ! iq_star
+      !
+      write(io_unit_write, "(a)") ""
+      write(io_unit_write, "(a)") "end of file"
+      write(io_unit_write, "(a)") ""
+      !
+      write(io_unit_write,"(a11,3f14.9,a2)") "q_cart = ( ", q_irr_cart(:, iq), " )"
+      write(io_unit_write, "(a)") ""
+      !
+    enddo ! iq
+    !
+    close(unit=io_unit_read)
+    close(unit=io_unit_write)
 
     ! Write irreducible q points
     io_unit = find_free_unit()

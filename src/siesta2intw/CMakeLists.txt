@@ -2,40 +2,6 @@
 
 if(USE_SIESTA)
 
-
-  # If SPGLIB is not specified by the user try to find it
-  if(NOT SPGLIB)
-
-    # Try to use PkgConfig first
-    find_package(PkgConfig)
-
-    if(PKG_CONFIG_FOUND)
-      pkg_check_modules(SPGLIB spglib)
-    else()
-      set(SPGLIB_FOUND 0)
-    endif()
-
-    if(SPGLIB_FOUND)
-      set(SPGLIB ${SPGLIB_LINK_LIBRARIES})
-    else()
-      message(STATUS "Trying to find Spglib")
-      set(_extaddlibdir "")
-      list(APPEND _extaddlibdir ENV LD_LIBRARY_PATH)
-      find_library(SPGLIB NAMES symspg PATHS ${_extaddlibdir})
-      if(SPGLIB)
-        set(SPGLIB_FOUND 1)
-      endif()
-    endif()
-
-    if(SPGLIB_FOUND)
-      set(SPGLIB ${SPGLIB} CACHE PATH "Spglib library.")
-    else()
-      message(FATAL_ERROR "Spglib not found!")
-    endif()
-
-  endif()
-
-
   set(SIESTA2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw src directory." FORCE)
   set(SIESTA2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw build directory." FORCE)
 
@@ -81,6 +47,7 @@ if(USE_SIESTA)
       set(SIESTA2INTW_FPPFLAGS -DDEBUG)
   endif()
 
+  list(JOIN SPGLIB_LIBRARIES " " SPGLIB_LIBRARIES_STR)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/Makefile.in"
                  "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/Makefile" @ONLY)
 

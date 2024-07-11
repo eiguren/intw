@@ -4,16 +4,7 @@ cmake_minimum_required(VERSION 3.12)
 # Add our local modlues to the module path
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-#set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 include(PreventInSourceBuilds)
-#include(PreventInBuildInstalls)
-#if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-#  message(FATAL_ERROR "In-source builds are not allowed.")
-#endif()
-
-
-#set(CMAKE_RULE_MESSAGES OFF)
-#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(intw
   VERSION 0.1
@@ -33,46 +24,20 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
   include_directories(${CPATH})
 endif()
 
-option(USE_MPI "Use the MPI library for parallelization" OFF)
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
 
-#message("CMAKE_Fortran_CREATE_SHARED_LIBRARY: ${CMAKE_Fortran_CREATE_SHARED_LIBRARY}")
-#message("CMAKE_Fortran_CREATE_SHARED_MODULE: ${CMAKE_Fortran_CREATE_SHARED_MODULE}")
-#message("CMAKE_Fortran_CREATE_STATIC_LIBRARY: ${CMAKE_Fortran_CREATE_STATIC_LIBRARY}")
-#message("CMAKE_Fortran_COMPILE_OBJECT: ${CMAKE_Fortran_COMPILE_OBJECT}")
-#message("CMAKE_Fortran_LINK_EXECUTABLE: ${CMAKE_Fortran_COMPILE_OBJECT}")
-#message("CMAKE_Fortran_ARCHIVE_CREATE: ${CMAKE_Fortran_ARCHIVE_CREATE}")
-#message("CMAKE_Fortran_ARCHIVE_APPEND: ${CMAKE_Fortran_ARCHIVE_APPEND}")
-#message("CMAKE_Fortran_ARCHIVE_FINISH: ${CMAKE_Fortran_ARCHIVE_FINISH}")
 
-
-#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> ruv <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in QE and wannier
-#set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cru <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in fftw3 and siesta
 set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in OpenBLAS and netlib lapack
 # cr should be correct, c for crate, and r for replace (cmake uses q for quick-append instead of r).
-# v adds verbose output.
-# And I don't know how works u, and I'm getting a warning also...
+
 
 include(SetFortranFlags)
 
-# Find MPI if needed
-if(USE_MPI)
-  message(WARNING "intw does not use MPI yet")
-  find_package(MPI REQUIRED)
-  add_definitions(-DMPI)
-  # Instead of ussing target_include_directories (which it is prefered), I am ussing include_directories, because all the targets will depend on MPI,
-  # and include_directories will add the include directories to all new targets.
-  include_directories(${MPI_Fortran_INCLUDE_PATH})
-  add_compile_options(${MPI_Fortran_COMPILE_FLAGS})
-endif()
 
 # Find OpenMP flag
 if(USE_OPENMP)
-  SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                   Fortran REQUIRED "-qopenmp"        # Intel
-                                    "-fopenmp"        # GNU
-                  )
+  find_package(OpenMP REQUIRED)
 endif()
 
 
@@ -101,6 +66,7 @@ if(DEFINED ENV{SIESTA_HOME})
   set(USE_SIESTA ON CACHE BOOL "Use SIESTA" FORCE)
 endif()
 if (USE_SIESTA)
+  find_package(Spglib REQUIRED)
   include(SetSiesta)
 endif()
 
@@ -122,6 +88,7 @@ if (USE_QE)
 endif()
 if (USE_SIESTA)
   add_subdirectory(src/siesta2intw)
+  add_subdirectory(src/siesta2ph)
 endif()
 
 
@@ -158,12 +125,23 @@ message("-- Fortran compiler vendor: ${CMAKE_Fortran_COMPILER_ID}")
 message("-- Archive: ${CMAKE_AR}")
 message("-- Ranlib: ${CMAKE_RANLIB}")
 message("-- Install prefix: ${CMAKE_INSTALL_PREFIX} (Use -DCMAKE_INSTALL_PREFIX=/install/prefix to change the default value)")
-if (USE_MPI)
-  message("-- MPI C compiler: ${MPI_C_COMPILER}")
-  message("-- MPI Fortran compiler: ${MPI_Fortran_COMPILER}")
-  message("-- MPI include dirs: ${MPI_Fortran_INCLUDE_DIRS}")
-  message("-- MPI link flags: ${MPI_Fortran_LINK_FLAGS}")
-  message("-- MPI library: ${MPI_Fortran_LIBRARIES}")
+if (USE_OPENMP)
+  if(OpenMP_C_FOUND)
+    if(OpenMP_C_FLAGS)
+      message("-- OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
+    else()
+      message("-- OpenMP_C_INCLUDE_DIRS: ${OpenMP_C_INCLUDE_DIRS}")
+      message("-- OpenMP_C_LIBRARIES: ${OpenMP_C_LIBRARIES}")
+    endif()
+  endif()
+  if(OpenMP_Fortran_FOUND)
+    if(OpenMP_Fortran_FLAGS)
+    message("-- OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
+  else()
+    message("-- OpenMP_Fortran_INCLUDE_DIRS: ${OpenMP_Fortran_INCLUDE_DIRS}")
+    message("-- OpenMP_Fortran_LIBRARIES: ${OpenMP_Fortran_LIBRARIES}")
+  endif()
+  endif()
 endif()
 message("-- BLAS flags: ${BLAS_LINKER_FLAGS}")
 message("-- BLAS library: ${BLAS_LIBRARIES}")
@@ -174,7 +152,7 @@ message("-- FFLAGS: ${CMAKE_Fortran_FLAGS}")
 message("-- FFLAGS_RELEASE: ${CMAKE_Fortran_FLAGS_RELEASE}")
 message("-- FFLAGS_DEBUG: ${CMAKE_Fortran_FLAGS_DEBUG}")
 message("-- FFLAGS_RELWITHDEBINFO: ${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}")
-# message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
+message("-- FFLAGS_MINSIZEREL: ${CMAKE_Fortran_FLAGS_MINSIZEREL}")
 if(Python3_Interpreter_FOUND)
   message("-- Python3: ${Python3_EXECUTABLE}")
 else()
@@ -187,7 +165,7 @@ endif()
 if (USE_SIESTA)
   message("-- SIESTA_HOME: ${SIESTA_HOME}")
   message("-- SIESTA_VERSION: ${SIESTA_VERSION}")
-  message("-- SPGLIB: ${SPGLIB}")
+  message("-- SPGLIB_LIBRARIES: ${SPGLIB_LIBRARIES}")
 endif()
 if (USE_WANNIER)
   message("-- W_HOME: ${W_HOME}")

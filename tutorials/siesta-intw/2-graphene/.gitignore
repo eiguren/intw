@@ -1,0 +1,6 @@
+*
+!.gitignore
+!C.psf
+!graphene.fdf
+!path.dat
+!siesta2ph.in

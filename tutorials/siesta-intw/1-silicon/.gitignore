@@ -1,0 +1,9 @@
+*
+!.gitignore
+!intw.in
+!bands_siesta2nxy.bash
+!bands_wannier2nxy.bash
+!s2intw.in
+!silicon.fdf
+!Si.psf
+!si.win

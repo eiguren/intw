@@ -1,0 +1,16 @@
+&input
+ prefix="graphene.fdf"
+ v0dir="./441/v0/"
+ phdir="./441/0.01/"
+ nr1=4
+ nr2=4
+ nr3=1
+ dx=0.01
+ lpm=.true.
+ use_sym=.true.
+ irreducible_q=.true.
+ kpath_file="path.dat"
+ xsf=.true.
+ full_xsf=.true.
+ verbose=.true.
+/

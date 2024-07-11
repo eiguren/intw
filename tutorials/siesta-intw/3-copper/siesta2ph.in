@@ -1,0 +1,14 @@
+&input
+ prefix="copper.fdf"
+ v0dir="./222/v0/"
+ phdir="./222/0.02/"
+ nr1=2
+ nr2=2
+ nr3=2
+ dx=0.02
+ lpm=.true.
+ irreducible_q = .true.
+ xsf=.false.
+ full_xsf=.false.
+ verbose=.true.
+/

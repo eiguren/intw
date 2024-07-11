@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+
+
+print_help () {
+    echo ""
+    echo "Usage:"
+    echo "  run-disps.bash [Options] <Directory>"
+    echo ""
+    echo "<Directory>:"
+    echo "  Directory where displacements are located."
+    echo ""
+    echo "Options:"
+    echo "  -d, --dm <file>          DM file."
+    echo "  -n, --nodes <integer>    Number of MPI nodes for the SIESTA calculations."
+    echo "  -s, --slurm <file>       SLURM job submission batch script."
+    echo "  -v, --verbose            Give more output."
+    echo "  -vv, --vverbose          Print also SIESTA output."
+    echo "  -h, --help               Show this help."
+}
+
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -d|--dm)
+      dm="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -n|--nodes)
+      nodes=$2
+      shift # past argument
+      shift # past value
+      ;;
+    -s|--slurm)
+      slurm="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -v|--verbose)
+      verbose=YES
+      shift # past argument
+      ;;
+    -vv|--vverbose)
+      vverbose=YES
+      shift # past argument
+      ;;
+    -h|--help)
+      print_help
+      exit 0
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      print_help
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [ "$1" = "" ]; then
+    echo "  ERROR: No directory specified"
+    exit 1
+fi
+phdir=${1%/}
+
+
+# echo $dm
+# echo $nodes
+# echo $slurm
+# echo $verbose
+# echo $vverbose
+# echo $phdir
+
+
+# phdir
+if [ ! -d "$phdir" ]; then
+    echo "  ERROR: $phdir not found"
+    exit 1
+fi
+
+
+# SLURM script
+if [ ! "$slurm" = "" ]; then
+    if [ ! -f "$slurm" ]; then
+        echo "  ERROR: $slurm not found"
+        exit 1
+    fi
+    echo "  NOT IMPLEMENTED: SLURM job submission is not implemented yet"
+    exit 1
+fi
+
+
+
+# topdir
+topdir=$(pwd)
+
+
+# DM file
+if [ "$dm" = "" ]; then
+    echo "  WARNING: No DM file specified: DM file will not be copied"
+else
+    # echo $dm_file
+    if [ ! -f "$dm" ]; then
+        echo "  ERROR: $dm not found"
+        exit 1
+    fi
+fi
+
+
+# SIESTA command
+siesta_exec=@SIESTA_BUILD_DIR@/siesta
+# echo $siesta_exec
+
+
+# MPI command
+if [ "$nodes" = "" ] ; then
+    echo "  WARNING: Running siesta in serial mode"
+    mpiexec_command=""
+else
+    echo "  WARNING: Running siesta in parallel mode with $nodes nodes"
+    mpiexec_command="mpirun -n $nodes"
+fi
+# echo $mpiexec_command
+
+
+# displacement directories
+disp_dirs=$(ls -d $phdir/disp-*)
+# echo $disp_dirs
+
+
+# Run calculations
+for dir in $disp_dirs
+do
+    fdf=$(cd $dir ; ls *.fdf)
+    fdf=( $fdf )
+    if [ ! "${#fdf[@]}" = "1" ]; then
+        echo "  ERROR: There are more than one fdf's in $dir"
+        exit 1
+    fi
+
+    if [ "$verbose" = "YES" ] || [ "$vverbose" = "YES" ] ; then
+        echo "Copying files *.psf and $dm to $dir" | sed 's/and  //'
+    fi
+    cp *.psf $dm $dir
+
+    cd $dir
+
+    echo "Runing SIESTA for $dir"
+    if [ "$verbose" = "YES" ] || [ "$vverbose" = "YES" ] ; then
+        echo "$mpiexec_command $siesta_exec < $fdf > out" | sed 's/^ //'
+    fi
+
+    if [ "$vverbose" = "YES" ] ; then
+      $mpiexec_command $siesta_exec < $fdf | tee out
+    else
+      $mpiexec_command $siesta_exec < $fdf > out
+    fi
+
+    cd $topdir
+done
