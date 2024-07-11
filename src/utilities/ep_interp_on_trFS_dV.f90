@@ -6,23 +6,24 @@
 
       ! A. Eiguren, C. Ambrosch-Draxl, Phys. Rev. B 78, 045124 (2008)
 
-      ! For that, the induced potentials calculated with QE on the q-grid are read in
+      ! For that, the induced potentials calculated with QE on the q-grid are read in 
       ! and interpolated to the non-uniform q-list corresponding to the triangulation (q=k'-k)
       ! Needed wavefunctions on the triangulated k-points are calculated on the fly by calling QE and stored.
       ! If such calculations preexist, those wavefunctions are read.
 
-! 1st part:
+! 1st part: 
 
-      ! This utility uses < intw.in as others
-      ! TODO it need specific input, so it may be better to write specific .in file
-      ! (in the end, it only uses mesh_dir and prefix from intw.in).
-      ! It needs to know the location of pw.x and pw2intw.x executables.
+      ! This utility uses < intw.in as others.
+      ! It uses mesh_dir, prefix, and info on which FS sheets are needed.
+      ! Unlike with Wannier g-element interpolation, here 
+      ! the location of pw.x and pw2intw.x executables is needed,
+      ! which is also given in the intw.in file.
 
       ! 1.- From files prefix.N_FS_tri.off, where  N is the Fermi surface (FS) sheet,
-      ! it reads the lists of k-points at the vertices, and the faces, in order to calculate
+      ! it reads the lists of k-points at the vertices, and the faces, in order to calculate 
       ! areas.
 
-      ! 2.- It writes a prefix.nscf.in input for pw.x by reading prefix.scf.in
+      ! 2.- It writes a prefix.nscf.in input for pw.x by reading prefix.scf.in 
       ! and replacing the k-points by the FS triangularization information.
 
       ! 3.- It writes a nscf-pw2intw.in file, which will convert wfc data from
@@ -34,11 +35,11 @@
 
       ! (2-4 done only in case prefix.nscf.out does not exist)
 
-! 2nd part:
+! 2nd part: 
 
-      ! Read derivative of local potential (dvq_local) on the real space unit cell for
+      ! Read derivative of local potential (dvq_local) on the real space unit cell for 
       ! q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
-      ! as the first step of the interpolation.
+      ! as the first step of the interpolation. 
       ! The non-local part will be added on the fly when interpolating over the triangulated k-points.
 
       ! 3rd part:
@@ -47,17 +48,19 @@
       ! Interpolate the potential.
       ! Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
       ! Write to file
-
-
-program ep_on_trFS_nufft
+      
+      
+program ep_on_trFS_dV
 
         use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
-        use intw_utility, only: find_free_unit, cryst_to_cart, generate_kmesh, ainv, &
-                                joint_to_triple_index_r, area_vec
+        use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, ainv, &
+                joint_to_triple_index_r, area_vec
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
                 intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
-                nq1, nq2, nq3, nqirr, ph_dir, fc_mat
+                nq1, nq2, nq3, nqirr, ph_dir,  &
+                use_exclude_bands, &
+                ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir
         use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
                 nG_max, ngm, gvec, get_gvec,  &
                 nkpoints_QE, kpoints_QE, nspin, &
@@ -77,12 +80,13 @@ program ep_on_trFS_nufft
                 symtable, rtau_index, rtau, rtau_cryst
 
         use intw_fft, only: generate_nl, allocate_fft, nl, wfc_from_g_to_r, func_from_g_to_r
-        use intw_fft_interp, only: nufft_interp_3d_cmplx
 
         use intw_ph, only: nqmesh, qmesh, frc, readfc, read_ph_information_xml, &
                 q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
                 QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q, &
                 dvq_local, dvpsi
+
+        use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
 
         implicit none
 
@@ -93,24 +97,23 @@ program ep_on_trFS_nufft
         character(100) :: file_off, file_nscf, file_nscf_out, file_scf, file_pw2intw, dir_scf, dir_nscf
         character(200) :: comando
         integer :: unit_off, unit_pw2intw, unit_scf, unit_nscf
-        integer :: nfs_sheets_tot, nkpt_tr_tot, nkpt_tr_ibz_tot
+        integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
         integer :: is, js, ikpt, ik, ik1, i,j,k, iface, iks, ish,  iksp, ishp, ibp
-        integer , allocatable :: nkpt_tr(:), &  ! number of kpoints in each FS sheet
+        integer  :: nfs_sheets_tot ! number of sheets considered
+        integer , allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+                                 nkpt_tr(:), &  ! number of kpoints in each FS sheet
                                  nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
-                                 nface_tr(:), &  ! number of faces in each FS sheet
-                                 nfs_sheet(:)   ! indices of FS sheets
+                                 nface_tr(:)  ! number of faces in each FS sheet
         real(dp) :: k1(3), k2(3), k3(3), kwei, vol1bz, dsk_vk_2
         real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
 
         ! for part II
         logical                  :: q_points_consistent
         logical                  :: full_mesh_q, IBZ_q
-        integer                  :: iq, irq, ir, ir_p, ir1, ir2, ir3, i1,i2,i3, j1,j2,j3
+        integer                  :: iq, irq, ir, ir_p, jr, ir1, ir2, ir3, i1,i2,i3, j1,j2,j3
         real(dp)                 :: qpoint(3), rvec(3)
         complex(dp)              :: facq, facqr
-        complex(dp), allocatable :: dvq_local_R(:,:,:,:,:,:)
-
-        !complex(dp), allocatable :: dvq_local_ref(:,:,:,:), dvq_local_interp(:,:,:,:) !testing
+        complex(dp), allocatable :: dvq_local_R(:,:,:,:,:)
 
         ! for part III
         logical                  :: have_ep
@@ -125,24 +128,28 @@ program ep_on_trFS_nufft
 
         complex(dp), external :: zdotc
 
+        ! time analysis
+        real(dp) :: time1, time2, time3, time4, time5
+
 
         20 format(A)
         30 format(A,F8.2,6X,A)
+
+
 
 !--------------------------------------------------------------------------------
 !================================================================================
 !       Talk to the user
 !================================================================================
 write(*,'(A)') '====================================================='
-write(*,'(A)') '|         e-p interpolation on triangulated FS      |'
+write(*,'(A)') '|         e-p calculation on triangulated FS        |'
+write(*,'(A)') '|  using interpolation of dV on the triangulated q  | '
 write(*,'(A)') '|        ---------------------------------          |'
 write(*,'(A)') '====================================================='
-write(*,'(A)') '|    waiting for input file...                      |'
+write(*,'(A)') '|  waiting for input file...                        |'
 
 !================================================================================
-!       read the input file
-!       Read in the necessary information from standard input
-!       (for this utility, only prefix needed, really)
+!       read the input files
 !================================================================================
 
     call read_input(read_status)
@@ -151,6 +158,34 @@ write(*,'(A)') '|    waiting for input file...                      |'
        stop
     end if
 
+    ! check right method is chosen in intw.in
+    if ( ep_interp_method .ne. 'dV_interpolate') then
+       write(*,*) ' ep_interp_method /= dV_interpolate in input. Stopping.'
+       stop
+    end if
+
+    !  Establish number of bands 
+    write(*,*)' use_exclude_bands =', use_exclude_bands
+    ! this needs to be invoked before set_num_bands
+    call read_parameters_data_file_xml()
+    ! this will read num_wann_intw and num_bands_intw dimensions 
+    call set_num_bands()
+    write(*,*)' num_bands_intw = ', num_bands_intw
+
+    ! choose Fermi surface sheets according to ep_interp_bands
+    if ( ep_interp_bands == 'intw_bands' ) then
+       nfs_sheets_tot = num_bands_intw
+       allocate ( nfs_sheet(nfs_sheets_tot) )
+       do ib = 1, num_bands_intw
+           nfs_sheet(ib) = ib
+       end do
+    else if ( ep_interp_bands == 'ef_crossing' ) then
+       nfs_sheets_tot = nfs_sheets_final - nfs_sheets_initial + 1
+       allocate ( nfs_sheet(nfs_sheets_tot) )
+       do ib = 1, nfs_sheets_tot
+           nfs_sheet(ib) = nfs_sheets_initial + ib-1
+       end do
+    end if        
 
     !******************************** Part I ************************************
 
@@ -163,12 +198,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
 write(*,'(A)') '====================================================='
 write(*,'(A)') '|    reading .off and v_k files...                  |'
 
-! TODO De momento, esto a mano
-nfs_sheets_tot = 1
-allocate (nfs_sheet(nfs_sheets_tot), nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
-allocate (nkpt_tr_ibz(nfs_sheets_tot))
-! labels of FS sheets
-nfs_sheet(1)=6
+allocate (nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
+allocate (nkpt_tr_ibz(nfs_sheets_tot)) 
 
 !open all sheet files just to see dimensions of kpoint lists
 unit_off=find_free_unit()
@@ -179,13 +210,14 @@ do is=1,nfs_sheets_tot
    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+   write(*,*) is, file_off
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
+   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges) 
    close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
+   !open the IBZ off file and search for dimension nkpt_tr_ibz(is). 
    !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
@@ -201,8 +233,6 @@ end do
 nkpt_tr_tot=sum(nkpt_tr)
 nkpt_tr_ibz_tot=sum(nkpt_tr_ibz)
 
-write(*,'(A)') '|   .off file                                       |'
-write(*,*) is, file_off
 write(*,'(A)') '|   Number of k-points (total vertices):            |'
 write(*,*)  nkpt_tr_tot
 write(*,'(A)') '|   Number of k-points in IBZ (total vertices):     |'
@@ -233,14 +263,14 @@ do is=1,nfs_sheets_tot
    if  ( i .ne. nkpt_tr(is) .or. j .ne. nface_tr(is) ) then
            write(*,*)'Error reading ', file_off, '. Stopping.'
            stop
-   end if
+   end if        
 
    !read vertices
    do ik=1,nkpt_tr(is)
       read(unit_off,*) kpts_tr(:,ik1+ik)  !units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
-   end do
+   end do   
 
-   !Read (triangular) faces on this sheet.
+   !Read (triangular) faces on this sheet. 
    !Each face contributes with 1/3 of its area to the effective area of each of its vertices.
    !Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik1+ik).
    do iface = 1,nface_tr(is)
@@ -267,7 +297,7 @@ do is=1,nfs_sheets_tot
    close(unit_off)
 
    ! velocity for this sheet (use same unit)
-
+   
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
    open(unit_off, file=file_off, status='old')
 
@@ -291,15 +321,15 @@ end do
   write(*,'(A)') '|================================================== |'
 
 
-!print *,  kpts_tr_area(1), vabsk_tr(1)
-!print *,  kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
+print *,  kpts_tr_area(1), vabsk_tr(1)
+print *,  kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
+print *, 'total area FS = ', sum(kpts_tr_area) ,' (2 x pi / alat)^2 ' !OK
 
-!print *, 'total area FS = ', sum(kpts_tr_area) ,' (2 x pi / alat)^2 ' !OK
 
 !================================================================================
 ! Read prefix.scf.in file line by line and dump information to prefix.nscf.in .
 ! For that, the lines containing calculation and prefix are modified.
-! When arriving at KPOINTS, reading stops and the triangle list is dumped to the
+! When arriving at KPOINTS, reading stops and the triangle list is dumped to the 
 ! prefix.nscf.in file .
 ! Note: this is done only in case the .nscf.out does not exist (otherwise,
 ! it is assumed that the wfcs have already been calculated and transformed to intw format)
@@ -320,13 +350,14 @@ unit_nscf= unit_scf + 1
 open(unit_scf, file=trim(file_scf), status='old')
 open(unit_nscf, file=trim(file_nscf), status='unknown')
 
-do
+do 
         read(unit_scf,'(a)',end=100) linea
         lleft=trim(adjustl(linea))
         if (lleft(1:11)=='calculation') then
            write(unit_nscf,*) " calculation = 'nscf' "
         else if (lleft(1:6)=='prefix') then
-           write(unit_nscf,*) " prefix = 'cu-nscf' "
+           !write(unit_nscf,*) " prefix = 'cu-nscf' "
+           write(unit_nscf,*) " prefix = '", trim(prefix), "-nscf' "
         else if (lleft(1:8) == 'K_POINTS') then
            exit
         else
@@ -382,7 +413,7 @@ comando='cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
 call system (comando)
 
 ! run pw.x and pw2intw.x
-! check if first and last wfc are present. If so, it probably means that the nscf
+! check if first and last wfc are present. If so, it probably means that the nscf 
 ! calculation was already made, so skip this step
 
 inquire(file=trim(dir_nscf)//'wfc1.dat',exist=have_wfc1)
@@ -391,15 +422,15 @@ inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat',exist=have_wfc
 
 if (have_wfc1 .and. have_wfcN) then
    write(*,*)' nscf calculation seems to have already been performed (check!).'
-   write(*,*)' Skipping pw.x and pw2intw.x'
-else
+   write(*,*)' Skipping pw.x and pw2intw.x' 
+else       
    ! invoke QE pw.x
-   ! (eventually, mpirun can be used)
-   comando='/home/mblanco/KODEAK/qe_git/build/bin/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
+   ! (eventually, mpirun can be used if these system call is modified)
+   comando=trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
    write(*,*)' Running ', comando
    call system (comando)
    ! Convert to INTW format
-   comando='/home/mblanco/KODEAK/qe_git/build/bin/pw2intw.x<'//trim(file_pw2intw)
+   comando=trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
    write(*,*)' Running ', comando
    call system (comando)
 end if
@@ -415,26 +446,24 @@ end if ! have_nscf
     !******************************** Part II ************************************
 
 !================================================================================
-!  Establish number of bands and generate coarse meshes of q-points
+!  Read phonon input and and generate coarse meshes of q-points
 !================================================================================
 
-    ! this needs to be invoked before set_num_bands
-    call read_parameters_data_file_xml()
-    ! this will read num_wann_intw and num_bands_intw dimensions from .nnkp if available
-    call set_num_bands()
     ! q_irr vectors info is obtained through this (it is contained in qlist.txt file)
     call read_ph_information_xml()
 
-
-
-    write(*,*)' num_bands_intw = ', num_bands_intw
     write(*,*)' nqirr = ', nqirr
-    write(*,*)' nq1, nq2, nq3 = ', nq1, nq2, nq3
+    write(*,*)' nq1, nq2, nq3 = ', nq1, nq2, nq3 
 
     ! Full zone qmesh
     nqmesh = nq1*nq2*nq3
     allocate(qmesh(3,nqmesh))
     call generate_kmesh(qmesh,nq1,nq2,nq3)
+
+    ! Wigner-Seitz R points 
+    call allocate_and_build_ws_irvec_q()
+
+    write(*,*)' qmesh and irvec_q meshes calculated'
 
     ! Irreducible q-points
     allocate(q_irr_cryst(3,nqirr))
@@ -453,7 +482,7 @@ end if ! have_nscf
       write(*,'(6f10.4)') q_irr(:,iq), q_irr_cryst(:,iq)
     enddo
 
-    ! Relate by symmetry
+    ! Relate by symmetry 
     ! (in principle, this is needed by get_dv)
     call set_symmetry_relations(nq1,nq2,nq3, nqirr, q_irr_cryst, qmesh, &
                               q_points_consistent, &
@@ -477,11 +506,19 @@ end if ! have_nscf
 
   ! Allocate induced potential related variables (
   ! hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz)
-  allocate(dvpsi(nG_max,num_bands_intw,nspin,nspin,3*nat))
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
-  ! order convenient for nufft
-  allocate(dvq_local_R(-nr1*nq1/2:nr1*nq1/2-1,-nr2*nq2/2:nr2*nq2/2-1,-nr3*nq3/2:nr3*nq3/2-1,3*nat,nspin,nspin))
 
+  ! Potential in the supercell using Wigner-Seitz R points
+  allocate(dvq_local_R(nrpts_q,nr1*nr2*nr3,3*nat,nspin,nspin))
+
+  ! !allocate only needed bands
+  ! MBR 270624
+!  if (ep_interp_bands == 'intw_bands') then
+!          allocate(dvpsi(nG_max,num_bands_intw,nspin,nspin,3*nat))
+!  else if (ep_interp_bands == 'ef_crossing') then
+!          allocate(dvpsi(nG_max,nfs_sheets_initial:nfs_sheets_final,nspin,nspin,3*nat))
+!  end if
+ 
   ! read G vectors
   write(*,20) '|       - Reading G vectors...                      |'
   call get_gvec()
@@ -507,18 +544,16 @@ end if ! have_nscf
   call read_allq_dvr()
   write(*,20) '====================================================='
 
-
-  ! dVq-related quantities allocated and initiated'
-  ! Loop over whole mesh: add each q-point dvq_local to the Fourier transform
-
+  ! Fourier transform a la Wannier of q->R of dvq_local using the Wigner-Seitz supercell grid.
+  ! Loop over whole mesh: obtain dvq_local for each q-point and add it to the Fourier transform
   dvq_local_R=cmplx_0
-
-  do iq=1,nqmesh
+  do iq = 1, nqmesh
 
       qpoint = qmesh(:,iq)
       write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
 
-      ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
+      ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez)
+      ! qpoint honetarako.
       dvq_local = cmplx_0
       call get_dv(qpoint,3*nat,nspin,dvq_local)
 
@@ -527,55 +562,39 @@ end if ! have_nscf
       call init_vlocq(qpoint)
       call calculate_local_part_dv(qpoint, dvq_local)
 
-      ! Fourier with e^{iq.R}, where R is a lattice vector of the WS supercell, as
-      ! we would do in Wannier.
-      ! Since dvq_local contains the periodic part in real-space coordinates r of the uc
-      ! (collapsed into 1 index), I need to add e^{iq.r}
-       do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+      ! transform with phase: iq*(r-R)
 
+      do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1) 
           !ir to (ir1,ir2,ir3), 3rd index fastest
           ir_p = ir
           call joint_to_triple_index_r(nr1,nr2,nr3,ir_p,ir1,ir2,ir3)
-          rvec(1) = real(ir1-1,dp)/real(nr1,dp)
+          rvec(1) = real(ir1-1,dp)/real(nr1,dp)  ! r-vector in fractional coord.
           rvec(2) = real(ir2-1,dp)/real(nr2,dp)
           rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-          facqr = exp(cmplx_i*tpi*dot_product(qpoint,rvec)) ! e^{iq.r}
+          do jr = 1,nrpts_q 
+             facq = exp(cmplx_i*tpi*dot_product(qpoint,rvec(:)-irvec_q(:,jr)))
+             dvq_local_R(jr,ir,:,:,:) = dvq_local_R(jr,ir,:,:,:) + facq * dvq_local(ir,:,:,:)
+          end do ! R in WS
+      end do ! e in unit cell
 
-          do i1=0,nq1-1 ! R coordinates 0:nr1-1, etc.
-          do i2=0,nq2-1
-          do i3=0,nq3-1
-             facq =  exp( cmplx_i*tpi*( i1*qpoint(1)+i2*qpoint(2)+i3*qpoint(3) )  ) ! e^{iq.R}
-             ! integer index of r+R is in [0:nq1*nr1-1], etc
-             j1 = i1*nr1 + ir1-1
-             j2 = i2*nr2 + ir2-1
-             j3 = i3*nr3 + ir3-1
-             ! fold to [-nq1*nr1/2:nq1*nr1/2-1] etc, needed to make call to NUFFT clear
-             if (j1 > nq1*nr1/2-1) j1=j1-nq1*nr1
-             if (j2 > nq2*nr2/2-1) j2=j2-nq2*nr2
-             if (j3 > nq3*nr3/2-1) j3=j3-nq3*nr3
-             dvq_local_R(j1,j2,j3,:,:,:) = dvq_local_R(j1,j2,j3,:,:,:) + facqr*facq*dvq_local(ir,:,:,:)
-          end do
-          end do
-          end do
-
-       end do !unit cell
-
-!       if (iq==8 .or. iq==7) dvq_local_ref(:,:,:,:) = dvq_local_ref(:,:,:,:) + 0.5_dp*dvq_local !for the test below
-
-  end do !qmesh
+  end do 
   dvq_local_R = dvq_local_R / real(nqmesh,dp)  !normalize Fourier transform
 
 
  write(*,*)' !  ---------------- Part II completed ----------------------'
 
-  ! DUDA dvq_local_R en la supercelda (valores en r+R) deberia ser real, no?
+  ! DUDA dvq_local_R en la supercelda (valores en r+R) deberia salir real?
 
 
   !******************************* Part III *************************************
   ! For the a2F integral we will need a double loop on kpoints of the FS triangulation.
-  ! In this part the final ep element is calculated on the go for q=k'-k after
+  ! In this part the final ep element is calculated on the go for q=k'-k after 
   ! backtransform of dV local:
   ! dvq_local(k+q,k) = dvq_local(k',k)
+
+  ! allocate dvpsi for only one band, as band index is included in the k indices and thus
+  ! run one-by-one in the loops below
+  allocate(dvpsi(nG_max,1,nspin,nspin,3*nat))
 
   allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
 
@@ -584,39 +603,6 @@ end if ! have_nscf
   allocate(wfc(nG_max,num_bands_intw,nspin), wfc_p(nG_max,num_bands_intw,nspin))
   allocate (vfc(ngm,nspin,nspin))
 
-  !***************************** test: interpolate dV in one of the given points
-  ! by reproducing the value, I should be able to understand the transform prefactor
-  ! (now I am not sure if I should divide by nr1*nr2*nr3*nq1*nq2*nq3...
-  ! according to this test, it is by nr1*nr2*nr3 only!)
-
-!  iq=7
-!  qpoint = 0.5_dp*(qmesh(:,8) + qmesh(:,7))
-!  print *, qmesh(:,7)
-!  print *, qmesh(:,8)
-!  print *, qpoint
-!  do iat=1,3*nat
-!         vfc = cmplx_0
-!         do is=1,nspin
-!         do js=1,nspin
-!              ! this calculates the Fourier transform for q+G, for all G in gvec list (thus ngm values in vfc)
-!              call nufft_interp_3d_cmplx (nq1, nq2, nq3, qpoint, &
-!                   dvq_local_R(:,:,:,iat,is,js), vfc(:,is,js))
-!         end do
-!         end do
-!         call func_from_g_to_r (nspin, ngm, vfc, dvq_local_interp(:,iat,:,:))
-!  end do
-!  dvq_local_interp=dvq_local_interp/real(nr1*nr2*nr3,dp) ! don't ask...
-!  ! print dvq_local_interp vs. dvq_local_ref
-!   do ir=1,nr1*nr2*nr3
-!          call joint_to_triple_index_r(nr1,nr2,nr3,ir,ir1,ir2,ir3)
-!          ik=1000+iq
-!          write(unit=ik,fmt="(3i4,50e12.4)") ir1,ir2,ir3, (dvq_local_ref(ir,iat,1,1),iat=1,3*nat)
-!          ik=2000+iq
-!          write(unit=ik,fmt="(3i4,50e12.4)") ir1,ir2,ir3, (dvq_local_interp(ir,iat,1,1),iat=1,3*nat)
-!   end do
-!   stop
-
-  !******************************
 
   altprefix=trim(prefix)//'-nscf'
   unit_ep=find_free_unit()
@@ -627,24 +613,28 @@ end if ! have_nscf
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
   open(unit_ep, file=file_ep, status='unknown')
-  write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)'
+  write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)' 
 
 
-! ik, ikp indices implicitly contain the FS sheet index, i.e. the band indices ib, ib'
-! to be selected, so instead of iterating over nkpt_tr_tot, I separate over sheets
+! ik, ikp indices implicitly contain the FS sheet index, i.e. the band indices ib, ib' 
+! to be selected, so instead of iterating over nkpt_tr_tot, I separate over sheets 
 ! (aep_mat_el elements are stored only for the needed pair of sheets for a given kk')
 
   ik = 0
+  ik1 = 0
   do ish = 1, nfs_sheets_tot
       ib = nfs_sheet(ish) !band index for k
   do iks = 1, nkpt_tr_ibz(ish)
-      ik = ik + 1   !k-index over nkpt_tr_tot in the Irreducible BZ
+      ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
+      ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
+      ik = ik + 1
+      ik1 = ik1 + 1
 
-      kpoint = kpts_tr(:,ik)  ! this is cartesians x 2pi/alat. Transform to cryst.
+      kpoint = kpts_tr(:,ik1)  ! this is cartesians x 2pi/alat. Transform to cryst.
       call cryst_to_cart (1, kpoint, at, -1)
 
       ! Read wavefunction k
-      call get_K_folder_data(ik, list_iG, wfc, QE_eig, nG, altprefix)
+      call get_K_folder_data(ik1, list_iG, wfc, QE_eig, nG, altprefix)
       ! re-do nG (the one from the routine is read from the file)
       nG=0
       do iG=1,nG_max
@@ -652,17 +642,25 @@ end if ! have_nscf
           nG=nG+1
       enddo
 
+      ! non-local contribution:
+      !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k puntuetarako, 
+      ! k+q behean egingo da).
+      vkb = cmplx_0
+      call init_KB_projectors(nG, list_iG, kpoint, vkb )
+
   ikp = 0
   do ishp = 1, nfs_sheets_tot
       ibp = nfs_sheet(ishp) !band index for k'
   do iksp = 1, nkpt_tr(ishp)
       ikp = ikp + 1   !k'-index over nkpt_tr_tot
-
+   
       kpoint_p = kpts_tr(:,ikp)  ! this is cartesians x 2pi/alat. Transform to cryst.
       call cryst_to_cart (1, kpoint_p, at, -1)
+        
+        !call get_timing(time1)
 
       ! Read wavefunction k'
-      call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
+      call get_K_folder_data (ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
       ! re-do nG (the one from the routine is read from the file)
       nG_p=0
       do iG=1,nG_max
@@ -670,71 +668,98 @@ end if ! have_nscf
           nG_p=nG_p+1
       enddo
 
-      ! Fourier backtransform: interpolation of dV local at qpoint
-      ! with e^{+iq.R}, where R is a lattice vector of the WS supercell, as
-      ! we would do in Wannier.
-      ! Since dvq_local is the periodic part, we add e^{-iq.r}, where
-      ! r is a uc position in crystal real-space coordinates
+        !call get_timing(time2)
+        !print *,' get wfc time = ', time2-time1
 
       qpoint = kpoint_p-kpoint
+
+        !call get_timing(time1)
+
+      ! Fourier backtransformi a la Wannier: interpolation of dV local at qpoint
+      ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
+      ! we would do in Wannier.
+
       dvq_local = cmplx_0  !watch out: I am reusing this array in this step of k,k' double loop
+      do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+          !ir to (ir1,ir2,ir3), 3rd index fastest
+          ir_p = ir
+          call joint_to_triple_index_r(nr1,nr2,nr3,ir_p,ir1,ir2,ir3)
+          rvec(1) = real(ir1-1,dp)/real(nr1,dp)  ! r-vector in fractional coord.
+          rvec(2) = real(ir2-1,dp)/real(nr2,dp)
+          rvec(3) = real(ir3-1,dp)/real(nr3,dp)
+          do jr = 1,nrpts_q
+             facq = exp(-cmplx_i*tpi*dot_product(qpoint,rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
+             dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
+          end do ! R in WS
+      end do ! r in unit cell
 
-      ! Fourier of dvq_local_R at q+G. Run over G.
-      ! This gives the periodic part of dvq in the same "format" as a wfc.
-      ! Then transform G-->r
-
-      do iat=1,3*nat
-         vfc = cmplx_0
-         do is=1,nspin
-         do js=1,nspin
-              ! this calculates the Fourier transform for q+G, for all G in gvec list (thus ngm values in vfc)
-              call nufft_interp_3d_cmplx ( nq1, nq2, nq3, qpoint, &
-                   dvq_local_R(:,:,:,iat,is,js), vfc(:,is,js))
-         end do
-         end do
-         ! func_from_g_to_r uses a f(G,is,nf) with spin component as second index and
-         ! nf)number of f(G,is) to be transformed as third.
-         ! I call using the other spin index (js) as nf.
-         call func_from_g_to_r (nspin, ngm, vfc, dvq_local(:,iat,:,:))
-      end do
-      dvq_local=dvq_local/real(nr1*nr2*nr3,dp) ! this normalization is needed to get dvq_local(r) (checked)
+        !call get_timing(time2)
+        !print *,' total interpolation time = ', time2-time1
 
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
       ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-      call dvqpsi_local(num_bands_intw, list_iG, list_iG_p, wfc, dvq_local, dvpsi)
-
+      ! MBR 270624
+      !if (ep_interp_bands == 'intw_bands') then
+      !    call dvqpsi_local(num_bands_intw, list_iG, list_iG_p, wfc, dvq_local, dvpsi)
+      !else if (ep_interp_bands == 'ef_crossing') then
+      !    call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib,:), dvq_local, dvpsi(:,ib,:,:,:)  )
+      !end if
+       call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib,:), dvq_local, dvpsi(:,1,:,:,:)  )
 
       ! Add non-local contribution:
-      !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren).
-      vkb = cmplx_0
+      !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k+q puntuetarako, 
+      ! k puntua goian egin da).
+
+        !call get_timing(time1)
+
       vkqb = cmplx_0
-      call init_KB_projectors(nG, list_iG, kpoint, vkb )
       call init_KB_projectors(nG_p, list_iG_p, kpoint_p, vkqb)
+
+        !call get_timing(time2)
+        !print *,' vkqb time = ', time2-time1
 
       !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
-      call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iG, list_iG_p, wfc, dvpsi)
+        !call get_timing(time1)
 
+        ! MBR 270624
+      !if (ep_interp_bands == 'intw_bands') then
+      !    call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iG, list_iG_p, wfc, dvpsi)
+      !else if (ep_interp_bands == 'ef_crossing') then
+      !    call multiply_psi_by_dvKB(kpoint, qpoint, 1, list_iG, list_iG_p, wfc(:,ib,:), dvpsi(:,ib,:,:,:)  )
+      !end if    
+      call multiply_psi_by_dvKB(kpoint, qpoint, 1, list_iG, list_iG_p, wfc(:,ib,:), dvpsi(:,1,:,:,:)  )
 
+        !call get_timing(time2)
+        !print *,' multiply_psi_by_dvKB time = ', time2-time1
+               
       !-QE-ren subroutina goikoaren berdina egiteko.
       ! Osagai kanonikoak, ez dira moduak, kontuz.
       ! matrize elementuak kalkulatu: ep_element(k',k) = k+q,k
 
-      do iat=1,3*nat
+         !call get_timing(time1)
+
+      do iat=1,3*nat 
           do js=1,nspin
             do is=1,nspin
                 aep_mat_el(ikp,ik, js,is,iat) = &
-                          zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,ib,js,is,iat), 1 )
+                          !!zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,ib,js,is,iat), 1 )   !MBR 270624
+                          zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
             enddo !is
           enddo !js
       enddo !iat
 
-      print *, ikp, kpts_tr(:,ikp) - kpts_tr(:,ik)
+         !call get_timing(time2)
+         !print *,' aep_mat_el time = ', time2-time1
+
+
+      !print *, ikp, kpts_tr(:,ikp) - kpts_tr(:,ik) 
 
       do js=1,nspin
         do is=1,nspin
-            write(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpts_tr(:,ikp),  &
+            !write(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpts_tr(:,ikp),  &
+            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
                  (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
         end do
       end do
@@ -742,15 +767,15 @@ end if ! have_nscf
   end do  ! k'
   end do  ! sheet'
 
-  print *, ik
-
+  print *, ik, ik1
   end do  ! k
+  ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
   end do  ! sheet
 
   close(unit_ep)
   write(*,*) '!      e-p elements interpolated and written to file:         !'
   write(*,*) file_ep
-  write(*,*) '!      (local part only)                                      !'
+  !write(*,*) '!      (local part only)                                      !'
 
   else ! have_ep--> read interpolated matrix elements
 
@@ -772,4 +797,6 @@ end if ! have_nscf
 
 
 
-end program ep_on_trFS_nufft
+end program ep_on_trFS_dV
+
+

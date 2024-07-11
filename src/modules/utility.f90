@@ -19,16 +19,17 @@ use kinds, only: dp
   public :: get_timing, &
             joint_to_triple_index_g, triple_to_joint_index_g, &
             joint_to_triple_index_r, triple_to_joint_index_r, &
-            generate_kmesh, find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
+            generate_kmesh, generate_and_allocate_kpath, &
+            find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
             HPSORT, HPSORT_real, hpsort_eps, &
-            find_r_in_WS_cell, errore, simpson, gaussian, sphb, &
+            find_r_in_WS_cell, errore, simpson, sphb, &
             real_ylmr2
   !
   ! functions
   public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
-            smeared_delta, fermi_dirac, area_vec
+            smeared_delta, smeared_lorentz, fermi_dirac, area_vec
   !
   private
   !
@@ -487,6 +488,89 @@ end function intgr_spline_gaussq
 
 
   end subroutine generate_kmesh
+
+
+  subroutine generate_and_allocate_kpath(at, bg, tpiba, nkpath, nkspecial, kspecial, kpath, dkpath)
+    ! --------------------------------------------------
+    ! MBR 03/05/2024
+    ! This generates the path of nearly equispaced k-points in cartesians
+    ! and convert to cryst at the end.
+    ! It works similar to Asier's method:
+    ! The total length of the path is calculated and a
+    ! number of points per stage is assigned proportional
+    ! to the stage length.
+    ! Each stage starts with a kspecial point.
+    ! In the end it may happen that this routine generates a few less points
+    ! in total than nkpath. In that case, this value is corrected and returned,
+    ! together with the allocated kpath list (in fractional coordinates).
+    ! Optionally, a list of distances dkpath between k-points (in cartesians) is returned.
+    ! --------------------------------------------------
+    implicit none
+
+    integer, intent(in) :: nkspecial
+    integer, intent(inout) :: nkpath
+    real(dp), intent(in) :: at(3,3), bg(3,3), tpiba
+    real(dp), intent(in) :: kspecial(3,nkspecial)
+    real(dp), allocatable , intent(out) :: kpath(:,:)
+    real(dp), allocatable , intent(out) , optional :: dkpath(:)
+
+    integer :: i,j,ik, nkstage(nkspecial-1)
+    real(dp) :: lpath, lstep
+    real(dp) :: kspecial_cart(3,nkspecial), lstage(nkspecial-1), vec(3)
+
+    ! cryst to cart of special points forming the path milestones
+
+    kspecial_cart = kspecial
+    call cryst_to_cart (nkspecial, kspecial_cart, bg, 1)
+
+    ! total length (lpath) of the path by adding stages of length (lstage)
+    do i=2,nkspecial
+       vec = kspecial_cart(:,i) - kspecial_cart(:,i-1)
+       lstage(i-1) = sqrt( dot_product(vec,vec) )
+    end do
+    lpath = sum(lstage)
+
+    ! number of points in the path per stage
+    do i=2,nkspecial
+        nkstage(i-1) = int( real(nkpath-1,dp) * lstage(i-1) / lpath)
+    end do
+
+    ! check how many point will we actually generate
+    if ( sum(nkstage) - nkpath .ne. 0) &
+        write(*,*)' Actual path will have', sum(nkstage), ' points instead of ', nkpath
+
+    nkpath = sum(nkstage)
+    allocate(kpath(3,nkpath))
+
+    ! Build path points in cartesians
+    kpath = 0.0_dp
+    ik = 0
+    do i=2,nkspecial
+       ! stage i-1 starts in i-1-th, ends in i-th special point,
+       ! but this i-th point is not included.
+       ! It contains nkstage(i-1) points
+       do j=1, nkstage(i-1)
+          ik = ik+1
+          kpath(:,ik) = kspecial_cart(:,i-1) + &
+                      (kspecial_cart(:,i) - kspecial_cart(:,i-1) ) * real(j-1,dp) / real(nkstage(i-1),dp)
+       end do
+    end do
+
+    !compute accumulated distance (cartesians, atomic units, incl. 2pi/alat factor) along path if requested
+    if (present(dkpath)) then
+      allocate(dkpath(nkpath))
+      dkpath(1) = 0.0_dp
+      do ik=2,nkpath
+         dkpath(ik) = dkpath(ik-1) + &
+             sqrt(dot_product(kpath(:,ik)-kpath(:,ik-1), kpath(:,ik)-kpath(:,ik-1) )) * tpiba
+      end do
+    end if
+
+    ! Finally, convert kpath list to crystal coordinates
+    call cryst_to_cart (nkpath, kpath, at, -1)
+
+  end subroutine generate_and_allocate_kpath
+
 
   subroutine find_neighbor(kpoint,nk_1,nk_2,nk_3,i_k,j_k,k_k)
     !----------------------------------------------------------------------------!
@@ -1342,49 +1426,6 @@ end function intgr_spline_gaussq
   end function qe_erfc
 
 
-  subroutine gaussian(e0, e_min, e_max, n, sigma, gauss)
-    !
-    ! Created by Peio G. Goiricelaya 11/03/2016
-    !
-    !==========================================================================================!
-    ! We create a list containing values for Delta[e-e0] simulated by the gaussian function    !
-    ! with e defined by us from e_min to e_max, and with n points, each on separated from its  !
-    ! neighbours by abs[e_max-e_min]/n                                                         !
-    !==========================================================================================!
-
-    use kinds, only: dp
-    use intw_useful_constants, only: ZERO, pi
-
-    implicit none
-
-    !I/O variables
-
-    integer, intent(in) :: n
-    real(kind=dp), intent(in) :: e0, e_min, e_max, sigma
-    real(kind=dp), intent(out) :: gauss(n)
-
-    !local variables
-
-    integer :: i
-    real(kind=dp) :: e
-
-    gauss = ZERO
-    !
-    do i = 1, n
-      !
-      e = e_min+(e_max-e_min)*(i-1)/(n-1)
-      !
-      if ( abs(e-e0) > 4.d0*sigma ) then
-        gauss(i) = ZERO
-      else
-        gauss(i) = exp(-((e-e0)/sigma)**2)/(sigma*sqrt(pi))
-      endif
-      !
-    enddo
-
-  end subroutine gaussian
-
-
   recursive function sphb(n,x) result(sphb_)
     !
     ! Spherical bessel functions
@@ -1577,6 +1618,17 @@ end function intgr_spline_gaussq
     smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
   return
   end function smeared_delta
+
+  function smeared_lorentz(x,s)
+          ! MBR 280624
+    use kinds, only: dp
+    use intw_useful_constants, only: pi
+    implicit none
+    real(dp) :: x,s, smeared_lorentz
+    !lorentz
+    smeared_lorentz = s / (pi*(s*s+x*x))
+  return
+  end function smeared_lorentz
 
   function fermi_dirac(x, kt)
           ! x = energy - e_fermi, kT = Boltzmann * temp, same units

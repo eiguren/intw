@@ -239,8 +239,9 @@ contains
           n1 = n1 + 1
           do n2=1,num_wann_intw
             do i=1,num_wann_intw
-               u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)   
-               ! DUDA: no deberia ser: u_mesh(nb1,n2,ik) = u_mesh(nb1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
+               !u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)   
+               !MBR 10/05/24. I think it should be:
+               u_mesh(nb1,n2,ik) = u_mesh(nb1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
             enddo !i
           enddo !n2
        enddo !nb1
@@ -315,7 +316,7 @@ contains
   end subroutine write_formatted_u_mesh
   !
   !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ws_irvec(nk1,nk2,nk3)
+  subroutine allocate_and_build_ws_irvec_hold(nk1,nk2,nk3)
   !----------------------------------------------------------------------------!
   !  Calculate real-space Wigner-Seitz lattice vectors
   !----------------------------------------------------------------------------!
@@ -331,13 +332,15 @@ contains
   integer :: ik, nws, i,j,k,l
   integer :: permu(n_wss), rdeg_ws_max(nk1*nk2*nk3) 
   integer :: r_ws_max(3,n_wss,nk1*nk2*nk3)
-  real(kind=dp) :: kmesh(3,nk1*nk2*nk3)
+  integer :: r_cryst_int(3,n_wss)
+  real(kind=dp) :: kmesh(3,nk1*nk2*nk3), dist0
   real(kind=dp) :: r_cryst(3,n_wss), r_length(n_wss), r_cart(3)
   !
   call generate_kmesh (kmesh,nk1,nk2,nk3)
   !
   nws = 0  ! total number of WS vectors
   do ik = 1,nk1*nk2*nk3
+      !
       l = 0
       do i = -n_ws_search(1),n_ws_search(1)
       do j = -n_ws_search(2),n_ws_search(2)
@@ -348,6 +351,7 @@ contains
          r_cryst(2,l) =  kmesh(2,ik) + real(j,dp)
          r_cryst(3,l) =  kmesh(3,ik) + real(k,dp)
          r_cart = r_cryst(:,l) * (/ nk1, nk2, nk3 /)   
+         r_cryst_int(:,l) = nint(r_cart)
          !R-vector from crystallographic to cartesian
          call cryst_to_cart (1, r_cart, at, 1)
          r_cart = r_cart * alat  ! bohr units
@@ -355,22 +359,25 @@ contains
      end do   
      end do   
      end do   
+     !
      ! order by ascending length
      call HPSORT_real(n_wss,r_length,permu)
      ! store first vector (shortest)
-     r_ws_max(:,1,ik) = INT(r_cryst(:,permu(1)) * (/ nk1, nk2, nk3 /) )
+     r_ws_max(:,1,ik) = r_cryst_int(:,permu(1))
      rdeg_ws_max(ik) = 1
      nws = nws + 1
      ! detect degeneracies and store vectors if degenerate
      do l = 2,n_wss
-        if ( abs(r_length(l) - r_length(l-1))<eps_6) then
-           r_ws_max(:,l,ik) = INT(r_cryst(:,permu(l)) * (/ nk1, nk2, nk3 /) )
+        !if ( abs(r_length(l) - r_length(l-1))<eps_6) then
+        if ( abs(r_length(l) - r_length(1))<eps_6) then
+           r_ws_max(:,l,ik) = r_cryst_int(:,permu(l))
            rdeg_ws_max(ik) = rdeg_ws_max(ik) + 1
            nws = nws + 1
         else
            exit
         end if
      end do  
+     !
   end do
   !
   ! Data for Wannier
@@ -389,16 +396,113 @@ contains
      end do
   end do
 
-  !!JLB test
+  !JLB test
+  !write (*, '(I5)') nrpts
   !write (*, '(15I5)') (ndegen(i), i=1, nrpts)
   !do i = 1, nrpts
-  !      write (*, '(3I6)') irvec(:, i)
+  !      write (*, '(i5,3I6)') i, irvec(:, i)
+  !end do
+
+  return
+  end subroutine allocate_and_build_ws_irvec_hold
+  !
+  subroutine allocate_and_build_ws_irvec(nk1,nk2,nk3)
+  !----------------------------------------------------------------------------!
+  !  Calculate real-space Wigner-Seitz lattice vectors
+  !----------------------------------------------------------------------------!
+  !
+  use intw_reading, only:  at, alat
+  use intw_useful_constants, only: eps_8
+  use intw_utility, only: generate_kmesh, cryst_to_cart
+  !
+  implicit none
+  !
+  integer, intent(in) :: nk1,nk2,nk3
+  !
+  logical :: in_ws
+  integer :: ik, nboundary, i,j,k,l, l0,l1
+  integer :: r_cryst_int(3), Rs(3,n_wss), ndegen_ws(nk1*nk2*nk3*n_wss), irvec_ws(3,nk1*nk2*nk3*n_wss)
+  real(kind=dp) :: kmesh(3,nk1*nk2*nk3), dist0
+  real(kind=dp) :: r_cryst(3), r_length_l, r_length_l1, r_cart(3)
+  !
+  call generate_kmesh (kmesh,nk1,nk2,nk3)
+  !
+  ! generate superlattice replica vectors search mesh
+  l = 0
+  do i = -n_ws_search(1),n_ws_search(1)
+  do j = -n_ws_search(2),n_ws_search(2)
+  do k = -n_ws_search(3),n_ws_search(3)
+         l = l + 1
+         Rs(:,l) = (/ i,j,k /)
+         if (i == 0 .and. j == 0 .and. k == 0) l0=l ! Origin O
+  end do       
+  end do       
+  end do       
+  !
+  nrpts = 0  ! total number of WS vectors
+  do ik = 1,nk1*nk2*nk3
+     !
+     do l = 1, n_wss
+        ! r-R(l), where for r-supercell-vector I use a conventional cell mesh of size nk1, nk2, nk3
+        ! and R(l) runs over replicas
+        r_cryst = ( kmesh(:,ik) - real(Rs(:,l),dp) ) * real( (/ nk1, nk2, nk3 /), dp)
+        r_cryst_int = nint(r_cryst)
+        !R-vector from crystallographic to cartesian
+        r_cart = r_cryst
+        call cryst_to_cart (1, r_cart, at, 1)
+        r_length_l =  alat * sqrt ( sum(r_cart*r_cart) )  ! distance of r-R(l) to O (cartesian, bohr)
+        !
+        ! r-R(l) is in the WS if its distance to O is shorter than its 
+        ! distance to any other O' origin. 
+        ! If it is equidistant, it lies on the boundary and is degenerate.
+        in_ws = .true.
+        nboundary = 1
+        !
+        ! Loop over origins O' given by R(l1)
+        do l1 = 1, n_wss
+          ! r-R(l)-R(l1)
+          r_cryst = ( kmesh(:,ik) - real(Rs(:,l)+Rs(:,l1),dp) ) * real( (/ nk1, nk2, nk3 /), dp)
+          r_cart = r_cryst
+          call cryst_to_cart (1, r_cart, at, 1)
+          r_length_l1 = alat * sqrt ( sum(r_cart*r_cart) )  ! distance of r-R(l) to O' (cartesian, bohr)
+          ! compare distances leaving a eps_8 gap
+          if ( r_length_l > r_length_l1 + eps_8 .and. l1/=l0) then ! not in the WS => remove vector from list
+                  in_ws = .false.
+                  exit
+          else if ( abs(r_length_l-r_length_l1)<=eps_8 .and. l1/=l0) then ! on the boundary => add degeneracy
+                  nboundary = nboundary + 1
+          end if    
+        end do
+        !
+        ! store r-R(l) and its degeneracy if it is inside WS
+        if (in_ws) then
+             nrpts=nrpts+1
+             irvec_ws(:,nrpts) = r_cryst_int
+             ndegen_ws(nrpts) = nboundary 
+        end if        
+        !
+     end do
+  end do ! ik
+  !
+  ! Data for Wannier: WS kpoint list and degeneracies.
+  ! Simply dismiss the array at sites >nrpts, which have not been used
+  allocate ( irvec(3,nrpts) )
+  allocate ( ndegen(nrpts) )
+  ndegen = ndegen_ws(1:nrpts)
+  do i=1,3
+       irvec(i,:) = irvec_ws(i,1:nrpts)
+  end do
+
+  !JLB test
+  !write (*, '(I5)') nrpts
+  !write (*, '(15I5)') (ndegen(i), i=1, nrpts)
+  !do i = 1, nrpts
+  !      write (*, '(i5,3I6)') i, irvec(:, i)
   !end do
 
   return
   end subroutine allocate_and_build_ws_irvec
 
-  
   !
   !----------------------------------------------------------------------------!
   subroutine allocate_and_build_ham_k()
@@ -691,7 +795,7 @@ contains
 
 
 
-!!! Finally, TODO modules for interpolation utilities
+!!! Finally, modules for interpolation utilities
 
   subroutine interpolate_1k (kpoint, eig_int, u_interp)
   !
@@ -815,6 +919,8 @@ contains
   end do
   end do
   end do
+  DOS = DOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
+  PDOS = PDOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
   !
   end subroutine interpolated_DOS        
 

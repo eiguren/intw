@@ -706,10 +706,12 @@ contains
     !       WARNING: This subroutine must always be called after "read_parameters_data_file_xml"
     !                so that nbands is set.
     !
+    !       MBR 20/05/2024: three options for exclude_bands
     !------------------------------------------------------------------------
 
     use intw_utility, only: find_free_unit
-    use intw_input_parameters, only: prefix
+    use intw_input_parameters, only: prefix, use_exclude_bands, &
+                                     include_bands_initial, include_bands_final
 
     implicit none
 
@@ -721,21 +723,32 @@ contains
     nnkp_filename = trim(prefix)//trim('.nnkp')
     inquire (file=nnkp_filename,exist=have_nnkp)
 
-    ! Write info
-    if(have_nnkp) then
-      write(*,'(A)') '|       - .nnkp file found                          |'
-      write(*,'(A)') '|         Setting the number of bands from .nnkp    |'
-      write(*,'(A)') '|           ---------------------------------       |'
-    else
-      write(*,'(A)') '|       - .nnkp file NOT found                      |'
-      write(*,'(A)') '|         Setting the number of bands from QE       |'
-      write(*,'(A)') '|           ---------------------------------       |'
+    ! control consistency with use_exclude_bands flag
+    if (have_nnkp .and. trim(use_exclude_bands) .eq. 'all') then
+            write(*,'(A)') '|  -  use_exclude_bands = all in input but          |'
+            write(*,'(A)') '|       - .nnkp file found. Inconsistency!!         |'
+            write(*,'(A)') ' Stopping '
+            stop
+    else if (have_nnkp .and. trim(use_exclude_bands) .eq. 'custom') then
+            write(*,'(A)') '|  -  use_exclude_bands = custom in input but       |'
+            write(*,'(A)') '|       - .nnkp file found. Inconsistency!!         |'
+            write(*,'(A)') ' Stopping '
+            stop
+    else if ( .not. have_nnkp .and. trim(use_exclude_bands) .eq. 'wannier' ) then
+            write(*,'(A)') '|  -  use_exclude_bands = wannier in input but      |'
+            write(*,'(A)') '|       - .nnkp file not found. Inconsistency!!     |'
+            write(*,'(A)') ' Stopping '
+            stop
     end if
 
     ! Set number of bands
 
     ! from .nnkp
-    if(have_nnkp) then
+    if( trim(use_exclude_bands) .eq. 'wannier' ) then
+      !
+      write(*,'(A)') '|       - .nnkp file found                          |'
+      write(*,'(A)') '|       - Setting number of bands from .nnkp        |'
+      write(*,'(A)') '|           ---------------------------------       |'
       !
       nnkp_unit=find_free_unit()
       open(unit=nnkp_unit,file=nnkp_filename,status='old')
@@ -763,13 +776,29 @@ contains
       ! Number of bands (before disentanglement)
       num_bands_intw = nbands - num_exclude_bands_intw
       !
-    ! all bands from QE
-    else
+    ! all bands from DFT
+    else if ( trim(use_exclude_bands) .eq. 'all' ) then
+      write(*,'(A)') '|       - Setting number of bands from calculation  |'
+      write(*,'(A)') '|           ---------------------------------       |'
       !
       allocate(band_excluded_intw(nbands))
       band_excluded_intw(:) = .false.
       num_bands_intw = nbands
       num_wann_intw = nbands
+      !
+    ! custom bands from input
+    else if ( trim(use_exclude_bands) .eq. 'custom' ) then
+      write(*,'(A)') '|       - Setting custom number of bands from:      |'
+      write(*,'(A)') '|', include_bands_initial, ' to ', include_bands_final
+      write(*,'(A)') '|           ---------------------------------       |'
+      allocate(band_excluded_intw(nbands))
+      num_bands_intw = include_bands_final - include_bands_initial + 1
+      num_wann_intw = num_bands_intw
+      num_exclude_bands_intw = nbands - num_bands_intw
+      band_excluded_intw(:)=.true.
+      do i= include_bands_initial, include_bands_final
+          band_excluded_intw(i) = .false.
+      end do
       !
     end if
 

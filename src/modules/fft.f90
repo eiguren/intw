@@ -212,7 +212,7 @@ contains
       else
         write(*,*) 'ERROR in generate_nl. FFT mesh too small?'
         write(*,*) '    More than one G-vector in the gvec array are being'
-        write(*,*) '    assigned to the same FFT triple (n1,n2,n3);      '
+        write(*,*) '    assigned to the same FFT triple (n1,n2,n3);       '
         write(*,*) '    this suggests that the FFT mesh (nr1,nr2,nr3) is  '
         write(*,*) '    too small.                                        '
 
@@ -282,7 +282,7 @@ contains
   end subroutine generate_nl
 !*******************************************************************************************************
 !-------------------------------------------------------------------------------------------------------
-  subroutine  wfc_by_expigr (kpoint, nbands, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
+  subroutine  wfc_by_expigr (kpoint, num_bands, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
     !-------------------------------------------------------------------------------------------------------
 
     use intw_reading, only: gvec, bg
@@ -293,15 +293,15 @@ contains
 
     !I/O variables
 
-    integer,intent(in) :: nbands,nspin,ng_max,list_iG_k_irr(nG_max) ! G vector indices for k_irr
+    integer,intent(in) :: num_bands, nspin, ng_max, list_iG_k_irr(nG_max) ! G vector indices for k_irr
     integer,intent(in) :: G_sym_l(3)                               ! G vector such that  R*k + G_sym_l = sym_l * k_irr
     real(dp),intent(in) :: kpoint(3)
-    complex(dp),intent(inout) :: wfc_k(ng_max,nbands,nspin)
+    complex(dp),intent(inout) :: wfc_k(ng_max,num_bands,nspin)
     integer,intent(out) :: list_iG_k(nG_max)                       ! G vector indices for k, sorted
 
     !local variables
 
-    complex(dp) :: wfc_k_irr(ng_max,nbands,nspin)
+    complex(dp) :: wfc_k_irr(ng_max,num_bands,nspin)
     integer :: list_iG(nG_max)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
@@ -345,7 +345,7 @@ contains
       !
       ! compute the wfc element
       !
-      do nb=1,nbands
+      do nb=1,num_bands
         do ispin=1,nspin
           !
           wfc_k(i,nb,ispin) = wfc_k_irr(p_i,nb,ispin)
@@ -357,7 +357,7 @@ contains
       !
     enddo
 
-    !I think this can be deleted, because we have decided to short our components in another fashion
+    !I think this can be deleted, because we have decided to sort our components in another fashion
     !    permutations=0
     !    call hpsort_eps (nG, gkmod(1:nG) , permutations(1:nG), 1.0E-8_dp)
     !    wfc_k_irr =  wfc_k
@@ -368,7 +368,7 @@ contains
     !       p_i          = permutations(i)
     !       list_iG_k(i) = list_iG(p_i)
     !       ! compute the wfc element
-    !       do nb = 1,nbands
+    !       do nb = 1,num_bands
     !          do ispin=1,nspin
     !             wfc_k(i,nb,ispin) =  wfc_k_irr(p_i,nb,ispin)
     !          enddo

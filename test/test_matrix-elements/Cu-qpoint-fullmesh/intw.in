@@ -5,14 +5,19 @@
     nk2 = 4
     nk3 = 4
     TR_symmetry = .false.
+    use_exclude_bands = "all"
 /
-
 &intw2W
 /
-
 &ph
     nq1 = 2
     nq2 = 2
     nq3 = 2
     nqirr = 8
+/
+&DOS
+/
+&DOS_ph
+/
+&elphon
 /

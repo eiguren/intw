@@ -10,7 +10,7 @@ set(PROGS
   interpolate
   interpolate_phonons
   ep_interp_on_trFS_wannier
-  ep_interp_on_trFS_nufft
+  ep_interp_on_trFS_dV
   a2F_on_trFS
 )
 

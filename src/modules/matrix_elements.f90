@@ -377,7 +377,7 @@ contains
   end subroutine get_spin_component
 
 
-  subroutine write_matrix_elements(filename, matrix_elements, nbands, nb1, nb2)
+  subroutine write_matrix_elements(filename, matrix_elements, num_bands, nb1, nb2)
     !------------------------------------------------------------------
     ! This subroutine writes out the matrix elements in a file
     !------------------------------------------------------------------
@@ -387,8 +387,8 @@ contains
 
     implicit none
 
-    complex(kind=dp), intent(in) :: matrix_elements(nbands,nbands,0:nk1+2,0:nk2+2,0:nk3+2)
-    integer, intent(in) :: nbands, nb1, nb2
+    complex(kind=dp), intent(in) :: matrix_elements(num_bands,num_bands,0:nk1+2,0:nk2+2,0:nk3+2)
+    integer, intent(in) :: num_bands, nb1, nb2
 
     integer :: io_unit
     integer :: i, j, k

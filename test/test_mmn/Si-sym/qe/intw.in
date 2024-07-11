@@ -5,6 +5,7 @@
     nk2 = 8
     nk3 = 8
     TR_symmetry = .false.
+    use_exclude_bands = "wannier"
 /
 
 &intw2W
@@ -13,4 +14,10 @@
 /
 
 &ph
+/
+&DOS
+/
+&DOS_ph
+/
+&elphon
 /

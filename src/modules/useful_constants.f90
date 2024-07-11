@@ -13,7 +13,7 @@ module intw_useful_constants
             eps_2, eps_5, eps_6, eps_7, eps_8, eps_10, eps_14, &
             cmplx_i, cmplx_1, cmplx_0
   !
-  ! Phisical constants
+  ! Physical constants
   public :: bohr, boltzmann
   !
   ! Energy conversion factors

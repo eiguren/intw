@@ -4,7 +4,8 @@ program ep_melements
   use intw_input_parameters, only: nk1, nk2, nk3, &
                                    nq1, nq2, nq3, nqirr, mesh_dir, &
                                    ep_mat_file, TR_symmetry, &
-                                   read_input
+                                   read_input, use_exclude_bands, &
+                                   ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
                           s, nbands, nG_max, nat, nspin, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
@@ -52,6 +53,7 @@ program ep_melements
   !k point related variables
   logical                  :: k_points_consistent
   integer                  :: ik, nk_irr, nkmesh
+  integer                  :: num_bands_ep
   real(dp),allocatable     :: kmesh(:,:)
   real(dp)                 :: kpoint(3), kpoint_cart(3), kqpoint_cart(3)
 
@@ -147,6 +149,27 @@ program ep_melements
   !
   call set_num_bands()
   !
+  ! MBR 13/05/2024
+  ! Check consistency with input flag use_exclude_bands
+  !
+  if (trim(use_exclude_bands) .eq. 'all' .and. num_bands_intw .lt. nbands) then
+    write(*,*) ' use_exclude_bands == all chosen, but bands have been excluded previously.'
+    write(*,*) ' nbands = ', nbands
+    write(*,*) ' num_bands_intw = ', num_bands_intw
+    write(*,*) ' This is an inconsistency. Stopping.'
+    stop
+  end if
+  !
+  ! Information about bands for which ep elements will be calculated
+  !
+  if (trim(ep_bands) .eq. 'custom') then ! only a handful of bands
+    num_bands_ep = ep_bands_final-ep_bands_initial+1
+    write(*,*) ' ep_bands == custom chosen.'
+    write(*,*) ' ep elements to be calculated for bands ', ep_bands_initial, &
+               ' to ', ep_bands_final, ' of the num_bands_intw list'
+  else ! all available bands
+    num_bands_ep = num_bands_intw
+  end if
   !
   !================================================================================
   ! Print spin information
@@ -396,12 +419,15 @@ program ep_melements
   allocate(wfc_k(nG_max,num_bands_intw,nspin))
   allocate(wfc_kq(nG_max,num_bands_intw,nspin))
   !
+  ! We will calculate num_bands_ep bands if ep_bands=custom
+  ! indexed 1:num_bands_ep (ep_bands_initial to ep_bands_final)
+  !
   ! Allocate induced potential related variables (hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz)
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
-  allocate(dvpsi(nG_max,num_bands_intw,nspin,nspin,3*nat))
+  allocate(dvpsi(nG_max,num_bands_ep,nspin,nspin,3*nat))
   !
   ! Allocate matrix elements variable
-  allocate(ep_mat_el(nk1*nk2*nk3,num_bands_intw,num_bands_intw,nspin,nspin,3*nat))
+  allocate(ep_mat_el(nk1*nk2*nk3,num_bands_ep,num_bands_ep,nspin,nspin,3*nat))
   !
   do iq=1,nqmesh
     !
@@ -417,8 +443,8 @@ program ep_melements
     ep_unit = find_free_unit()
     inquire(iolength=record_lengh) ep_mat_el
     open(unit=ep_unit, iostat=ierr, &
-          file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
-          form='unformatted', status='unknown', access='direct', recl=record_lengh)
+         file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
+         form='unformatted', status='unknown', access='direct', recl=record_lengh)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
@@ -464,25 +490,33 @@ program ep_melements
       !
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
       ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-      call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
       !
       ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
-      call multiply_psi_by_dvKB(kpoint, qpoint, nbands, list_iGk, list_iGkq, wfc_k, dvpsi)
+      !
+      if ( trim(ep_bands) .eq. 'intw') then
+        call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iGk, list_iGkq, wfc_k, dvpsi)
+      else if ( trim(ep_bands) .eq. 'custom') then
+        call dvqpsi_local(num_bands_ep, list_iGk, list_iGkq, &
+                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_ep, list_iGk, list_iGkq, &
+                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
+      end if
       !
       do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz
         !
         ! Matrize elementuak kalkulatu
         do jspin=1,nspin
           do ispin=1,nspin
-            do jbnd=1,num_bands_intw
-              do ibnd=1,num_bands_intw
+            do jbnd=1,num_bands_ep
+              do ibnd=1,num_bands_ep
                 !
                 ep_mat_el(ik,ibnd,jbnd,ispin,jspin,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ispin), 1, dvpsi(:,jbnd,ispin,jspin,imode), 1 )
                 !
-              enddo !ibnd
-            enddo !jbnd
+              enddo !ibnd (intw or custom)
+            enddo !jbnd (intw or custom)
           enddo !is
         enddo !js
         !
