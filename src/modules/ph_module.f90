@@ -570,7 +570,7 @@ contains
             write(*,*)' Failed to read dynq for iq= ',iq
          end if
       end do
-      if ( not(all_done) ) stop
+      if ( .not. all_done ) stop
 
       ! Apply ASR to q=0 matrix:
       ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0

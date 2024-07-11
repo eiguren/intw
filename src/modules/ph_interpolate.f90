@@ -254,7 +254,8 @@ module intw_ph_interpolate
   !
   implicit none
   !
-  integer :: iq, in_ws, i,j,k,l, l0,l1, nboundary
+  integer :: iq, i,j,k,l, l0,l1, nboundary
+  logical :: in_ws
   integer :: Rs(3,n_wss_q), r_cryst_int(3), ndegen_ws(nq1*nq2*nq3*n_wss_q), irvec_ws(3,nq1*nq2*nq3*n_wss_q)
   real(kind=dp) :: r_cryst(3), r_length_l, r_length_l1, r_cart(3)
   !
@@ -353,7 +354,8 @@ module intw_ph_interpolate
   !
   implicit none
   !
-  integer :: iq, in_ws, i,j,k,l, l0,l1, nboundary, iat1, iat2, nws
+  integer :: iq, i,j,k,l, l0,l1, nboundary, iat1, iat2, nws
+  logical :: in_ws
   integer :: Rs(3,n_wss_q), r_cryst_int(3), ndegen_ws(nq1*nq2*nq3*n_wss_q,nat,nat), irvec_ws(3,nq1*nq2*nq3*n_wss_q,nat,nat)
   real(kind=dp) :: r_cryst(3), r_length_l, r_length_l1, r_cart(3)
   !
