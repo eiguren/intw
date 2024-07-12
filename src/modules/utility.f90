@@ -532,7 +532,7 @@ end function intgr_spline_gaussq
 
     ! number of points in the path per stage
     do i=2,nkspecial
-        nkstage(i-1) = int( real(nkpath-1,dp) * lstage(i-1) / lpath)
+        nkstage(i-1) = nint( real(nkpath-1,dp) * lstage(i-1) / lpath)
     end do
 
     ! check how many point will we actually generate
