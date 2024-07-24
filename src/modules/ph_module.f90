@@ -20,7 +20,7 @@ module intw_ph
   ! variables
   public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, frc, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
-            symlink_q, dvq_local, dvpsi, frc_R
+            symlink_q, dvq_local, dvpsi
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -52,8 +52,6 @@ module intw_ph
 
   complex(dp), allocatable    :: dvq_local    (:,:,:,:)
   complex(dp), allocatable    :: dvpsi (:,:,:,:,:)
-
-  REAL(DP), ALLOCATABLE :: frc_R(:,:,:,:,:,:,:)
 
   !
 contains
@@ -246,9 +244,9 @@ contains
     real(dp) :: tau_fc(3, nat), zeu_fc(3,3,nat)
     integer  :: ityp_fc(nat)
     integer :: io_unit, ios
-
-    !  !
-    !  !
+    real(dp) :: frc_R(nq1,nq2,nq3,3,3,nat,nat)
+    !
+    !
     io_unit = find_free_unit()
     OPEN(unit=io_unit, file=flfrc, status='old', form='formatted', iostat=ios)
     IF ( ios /= 0 ) STOP 'ERROR: readfc: error opening flfrc'
@@ -292,8 +290,6 @@ contains
     !  !
     ALLOCATE ( frc(nr1,nr2,nr3,3,3,nat,nat) )
     frc(:,:,:,:,:,:,:) = 0.d0
-    allocate(frc_R(nq1,nq2,nq3,3,3,nat,nat))
-    frc_R(:,:,:,:,:,:,:) = 0.d0
     DO i=1,3
        DO j=1,3
           DO na=1,nat
@@ -317,7 +313,6 @@ contains
        end if   
 
        frc=frc_R*cmplx_1                   ! make it complex again
-       deallocate(frc_R)
        ! End IGG
 
   END SUBROUTINE readfc
