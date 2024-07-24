@@ -20,7 +20,7 @@ module intw_ph
   ! variables
   public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, frc, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
-            symlink_q, dvq_local, dvpsi, zeu, frc_R
+            symlink_q, dvq_local, dvpsi, frc_R
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -53,7 +53,7 @@ module intw_ph
   complex(dp), allocatable    :: dvq_local    (:,:,:,:)
   complex(dp), allocatable    :: dvpsi (:,:,:,:,:)
 
-  REAL(DP), ALLOCATABLE ::  zeu(:,:,:), frc_R(:,:,:,:,:,:,:)
+  REAL(DP), ALLOCATABLE :: frc_R(:,:,:,:,:,:,:)
 
   !
 contains
@@ -308,8 +308,6 @@ contains
     !  !
     CLOSE(unit=io_unit)
     frc=frc_R*cmplx_1
-       ALLOCATE (zeu(3,3,nat))
-       zeu =0.d0
        !MBR 21/05/2024
        ! Instead of that set_asr module, use only the "simple" method
        ! (worked in the routine as real)
@@ -319,7 +317,6 @@ contains
        end if   
 
        frc=frc_R*cmplx_1                   ! make it complex again
-       deallocate (zeu)
        deallocate(frc_R)
        ! End IGG
 
