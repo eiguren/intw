@@ -18,9 +18,9 @@ module intw_ph
   !
   save
   ! variables
-  public :: nmodes, q_irr, u_irr, fcmat, dvscf_cart, dvscf_irr, amass_ph, frc, nqmesh, &
+  public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, frc, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
-            symlink_q, dvq_local, dvpsi, asr, zeu, frc_R, dvscf_cart_comps
+            symlink_q, dvq_local, dvpsi, asr, zeu, frc_R
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -38,7 +38,6 @@ module intw_ph
   complex(dp),allocatable    :: u_irr(:,:,:)         !displacement patterns for the irr.  q.
   complex(dp),allocatable    :: fcmat(:,:,:)         !dymanical matrices for irr. q.
   complex(dp),allocatable    :: dvscf_cart(:,:,:,:,:), dvscf_irr(:,:,:,:)
-  real(dp),allocatable       :: amass_ph(:)
   complex(dp), allocatable :: frc(:,:,:,:,:,:,:) ! force constants
   integer :: nqmesh
 
@@ -54,10 +53,8 @@ module intw_ph
   complex(dp), allocatable    :: dvq_local    (:,:,:,:)
   complex(dp), allocatable    :: dvpsi (:,:,:,:,:)
 
-!  integer :: fc_ibrav
   CHARACTER(LEN=10)  :: asr
   REAL(DP), ALLOCATABLE ::  zeu(:,:,:), frc_R(:,:,:,:,:,:,:)
-  complex(dp),allocatable    :: dvscf_cart_comps(:,:,:,:)
 
   !
 contains
