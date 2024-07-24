@@ -4,9 +4,9 @@
 ! MBR 24/01/24
 ! intw_ph_interpolate contains routines to generate Wigner-Seitz real meshes,
 ! Fourier transforms of the dynamical matrix, interpolation at a given q-point.
-! So far, it contains the necessary tools to interpolate phonons. 
+! So far, it contains the necessary tools to interpolate phonons.
 !
-! Those tools are similar to some routines in w90_setup, which have been 
+! Those tools are similar to some routines in w90_setup, which have been
 ! adapted here for phonon meshes.
 !
 ! This is a mid result for EP interpolation. The goal is to have two ways of
@@ -24,7 +24,7 @@ module intw_ph_interpolate
   public :: dyn_q, dyn_r        !!! dynamical matrix in qmesh and real space (WS vectors)
   !
   public :: irvec_qtau, nrpts_qtau, ndegen_qtau, nrpts_qtau12   !!! as above, but corrected with atom positions
-  public :: dyn_rtau        
+  public :: dyn_rtau
   !
   public :: w2_q, u_q            !!! omega^q and eigenvectors in qmesh
   !
@@ -43,7 +43,7 @@ module intw_ph_interpolate
   integer, dimension(3) , parameter :: n_ws_search_q = (/ 1,1,1 /) !! TODO give somewhere as input
   integer, allocatable :: ndegen_q(:), irvec_q(:,:)
   real(kind=dp), allocatable :: w2_q(:,:)
-  complex(kind=dp), allocatable :: dyn_r(:,:,:), dyn_q(:,:,:), u_q(:,:,:)
+  complex(kind=dp), allocatable :: dyn_r(:,:,:), dyn_q(:,:,:), u_q(:,:,:) ! in a.u. (without the mass factor)
   !
   integer :: nrpts_qtau
   integer, allocatable :: ndegen_qtau(:,:,:), irvec_qtau(:,:,:,:), nrpts_qtau12(:,:)
@@ -100,7 +100,7 @@ module intw_ph_interpolate
      ! detect degeneracies and store vectors if degenerate
      do l = 2,n_wss_q
        if ( abs(r_length(l) - r_length(l-1))<eps_6) then
-           r_ws_max(:,l,iq) = r_cryst_int(:,permu(l)) 
+           r_ws_max(:,l,iq) = r_cryst_int(:,permu(l))
            rdeg_ws_max(iq) = rdeg_ws_max(iq) + 1
            nws = nws + 1
         else
@@ -133,7 +133,7 @@ module intw_ph_interpolate
   !----------------------------------------------------------------------------!
   !  Calculate real-space Wigner-Seitz lattice vectors for phonon grid.
   !  Similar to w90_setup allocate_and_build_ws_irvec routine.
-  !  Unlike the allocate_and_build_ws_irvec_q version, here we choose as WS 
+  !  Unlike the allocate_and_build_ws_irvec_q version, here we choose as WS
   !  criterion that, for each tau1,tau2 atom pair, the WS cell is centered at tau1.
   !  So, we impose the truncation using R+tau2-tau1,
   !  as in S. Poncé et al, Phys. Rev. Research 3, 043022 (2021)  (appendix D)
@@ -170,8 +170,8 @@ module intw_ph_interpolate
          r_cryst(1,l) =  qmesh(1,iq) + real(i,dp)
          r_cryst(2,l) =  qmesh(2,iq) + real(j,dp)
          r_cryst(3,l) =  qmesh(3,iq) + real(k,dp)
-         r_cryst_int(:,l) = nint(  r_cryst(:,l) * (/ nq1, nq2, nq3 /) ) 
-         r_cart = r_cryst(:,l) * (/ nq1, nq2, nq3 /) + tau_cryst(:,iat2) - tau_cryst(:,iat1)    
+         r_cryst_int(:,l) = nint(  r_cryst(:,l) * (/ nq1, nq2, nq3 /) )
+         r_cart = r_cryst(:,l) * (/ nq1, nq2, nq3 /) + tau_cryst(:,iat2) - tau_cryst(:,iat1)
          !R-vector from crystallographic to cartesian
          call cryst_to_cart (1, r_cart, at, 1)
          r_cart = r_cart * alat  ! bohr units
@@ -297,7 +297,7 @@ module intw_ph_interpolate
           r_cart = r_cryst
           call cryst_to_cart (1, r_cart, at, 1)
           r_length_l1 = alat * sqrt ( sum(r_cart*r_cart) )  ! distance of r-R(l) to O' (cartesian, bohr)
-          ! compare distances leaving a gap eps_8 
+          ! compare distances leaving a gap eps_8
              ! TODO !!! put tolerance as parameter. It depends a lot on this!
              ! I guess that we need a smaller one the less nq...
           if ( r_length_l > r_length_l1 + eps_8*1000. .and. l1/=l0) then ! not in the WS => remove vector from list
@@ -403,7 +403,7 @@ module intw_ph_interpolate
              r_cart = r_cryst + tau_cryst(:,iat2) - tau_cryst(:,iat1)  ! add interatomic distance to distance criterion (O' is at l1+iat1 position)
              call cryst_to_cart (1, r_cart, at, 1)
              r_length_l1 =  alat * sqrt ( sum(r_cart*r_cart) )  ! distance of r-R(l) to O' (cartesian, bohr)
-             ! compare distances leaving a gap eps_8*1000. 
+             ! compare distances leaving a gap eps_8*1000.
              ! TODO !!! put tolerance as parameter. It depends a lot on this!
              ! I guess that we need a smaller one the less nq...
              if ( r_length_l > r_length_l1 + eps_8*1000. .and. l1/=l0) then ! not in the WS => remove vector from list
@@ -445,8 +445,8 @@ module intw_ph_interpolate
      do i=1,3
        irvec_qtau(i,1:nws,iat1,iat2) = irvec_ws(i,1:nws,iat1,iat2)
      end do
-  end do   
-  end do   
+  end do
+  end do
   !
   print *, '#max nrpts_q = ',  nrpts_qtau12
   !
@@ -478,17 +478,16 @@ module intw_ph_interpolate
   ! transform to dyn(q) and diagonalize
   do iq=1,nqmesh
      qpoint = qmesh(:,iq)
-     ! mat_inv_four_t returns data in meV units
      call mat_inv_four_t(qpoint, nq1, nq2, nq3, 3*nat, frc, dyn_q(:,:,iq))
      call dyn_diagonalize_1q(3*nat, dyn_q(:,:,iq), u_q(:,:,iq), w2_q(:,iq))
   end do
   !
-  return 
+  return
   end subroutine allocate_and_build_dyn_qmesh
   !
   !----------------------------------------------------------------------------
   subroutine allocate_and_build_dyn_qmesh2()
-  ! Same as allocate_and_build_dyn_qmesh, but reading directly the prefix.dyn_q* 
+  ! Same as allocate_and_build_dyn_qmesh, but reading directly the prefix.dyn_q*
   ! files generated by QE
   !----------------------------------------------------------------------------
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
@@ -569,8 +568,8 @@ module intw_ph_interpolate
                    fac*dyn_q((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq)
         end do
      end do
-  end do   
-  end do   
+  end do
+  end do
   dyn_rtau = dyn_rtau / real(nqmesh,dp)
   !
   return
@@ -642,20 +641,34 @@ module intw_ph_interpolate
     ! TODO this is c+p Haritz's diagonalize_cmat, which should be in intw_utilities, since it is useful
     !----------------------------------------------------------------------------
     !
+    use intw_reading, only: nat, amass, ityp
     use intw_utility, only: diagonalize_cmat
     !
     implicit none
     !
     integer, intent(in)  :: n
-    complex(dp) , intent(in) :: dynq(n,n)
-    complex(dp) , intent(out) :: uq(n,n)
-    real(dp) , intent(out) :: w2q(n)
+    complex(dp), intent(in) :: dynq(n,n) ! Dynamical matrix in a.u. (without the mass factor)
+    complex(dp), intent(out) :: uq(n,n) ! Phonon polarization vectors in a.u.
+    real(dp), intent(out) :: w2q(n) ! Phonon frequencies^2 in a.u.
     !
+    integer :: iat1, iat2
+    real(dp), parameter :: pmass = 1822.88848426_dp
+    real(dp), parameter :: aumev = 27211.396132_dp
+    !
+    !
+    ! Add mass factor
+    do iat1 = 1,nat
+      do iat2 = 1,nat
+        !
+        uq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3 ) = dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3 ) &
+                / sqrt( amass(ityp(iat1)) * amass(ityp(iat2)) ) / pmass ! in a.u. (Hartree/Bohr^2*/me = Hartree^2/hbar^2)
+        !
+      end do
+    end do !atoms
     !
     ! force hermiticity
-    uq = 0.5_dp * ( dynq + transpose(conjg(dynq)) )
+    uq = 0.5_dp * ( uq + transpose(conjg(uq)) )
     !
-    ! print"(6f20.12)", uq(:,:)
     call diagonalize_cmat(uq, w2q)
 
   end subroutine dyn_diagonalize_1q

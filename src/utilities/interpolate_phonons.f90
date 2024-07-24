@@ -5,7 +5,7 @@ program interpolatephononstau
         ! Like interpolate_phonons.f90, but using atom-pair-adapter WS vectors
 
     use kinds, only: dp
-    use intw_useful_constants, only: cmplx_0, Ha_to_eV
+    use intw_useful_constants, only: cmplx_0, Ha_to_Ry, Ha_to_eV
     use intw_utility, only: find_free_unit, find_k_1BZ_and_G,  &
             generate_kmesh, cryst_to_cart, smeared_delta, &
             generate_and_allocate_kpath
@@ -110,15 +110,19 @@ write(*,'(A)') '|    waiting for input file...                      |'
   else if (read_for_dynmat == 'dynq' ) then ! read dyn files        
           call allocate_and_build_dyn_qmesh2()
   end if        
+
+  ! do iq=1,nqmesh
+  !   ! print"(i,3f,x,100f)", iq, qmesh(:,iq), sign(sqrt(abs(w2_q(:,iq))), w2_q(:,iq)) ! a.u.
+  !   print"(i,3f,x,100f)", iq, qmesh(:,iq), sign(sqrt(abs(w2_q(:,iq))), w2_q(:,iq))*Ha_to_eV*1000.0_dp ! meV
+  !   ! print"(i,3f,x,100f)", iq, qmesh(:,iq), sign(sqrt(abs(w2_q(:,iq))), w2_q(:,iq))*Ha_to_eV*8065.610_dp ! cm-1
+  !   ! print"(i,3f,x,100f)", iq, qmesh(:,iq), sign(sqrt(abs(w2_q(:,iq))), w2_q(:,iq))*6579.6839205_dp ! THz
+  ! end do
+
   !
   ! transform to R space with atom position correction
   print *,' transform to R space'
   call dyn_q_to_dyn_rtau()
   
-  !do iq=1,nqmesh
-  !   print *, iq, qmesh(:,iq), w2_q(:,iq)
-  !end do
-
   ! test decay of dyn_r elements with distance
 !  do ir=1,nrpts_q
 !     rcart = real(irvec_q(:,ir),dp)
@@ -143,8 +147,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
   do iq=1,nqpath
      qpoint = qpath(:,iq)
      call dyn_interp_1q_tau(qpoint, dyn_qint)
-     call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
-     w_qint=sign(sqrt(abs(w2_qint)),w2_qint)  !!freqs are given in meV units
+     call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint) ! freqs are given in a.u
+     w_qint = sign(sqrt(abs(w2_qint)),w2_qint) * Ha_to_eV*1000.0_dp
      write(ph_unit,'(20e14.6)') dqpath(iq), w_qint
   end do
   close(ph_unit)
@@ -171,8 +175,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
         call dyn_interp_1q_tau(qpoint, dyn_qint)
         call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
         w_qint=sign(sqrt(abs(w2_qint)),w2_qint) 
-        !phonon frequency in meV units: pass to Ry
-        w_qint= w_qint*0.002_dp / Ha_to_eV
+        !phonon frequency in a.u.: pass to Ry
+        w_qint= w_qint*Ha_to_Ry
         ! Smear omega(q) for DOS (gaussian)
         do imode = 1,3*nat
            do iomega=1, nomega  !frequencies in Ry

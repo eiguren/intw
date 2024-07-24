@@ -318,6 +318,8 @@ contains
     !
     CLOSE(unit=io_unit)
     !
+    frc_R = frc_R * Ry2Hartree ! Transform to a.u.
+    !
     !MBR 21/05/2024
     ! Instead of that set_asr module, use only the "simple" method
     ! (worked in the routine as real)
@@ -334,7 +336,7 @@ contains
   !====================================================================
   ! MBR 21/05/24
   ! Apply ASR "simple" method:
-  !   set_asr_frc --> to the real-space force constant matrix 
+  !   set_asr_frc --> to the real-space force constant matrix
   !                   (real elements)
   !   set_asr_dynr --> to the dynamical matrices after doing dynq_to_dynr
   !====================================================================
@@ -343,7 +345,7 @@ contains
 
    implicit none
 
-   integer , intent(in) :: n1, n2, n3, nat 
+   integer , intent(in) :: n1, n2, n3, nat
    real(dp) , intent(inout) :: frc_R(n1,n2,n3,3,3,nat,nat)
 
    ! Internal
@@ -351,7 +353,7 @@ contains
    real(dp) :: suma
 
    do i=1,3  !coords.
-   do j=1,3  
+   do j=1,3
         do iat=1,nat  !atom
            suma=0.0_dp
            do jat=1,nat  !atom
@@ -365,11 +367,11 @@ contains
            end do !jat atom
            frc_R(1,1,1,i,j,iat,iat) = frc_R(1,1,1,i,j,iat,iat) - suma
         end do !iat atom
-   end do 
+   end do
    end do !coords.
 
-   return 
-   end subroutine set_asr_frc         
+   return
+   end subroutine set_asr_frc
 
 
 
@@ -383,7 +385,7 @@ contains
    complex(dp) , intent(inout) :: dynq(3*nat,3*nat, nq)
 
    ! Internal
-   integer :: i,j, iat, jat,ir
+   integer :: i,j, iat, jat
    complex(dp) :: suma
    complex(dp) :: dynq_aux(3*nat,3*nat, nq)
 
@@ -393,7 +395,7 @@ contains
           do iat=1,nat  !atom
              suma=0.0_dp
              do jat=1,nat  !atom !sum over cells
-                 suma=suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )  
+                 suma=suma + dynq( (iat-1)*3+i, (jat-1)*3+j, iq )
              end do !jat atom
              ! option 1 : apply only to q=0:
              ! dynq_aux( (iat-1)*3+i, (iat-1)*3+j, iq ) = dynq( (iat-1)*3+i, (iat-1)*3+j, iq ) - suma
@@ -415,10 +417,10 @@ contains
       ! (each files contains the info of an irreducible q-point)
   !====================================================================
 
-      subroutine read_dynq (dynq)
+    subroutine read_dynq (dynq)
 
-      use intw_reading, only: ntyp, nat, at, amass, ityp
-      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1
+      use intw_reading, only: ntyp, nat, at
+      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
       use intw_utility, only: cryst_to_cart, find_free_unit, &
               triple_to_joint_index_g, find_k_1BZ_and_G
       use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
@@ -427,7 +429,7 @@ contains
       implicit none
 
       ! I/O
-      complex(dp) , intent(out) :: dynq(3*nat,3*nat,nqmesh)
+      complex(dp) , intent(out) :: dynq(3*nat,3*nat,nqmesh) ! in a.u. (without the mass factor)
 
       ! Internal
       character(len=4) :: iq_loc
@@ -436,13 +438,13 @@ contains
       logical :: all_done
       integer :: ntyp_, nat_, ibrav_
       integer :: dynq_unit, ierr
-      integer :: iat, iat1, iat2, iq1, iq2, iq, iqirr, Gq(3), i,j,k, iq_done(nqmesh)
-      real(dp) :: celldm_(6), at_(3,3), dist, massfac
+      integer :: iat, iat1, iat2, iq, iq1, iqirr, Gq(3), i,j,k, iq_done(nqmesh)
+      real(dp) :: celldm_(6), at_(3,3), dist
       real(dp) ::  fracpos(3), qpoint(3), qpoint1(3), qpoint_cart(3,nqmesh)
       real(dp) ::  dynq_re(3,3), dynq_im(3,3)
-      ! From mat_inv_four_t, see IGG's comments
       ! TODO add to useful_constants
-      real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.396d0
+      real(dp), parameter :: Ry2Hartree = 0.5_dp
+
 
       iq_done=0
 
@@ -516,24 +518,13 @@ contains
          do iat1 = 1,nat
            do iat2 = 1,nat
 
-              ! mass factor sqrt(m1*m2) to be used below
-              ! (QE routine elph.f90 adds it when reading dynq and then
-              ! again after diagonalization)
-              massfac = sqrt( amass(ityp(iat1)) * amass(ityp(iat2))  )
-
               read(dynq_unit,*) i,j ! not used
 
-              ! cartesian 3x3 block of this atom pair in dynq matrix
-              read(dynq_unit,*) ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3)
+              ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
+              read(dynq_unit,*) ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3) ! in Ry/Bohr^2
 
-              ! Add mass factor and unit conversion
-              ! (this will give the same as mat_inv_four_t)
               dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
-                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) &
-          !           / massfac &  !sqrt(m1*m2)
-                     / (pmass/2.d0) & !Up to this in Ry.
-                     * (aumev/2.d0)**2 !Now in meV.
-
+                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) * Ry2Hartree ! in a.u.
 
            end do
          end do !atoms
@@ -548,7 +539,8 @@ contains
       close(dynq_unit)
 
       end do ! iqirr
-            ! Check that all the qpoints in the full mesh have been read
+
+      ! Check that all the qpoints in the full mesh have been read
       all_done=.true.
       do iq=1,nqmesh
          if (iq_done(iq) == 0) then
@@ -560,40 +552,30 @@ contains
 
       ! Apply ASR to q=0 matrix:
       ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0
-      if (apply_asr) then 
+      if (apply_asr) then
            write(*,*)' Applying ASR to all q vector indices'
            !iq = 1 !q=0 index in mesh
-           ! just in case, find q=0 index in mesh 
+           ! just in case, find q=0 index in mesh
            qpoint = (/ 0._dp, 0._dp, 0._dp /)
            call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
            call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
            call set_asr_dynq(nqmesh, iq, nat, dynq)
-      end if        
-
-      !add mass factor
-      do iat1 = 1,nat
-           do iat2 = 1,nat
-              massfac = sqrt( amass(ityp(iat1)) * amass(ityp(iat2))  )
-              dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, : ) = &
-                      dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, : ) / massfac  !sqrt(m1*m2)
-           end do   
-      end do   
+      end if
 
       return
       end subroutine read_dynq
   !====================================================================
-      
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
 
-    USE intw_reading, only : tau, ityp, at, bg, amass, nat
+    USE intw_reading, only : tau, at, bg, nat
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, Ry_to_eV
 
     implicit none
 
-    complex(dp), intent(in) :: in_mat(nkk1,nkk2,nkk3,3,3,nat,nat)
-    complex(dp), intent(out) :: out_mat(nnmode, nnmode)
+    complex(dp), intent(in) :: in_mat(nkk1,nkk2,nkk3,3,3,nat,nat) ! FC matrix
+    complex(dp), intent(out) :: out_mat(nnmode, nnmode) ! Dynamical matrix (without the mass factor)
 
     real(dp) :: q_point(3),q(3)
     integer :: nkk1, nkk2, nkk3, nnmode
@@ -605,7 +587,7 @@ contains
     integer :: n1, n2, n3, m1, m2, m3, nrws
     real(dp) :: arg, total_weight
     integer, parameter :: nrwsx=200
-    real(dp), parameter :: pmass = 1822.88848426_dp
+
 
     out_mat(:,:)=cmplx_0
 
@@ -650,12 +632,8 @@ contains
                       arg = tpi*(q(1)*r(1) + q(2)*r(2) + q(3)*r(3))
                       do i=1, 3
                          do j=1, 3
-                            out_mat((na-1)*3+i, (nb-1)*3+j)= &
-                                 out_mat((na-1)*3+i, (nb-1)*3+j) + &
-                                 in_mat(m1,m2,m3, i,j, na,nb) * exp(-cmplx_i*arg)*weight / &
-                                 sqrt(amass(ityp(na))*amass(ityp(nb))) / &
-                                 (pmass/2.d0) * & !Up to this in Ry.
-                                 (Ry_to_eV*1000)**2 !Now in meV.
+                            out_mat((na-1)*3+i, (nb-1)*3+j) = out_mat((na-1)*3+i, (nb-1)*3+j) &
+                                + in_mat(m1,m2,m3, i,j, na,nb) * exp(-cmplx_i*arg)*weight
                          end do
                       end do
                    end if

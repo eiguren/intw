@@ -13,7 +13,7 @@
 program a2F_on_trFS
 
         use kinds, only: dp
-        use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8, eps_6
+        use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
         use intw_utility, only: find_free_unit, cryst_to_cart, area_vec, smeared_delta, smeared_lorentz, &
                 generate_kmesh
 
@@ -433,7 +433,7 @@ end do
   ! Now w2_q contains phonon frequencies and u_q contains the polarization vectors.
   ! Phonon frequencies (negative means unstable mode)
   allocate (w_q(3*nat,nqmesh) )
-  w_q=sign(sqrt(abs(w2_q)),w2_q) * 0.002_dp / Ha_to_eV !meV to Ry
+  w_q=sign(sqrt(abs(w2_q)),w2_q) * Ha_to_Ry !a.u. to Ry
 
 
 !  Energy range for Eliashberg is read from intw.in
@@ -499,8 +499,8 @@ do iks = 1, nkpt_tr_ibz(ish)
       call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
       w_qint=sign(sqrt(abs(w2_qint)),w2_qint)
       !u_qint contains the polarization vector (each column is a mode)
-      !phonon frequency in meV units: pass to Ry
-      w_qint= w_qint*0.002_dp / Ha_to_eV
+      !phonon frequency in a.u.: pass to Ry
+      w_qint= w_qint*Ha_to_Ry
 
       !Generate ep elements with the added mass factor and polarization vector
       !component for each mode and sum over modes.
