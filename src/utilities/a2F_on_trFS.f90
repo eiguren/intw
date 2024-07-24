@@ -12,7 +12,7 @@
 
 program a2F_on_trFS
 
-        use kinds, only: dp    
+        use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8, eps_6
         use intw_utility, only: find_free_unit, cryst_to_cart, area_vec, smeared_delta, smeared_lorentz, &
                 generate_kmesh
@@ -25,7 +25,7 @@ program a2F_on_trFS
         use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                 nspin, at, bg, volume0, alat, nat, ntyp, ityp, amass, &
                 num_bands_intw
-        use intw_ph, only: nqmesh, qmesh, frc, readfc, read_ph_information_xml, &
+        use intw_ph, only: nqmesh, qmesh, read_ph_information_xml, &
                 q_irr, q_irr_cryst
 
         use intw_ph_interpolate, only: allocate_and_build_dyn_qmesh, &
@@ -48,7 +48,7 @@ program a2F_on_trFS
                                  nkpt_tr(:), &      ! number of kpoints in each FS sheet
                                  nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
                                  nface_tr(:), &     ! number of faces in each FS sheet
-                                 nface_tr_ibz(:)    ! number of faces in each IFS 
+                                 nface_tr_ibz(:)    ! number of faces in each IFS
         real(dp) :: k1(3), k2(3), k3(3), kwei, vol1bz
         real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:), &
                                  kpts_tr_ibz(:,:), kpts_tr_ibz_area(:), vk_tr_ibz(:,:), vabsk_tr_ibz(:)
@@ -89,7 +89,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 
 !================================================================================
 !       read the input file
-!       Read in the necessary information from standard input 
+!       Read in the necessary information from standard input
 !       (for this utility, only prefix needed, really)
 !================================================================================
 
@@ -141,10 +141,10 @@ do is=1,nfs_sheets_tot
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges) 
+   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
    close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is). 
+   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
    !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
@@ -181,26 +181,26 @@ do is=1,nfs_sheets_tot
 
    ! .off file for this sheet
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off') 
+   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) comenta
    read(unit_off,*) i,j,k  !number vertices, faces and edges (I will ignore edges)
    !read(unit_off,'(/)') !DUDA... esto dependdera de como está escrito el salto de línea en el fichero, creo...
-   if  ( i .ne. nkpt_tr(is) .or. j .ne. nface_tr(is) ) then 
+   if  ( i .ne. nkpt_tr(is) .or. j .ne. nface_tr(is) ) then
            write(*,*)'Error reading ', file_off, '. Stopping.'
            stop
    end if
 
    !read vertices
-   do ik=1,nkpt_tr(is) 
+   do ik=1,nkpt_tr(is)
       read(unit_off,*) kpts_tr(:,ik1+ik)  !units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
    end do
 
    !Read (triangular) faces on this sheet.
    !Each face contributes with 1/3 of its area to the effective area of each of its vertices.
    !Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik1+ik).
-   do iface = 1,nface_tr(is) 
+   do iface = 1,nface_tr(is)
       read(unit_off,*) i, ir1,ir2,ir3 !indices ik of the vertices of the face, indexed from 0
       ir1=ir1+1
       ir2=ir2+1
@@ -234,14 +234,14 @@ do is=1,nfs_sheets_tot
            stop
    end if
 
-   do ik=1,nkpt_tr(is) 
+   do ik=1,nkpt_tr(is)
       read(unit_off,*) i, vk_tr(:,ik1+ik), vabsk_tr(ik1+ik)  !velocity xyz and its modulus. DUDA 2pi/alat???
    end do
 
    close(unit_off)
 
    !accumulate ik global index for the reading of next sheet
-   ik1=ik1+nkpt_tr(is) 
+   ik1=ik1+nkpt_tr(is)
 
 end do
 
@@ -375,7 +375,7 @@ end do
      write(*,*) '!      Stopping                                               !'
      stop
 
-  else       
+  else
 
     ! Note, indices ikp,ik include all the calculated sheets
     allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
@@ -391,16 +391,16 @@ end do
             read(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,&
                  (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
         end do
-        end do 
+        end do
     end do
-    end do        
+    end do
 
     close(unit_ep)
 
     write(*,*) '!     interpolated e-p elements read from file:               !'
-    write(*,*) file_ep         
+    write(*,*) file_ep
 
-  end if  
+  end if
 
 !================================================================================
 ! Read all the information about phonons and prepare for interpolation of phonons:
@@ -519,7 +519,7 @@ do iks = 1, nkpt_tr_ibz(ish)
             if (w_qint(imode)>eps_8) then !stable mode frequency
                do iat=1,3*nat
                   k=((iat-1)/3)+1  !atom index
-                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * pmass 
+                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * pmass
                   gep_int(imode) = gep_int(imode)  +  &
                       aep_mat_el(ikp,ik,is,js,iat) * u_qint(iat,imode) / sqrt(rfacq)
                end do
@@ -554,12 +554,12 @@ end do !k  (sheet)
   ! divide by N(E_F) and 1BZ volume
   ! TODO:
   ! DUDA con la normalizacion... para variar...
-  ! DUDA con el spin... 
+  ! DUDA con el spin...
   alpha2F=alpha2F/dosef/vol1bz
 
   !  print out by spin blocks
-  do is=1,nspin 
-  do js=1,nspin 
+  do is=1,nspin
+  do js=1,nspin
 
      write(unit_a2f,*) '#spins = ', is,js
 
@@ -571,7 +571,7 @@ end do !k  (sheet)
         omega = omega + omega_step
      end do
 
-     ! calculate lambda 
+     ! calculate lambda
      write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
      do imode = 1,3*nat
         lambda(imode) = 0.0_dp
@@ -599,5 +599,5 @@ end do !k  (sheet)
 
     deallocate(aep_mat_el)
 
-    stop     
+    stop
 end program a2F_on_trFS

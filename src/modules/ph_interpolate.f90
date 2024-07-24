@@ -459,17 +459,18 @@ module intw_ph_interpolate
   !----------------------------------------------------------------------------
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
   use intw_input_parameters, only: nq1, nq2, nq3
-  use intw_reading, only:  alat, nat, ntyp, amass
-  use intw_ph, only: nqmesh, qmesh, frc, mat_inv_four_t, readfc
+  use intw_reading, only: nat
+  use intw_ph, only: nqmesh, qmesh, mat_inv_four_t, readfc
   !
   implicit none
   !
   character(256) , intent(in) :: fcfile
   integer :: ir, iq, i,j,k
   real(dp) :: at_frc(3,3), qpoint(3)
+  complex(dp) :: frc(nq1,nq2,nq3,3,3,nat,nat)
   !
   ! Read the force constant matrix from the QE directory
-  call readfc(fcfile,i,j,k, nat, alat, at_frc, ntyp, amass)
+  call readfc(fcfile, frc)
   !
   ! allocate and calculate dynmat at qmesh
   allocate( dyn_q(3*nat,3*nat,nqmesh), w2_q(3*nat,nqmesh), u_q(3*nat,3*nat,nqmesh) )

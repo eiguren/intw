@@ -18,7 +18,7 @@ module intw_ph
   !
   save
   ! variables
-  public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, frc, nqmesh, &
+  public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
             symlink_q, dvq_local, dvpsi
   !
@@ -38,7 +38,6 @@ module intw_ph
   complex(dp),allocatable    :: u_irr(:,:,:)         !displacement patterns for the irr.  q.
   complex(dp),allocatable    :: fcmat(:,:,:)         !dymanical matrices for irr. q.
   complex(dp),allocatable    :: dvscf_cart(:,:,:,:,:), dvscf_irr(:,:,:,:)
-  complex(dp), allocatable :: frc(:,:,:,:,:,:,:) ! force constants
   integer :: nqmesh
 
   real(dp),allocatable::  q_irr_cryst(:,:)
@@ -220,75 +219,90 @@ contains
 
   end subroutine read_ph_information_xml
 
-  SUBROUTINE readfc ( flfrc, nr1, nr2, nr3, nat, alat, at, ntyp, amass )
+  SUBROUTINE readfc ( flfrc, frc )
+    ! Read QE force constants file
 
-    !use intw_set_asr, only: set_asr
+    use intw_reading, only: nat, ntyp, at, alat, amass, ityp, tau
     use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: cmplx_1
+    use intw_useful_constants, only: cmplx_1, eps_6
     use intw_input_parameters, only: nq1, nq2, nq3, apply_asr
 
     IMPLICIT NONE
 
-    CHARACTER(LEN=256) :: flfrc
+    CHARACTER(LEN=256), intent(in) :: flfrc
+    complex(dp), intent(out) :: frc(nq1,nq2,nq3,3,3,nat,nat) ! force constants
 
-    INTEGER :: ibrav, nr1, nr2, nr3, nat, ntyp
-    REAL(DP) :: alat, at(3,3), epsil(3,3)
+    ! local variables
+    INTEGER :: ntyp_fc, nat_fc
+    INTEGER :: nr1_fc, nr2_fc, nr3_fc, ibrav_fc, ityp_fc(nat)
+    REAL(DP) :: alat_fc, celldm_fc(6), at_fc(3,3), amass_fc(ntyp), tau_fc(3, nat), zeu_fc(3,3,nat)
     LOGICAL :: has_zstar
-    !  ! local variables
-    INTEGER :: i, j, na, nb, m1, m2, m3
-    INTEGER :: ibid, jbid, nabid, nbbid, m1bid,m2bid,m3bid
-    REAL(DP) :: amass(ntyp), amass_from_file, celldm(6)
-    INTEGER :: nt
+    REAL(DP) :: epsil_fc(3,3)
     CHARACTER(LEN=3) :: atm
     CHARACTER(LEN=9) :: symm_type
-    real(dp) :: tau_fc(3, nat), zeu_fc(3,3,nat)
-    integer  :: ityp_fc(nat)
+    INTEGER :: nt
+    INTEGER :: i, j, na, nb, m1, m2, m3
+    INTEGER :: ibid, jbid, nabid, nbbid, m1bid,m2bid,m3bid
     integer :: io_unit, ios
+    real(dp), parameter :: Ry2Hartree = 0.5_dp
+    real(dp), parameter :: pmass = 1822.88848426_dp
     real(dp) :: frc_R(nq1,nq2,nq3,3,3,nat,nat)
     !
     !
     io_unit = find_free_unit()
     OPEN(unit=io_unit, file=flfrc, status='old', form='formatted', iostat=ios)
     IF ( ios /= 0 ) STOP 'ERROR: readfc: error opening flfrc'
-    !  !
-    !  !  read cell data
-    !  !
-    READ(io_unit,*) ntyp,nat,ibrav,(celldm(i),i=1,6)
-    if (ibrav==0) then
+    !
+    !  read cell data
+    !
+    READ(io_unit,*) ntyp_fc, nat_fc, ibrav_fc, (celldm_fc(i), i=1,6)
+    if (ibrav_fc==0) then
        read(io_unit,'(a)') symm_type
-       read(io_unit,*) ((at(i,j),i=1,3),j=1,3)
+       read(io_unit,*) ((at_fc(i,j),i=1,3),j=1,3)
     end if
     !
-
-    alat = celldm(1)
-    !  !
-    !  !  read atomic types, positions and masses
-    !  !
+    alat_fc = celldm_fc(1)
+    !
+    ! Some checks
+    if (nat_fc /= nat) stop "ERROR: readfc: Wrong number of atoms"
+    if (ntyp_fc /= ntyp) stop "ERROR: readfc: Wrong number of species"
+    if (ibrav_fc == 0 .and. any(abs(at_fc-at) > eps_6)) stop "ERROR: readfc: Wrong lattice vectors"
+    if (abs(alat_fc-alat) > eps_6) stop "ERROR: readfc: Wrong lattice parameter"
+    !
+    !
+    !  read atomic types, positions and masses
+    !
     DO nt = 1,ntyp
-       READ(io_unit,*) i,atm,amass_from_file
+       READ(io_unit,*) i, atm, amass_fc(nt)
     END DO
-    !  !
-    !  !
+    !
     DO na=1,nat
-       READ(io_unit,*) i,ityp_fc(na),(tau_fc(j,na),j=1,3)
+       READ(io_unit,*) i, ityp_fc(na), (tau_fc(j,na), j=1,3)
     END DO
-    !  !
-    !  !  read macroscopic variable
-    !  !
+    !
+    ! More checks
+    if (any(abs(amass_fc/pmass*2-amass) > eps_6)) stop "ERROR: readfc: Wrong atomic weights"
+    if (any(abs(ityp_fc-ityp) /= 0)) stop "ERROR: readfc: Wrong atomic types"
+    if (any(abs(tau_fc-tau) > eps_6)) stop "ERROR: readfc: Wrong atomic positions"
+    !
+    !  read macroscopic variable
+    !
     READ (io_unit,*) has_zstar
     IF (has_zstar) THEN
-       READ(io_unit,*) ((epsil(i,j),j=1,3),i=1,3)
+       READ(io_unit,*) ((epsil_fc(i,j),j=1,3),i=1,3)
        DO na=1,nat
           READ(io_unit,*)
           READ(io_unit,*) ((zeu_fc(i,j,na),j=1,3),i=1,3)
        END DO
     ENDIF
-    !  !
-    READ (io_unit,*) nr1,nr2,nr3
-    !  !
-    !  !  read real-space interatomic force constants
-    !  !
-    ALLOCATE ( frc(nr1,nr2,nr3,3,3,nat,nat) )
+    !
+    READ (io_unit,*) nr1_fc, nr2_fc, nr3_fc
+    !
+    ! Even more checks
+    if (nr1_fc /= nq1 .or. nr2_fc /= nq2 .or. nr3_fc /= nq3) stop "ERROR: readfc: Wrong supercell"
+    !
+    !  read real-space interatomic force constants
+    !
     frc(:,:,:,:,:,:,:) = 0.d0
     DO i=1,3
        DO j=1,3
@@ -296,24 +310,23 @@ contains
              DO nb=1,nat
                 READ (io_unit,*) ibid, jbid, nabid, nbbid
                 READ (io_unit,*) (((m1bid, m2bid, m3bid, frc_R(m1,m2,m3,i,j,na,nb), &
-                                    m1=1,nr1),m2=1,nr2),m3=1,nr3)
+                                    m1=1,nq1),m2=1,nq2),m3=1,nq3) ! in Ry/Bohr^2
              END DO
           END DO
        END DO
     END DO
-    !  !
+    !
     CLOSE(unit=io_unit)
-    frc=frc_R*cmplx_1
-       !MBR 21/05/2024
-       ! Instead of that set_asr module, use only the "simple" method
-       ! (worked in the routine as real)
-       if (apply_asr) then
-          write(*,*)' Applying ASR (simple) to force constant matrix'
-          call set_asr_frc(nq1, nq2, nq3, nat, frc_R)
-       end if   
-
-       frc=frc_R*cmplx_1                   ! make it complex again
-       ! End IGG
+    !
+    !MBR 21/05/2024
+    ! Instead of that set_asr module, use only the "simple" method
+    ! (worked in the routine as real)
+    if (apply_asr) then
+      write(*,*)' Applying ASR (simple) to force constant matrix'
+      call set_asr_frc(nq1, nq2, nq3, nat, frc_R)
+    end if
+    !
+    frc = frc_R*cmplx_1 ! make it complex
 
   END SUBROUTINE readfc
 
