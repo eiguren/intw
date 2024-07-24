@@ -547,7 +547,7 @@ module intw_ph_interpolate
   ! allocate_and_build_ws_irvec_q and allocate_and_build_dyn_qmesh must have been previously run
   !----------------------------------------------------------------------------
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only:  nat
+  use intw_reading, only:  nat, tau_cryst
   use intw_ph, only: nqmesh, qmesh
   !
   implicit none
@@ -562,7 +562,7 @@ module intw_ph_interpolate
   do iat2=1,nat
      do ir = 1,nrpts_qtau12(iat1,iat2)
         do iq = 1, nqmesh
-           fac = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq),irvec_qtau(:,ir,iat1,iat2)))
+           fac = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq),(irvec_qtau(:,ir,iat1,iat2) + tau_cryst(:,iat2) - tau_cryst(:,iat1))))
            dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, ir ) = &
                    dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, ir ) + &
                    fac*dyn_q((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq)
@@ -607,7 +607,7 @@ module intw_ph_interpolate
   ! as this uses irvec_q and dyn_r variables.
   !----------------------------------------------------------------------------
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only:  nat
+  use intw_reading, only:  nat, tau_cryst
   !
   implicit none
   !
@@ -622,7 +622,7 @@ module intw_ph_interpolate
   do iat1 = 1,nat
   do iat2 = 1,nat
      do ir = 1,nrpts_qtau12(iat1,iat2)
-       fac = exp(cmplx_i*tpi*dot_product(qpoint(:),irvec_qtau(:,ir,iat1,iat2)))/real(ndegen_qtau(ir,iat1,iat2),dp)
+       fac = exp(cmplx_i*tpi*dot_product(qpoint(:),(irvec_qtau(:,ir,iat1,iat2) - tau_cryst(:,iat2) + tau_cryst(:,iat1))))/real(ndegen_qtau(ir,iat1,iat2),dp)
        dyn_qint((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3) = &
            dyn_qint((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3) + &
            fac * dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3,ir)
