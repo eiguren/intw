@@ -16,7 +16,7 @@ use kinds, only: dp
   implicit none
   !
   ! subroutines
-  public :: get_timing, &
+  public :: diagonalize_cmat, get_timing, &
             joint_to_triple_index_g, triple_to_joint_index_g, &
             joint_to_triple_index_r, triple_to_joint_index_r, &
             generate_kmesh, generate_and_allocate_kpath, &
@@ -35,6 +35,41 @@ use kinds, only: dp
   !
 
 contains
+
+  subroutine diagonalize_cmat(A,w)
+    !
+    ! Diagonalize a complex Hermitian matrix
+    !
+    implicit none
+    !
+    ! input variables
+    complex(kind=dp), intent(inout) :: A(:,:) ! matrix to diagonalize on input, eigenvector on output
+    real(kind=dp), intent(out) :: w(:) ! eigenvalues
+    !
+    complex(kind=dp), allocatable, dimension(:) :: WORK
+    real(kind=dp), allocatable, dimension(:) :: RWORK
+    integer :: N, LWORK, INFO
+
+
+    N = size((A),DIM=1)
+    if ( size((A),DIM=2) .ne. N ) stop "diagonalize_cmat: ERROR"
+    if ( size((w),DIM=1) .ne. N ) stop "diagonalize_cmat: ERROR"
+    !
+    LWORK = -1
+    allocate(WORK(1))
+    allocate(RWORK(max(1, 3*N-2)))
+    !
+    call zheev( "V", "U", N, A, N, w, WORK, LWORK, RWORK, INFO )
+    !
+    LWORK = int(WORK(1))
+    !
+    deallocate(WORK)
+    allocate(WORK(LWORK))
+    !
+    call zheev( "V", "U", N, A, N, w, WORK, LWORK, RWORK, INFO )
+
+  end subroutine diagonalize_cmat
+
 
 function intgr_spline_gaussq(xdata,ydata) result(batura)
 ! This is original from MBGROUP
