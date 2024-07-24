@@ -417,9 +417,9 @@ contains
       ! (each files contains the info of an irreducible q-point)
   !====================================================================
 
-    subroutine read_dynq (dynq)
+      subroutine read_dynq (dynq)
 
-      use intw_reading, only: ntyp, nat, at
+      use intw_reading, only: ntyp, nat, at, tau_cryst
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
       use intw_utility, only: cryst_to_cart, find_free_unit, &
               triple_to_joint_index_g, find_k_1BZ_and_G
@@ -523,8 +523,10 @@ contains
               ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
               read(dynq_unit,*) ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3) ! in Ry/Bohr^2
 
+              ! Add gq phase
               dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
-                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) * Ry2Hartree ! in a.u.
+                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) &
+                     * exp(cmplx_i*tpi*sum( Gq * (tau_cryst(:,iat1)-tau_cryst(:,iat2)) )) * Ry2Hartree ! in a.u.
 
            end do
          end do !atoms
@@ -540,7 +542,7 @@ contains
 
       end do ! iqirr
 
-      ! Check that all the qpoints in the full mesh have been read
+            ! Check that all the qpoints in the full mesh have been read
       all_done=.true.
       do iq=1,nqmesh
          if (iq_done(iq) == 0) then
