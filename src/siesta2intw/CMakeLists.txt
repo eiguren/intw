@@ -4,6 +4,7 @@ if(USE_SIESTA)
 
   set(SIESTA2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw src directory." FORCE)
   set(SIESTA2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw build directory." FORCE)
+  set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
 
 
   set(SIESTA2INTW_SRC_FILES ${SIESTA2INTW_SRC_DIR}/cfftnd.f90
@@ -51,7 +52,7 @@ if(USE_SIESTA)
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/Makefile.in"
                  "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/Makefile" @ONLY)
 
-  add_custom_command(OUTPUT ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
+  add_custom_command(OUTPUT ${SIESTA2INTW_EXE}
     COMMAND make -C ${SIESTA2INTW_BUILD_DIR} siesta2intw.x
     COMMENT "Building siesta2intw"
     DEPENDS ${SIESTA2INTW_SRC_FILES}
@@ -59,7 +60,7 @@ if(USE_SIESTA)
     )
 
   add_custom_target(siesta2intw.x ALL
-    DEPENDS ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
+    DEPENDS ${SIESTA2INTW_EXE}
     )
 
 endif()
