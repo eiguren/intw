@@ -51,33 +51,81 @@ find_package(LAPACK REQUIRED)
 
 # Quantum Espresso
 option(USE_QE "Use Quantum Espresso" OFF)
+
+# Try to define the QE home directory from the environmental variable
 if(DEFINED ENV{QE_HOME})
   set(QE_HOME $ENV{QE_HOME} CACHE PATH "Path to the Quantum Espresso home directory." FORCE)
+endif()
+
+# Turn on USE_QE if the QE home directory is defined
+if(DEFINED QE_HOME)
   set(USE_QE ON CACHE BOOL "Use Quantum Espresso" FORCE)
 endif()
+
 if (USE_QE)
+  #
+  # Check if the QE home directory is defined
+  if(NOT DEFINED QE_HOME)
+    message(FATAL_ERROR "QE_HOME variable not set.")
+  endif()
+  #
+  # Setup QE variables
   include(SetQuantumEspresso)
+  #
 endif()
+
 
 # SIESTA
 option(USE_SIESTA "Use SIESTA" OFF)
+
+# Try to define the SIESTA home directory from the environmental variable
 if(DEFINED ENV{SIESTA_HOME})
   set(SIESTA_HOME $ENV{SIESTA_HOME} CACHE PATH "Path to the SIESTA home directory." FORCE)
+endif()
+
+# Turn on USE_SIESTA if the SIESTA home directory is defined
+if(DEFINED SIESTA_HOME)
   set(USE_SIESTA ON CACHE BOOL "Use SIESTA" FORCE)
 endif()
+
 if (USE_SIESTA)
+  #
+  # Check if the SIESTA home directory is defined
+  if(NOT DEFINED SIESTA_HOME)
+    message(FATAL_ERROR "SIESTA_HOME variable not set.")
+  endif()
+  #
+  # Find required Spglib library
   find_package(Spglib REQUIRED)
+  #
+  # Setup SIESTA variables
   include(SetSiesta)
+  #
 endif()
 
 # Wannier90
 option(USE_WANNIER "Use Wannier90" OFF)
+
+# Try to define the Wannier home directory from the environmental variable
 if(DEFINED ENV{W_HOME})
   set(W_HOME $ENV{W_HOME} CACHE PATH "Path to the Wannier90 home directory." FORCE)
+endif()
+
+# Turn on USE_WANNIER if the Wannier home directory is defined
+if(DEFINED W_HOME)
   set(USE_WANNIER ON CACHE BOOL "Use Wannier90" FORCE)
 endif()
+
 if (USE_WANNIER)
+  #
+  # Check if the Wannier home directory is defined
+  if(NOT DEFINED W_HOME)
+    message(FATAL_ERROR "W_HOME variable not set.")
+  endif()
+  #
+  # Setup Wannier variables
   include(SetWannier)
+  #
 endif()
 
 
