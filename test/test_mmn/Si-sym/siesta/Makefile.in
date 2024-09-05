@@ -17,7 +17,7 @@ run_w90pp:
 	$(MPI_CMD) $(W_BUILD_DIR)/wannier90.x -pp si
 
 run_siesta:
-	rm -rf fdf-*.log INPUT_TMP.*
+	rm -rf fdf*.log INPUT_TMP.*
 	$(SIESTA_EXE) < si.fdf | tee si.out
 	( test -f 0_NORMAL_EXIT && echo "OK" || exit 1 )
 	cp si.mmn siesta_si.mmn

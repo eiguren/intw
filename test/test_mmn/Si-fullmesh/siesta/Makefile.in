@@ -34,7 +34,7 @@ run_w90_1:
 
 run_siesta2intw:
 	rm -rf si.save.intw
-	rm -rf fdf-*.log INPUT_TMP.*
+	rm -rf fdf*.log INPUT_TMP.*
 	$(SIESTA2INTW_EXE) < si.fdf | tee siesta2intw.out
 	( test -f 0_NORMAL_EXIT && echo "OK" || exit 1 )
 

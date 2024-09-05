@@ -114,7 +114,7 @@ fi
 
 
 # SIESTA command
-siesta_exec=@SIESTA_BUILD_DIR@/siesta
+siesta_exec=@SIESTA_EXE@
 # echo $siesta_exec
 
 

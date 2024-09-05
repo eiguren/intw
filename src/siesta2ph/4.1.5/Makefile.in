@@ -23,9 +23,9 @@ FC:=$(FC_SERIAL) # Make it non-recursive
 
 INCFLAGS += -I$(OBJDIR)
 
-FFLAGS += @SIESTA2INTW_FFLAGS@
+FFLAGS += @SIESTA2PH_FFLAGS@
 
-FPPFLAGS += @SIESTA2INTW_FPPFLAGS@
+FPPFLAGS += @SIESTA2PH_FPPFLAGS@
 
 # ---------------------------------
 
