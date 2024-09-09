@@ -434,21 +434,11 @@ contains
     real(kind=dp), parameter :: fpi = 4.0_dp*pi
 
     integer :: ir, ikb
-    real(kind=dp), dimension(max_nkb) :: kbcos
 
     ! Radial grid variables
     real(kind=dp), parameter :: xmin = -7.0_dp, dx = 0.0125_dp, rmax = 100.0_dp ! default UPF values
 
 
-    !
-    !
-    ! get kbcos
-    write(stdout, *) "- Getting kbcos for "//trim(siestaPP%label)//"..."
-    call get_kbcos(trim(siestaPP%label), siestaPP%nkb, kbcos)
-    !
-    do ikb=1,siestaPP%nkb
-      write(stdout, "(a,i2,a,i2,a,f10.6)") "kbcos for KB projector", ikb, " (l=", siestaPP%ls(ikb), "): ", kbcos(ikb)
-    enddo
     !
     !
     ! pp_info
@@ -481,7 +471,7 @@ contains
     !      In this second case, the PSF does not contain any relativistic effect for sure, but the projectors are duplicated. Thus,
     !      the duplicated projetors are exactly equal and just one of them could be used to obtain the exactly same results. Maybe, in
     !      this case, the best would be to remove the duplicated projectors and keep just one, and use rel = 0 (no relativistic).
-    !      Anyway, I am not sure if the Dij's, kbcos' or ekb's must be modified. Furthermore, I am not sure if keeping all the
+    !      Anyway, I am not sure if the Dij's or ekb's must be modified. Furthermore, I am not sure if keeping all the
     !      projetors and using rel = 0 (no relativistic) is correct.
     ! 12-01-2022:
     ! I found that in the 4th case I should use rel = 0 and take just one of the duplicated projectors letting the Dij's as they are.
@@ -517,7 +507,7 @@ contains
     !
     intwPP%vpsloc = 0.0_dp
     call dosplineint( siestaPP%r_reduced_vlocal(1:siesta_nrpts), siestaPP%reduced_vlocal(1:siesta_nrpts), &
-    intwPP%r(1:intwPP%mesh),                     intwPP%vpsloc(1:intwPP%mesh)               )
+                      intwPP%r(1:intwPP%mesh),                   intwPP%vpsloc(1:intwPP%mesh)               )
     do ir=1,intwPP%mesh
       if (intwPP%r(ir) .lt. intwPP%rcloc) then
         intwPP%vpsloc(ir) = ( intwPP%vpsloc(ir) - 2*intwPP%Zval )/intwPP%r(ir)
@@ -559,7 +549,7 @@ contains
       do ir=1,intwPP%mesh
         if (intwPP%r(ir) .lt. siestaPP%rcut(ikb)) then
           intwPP%ikk(ikb) = ir ! cutoff_radius_index
-          intwPP%betas(ir,ikb) = intwPP%betas(ir,ikb)*(intwPP%r(ir)**(intwPP%ls(ikb)+1))/kbcos(ikb)
+          intwPP%betas(ir,ikb) = intwPP%betas(ir,ikb)*(intwPP%r(ir)**(intwPP%ls(ikb)+1))
         else
           intwPP%betas(ir,ikb) = 0.0_dp
         endif
@@ -571,87 +561,10 @@ contains
     ! pp_dij
     intwPP%bmat = 0.0_dp
     do ikb=1,intwPP%nbeta
-      intwPP%bmat(ikb,ikb) = siestaPP%ekb(ikb)*kbcos(ikb)**2
+      intwPP%bmat(ikb,ikb) = siestaPP%ekb(ikb)
     enddo
 
   end subroutine convert_pp
-
-
-  subroutine get_kbcos(label, nkb, kbcos)
-    !
-    !
-    !
-
-    ! variables
-    use siesta2intw_io, only: siesta_output_file, stdout
-    ! functions and subroutines
-    use siesta2intw_io, only: find_free_unit
-
-    implicit none
-
-    character(*), intent(in) :: label
-    integer, intent(in) :: nkb
-    real(kind=dp), dimension(nkb), intent(out) :: kbcos
-
-    character(len=256) :: line
-    character(len=256) :: atom_begining, atom_end
-    character(len=256) :: kbgen_begining, kbgen_end
-    integer :: ikb
-    integer :: iounit, iostat
-
-
-    ! Set strings to search for the needed blocks
-    if (len(trim(label)) == 1) then
-      write(atom_begining, "(a16,x,a1)") "atom: Called for", trim(label)
-    else if (len(trim(label)) == 2) then
-      write(atom_begining, "(a16,x,a2)") "atom: Called for", trim(label)
-    else if (len(trim(label)) == 3) then
-      write(atom_begining, "(a16,x,a3)") "atom: Called for", trim(label)
-    else
-      stop "ERROR: get_kbcos: Label too long."
-    endif
-    atom_end = "atom: -------------------------------------------------------------------------"
-    kbgen_begining = "KBgen: Kleinman-Bylander projectors:"
-    kbgen_end = "KBgen: Total number of Kleinman-Bylander projectors:"
-
-    ! Open siesta output file
-    iounit = find_free_unit()
-    open(unit=iounit, file=trim(siesta_output_file), status="old", action="read", iostat=iostat)
-    if (iostat /= 0) stop "ERROR: get_kbcos: siesta_output_file could not be opened"
-
-    ! Read until the atom block starts
-    do
-
-      read(iounit, "(a)", iostat=iostat) line
-      if (iostat /= 0) exit
-
-      if (index( line, trim(atom_begining)) == 1) exit
-
-    end do
-
-    ! Read until the KBgen block starts
-    do
-
-      read(iounit, "(a)", iostat=iostat) line
-      if (iostat /= 0) exit
-
-      if (index( line, trim(atom_end)) == 1) stop "ERROR: get_kbcos: kbcos not found"
-      if (index( line, trim(kbgen_end)) == 1) stop "ERROR: get_kbcos: kbcos not found"
-
-      if (index( line, trim(kbgen_begining)) == 1) exit
-
-    end do
-
-    ! Read kbcos
-    do ikb=1,nkb
-
-      read(iounit, "(a)") line
-
-      read(line(index(line, "kbcos=")+len("kbcos="):), "(f10.6,a)") kbcos(ikb)
-
-    enddo
-
-  end subroutine get_kbcos
 
 
   subroutine write_pp_intw(intwPP, filename)
