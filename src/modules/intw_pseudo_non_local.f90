@@ -373,7 +373,7 @@ contains
     use intw_reading, only: ecutwfc, ntyp, volume0
     use intw_pseudo, only: upf
     use intw_useful_constants, only: fpi, ZERO
-    use intw_utility, only: sphb, intgr_spline_gaussq !, simpson
+    use intw_utility, only: sphb, simpson
     use mcf_spline, only: spline_mcf
 
     implicit none
@@ -409,12 +409,13 @@ contains
       do nb = 1, upf(nt)%nbeta
         l = upf(nt)%lll(nb)
         do iq = 1, nqx
-          aux = upf(nt)%beta(:,nb) * sphb(l, xdata(iq)*upf(nt)%r) * upf(nt)%r
-          !ASIER 29/07/2021
-          !call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
 
-          !Integrating by spline + gauss 2. order
-          vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
+          aux = upf(nt)%beta(:,nb) * sphb(l, xdata(iq)*upf(nt)%r) * upf(nt)%r
+          call simpson(upf(nt)%kkbeta, aux, upf(nt)%rab, vqint)
+
+          ! ASIER 29/07/2021
+          ! Integrating by spline + gauss 2. order
+          ! vqint = intgr_spline_gaussq( upf(nt)%r(1:upf(nt)%kkbeta), aux )
 
           tab(iq,nb,nt) = vqint * fpi / sqrt(volume0)
 
