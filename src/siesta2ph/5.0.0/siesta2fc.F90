@@ -90,8 +90,7 @@ program siesta2fc
   call compute_force_constants()
   !
   ! Save FC to a file
-  ! call write_fc_phonopy("fc.dat_1")
-  call write_fc_QE("fc.dat_1")
+  call write_fc_phonopy("fc.dat_1")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -327,8 +326,6 @@ contains
       !
       if ( .not. irred_atm(ia) ) cycle
       !
-      if (all(done(ia,:))) stop "ERROR: all(done(ia,:))"
-      !
       ! Find site symmetry of the atom
       do isite_sym=1,nsite_sym
         if ( ia .eq. site_atm(isite_sym)) exit
@@ -461,25 +458,11 @@ contains
           Sia = rtau_index(ia,isym)
           Sja = rtau_index(ja,isym)
           !
-          ! if (done(Sia,Sja)) then
-          !   if (any(abs(fc(:,:,Sia,Sja) - matmul(s_cart(:,:,isym) , matmul( FC_ij(:,:) , ainv(s_cart(:,:,isym)) ) ) )> 0.0000001_dp)) then
-          !     if (isym==1) then
-          !       print*, ia, ja
-          !       print*, Sia, Sja
-          !       print"(3f15.8)", fc(:,:,Sia,Sja)
-          !       print"(3f15.8)", matmul(s_cart(:,:,isym) , matmul( FC_ij(:,:) , ainv(s_cart(:,:,isym)) ) )
-          !     endif
-          !   endif
-          ! endif
-          !
           if (done(Sia,Sja)) cycle
           !
           fc(:,:,Sia,Sja) = matmul( s_cart(:,:,isym), matmul( FC_ij(:,:), ainv(s_cart(:,:,isym)) ) )
           !
           done(Sia,Sja) = .true.
-          !
-          ! fc(:,:,Sja,Sia) = transpose(fc(:,:,Sia,Sja))
-          ! done(Sja,Sia) = .true.
           !
         enddo ! isym
         !
@@ -528,7 +511,6 @@ contains
     integer, dimension(nr1*nr2*nr3) :: qirr_map
     integer :: nq_star
     logical, dimension(nr1*nr2*nr3) :: qirr_done
-    real(kind=dp), allocatable, dimension(:,:)::dmr,dmi
 
 
     ! Get q-mesh
@@ -536,16 +518,11 @@ contains
     qirr_map = 0
     !
     call get_q_mesh(nr1, nr2, nr3, qmesh_cryst, qirr_map)
-    do iq=1,nr1*nr2*nr3
-      print"(i,3f)", iq, qmesh_cryst(:,iq)
-    enddo
     !
     nat_uc = nat/nr1/nr2/nr3 ! The number of atoms in the unit cell
     !
     allocate(w(3*nat_uc))
     allocate(dm(3*nat_uc, 3*nat_uc, nr1*nr2*nr3))
-    allocate(dmr(3*nat_uc, 3*nat_uc))
-    allocate(dmi(3*nat_uc, 3*nat_uc))
     dm = cmplx_0
     !
     if (.not.irreducible_q) then
@@ -646,11 +623,6 @@ contains
       !
       close(iounit)
       !
-      ! dmr(:,:) = int(real(dm(:,:,iq))*10000000.0_dp)/10000000.0_dp
-      ! dmi(:,:) = int(aimag(dm(:,:,iq))*10000000.0_dp)/10000000.0_dp
-      ! dm(:,:,iq) = cmplx(dmr,dmi)
-      ! print"(6f20.12)", dm(:,:,iq)
-
       call diagonalize_cmat(dm(:,:,iq), w)
       print"(a12,x,a2,x,i4,x,100f18.6)", "freq. (meV):", "iq", iq, sign(sqrt(abs(w)), w)*Hartree2meV
       ! print"(a12,x,a2,x,i4,x,100f18.6)", "freq. (THz):", "iq", jq, sign(sqrt(abs(w)), w)*au2THz ! QE
@@ -786,8 +758,8 @@ contains
       dm = 0.5_dp*(dm + conjg(transpose(dm)))
       !
       call diagonalize_cmat(dm, w)
-      ! write(iounit,"(f12.8,x,100f12.6)") dist, sign(sqrt(abs(w)), w)*Hartree2meV
-      write(iounit,"(f12.8,x,100f12.6)") dist/tpi*alat, sign(sqrt(abs(w)), w)*au2cm1 ! matdyn
+      write(iounit,"(f12.8,x,100f12.6)") dist, sign(sqrt(abs(w)), w)*Hartree2meV
+      ! write(iounit,"(f12.8,x,100f12.6)") dist, sign(sqrt(abs(w)), w)*au2cm1 ! matdyn
       ! write(iounit,"(f12.8,x,100f12.6)") dist/tpi, sign(sqrt(abs(w)), w)*au2THz ! phonopy
       !
     enddo ! iq
