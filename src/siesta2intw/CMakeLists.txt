@@ -133,17 +133,23 @@ else()
     DEPENDS ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
     )
 
-  add_custom_target(restore-siesta
+  add_custom_target(remove-siesta2intw
+    COMMENT "Removing siesta2intw from SIESTA"
     COMMAND rm -rf "${SIESTA_BUILD_DIR}/Util/Contrib/siesta2intw"
     COMMAND rm -rf "${SIESTA_HOME}/Util/Contrib/siesta2intw"
     COMMAND mv "${SIESTA_HOME}/Util/CMakeLists.txt" "${SIESTA_HOME}/Util/CMakeLists.txt_backup"
     COMMAND grep -v siesta2intw "${SIESTA_HOME}/Util/CMakeLists.txt_backup" > "${SIESTA_HOME}/Util/CMakeLists.txt"
     COMMAND rm -rf "${SIESTA_HOME}/Util/CMakeLists.txt_backup"
-    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}"
     COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp"
-    COMMENT "SIESTA restored"
     VERBATIM
     )
+
+  add_custom_target(restore-siesta
+    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}"
+    COMMENT "Restoring SIESTA"
+    )
+
+  add_dependencies(restore-siesta remove-siesta2intw)
 
 endif()
 
