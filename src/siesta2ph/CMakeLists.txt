@@ -130,19 +130,36 @@ else()
     COMMENT "Configuring SIESTA"
     )
 
-  add_custom_target(siesta2ph.x ALL cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_exe
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    BYPRODUCTS ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2ph/siesta2ph.x
+  add_custom_target(patch-siesta-siesta2ph DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp)
+
+  add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_exe
+    COMMENT "Building siesta2ph.x"
+    DEPENDS patch-siesta-siesta2ph
     )
 
-  add_custom_target(siesta2fc.x ALL cmake --build "${SIESTA_BUILD_DIR}" -t siesta2fc_exe
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    BYPRODUCTS ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2ph/siesta2fc.x
+  add_custom_target(siesta2ph.x ALL
+    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
     )
 
-  add_custom_target(siesta2dv.x ALL cmake --build "${SIESTA_BUILD_DIR}" -t siesta2dv_exe
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    BYPRODUCTS ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2ph/siesta2dv.x
+  add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2fc_exe
+    COMMENT "Building siesta2fc.x"
+    DEPENDS patch-siesta-siesta2ph
+    )
+
+  add_custom_target(siesta2fc.x ALL
+    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
+    )
+
+  add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2dv_exe
+    COMMENT "Building siesta2dv.x"
+    DEPENDS patch-siesta-siesta2ph
+    )
+
+  add_custom_target(siesta2dv.x ALL
+    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
     )
 
   add_custom_target(remove-siesta2ph

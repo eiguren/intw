@@ -122,10 +122,15 @@ else()
     COMMENT "Configuring SIESTA"
     )
 
+  add_custom_target(patch-siesta-siesta2intw
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
+    )
+
+
   add_custom_command(OUTPUT ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
     COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2intw_exe
     COMMENT "Building siesta2intw.x"
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
+    DEPENDS patch-siesta-siesta2intw
     BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
     )
 
