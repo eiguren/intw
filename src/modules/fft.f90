@@ -477,126 +477,114 @@ contains
     if (iG == 0) exit
     ! use nl to identify which G_fft vector G corresponds to,
     ! and assign the value of the wave function in the aux array
-    wfc_g(ig) = aux(nl(ig))
+    wfc_g(i) = aux(nl(ig))
   enddo
 
   end subroutine wfc_from_r_to_g
 
-  subroutine func_from_g_to_r (nfunc, nG_max, fg, fr)
+  subroutine func_from_g_to_r (nfunc, fg, fr)
     !--------------------------------------------------------
     !  This subroutine is a driver which uses the 3D-FFT
     !  code to go from f(G) to f(r).
-    !
-    !  The code was copied from Asier's previous work,
-    !  and slightly modified and cleaned up by Bruno.
     !--------------------------------------------------------
-    use intw_reading, only: nr1, nr2, nr3, nspin
+    use intw_reading, only: nr1, nr2, nr3, nspin, ngm
     use intw_useful_constants, only: cmplx_0
+
     implicit none
+
+    integer, intent(in) :: nfunc
+    complex(dp), intent(in) :: fg(ngm,nfunc)
+    complex(dp), intent(out) :: fr(nr1*nr2*nr3,nfunc)
+
+    integer :: mode, ig
+    complex(dp) :: aux(nr1*nr2*nr3)
 
     external :: cfftnd
 
-    integer :: nG_max      !this is local here!
-    integer :: nfunc, mode, ig, ispin
 
-    complex(dp), intent(in) :: fg(nG_max,nspin,nfunc)
-    complex(dp), intent(out) :: fr(nr1*nr2*nr3,nspin,nfunc)
-    complex(dp) :: aux(nr1*nr2*nr3)
+    do mode=1,nfunc
+      ! initialize work array
+      aux(:) = cmplx_0
 
-    do ispin=1,nspin
-      do mode=1,nfunc
-        ! initialize work array
-        aux(:)= cmplx_0
-
-        ! put fg in aux
-        do ig=1,nG_max
-          aux(nl(ig)) = fg(ig, ispin, mode)
-        enddo
-
-        ! perform fourier transform in place aux(fg) -> aux(fr)
-        call cfftnd(3,(/nr1,nr2,nr3/),1,aux) ! This is the right convention
-
-        ! put aux in fr
-        fr(:,ispin,mode)=aux(:)
-
+      ! put fg in aux
+      do ig=1,ngm
+        aux(nl(ig)) = fg(ig, mode)
       enddo
-    enddo
 
-    return
+      ! perform fourier transform in place aux(fg) -> aux(fr)
+      call cfftnd(3, (/nr1,nr2,nr3/), 1, aux) ! This is the right convention
+
+      ! put aux in fr
+      fr(:,mode) = aux(:)
+
+    enddo
 
   end subroutine func_from_g_to_r
 
-  subroutine r_function_by_exp_igr (g, nfunc, nr1, nr2, nr3, fr, fr_exp_igr)
 
-    use intw_reading, only: nspin
+  subroutine r_function_by_exp_igr (g_cryst, nfunc, nr1, nr2, nr3, fr, fr_exp_igr)
+
     use intw_utility, only: joint_to_triple_index_g
     use intw_useful_constants, only: tpi, cmplx_i
 
     implicit none
 
-    integer,intent(in) :: g(3), nr1, nr2, nr3
-    integer :: nfunc, mode
+    integer,intent(in) :: g_cryst(3), nfunc, nr1, nr2, nr3
+    complex(dp),intent(in) :: fr(nr1*nr2*nr3,nfunc)
+    complex(dp),intent(out) :: fr_exp_igr(nr1*nr2*nr3,nfunc)
 
-    complex(dp),intent(in) :: fr(nr1*nr2*nr3,nspin,nfunc)
-    complex(dp),intent(out) :: fr_exp_igr(nr1*nr2*nr3,nspin,nfunc)
-
-    integer :: i, j, k, ir
-    integer :: ispin
-
+    integer :: mode, i, j, k, ir
     real(dp) :: gr
 
-    do ispin=1,nspin
-      do mode=1,nfunc
 
-        do ir=1,nr1*nr2*nr3
+    do mode=1,nfunc
 
-          call joint_to_triple_index_g(nr1,nr2,nr3,ir,i,j,k)
+      do ir=1,nr1*nr2*nr3
 
-          gr = tpi*(g(1)*(i-1)/nr1 + g(1)*(j-1)/nr2 + g(1)*(k-1)/nr3)
+        call joint_to_triple_index_g(nr1,nr2,nr3,ir,i,j,k)
 
-          fr_exp_igr(ir,ispin, mode) = fr(ir,ispin,mode) * exp( cmplx_i * gr )
+        gr = tpi*(g_cryst(1)*(i-1)/nr1 + g_cryst(1)*(j-1)/nr2 + g_cryst(1)*(k-1)/nr3)
 
-        enddo
+        fr_exp_igr(ir,mode) = fr(ir,mode) * exp( cmplx_i * gr )
+
       enddo
     enddo
 
   end subroutine r_function_by_exp_igr
 
-  subroutine func_from_r_to_g (nfunc, nG_max_loc, fr, fg)
+
+  subroutine func_from_r_to_g (nfunc, fr, fg)
     !--------------------------------------------------------
     !  This subroutine is a driver which uses the 3D-FFT
     !  code to go from f(r) to f(G).
-    !
-    !  The code was copied from Asier's previous work,
-    !  and slightly modified and cleaned up by Bruno.
     !--------------------------------------------------------
-    use intw_reading, only: nr1, nr2, nr3, nspin
+    use intw_reading, only: nr1, nr2, nr3, ngm
     use intw_useful_constants, only: cmplx_0
+
     implicit none
+
+    integer, intent(in) :: nfunc
+    complex(dp), intent(in) :: fr(nr1*nr2*nr3,nfunc)
+    complex(dp), intent(out) :: fg(ngm,nfunc)
+
+    integer :: mode, ig, ir
+    complex(dp) :: aux(nr1*nr2*nr3)
 
     external :: cfftnd
 
-    integer :: nG_max_loc !this is local here!
-    integer :: nfunc, mode, ig, ir, ispin
 
-    complex(dp), intent(out) :: fg(nG_max_loc,nspin,nfunc)
-    complex(dp), intent(in) :: fr(nr1*nr2*nr3,nspin,nfunc)
-    complex(dp) :: aux(nr1*nr2*nr3)
+    do mode=1,nfunc
 
-    do ispin=1,nspin
-      do mode=1,nfunc
+      aux(:) = cmplx_0
 
-        aux(:)= cmplx_0
+      do ir=1,nr1*nr2*nr3
+        aux(ir) = fr(ir,mode)
+      enddo
 
-        do ir=1,nr1*nr2*nr3
-          aux(ir) = fr(ir, ispin,mode)
-        enddo
+      call cfftnd(3, (/nr1,nr2,nr3/), -1, aux) ! this is the right convention
 
-        call cfftnd(3,(/nr1,nr2,nr3/),-1,aux)  ! this is the right convention
-
-        do ig=1,nG_max_loc
-          fg(ig,ispin,mode)=aux(nl(ig))
-        enddo
+      do ig=1,ngm
+        fg(ig,mode) = aux(nl(ig))
       enddo
     enddo
 
