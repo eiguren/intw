@@ -61,7 +61,7 @@ module intw_intw2wannier
 
   integer     :: nnkp_nnkpts            !the number near neighbor k-points
 
-  integer     :: nnkp_n_proj            !the number of projections specified 
+  integer     :: nnkp_n_proj            !the number of projections specified
                                         !(should be the same as number of Wannier functions)
 
   real(dp),allocatable :: nnkp_kpoints(:,:)   ! the k vectors in the 1BZ
@@ -268,7 +268,7 @@ contains
   read(nnkp_unit,*) nnkp_exclude_bands
   !
   ! JLB: Now this is done in reading.f90 -> set_num_bands
-  !      Here only poulating nnkp_* variables, 
+  !      Here only poulating nnkp_* variables,
   !      then check for consistency with intw_* in main program / utility
   !num_exclude_bands=nnkp_exclude_bands
   !allocate(exclude_bands(num_exclude_bands))
@@ -479,649 +479,562 @@ contains
   return
 
   end subroutine generate_header
-!----------------------------------------------------
-!------------------------------------------------------------------
-!******************************************************************
-!------------------------------------------------------------------
+
+
   subroutine generate_mmn_using_allwfc (intw2W_fullzone,method)
-  !----------------------------------------------------------------------------!
-  ! This subroutine computes the plane wave matrix elements  needed by Wannier90
-  ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
-  ! the needed matrix elements.
-  !
-  !----------------------------------------------------------------------------!
-  USE intw_allwfcs, only: get_psi_general_k_all_wfc, ngk_all
-  use intw_utility, only: find_free_unit
-  use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
-  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
-  use intw_reading, only: num_bands_intw
-  use intw_symmetries, only:  QE_folder_sym
+    !----------------------------------------------------------------------------!
+    ! This subroutine computes the plane wave matrix elements  needed by Wannier90
+    ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
+    ! the needed matrix elements.
+    !
+    !----------------------------------------------------------------------------!
+    use intw_allwfcs, only: get_psi_general_k_all_wfc
+    use intw_utility, only: find_free_unit
+    use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
+    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+    use intw_reading, only: num_bands_intw
+
+    implicit none
+
+    logical        :: intw2W_fullzone
+    character(*)   :: method
+
+    integer        :: io_unit_mmn, io_unit_eig
+    integer        :: nkmesh
+
+    integer        :: nn
+
+    character(256) :: filename
+
+    integer        :: ikpt_1, ikpt_2
+    integer        :: nb1, nb2, nb
+    integer        :: G(3)
+
+    integer        :: ngk1, ngk2
+
+    integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
+    complex(dp)    :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+    real(dp)       :: QE_eig(num_bands_intw)
+
+    complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
+
+    character(256) :: header
 
 
-  implicit none
+    !-----------------------------------
+    ! Open all the needed files
+    !-----------------------------------
+    io_unit_mmn = find_free_unit()
+    filename = trim(mesh_dir)//trim(prefix)//trim('.mmn')
+    open(unit=io_unit_mmn,file=filename,status='unknown')
 
-  logical        :: intw2W_fullzone
-  character(*)   :: method
+    io_unit_eig = find_free_unit()
+    filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
+    open(unit=io_unit_eig,file=filename,status='unknown')
 
+    !-----------------------------------
+    ! define a few useful variables
+    !-----------------------------------
+    nkmesh = nk1*nk2*nk3
 
-  integer        :: io_unit_mmn, io_unit_eig
-  integer        :: nkmesh
+    if (intw2W_fullzone) then
+      call generate_header(trim(method)//trim('-fullzone'),header)
+    else
+      call generate_header(trim(method)//trim('-IBZ'),header)
+    end if
 
-  integer        :: nn
+    write(io_unit_mmn,*) trim(header)
+    write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
 
-  character(256) :: filename
+    !loop on all points
+    do ikpt_1 = 1, nkmesh
+      ! fetch the data
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_1), ngk1, list_iG_1, wfc_1, QE_eig)
 
-  integer        :: ikpt_1, ikpt_2
-  integer        :: nb1, nb2, nb
-  integer        :: G(3), G_plus(3)
+      ! print out the eigenvalues
+      do nb =1, num_bands_intw
+        write(io_unit_eig,'(2I5,F18.12)') nb, ikpt_1, QE_eig(nb)
+      end do
 
-  integer        :: ngk1, ngk2
+      ! loop on neighbors
+      do nn = 1, nnkp_nnkpts
+        G      = nnkp_list_G(:,nn,ikpt_1)
+        ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
 
-  integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
-  complex(dp)    :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
-  real(dp)       :: QE_eig(num_bands_intw)
+        write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
 
-  complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
+        ! fetch data
+        call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G, ngk2, list_iG_2, wfc_2, QE_eig)
 
-  character(256) :: header
-
-  !integer        :: nbands_loc
-  !nbands_loc=num_bands
-
-  !-----------------------------------
-  ! Open all the needed files
-  !-----------------------------------
-  io_unit_mmn = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.mmn')
-  open(unit=io_unit_mmn,file=filename,status='unknown')
-
-  io_unit_eig = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
-  open(unit=io_unit_eig,file=filename,status='unknown')
-
-  !-----------------------------------
-  ! define a few useful variables
-  !-----------------------------------
-  nkmesh = nk1*nk2*nk3
-
-  if (intw2W_fullzone) then
-          call generate_header(trim(method)//trim('-fullzone'),header)
-  else
-          call generate_header(trim(method)//trim('-IBZ'),header)
-  end if
-
-  write(io_unit_mmn,*) trim(header)
-  write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
-
-  !loop on all points
-  do ikpt_1 = 1, nkmesh
-    ! fetch the data
-    call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_1),list_iG_1, wfc_1, QE_eig)
-
-    ngk1= ngk_all(QE_folder_sym(ikpt_1))
-
-    ! print out the eigenvalues
-    do nb =1, num_bands_intw
-       write(io_unit_eig,'(2I5,F18.12)') nb, ikpt_1, QE_eig(nb)
-    end do
-
-    ! loop on neighbors
-    do nn = 1, nnkp_nnkpts
-      G      = nnkp_list_G(:,nn,ikpt_1)
-      ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
-
-      write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
-
-      ! fetch data
-      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G  ,list_iG_2, wfc_2, QE_eig)
-
-      ngk2= ngk_all(QE_folder_sym(ikpt_2))
-      ! Compute the matrix elements
-      if ( trim(method) == 'CONVOLUTION' ) then
+        ! Compute the matrix elements
+        if ( trim(method) == 'CONVOLUTION' ) then
           call get_plane_wave_matrix_element_convolution_map      &
                         ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
 
 
-      else if ( trim(method) == 'FFT' ) then
+        else if ( trim(method) == 'FFT' ) then
           call get_plane_wave_matrix_element_FFT              &
                         ((/0, 0, 0/),list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
-      else
+        else
           write(*,*) 'ERROR in generate_mmn'
           stop
-      end if
+        end if
 
-      if (nspin==2) then
-         do nb1 = 1,num_bands_intw
-           do nb2 = 1,num_bands_intw
+        if (nspin==2) then
+          do nb1 = 1,num_bands_intw
+            do nb2 = 1,num_bands_intw
               write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1) + pw_mat_el(nb2,nb1,2,2)
-           end do
-         end do
-      else if  (nspin==1) then
-         do nb1 = 1,num_bands_intw
-           do nb2 = 1,num_bands_intw
+            end do
+          end do
+        else if  (nspin==1) then
+          do nb1 = 1,num_bands_intw
+            do nb2 = 1,num_bands_intw
               write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1)
-           end do
-         end do
-      endif
+            end do
+          end do
+        endif
+
+      end do
 
     end do
 
-  end do
-
-  close(io_unit_mmn)
-  close(io_unit_eig)
+    close(io_unit_mmn)
+    close(io_unit_eig)
 
   end subroutine generate_mmn_using_allwfc
 
+
   subroutine generate_amn_using_allwfc (intw2W_fullzone,method)
-  !----------------------------------------------------------------------------!
-  ! This subroutine computes the overlap with trial functions, thus producing
-  ! the amn file needed by Wannier90.
-  !----------------------------------------------------------------------------!
-   USE intw_allwfcs, only: get_psi_general_k_all_wfc
-   use intw_utility, only: find_free_unit
-   use intw_useful_constants, only: cmplx_0
-   use intw_reading, only : noncolin, num_bands_intw
-   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+    !----------------------------------------------------------------------------!
+    ! This subroutine computes the overlap with trial functions, thus producing
+    ! the amn file needed by Wannier90.
+    !----------------------------------------------------------------------------!
 
-  implicit none
+    use intw_allwfcs, only: get_psi_general_k_all_wfc
+    use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only : noncolin, num_bands_intw
+    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
 
-  logical        :: intw2W_fullzone
-  character(256) :: method
+    implicit none
 
-  integer        :: io_unit_amn
-  integer        :: nkmesh
+    logical        :: intw2W_fullzone
+    character(256) :: method
 
+    integer        :: io_unit_amn
+    integer        :: nkmesh
 
-  character(256) :: filename
+    character(256) :: filename
 
-  integer        :: ikpt
-  integer        :: nb, n_proj
+    integer        :: ikpt
+    integer        :: nb, n_proj
 
-  integer        :: list_iG(nG_max)
+    integer        :: ngk, list_iG(nG_max)
 
-  complex(dp)    :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp)    :: wfc(nG_max,num_bands_intw,nspin)
 
-  complex(dp)    :: guiding_function(ngm,nspin)
+    complex(dp)    :: guiding_function(nG_max,nspin)
 
-  real(dp)       :: QE_eig(num_bands_intw)
+    real(dp)       :: QE_eig(num_bands_intw)
 
-  complex(dp)    :: amn(num_bands_intw)
+    complex(dp)    :: amn(num_bands_intw)
 
-  character(256) :: header
-
-  integer :: G_plus(3)
+    character(256) :: header
 
 
-  nkmesh = nk1*nk2*nk3
+    nkmesh = nk1*nk2*nk3
 
-  io_unit_amn = find_free_unit()
-  filename    = trim(mesh_dir)//trim(prefix)//trim('.amn')
-  open(unit=io_unit_amn,file=filename,status='unknown')
+    io_unit_amn = find_free_unit()
+    filename    = trim(mesh_dir)//trim(prefix)//trim('.amn')
+    open(unit=io_unit_amn,file=filename,status='unknown')
 
-  call generate_header(method,header)
-  write(io_unit_amn,*) trim(header)
+    call generate_header(method,header)
+    write(io_unit_amn,*) trim(header)
+    write(io_unit_amn,'(3I12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_n_proj
 
+    !loop on all k-points
+    do ikpt = 1, nnkp_num_kpoints
 
-  write(io_unit_amn,'(3I12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_n_proj
+      ! fetch the data
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt), ngk, list_iG, wfc, QE_eig)
 
+      !loop on all bands and all trial functions
+      do n_proj = 1,nnkp_n_proj
 
-  !loop on all k-points
-  do ikpt = 1, nnkp_num_kpoints
+        ! Generate the fourier transform of the trial function (called guiding
+        ! function, just like in pw2wannier).
+        call generate_guiding_function(ikpt, ngk, list_iG, n_proj, guiding_function(:,1))
 
-    ! fetch the data
-    !call get_psi_k(ikpt,.not.intw2W_fullzone,list_iG,wfc,QE_eig)
-!     call get_psi_general_k_all_wfc(.true.,  nnkp_kpoints(:, ikpt)   , nspin,list_iG, wfc, QE_eig, G_plus)
-    call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt)   , list_iG, wfc, QE_eig)
-
-    !loop on all bands and all trial functions
-    do n_proj = 1,nnkp_n_proj
-
-    ! Generate the fourier transform of the trial function (called guiding
-    ! function, just like in pw2wannier). In order
-    ! to insure that it is normalized, the coefficients must be computed
-    ! on the whole gvec mesh, not just the G vectors where the wavefunction
-    ! does not vanish. It will be assumed that gvec is large enough to
-    ! insure proper normalization.
-
-      call generate_guiding_function(ikpt,n_proj,guiding_function(:,1))
-
-      !JLB spinor projection. Should be generalized to quantization axis /= z
-      if (noncolin) then
-         if (nnkp_proj_s(n_proj) < 0) then
+        !JLB spinor projection. Should be generalized to quantization axis /= z
+        if (noncolin) then
+          if (nnkp_proj_s(n_proj) < 0) then
             guiding_function(:,2) = guiding_function(:,1)
             guiding_function(:,1) = cmplx_0
-         else
+          else
             guiding_function(:,2) = cmplx_0
-         end if
-      end if
-      !
+          end if
+        end if
 
-      if (trim(method) == 'CONVOLUTION') then
-              call get_guiding_function_overlap_convolution(list_iG,wfc,   &
-                                                        guiding_function,amn)
-      else if (trim(method) == 'FFT') then
-              call get_guiding_function_overlap_FFT(list_iG,wfc,   &
-                                                        guiding_function,amn)
-      else
+        if (trim(method) == 'CONVOLUTION') then
+          call get_guiding_function_overlap_convolution(ngk, wfc, guiding_function, amn)
+        else if (trim(method) == 'FFT') then
+          call get_guiding_function_overlap_FFT(list_iG, wfc, guiding_function, amn)
+        else
           write(*,*) 'ERROR in generate_amn'
           stop
-      end if
+        end if
 
-      !Write result to file $prefix.amn.
+        !Write result to file $prefix.amn.
+        do nb = 1,num_bands_intw
+          write(io_unit_amn,'(3I7,2F18.12)') nb, n_proj, ikpt, amn(nb)
+        end do !nb
 
-      do nb = 1,num_bands_intw
-        write(io_unit_amn,'(3I7,2F18.12)') nb, n_proj, ikpt, amn(nb)
-      end do !nb
+      end do ! n_proj
 
-    end do ! n_proj
+    end do !ikpt
 
-
-  end do !ikpt
-
-  close(io_unit_amn)
-
+    close(io_unit_amn)
 
   end subroutine generate_amn_using_allwfc
-!--------------------------------------------------
-!**********************************************************************
-!----------------------------------------------------------------------
-  subroutine generate_guiding_function(ikpt,n_proj,guiding_function)
-!----------------------------------------------------------------------
-!
-!---------------------------------------------------------------------------
-! This subroutine computes the normalized guiding function in reciprocal
-! space, over the global list of G vectors gvec.
-!
-! This subroutine is heavily inspired by a similar routine in pw2wannier.
-!---------------------------------------------------------------------------
 
-  use intw_reading, only: gvec, ngm, alat
 
-  implicit none
+  subroutine generate_guiding_function(ikpt, ngk, list_iG, n_proj, guiding_function)
+    !---------------------------------------------------------------------------
+    ! This subroutine computes the normalized guiding function in reciprocal
+    ! space.
+    !
+    ! This subroutine is heavily inspired by a similar routine in pw2wannier.
+    !---------------------------------------------------------------------------
 
-  !I/O variables
+    use intw_reading, only: gvec, alat
 
-  integer,intent(in) :: ikpt, n_proj
-  complex(dp),intent(out) :: guiding_function(ngm)
+    implicit none
 
-  !local variables
+    !I/O variables
 
-  integer, parameter :: lmax=3, lmmax=(lmax+1)**2 ! max Ylm implemented in wannier90
-  integer :: i, mu, iG
-  integer :: proj_nr, proj_l, proj_m
-  integer :: l, m, lm
-  real(dp) :: zona, zaxis(3), xaxis(3), ylm(ngm)
-  real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
-  real(dp) :: k_plus_G_cart(3,ngm)
-  real(dp) :: norm2, x, y
-  real(dp) :: radial_l(ngm, 0:lmax), coef(lmmax)
-  complex(dp) :: four_pi_i_l
+    integer, intent(in) :: ikpt, ngk, n_proj, list_iG(nG_max)
+    complex(dp), intent(out) :: guiding_function(nG_max)
 
-  ! get all the relevant vectors in reciprocal space
-  ! express the vectors in bohrs^-1 cartesian coordinates
-  !
-  k_cryst(:)=nnkp_kpoints(:,ikpt)
-  k_plus_G_cart=ZERO
-  !
-  do iG=1,ngm
-     do mu=1,3
+    !local variables
+
+    integer, parameter :: lmax=3, lmmax=(lmax+1)**2 ! max Ylm implemented in wannier90
+    integer :: i, mu, iG
+    integer :: proj_nr, proj_l, proj_m
+    integer :: l, m, lm
+    real(dp) :: zona, zaxis(3), xaxis(3), ylm(nG_max)
+    real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
+    real(dp) :: k_plus_G_cart(3,ngk)
+    real(dp) :: norm2
+    real(dp) :: radial_l(nG_max, 0:lmax), coef(lmmax)
+    complex(dp) :: four_pi_i_l
+
+    !
+    ! get all the relevant vectors in reciprocal space
+    ! express the vectors in bohrs^-1 cartesian coordinates
+    !
+    k_cryst(:)=nnkp_kpoints(:,ikpt)
+    k_plus_G_cart=ZERO
+    !
+    do iG=1,ngk
+      do mu=1,3
         do i=1,3
-           !
-           k_plus_G_cart(mu,iG)=k_plus_G_cart(mu,iG) &
-                     +nnkp_recip_lattice(mu,i)*(k_cryst(i)+dble(gvec(i,iG)))
-           !
+          !
+          k_plus_G_cart(mu,iG) = k_plus_G_cart(mu,iG) &
+                                 + nnkp_recip_lattice(mu,i)*(k_cryst(i)+dble(gvec(i,list_ig(iG))))
+          !
         enddo !i
-     enddo !mu
-  enddo !iG
-  !
-  k_plus_G_cart=k_plus_G_cart*tpi/alat ! bohr^-1
-  !
-  ! TEST
-  !  write(111,'(a,3F8.4)') 'k_crsyt = ',k_cryst
-  !  do iG = 1, ngm
-  !          write(111,'(a,3I4,a,3F8.4)') 'G = ',gvec(:,iG),' {k+G}_cart =',k_plus_G_cart(:,iG)
-  !  end do
-  !  stop
-  !
-  ! compute the guiding function
-  !
-  guiding_function=cmplx_0
-  !
-  ! Set projection l and m
-  proj_l=nnkp_proj_l(n_proj)
-  proj_m=nnkp_proj_m(n_proj)
-  ! JLB note: Not sure whether this works currently, needs to be tested
-  zaxis(:)=nnkp_proj_z(:,n_proj)
-  xaxis(:)=nnkp_proj_x(:,n_proj)
-  !
-  ! JLB: Expansion coefficients of this projection in lm-s (needed for hybrids)
-  call projection_expansion(proj_l, proj_m, coef)
-  ! 
-  ! get the part from the radial integration
-  proj_nr=nnkp_proj_n(n_proj) ! the radial projection parameter
-  zona=nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
-  !
-  ! MBR, JLB: radial integrals based on pw2wannier
-  !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function) 
-  call get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
-  !
-  do l=0, lmax
+      enddo !mu
+    enddo !iG
+    !
+    k_plus_G_cart = k_plus_G_cart*tpi/alat ! bohr^-1
+    !
+    ! compute the guiding function
+    !
+    guiding_function = cmplx_0
+    !
+    ! Set projection l and m
+    proj_l = nnkp_proj_l(n_proj)
+    proj_m = nnkp_proj_m(n_proj)
+    ! JLB note: Not sure whether this works currently, needs to be tested
+    zaxis(:) = nnkp_proj_z(:,n_proj)
+    xaxis(:) = nnkp_proj_x(:,n_proj)
+    !
+    ! JLB: Expansion coefficients of this projection in lm-s (needed for hybrids)
+    call projection_expansion(proj_l, proj_m, coef)
+    !
+    ! get the part from the radial integration
+    proj_nr = nnkp_proj_n(n_proj) ! the radial projection parameter
+    zona = nnkp_proj_zona(n_proj) ! Z/a, the diffusive parameter
+    !
+    ! MBR, JLB: radial integrals based on pw2wannier
+    !call get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
+    call get_radial_part_numerical(lmax, coef, proj_nr, zona, ngk, k_plus_G_cart, radial_l)
+
+    !
+    do l=0, lmax
       do m=1, 2*l+1
-      !
-      ! Check which lm are needed in this projection
-      lm = l**2 + m
-      if (abs(coef(lm)) < 1.0d-8) cycle
-      !
-      call get_angular_part(l, m, xaxis, zaxis, k_plus_G_cart, ylm)
-      !
-      four_pi_i_l=fpi*(-cmplx_i)**l
-         !
-         do iG=1,ngm
-            !
-            guiding_function(iG) = guiding_function(iG) +  coef(lm)*radial_l(iG, l)*ylm(iG)*four_pi_i_l
-            !
-         enddo !iG
-         !
+        !
+        ! Check which lm are needed in this projection
+        lm = l**2 + m
+        if (abs(coef(lm)) < 1.0d-8) cycle
+        !
+        call get_angular_part(l, m, xaxis, zaxis, ngk, k_plus_G_cart, ylm)
+        !
+        four_pi_i_l = fpi*(-cmplx_i)**l
+        !
+        do iG=1,ngk
+          !
+          guiding_function(iG) = guiding_function(iG) + coef(lm)*radial_l(iG, l)*ylm(iG)*four_pi_i_l
+          !
+        enddo !iG
+        !
       end do !m
-  end do !l
-  !
-  ! Add extra phase coming from Wannier center positions
-  tau_cryst=nnkp_Wcenters(:,n_proj) ! crystal coordinates
-  tau_cart=ZERO
-  do mu=1,3
-     do i=1,3
+    end do !l
+    !
+    ! Add extra phase coming from Wannier center positions
+    tau_cryst = nnkp_Wcenters(:,n_proj) ! crystal coordinates
+    tau_cart = ZERO
+    do mu=1,3
+      do i=1,3
         !
-        tau_cart(mu)=tau_cart(mu)+alat*nnkp_real_lattice(mu,i)*tau_cryst(i)
+        tau_cart(mu) = tau_cart(mu) + alat*nnkp_real_lattice(mu,i)*tau_cryst(i)
         !
-     enddo !i
-  enddo !mu
-  !
-  do iG=1,ngm
-     guiding_function(iG)=guiding_function(iG)*exp(-cmplx_i* &
-                                        (k_plus_G_cart(1,iG)*tau_cart(1) &
-                                       + k_plus_G_cart(2,iG)*tau_cart(2) &
-                                       + k_plus_G_cart(3,iG)*tau_cart(3)))
-  end do !iG
-  !
-  ! Normalize
-  norm2=sum(abs(guiding_function)**2)
-  guiding_function=guiding_function/sqrt(norm2)
-  !
-  return
+      enddo !i
+    enddo !mu
+    !
+    do iG=1,ngk
+      guiding_function(ig) = guiding_function(ig) &
+                             * exp(-cmplx_i*(  k_plus_G_cart(1,ig)*tau_cart(1) &
+                                             + k_plus_G_cart(2,ig)*tau_cart(2) &
+                                             + k_plus_G_cart(3,ig)*tau_cart(3) ))
+    end do !iG
+    !
+    ! Normalize
+    norm2 = sum(abs(guiding_function)**2)
+    guiding_function = guiding_function/sqrt(norm2)
+    !
+    return
 
   end subroutine generate_guiding_function
-!---------------------------------------------------------------------------------
-!*********************************************************************************
-!---------------------------------------------------------------------------------
-  subroutine get_guiding_function_overlap_FFT(list_iG,wfc,guiding_function,amn)
-!---------------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-!  This subroutine computes the overlap between a given wavefunction
-!  wfc and a given guiding_function (assumed normalized)
-!
-!                    amn(band) =  < wfc(band) |  guiding_function > .
-!
-!  The computation is done over all bands using FFT.
-!------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, nr1, nr2, nr3, num_bands_intw
-  use intw_fft, only: nl, find_iG, func_from_g_to_r, func_from_r_to_g, &
-                      wfc_from_g_to_r
 
-  implicit none
+  subroutine get_guiding_function_overlap_FFT(list_iG, wfc, guiding_function, amn)
+    !------------------------------------------------------------------------
+    !  This subroutine computes the overlap between a given wavefunction
+    !  wfc and a given guiding_function (assumed normalized)
+    !
+    !                    amn(band) =  < wfc(band) |  guiding_function > .
+    !
+    !  The computation is done over all bands using FFT.
+    !------------------------------------------------------------------------
 
-  !I/O variables
+    use intw_reading, only: nG_max, nr1, nr2, nr3, num_bands_intw
+    use intw_fft, only: wfc_from_g_to_r, wfc_from_r_to_g
 
-  integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-  complex(dp),intent(in) :: guiding_function(ngm,nspin)
-  complex(dp),intent(out) :: amn(num_bands_intw)
+    implicit none
 
-  !local variables
+    !I/O variables
 
-  integer :: ibnd, ir, is, iG0, iG0_fft, G0(3)
-  complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3,nspin)
-  complex(dp) :: frr(nr1*nr2*nr3,nspin)
-  complex(dp) :: fg(ngm,nspin)
+    integer,intent(in) :: list_iG(nG_max)
+    complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp),intent(in) :: guiding_function(nG_max,nspin)
+    complex(dp),intent(out) :: amn(num_bands_intw)
 
-  amn=cmplx_0
-  !
-  G0=0
-  !
-  call find_iG(G0,iG0)
-  !
-  ! find its scalar FFT index
-  !
-  iG0_fft=nl(iG0)
-  !
-  do ibnd=1,num_bands_intw
-     !
-     fr=cmplx_0
-     frr=cmplx_0  !MBR
-     !
-     ! MBR ojo!!! antes se "mezclaba" fr en espacio real con la convolucion
-     ! MBR, JLB: Hay que sacarlo del loop nspin porque el I/O fg/fr asume dimension spinor
-     !call func_from_g_to_r (1,ngm,guiding_function,fr)
-     call func_from_g_to_r (1,ngm,guiding_function,frr)
-     !
-     do is=1,nspin
+    !local variables
+
+    integer :: ibnd, ir, is
+    complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
+    complex(dp) :: fg(nG_max)
+
+
+    amn = cmplx_0
+    !
+    do ibnd=1,num_bands_intw
+      !
+      do is=1,nspin
         !
-        call wfc_from_g_to_r (list_iG,wfc(:,ibnd,is),wfc_r)
+        call wfc_from_g_to_r(list_iG, guiding_function(:,is), fr)
+        call wfc_from_g_to_r(list_iG, wfc(:,ibnd,is), wfc_r)
         !
         do ir=1,nr1*nr2*nr3
-           !
-           ! MBR
-           !fr(ir)=fr(ir) + conjg(wfc_r(ir))*fr(ir)
-           fr(ir,is)=fr(ir,is) + conjg(wfc_r(ir))*frr(ir,is)
-           !
+          !
+          fr(ir) = conjg(wfc_r(ir))*fr(ir)
+          !
         enddo !ir
-     enddo !is
-     !
-     call func_from_r_to_g (1,ngm,fr,fg)
-     !
-     ! JLB: Sum both spin components
-     do is=1, nspin
-      amn(ibnd)=amn(ibnd)+fg(iG0_fft, is)
-     end do
-     !amn(ibnd)=fg(iG0_fft)
-     !
-  enddo !ibnd
-  !
-  return
+        !
+        call wfc_from_r_to_g(list_iG, fr, fg)
+        !
+        amn(ibnd) = amn(ibnd) + fg(1)
+        !
+      enddo !is
+      !
+    enddo !ibnd
+    !
+    return
 
   end subroutine get_guiding_function_overlap_FFT
-!----------------------------------------------------------------------------------------
-!****************************************************************************************
-!----------------------------------------------------------------------------------------
-  subroutine get_guiding_function_overlap_convolution(list_iG,wfc,guiding_function,amn)
-!----------------------------------------------------------------------------------------
-!
-!--------------------------------------------------------------------------
-!
-!     This subroutine computes the overlap between a given wavefunction
-!     wfc and a given guiding_function (assumed normalized)
-!
-!	                amn(band) =  < wfc(band) |  guiding_function > .
-!
-!     The computation is done over all bands.
-!
-!     The G-vectors are referenced by their indices in list_iG
-!     which refer to the global list gvec(3,ngm).
-!
-!--------------------------------------------------------------------------
 
-  use intw_reading, only: ngm, nG_max, num_bands_intw
 
-  implicit none
+  subroutine get_guiding_function_overlap_convolution(ngk, wfc, guiding_function, amn)
+    !--------------------------------------------------------------------------
+    !     This subroutine computes the overlap between a given wavefunction
+    !     wfc and a given guiding_function (assumed normalized)
+    !
+    !	                amn(band) =  < wfc(band) |  guiding_function > .
+    !
+    !     The computation is done over all bands.
+    !--------------------------------------------------------------------------
 
-  !I/O variables
+    use intw_reading, only: nG_max, num_bands_intw
 
-  integer,intent(in) :: list_iG(nG_max)
-  complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-  complex(dp),intent(in) :: guiding_function(ngm,nspin)
-  complex(dp),intent(out) :: amn(num_bands_intw)
+    implicit none
 
-  !local variables
+    !I/O variables
 
-  integer :: i, ibnd, is, iG, nG_max_non_zero
-  integer        :: list_iG1(nG_max)
-  complex(dp) :: amn_local(num_bands_intw)
-!  real(dp)       :: wrong_norm2
+    integer, intent(in) :: ngk
+    complex(dp), intent(in) :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp), intent(in) :: guiding_function(nG_max,nspin)
+    complex(dp), intent(out) :: amn(num_bands_intw)
 
-  amn = cmplx_0
-  !
-  nG_max_non_zero = 0
-  !
-  do i=1,nG_max
-     !
-     iG=list_iG(i)
-     !
-     ! list_iG is zero-padded at the end.
-     ! When this point is reached, the computation is over.
-     !
-     if (iG==0) exit
-     !
-     nG_max_non_zero=nG_max_non_zero+1
-     list_iG1(nG_max_non_zero)=iG
-     !
-  enddo !i
-  !
-  !$omp parallel default(none) &
-  !$omp shared(nG_max_non_zero,list_iG1,num_bands_intw,nspin,wfc,amn,guiding_function) &
-  !$omp private(i,iG,ibnd,is,amn_local)
-  !
-  amn_local = cmplx_0
-  !
-  ! First, build the pw_mat_el_local arrays, on each thread.
-  !$omp do
-  !
-  do i=1,nG_max_non_zero
-     !
-     iG=list_iG1(i)
-     !
-     ! note that the guiding function is defined for all G in gvec;
-     ! it is thus properly indexed by iG, not i.
-     !
-     do ibnd=1,num_bands_intw
-        do is=1,nspin
-           !
-           amn_local(ibnd)=amn_local(ibnd)+CONJG(wfc(i,ibnd,is))*guiding_function(iG,is)
-           !
-        enddo !is
-     enddo !ibnd
-     !
-  enddo !i loop
-  !
-  !$omp end do
-  !
-  do ibnd=1,num_bands_intw
-     !
-     !$omp atomic
-     !
-     amn(ibnd)=amn(ibnd)+amn_local(ibnd)
-     !
-  enddo
-  !
-  !$omp end parallel
-  !
-  return
+    !local variables
+
+    integer :: ibnd, is, iG
+    complex(dp) :: amn_local(num_bands_intw)
+
+
+    amn = cmplx_0
+    !
+    !
+    !$omp parallel default(none) &
+    !$omp shared(num_bands_intw,nspin,wfc,amn,guiding_function) &
+    !$omp private(iG,ibnd,is,amn_local)
+    !
+    amn_local = cmplx_0
+    !
+    ! First, build the pw_mat_el_local arrays, on each thread.
+    !$omp do
+    !
+    do iG=1,ngk
+      !
+      do ibnd=1,num_bands_intw
+          do is=1,nspin
+            !
+            amn_local(ibnd) = amn_local(ibnd) + CONJG(wfc(iG,ibnd,is))*guiding_function(iG,is)
+            !
+          enddo !is
+      enddo !ibnd
+      !
+    enddo !i loop
+    !
+    !$omp end do
+    !
+    do ibnd=1,num_bands_intw
+      !
+      !$omp atomic
+      !
+      amn(ibnd) = amn(ibnd) + amn_local(ibnd)
+      !
+    enddo
+    !
+    !$omp end parallel
+    !
+    return
 
   end subroutine get_guiding_function_overlap_convolution
-!--------------------------------------------------------------------------
-!**************************************************************************
-  subroutine get_radial_part_numerical(lmax, coef, proj_nr, zona, k_plus_G_cart, radial_l)
-   ! MBR
-   ! Numerical integration, c+p from pw2wannier for testing
-   ! JLB: Extended to multiple l, needed for hybrid projections
-   use intw_reading, only: ngm, volume0
-   USE intw_utility, ONLY : simpson, sphb
-   use intw_useful_constants, only: fpi, ZERO
 
-   implicit none
 
-   !I/O variables
+  subroutine get_radial_part_numerical(lmax, coef, proj_nr, zona, ngk, k_plus_G_cart, radial_l)
+    ! MBR
+    ! Numerical integration, c+p from pw2wannier for testing
+    ! JLB: Extended to multiple l, needed for hybrid projections
+    use intw_reading, only: nG_max, volume0
+    use intw_utility, ONLY : simpson, sphb
+    use intw_useful_constants, only: fpi, ZERO
 
-   integer,intent(in) :: lmax, proj_nr
-   real(dp),intent(in) :: coef((lmax+1)**2), zona, k_plus_G_cart(3,ngm)
-   real(dp),intent(out) :: radial_l(ngm, 0:lmax)
+    implicit none
 
-   !local variables
+    !I/O variables
 
-   integer :: iG, l
-   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
-   real(dp) :: p(ngm)
+    integer, intent(in) :: lmax, proj_nr, ngk
+    real(dp), intent(in) :: coef((lmax+1)**2), zona, k_plus_G_cart(3,ngk)
+    real(dp), intent(out) :: radial_l(nG_max, 0:lmax)
 
-   ! from pw2wannier
+    !local variables
 
-   integer :: mesh_r, ir
-   real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
-   real(DP) :: x, rad_int
-   real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
+    integer :: iG, l
+    real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
+    real(dp) :: p(ngk)
 
-   z=zona
-   z2=z*z
-   z4=z2*z2
-   z6=z4*z2
-   sqrt_z=sqrt(z)
-   z52=z2*sqrt_z
-   !
-   !find the norms
-   !
-   do iG=1,ngm
-   !
-   p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
-            + k_plus_G_cart(2,iG)**2 &
-            + k_plus_G_cart(3,iG)**2 )
-   !
-   enddo !iG  
+    ! from pw2wannier
 
-   !
-   ! from pw2intw:
-   !
-   mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
-   allocate ( bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r) )
-   allocate ( aux(mesh_r))
-   !
-   !    compute the radial mesh
-   !
-   do ir = 1, mesh_r
-   x = xmin  + dble (ir - 1) * dx
-   r (ir) = exp (x) / zona
-   rij (ir) = dx  * r (ir)
-   end do
-   !
-   !
-   if (proj_nr==1) then
-   func_r(:) = 2.d0 * zona**(3.d0/2.d0) * exp(-zona*r(:))
-   else if (proj_nr==2) then
-   func_r(:) = 1.d0/sqrt(8.d0) * zona**(3.d0/2.d0) * &
-            (2.0d0 - zona*r(:)) * exp(-zona*r(:)*0.5d0)
-   else if (proj_nr==3) then
-   func_r(:) = sqrt(4.d0/27.d0) * zona**(3.0d0/2.0d0) * &
-            (1.d0 - 2.0d0/3.0d0*zona*r(:) + 2.d0*(zona*r(:))**2/27.d0) * exp(-zona*r(:)/3.0d0)
-   else
-   write(*,*) 'ERROR in intw2W90: this radial projection is not implemented'
-   endif
+    integer :: mesh_r, ir
+    real(DP), PARAMETER :: xmin=-6.d0, dx=0.025d0, rmax=10.d0
+    real(DP) :: x, rad_int
+    real(DP), ALLOCATABLE :: bes(:), func_r(:), r(:), rij(:), aux(:)
 
-   radial_l = ZERO
-   do l=0, lmax
+
+    z = zona
+    z2 = z*z
+    z4 = z2*z2
+    z6 = z4*z2
+    sqrt_z = sqrt(z)
+    z52 = z2*sqrt_z
+    !
+    !find the norms
+    !
+    do iG=1,ngk
+     !
+     p(iG) = sqrt( k_plus_G_cart(1,iG)**2 &
+                 + k_plus_G_cart(2,iG)**2 &
+                 + k_plus_G_cart(3,iG)**2 )
+     !
+    enddo !iG
+
+    !
+    ! from pw2intw:
+    !
+    mesh_r = nint ( ( log ( rmax ) - xmin ) / dx + 1 )
+    allocate(bes(mesh_r), func_r(mesh_r), r(mesh_r), rij(mesh_r))
+    allocate(aux(mesh_r))
+    !
+    !    compute the radial mesh
+    !
+    do ir = 1, mesh_r
+     x = xmin + dble(ir - 1) * dx
+     r(ir) = exp(x) / zona
+     rij(ir) = dx * r(ir)
+    end do
+    !
+    !
+    if (proj_nr==1) then
+      func_r(:) = 2.d0 * zona**(3.d0/2.d0) * exp(-zona*r(:))
+    else if (proj_nr==2) then
+      func_r(:) = 1.d0/sqrt(8.d0) * zona**(3.d0/2.d0) * &
+                  (2.0d0 - zona*r(:)) * exp(-zona*r(:)*0.5d0)
+    else if (proj_nr==3) then
+      func_r(:) = sqrt(4.d0/27.d0) * zona**(3.0d0/2.0d0) * &
+                (1.d0 - 2.0d0/3.0d0*zona*r(:) + 2.d0*(zona*r(:))**2/27.d0) * exp(-zona*r(:)/3.0d0)
+    else
+      write(*,*) 'ERROR in intw2W90: this radial projection is not implemented'
+    endif
+
+    radial_l = ZERO
+    do l=0, lmax
       ! JLB: Check which l-s are used in this projection
       if ( any(coef(l**2+1:l**2+1+2*l) > 1.0d-8) ) then
-         !
-         do iG=1,ngm
-            aux = r*r*sphb(l,p(iG)*r)*func_r
-            call simpson (mesh_r, aux, rij, rad_int)
-            radial_l(iG, l) = rad_int * fpi/sqrt(volume0)
-         end do
-         !
+        !
+        do iG=1,ngk
+          aux = r*r*sphb(l,p(iG)*r)*func_r
+          call simpson(mesh_r, aux, rij, rad_int)
+          radial_l(iG, l) = rad_int * fpi/sqrt(volume0)
+        end do
+        !
       end if
-   end do
+    end do
 
-   deallocate(bes,func_r,r,rij,aux)
+    deallocate(bes,func_r,r,rij,aux)
 
-   return
+    return
 
   end subroutine get_radial_part_numerical
 !**************************************************************************
@@ -1229,266 +1142,258 @@ contains
 !---------------------------------------------------------------------------
 !***************************************************************************
 !---------------------------------------------------------------------------
-  subroutine get_angular_part(proj_l,proj_m,xaxis,zaxis,k_plus_G_cart,ylm)
-!
-!--------------------------------------------------------------------------
-! This subroutine computes appropriate spherical harmonic corresponding
-! to
-!
-!                   amn(band) =  < wfc(band) |  guiding_function > .
-!
-! The computation is done over all bands.
-!
-! The G-vectors are referenced by their indices in list_iG
-! which refer to the global list gvec(3,ngm).
-!--------------------------------------------------------------------------
+  subroutine get_angular_part(proj_l, proj_m, xaxis, zaxis, ngk, k_plus_G_cart, ylm)
+    !--------------------------------------------------------------------------
+    ! This subroutine computes appropriate spherical harmonic corresponding
+    ! to
+    !
+    !                   amn(band) =  < wfc(band) |  guiding_function > .
+    !
+    ! The computation is done over all bands.
+    !--------------------------------------------------------------------------
 
-  use intw_reading, only: ngm
+    use intw_reading, only: nG_max
 
-  implicit none
+    implicit none
 
-  !I/O variables
+    !I/O variables
 
-  integer,intent(in) :: proj_l,proj_m
-  real(dp),intent(in) :: xaxis(3), zaxis(3)
-  real(dp),intent(in) :: k_plus_G_cart(3,ngm)
-  real(dp),intent(out) :: ylm(ngm)
+    integer, intent(in) :: ngk, proj_l, proj_m
+    real(dp), intent(in) :: xaxis(3), zaxis(3)
+    real(dp), intent(in) :: k_plus_G_cart(3,ngk)
+    real(dp), intent(out) :: ylm(nG_max)
 
-  !local variables
+    !local variables
 
-  integer :: iG
-  real(dp) :: yaxis(3),q(3,ngm),norm_y
+    integer :: iG
+    real(dp) :: yaxis(3), q(3,ngk), norm_y
 
 
-  ! produce the yaxis using z cross x. THEY REALLY SHOULD BE ORTHOGONAL.
-  !
-  yaxis(1)=  zaxis(2)*xaxis(3) - zaxis(3)*xaxis(2)
-  yaxis(2)= -zaxis(1)*xaxis(3) + zaxis(3)*xaxis(1)
-  yaxis(3)=  zaxis(1)*xaxis(2) - zaxis(2)*xaxis(1)
-  !
-  norm_y=sqrt(yaxis(1)**2+yaxis(2)**2+yaxis(3)**2)
-  !
-  yaxis=yaxis/norm_y
-  !
-  ! project k_plus_G_cart onto these axes.
-  !
-  do iG=1,ngm
-     !
-     q(1,iG)=k_plus_G_cart(1,iG)*xaxis(1) &
-           + k_plus_G_cart(2,iG)*xaxis(2) &
-           + k_plus_G_cart(3,iG)*xaxis(3)
-     !
-     q(2,iG)=k_plus_G_cart(1,iG)*yaxis(1) &
-           + k_plus_G_cart(2,iG)*yaxis(2) &
-           + k_plus_G_cart(3,iG)*yaxis(3)
-     !
-     q(3,iG)=k_plus_G_cart(1,iG)*zaxis(1) &
-           + k_plus_G_cart(2,iG)*zaxis(2) &
-           + k_plus_G_cart(3,iG)*zaxis(3)
-     !
-  enddo !iG
-  !
-  call ylm_wannier(ylm,proj_l,proj_m,q,ngm)
-  !
-  return
+    ! produce the yaxis using z cross x. THEY REALLY SHOULD BE ORTHOGONAL.
+    !
+    yaxis(1) =  zaxis(2)*xaxis(3) - zaxis(3)*xaxis(2)
+    yaxis(2) = -zaxis(1)*xaxis(3) + zaxis(3)*xaxis(1)
+    yaxis(3) =  zaxis(1)*xaxis(2) - zaxis(2)*xaxis(1)
+    !
+    norm_y = sqrt(yaxis(1)**2+yaxis(2)**2+yaxis(3)**2)
+    !
+    yaxis=yaxis/norm_y
+    !
+    ! project k_plus_G_cart onto these axes.
+    !
+    do iG=1,ngk
+      !
+      q(1,iG) = k_plus_G_cart(1,iG)*xaxis(1) &
+              + k_plus_G_cart(2,iG)*xaxis(2) &
+              + k_plus_G_cart(3,iG)*xaxis(3)
+      !
+      q(2,iG) = k_plus_G_cart(1,iG)*yaxis(1) &
+              + k_plus_G_cart(2,iG)*yaxis(2) &
+              + k_plus_G_cart(3,iG)*yaxis(3)
+      !
+      q(3,iG) = k_plus_G_cart(1,iG)*zaxis(1) &
+              + k_plus_G_cart(2,iG)*zaxis(2) &
+              + k_plus_G_cart(3,iG)*zaxis(3)
+      !
+    enddo !iG
+    !
+    call ylm_wannier(ylm,proj_l,proj_m,q,ngk)
+    !
+    return
 
   end subroutine get_angular_part
-!----------------------------------------
-!****************************************
-!----------------------------------------
+
+
   subroutine ylm_wannier(ylm,l,mr,r,nr)
-!----------------------------------------
-!
-!--------------------------------------------------------------------------
-!     This subroutine has been taken from pw2wannier and modified
-!     to suit my needs.
-!     The original comments follow.
-!--------------------------------------------------------------------------
-! this routine returns in ylm(r) the values at the nr points r(1:3,1:nr)
-! of the spherical harmonic identified  by indices (l,mr)
-! in table 3.1 of the wannierf90 specification.
-!
-! No reference to the particular ylm ordering internal to quantum-espresso
-! is assumed.
-!
-! If ordering in wannier90 code is changed or extended this should be the
-! only place to be modified accordingly
-!--------------------------------------------------------------------------
+    !--------------------------------------------------------------------------
+    !     This subroutine has been taken from pw2wannier and modified
+    !     to suit my needs.
+    !     The original comments follow.
+    !--------------------------------------------------------------------------
+    ! this routine returns in ylm(r) the values at the nr points r(1:3,1:nr)
+    ! of the spherical harmonic identified  by indices (l,mr)
+    ! in table 3.1 of the wannierf90 specification.
+    !
+    ! No reference to the particular ylm ordering internal to quantum-espresso
+    ! is assumed.
+    !
+    ! If ordering in wannier90 code is changed or extended this should be the
+    ! only place to be modified accordingly
+    !--------------------------------------------------------------------------
 
-   implicit none
+    implicit none
 
-   !I/O variables
+    !I/O variables
 
-   integer,intent(in) :: l, mr, nr
-   real(dp), intent(in) :: r(3,nr)
-   real(dp),intent(out) :: ylm(nr) 
+    integer,intent(in) :: l, mr, nr
+    real(dp), intent(in) :: r(3,nr)
+    real(dp),intent(out) :: ylm(nr)
 
-   !local variables
+    !local variables
 
-   real(dp), external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, &
-                         fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
-   real(dp) :: rr, cost, phi
-   integer :: ir
-   real(dp) :: bs2, bs3, bs6, bs12
+    real(dp), external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, &
+                          fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
+    real(dp) :: rr, cost, phi
+    integer :: ir
+    real(dp) :: bs2, bs3, bs6, bs12
 
-   bs2  = 1.d0/sqrt(2.d0)
-   bs3  = 1.d0/sqrt(3.d0)
-   bs6  = 1.d0/sqrt(6.d0)
-   bs12 = 1.d0/sqrt(12.d0)
-   !
-   if ( l>3 .OR. l<-5 ) then
+    bs2  = 1.d0/sqrt(2.d0)
+    bs3  = 1.d0/sqrt(3.d0)
+    bs6  = 1.d0/sqrt(6.d0)
+    bs12 = 1.d0/sqrt(12.d0)
+    !
+    if ( l>3 .OR. l<-5 ) then
       !
       write(*,*)' ylm_wannier: l out of range! '
       stop
       !
-   endif
-   !
-   if (l>=0) then
+    endif
+    !
+    if (l>=0) then
       !
       if ( mr<1 .OR. mr>2*l+1 ) then
-         !
-         write(*,*)' ylm_wannier: m out of range! '
-         stop
-         !
+        !
+        write(*,*)' ylm_wannier: m out of range! '
+        stop
+        !
       endif
       !
-   else
+    else
       !
       if ( mr<1 .OR. mr>abs(l)+1 ) then
-         !
-         write(*,*)' ylm_wannier: m out of range! '
-         stop
-         !
+        !
+        write(*,*)' ylm_wannier: m out of range! '
+        stop
+        !
       endif
       !
-   endif
-   !
-   do ir=1,nr
+    endif
+    !
+    do ir=1,nr
       !
-      rr=sqrt( r(1,ir)*r(1,ir) + r(2,ir)*r(2,ir) + r(3,ir)*r(3,ir) )
+      rr = sqrt( r(1,ir)*r(1,ir) + r(2,ir)*r(2,ir) + r(3,ir)*r(3,ir) )
       !
-      cost=r(3,ir)/rr
+      cost = r(3,ir)/(rr+eps_8)
       !
       ! beware the arc tan, it is defined modulo pi
       !
       if (r(1,ir) > eps_8) then
-         !
-         phi=atan( r(2,ir)/r(1,ir) )
-         !
-      elseif (r(1,ir) < -eps_8 ) then
-         !
-         phi=atan( r(2,ir)/r(1,ir) ) + pi
-         !
+        !
+        phi = atan( r(2,ir)/r(1,ir) )
+        !
+      elseif (r(1,ir) < -eps_8) then
+        !
+        phi = atan( r(2,ir)/r(1,ir) ) + pi
+        !
       else
-         !
-         phi = sign( pi/2.d0,r(2,ir) )
-         !
+        !
+        phi = sign( pi/2.d0,r(2,ir) )
+        !
       endif
       !
       ! if the norm of r is very small, just arbitrarily pick
       ! the angle to be theta = 0 , phi = 0
       !
       if (rr < eps_8) then
-         !
-         cost=1.0_dp
-         phi=0.0_dp
-         !
+        !
+        cost = 1.0_dp
+        phi = 0.0_dp
+        !
       endif
       !
-      if (l==0) then   ! s orbital
-         !
-         ylm(ir)=s(cost,phi)
-         !
+      if (l==0) then ! s orbital
+        !
+        ylm(ir) = s(cost,phi)
+        !
       endif
       !
-      if (l==1) then   ! p orbitals
-         !
-         if (mr==1) ylm(ir)=pz_func(cost,phi)
-         if (mr==2) ylm(ir)=px(cost,phi)
-         if (mr==3) ylm(ir)=py(cost,phi)
-         !
+      if (l==1) then ! p orbitals
+        !
+        if (mr==1) ylm(ir) = pz_func(cost,phi)
+        if (mr==2) ylm(ir) = px(cost,phi)
+        if (mr==3) ylm(ir) = py(cost,phi)
+        !
       endif
       !
-      if (l==2) then   ! d orbitals
-         !
-         if (mr==1) ylm(ir)=dz2(cost,phi)
-         if (mr==2) ylm(ir)=dxz(cost,phi)
-         if (mr==3) ylm(ir)=dyz(cost,phi)
-         if (mr==4) ylm(ir)=dx2my2(cost,phi)
-         if (mr==5) ylm(ir)=dxy(cost,phi)
-         !
+      if (l==2) then ! d orbitals
+        !
+        if (mr==1) ylm(ir) = dz2(cost,phi)
+        if (mr==2) ylm(ir) = dxz(cost,phi)
+        if (mr==3) ylm(ir) = dyz(cost,phi)
+        if (mr==4) ylm(ir) = dx2my2(cost,phi)
+        if (mr==5) ylm(ir) = dxy(cost,phi)
+        !
       endif
       !
-      if (l==3) then   ! f orbitals
-         !
-         if (mr==1) ylm(ir)=fz3(cost,phi)
-         if (mr==2) ylm(ir)=fxz2(cost,phi)
-         if (mr==3) ylm(ir)=fyz2(cost,phi)
-         if (mr==4) ylm(ir)=fzx2my2(cost,phi)
-         if (mr==5) ylm(ir)=fxyz(cost,phi)
-         if (mr==6) ylm(ir)=fxx2m3y2(cost,phi)
-         if (mr==7) ylm(ir)=fy3x2my2(cost,phi)
-         !
+      if (l==3) then ! f orbitals
+        !
+        if (mr==1) ylm(ir) = fz3(cost,phi)
+        if (mr==2) ylm(ir) = fxz2(cost,phi)
+        if (mr==3) ylm(ir) = fyz2(cost,phi)
+        if (mr==4) ylm(ir) = fzx2my2(cost,phi)
+        if (mr==5) ylm(ir) = fxyz(cost,phi)
+        if (mr==6) ylm(ir) = fxx2m3y2(cost,phi)
+        if (mr==7) ylm(ir) = fy3x2my2(cost,phi)
+        !
       endif
       !
-      if (l==-1) then  !  sp hybrids
-         !
-         if (mr==1) ylm(ir)=bs2 * ( s(cost,phi) + px(cost,phi) )
-         if (mr==2) ylm(ir)=bs2 * ( s(cost,phi) - px(cost,phi) )
-         !
+      if (l==-1) then ! sp hybrids
+        !
+        if (mr==1) ylm(ir) = bs2 * ( s(cost,phi) + px(cost,phi) )
+        if (mr==2) ylm(ir) = bs2 * ( s(cost,phi) - px(cost,phi) )
+        !
       endif
       !
-      if (l==-2) then  !  sp2 hybrids
-         !
-         if (mr==1) ylm(ir)= bs3*s(cost,phi)-bs6*px(cost,phi)+bs2*py(cost,phi)
-         if (mr==2) ylm(ir)= bs3*s(cost,phi)-bs6*px(cost,phi)-bs2*py(cost,phi)
-         if (mr==3) ylm(ir)= bs3*s(cost,phi) +2.d0*bs6*px(cost,phi)
-         !
+      if (l==-2) then ! sp2 hybrids
+        !
+        if (mr==1) ylm(ir) = bs3*s(cost,phi) - bs6*px(cost,phi) + bs2*py(cost,phi)
+        if (mr==2) ylm(ir) = bs3*s(cost,phi) - bs6*px(cost,phi) - bs2*py(cost,phi)
+        if (mr==3) ylm(ir) = bs3*s(cost,phi) + 2.d0*bs6*px(cost,phi)
+        !
       endif
       !
-      if (l==-3) then  !  sp3 hybrids
-         !
-         if (mr==1) ylm(ir)=0.5d0*(s(cost,phi)+px(cost,phi)+py(cost,phi)+pz_func(cost,phi))
-         if (mr==2) ylm(ir)=0.5d0*(s(cost,phi)+px(cost,phi)-py(cost,phi)-pz_func(cost,phi))
-         if (mr==3) ylm(ir)=0.5d0*(s(cost,phi)-px(cost,phi)+py(cost,phi)-pz_func(cost,phi))
-         if (mr==4) ylm(ir)=0.5d0*(s(cost,phi)-px(cost,phi)-py(cost,phi)+pz_func(cost,phi))
-         !
+      if (l==-3) then ! sp3 hybrids
+        !
+        if (mr==1) ylm(ir) = 0.5d0*( s(cost,phi) + px(cost,phi) + py(cost,phi) + pz_func(cost,phi) )
+        if (mr==2) ylm(ir) = 0.5d0*( s(cost,phi) + px(cost,phi) - py(cost,phi) - pz_func(cost,phi) )
+        if (mr==3) ylm(ir) = 0.5d0*( s(cost,phi) - px(cost,phi) + py(cost,phi) - pz_func(cost,phi) )
+        if (mr==4) ylm(ir) = 0.5d0*( s(cost,phi) - px(cost,phi) - py(cost,phi) + pz_func(cost,phi) )
+        !
       endif
       !
-      if (l==-4) then  !  sp3d hybrids
-         !
-         if (mr==1) ylm(ir) = bs3*s(cost,phi)-bs6*px(cost,phi)+bs2*py(cost,phi)
-         if (mr==2) ylm(ir) = bs3*s(cost,phi)-bs6*px(cost,phi)-bs2*py(cost,phi)
-         if (mr==3) ylm(ir) = bs3*s(cost,phi) +2.d0*bs6*px(cost,phi)
-         if (mr==4) ylm(ir) = bs2*pz_func(cost,phi)+bs2*dz2(cost,phi)
-         if (mr==5) ylm(ir) =-bs2*pz_func(cost,phi)+bs2*dz2(cost,phi)
-         !
+      if (l==-4) then ! sp3d hybrids
+        !
+        if (mr==1) ylm(ir) = bs3*s(cost,phi) - bs6*px(cost,phi) + bs2*py(cost,phi)
+        if (mr==2) ylm(ir) = bs3*s(cost,phi) - bs6*px(cost,phi) - bs2*py(cost,phi)
+        if (mr==3) ylm(ir) = bs3*s(cost,phi) + 2.d0*bs6*px(cost,phi)
+        if (mr==4) ylm(ir) = bs2*pz_func(cost,phi) + bs2*dz2(cost,phi)
+        if (mr==5) ylm(ir) =-bs2*pz_func(cost,phi) + bs2*dz2(cost,phi)
+        !
       endif
       !
-      if (l==-5) then  ! sp3d2 hybrids
-         !
-         if (mr==1) ylm(ir) = bs6*s(cost,phi)-bs2*px(cost,phi)-bs12*dz2(cost,phi)+.5d0*dx2my2(cost,phi)
-         if (mr==2) ylm(ir) = bs6*s(cost,phi)+bs2*px(cost,phi)-bs12*dz2(cost,phi)+.5d0*dx2my2(cost,phi)
-         if (mr==3) ylm(ir) = bs6*s(cost,phi)-bs2*py(cost,phi)-bs12*dz2(cost,phi)-.5d0*dx2my2(cost,phi)
-         if (mr==4) ylm(ir) = bs6*s(cost,phi)+bs2*py(cost,phi)-bs12*dz2(cost,phi)-.5d0*dx2my2(cost,phi)
-         if (mr==5) ylm(ir) = bs6*s(cost,phi)-bs2*pz_func(cost,phi)+bs3*dz2(cost,phi)
-         if (mr==6) ylm(ir) = bs6*s(cost,phi)+bs2*pz_func(cost,phi)+bs3*dz2(cost,phi)
-         !
+      if (l==-5) then ! sp3d2 hybrids
+        !
+        if (mr==1) ylm(ir) = bs6*s(cost,phi) - bs2*px(cost,phi) - bs12*dz2(cost,phi) + 0.5d0*dx2my2(cost,phi)
+        if (mr==2) ylm(ir) = bs6*s(cost,phi) + bs2*px(cost,phi) - bs12*dz2(cost,phi) + 0.5d0*dx2my2(cost,phi)
+        if (mr==3) ylm(ir) = bs6*s(cost,phi) - bs2*py(cost,phi) - bs12*dz2(cost,phi) - 0.5d0*dx2my2(cost,phi)
+        if (mr==4) ylm(ir) = bs6*s(cost,phi) + bs2*py(cost,phi) - bs12*dz2(cost,phi) - 0.5d0*dx2my2(cost,phi)
+        if (mr==5) ylm(ir) = bs6*s(cost,phi) - bs2*pz_func(cost,phi) + bs3*dz2(cost,phi)
+        if (mr==6) ylm(ir) = bs6*s(cost,phi) + bs2*pz_func(cost,phi) + bs3*dz2(cost,phi)
+        !
       endif
       !
-   enddo !ir
-   !
-   return
+    enddo !ir
+    !
+    return
 
-   end subroutine ylm_wannier
-!----------------------------------------------------------------------------!
-!****************************************
-!----------------------------------------
-   subroutine projection_expansion(l, mr, coef)
+  end subroutine ylm_wannier
+
+
+  subroutine projection_expansion(l, mr, coef)
 !----------------------------------------
 !
 !--------------------------------------------------------------------------
-!     Outputs expansion coefficients for hybrid projections, 
+!     Outputs expansion coefficients for hybrid projections,
 !     following wannier90 user guide table 3.2
 !--------------------------------------------------------------------------
 
@@ -1500,8 +1405,8 @@ contains
    integer, intent(in)  :: l, mr
    real(dp), intent(out) :: coef(:)
    !
-   !local variables  
-   integer :: lm 
+   !local variables
+   integer :: lm
    real(dp) :: fac1, fac2, fac3, fac4, fac5
 
    coef = ZERO
@@ -1536,7 +1441,7 @@ contains
          !
          write(*,*)' ylm_wannier: m out of range! '
          stop
-         !         
+         !
       end if
       !
       if (l==-1) then  !  sp hybrids
@@ -1694,7 +1599,7 @@ contains
 !===================================================
 
 
-   
+
 !----------------------------------------------------------------------------!
 !
 !

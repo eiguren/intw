@@ -465,27 +465,14 @@ program ep_melements
       write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
       !
       ! Uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta
-      call get_psi_general_k_all_wfc(kpoint       , list_iGk , wfc_k )
-      call get_psi_general_k_all_wfc(kpoint+qpoint, list_iGkq, wfc_kq)
-      !
-      ! Ordenan jartzen ditugu G bektoreak, k=0-n nola dauden ordenatuta arabera
-      npw=0
-      do iG=1,nG_max
-        if (list_iGk(iG)==0) exit
-        npw=npw+1
-      enddo
-      !
-      npwq=0
-      do iG=1,nG_max
-        if (list_iGkq(iG)==0) exit
-        npwq=npwq+1
-      enddo
+      call get_psi_general_k_all_wfc(       kpoint,  npw,  list_iGk,  wfc_k)
+      call get_psi_general_k_all_wfc(kpoint+qpoint, npwq, list_iGkq, wfc_kq)
       !
       ! Hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren)
       vkb =cmplx_0
       vkqb=cmplx_0
       !
-      call init_KB_projectors( npw,  list_iGk,        kpoint,  vkb)
+      call init_KB_projectors( npw, list_iGk,         kpoint,  vkb)
       call init_KB_projectors(npwq, list_iGkq, kpoint+qpoint, vkqb)
       !
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN

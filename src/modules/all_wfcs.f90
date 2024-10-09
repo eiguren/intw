@@ -94,7 +94,7 @@ contains
   end subroutine allocate_and_get_all_irreducible_wfc
 
 
-  subroutine get_psi_general_k_all_wfc(kpoint, list_iG, wfc_k, QE_eig)
+  subroutine get_psi_general_k_all_wfc(kpoint, ngk, list_iG, wfc_k, QE_eig)
 
     use intw_reading, only: s, ftau, nG_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
@@ -108,7 +108,7 @@ contains
 
     !I/O variables
     real(dp), intent(in) :: kpoint(3)
-    integer, intent(out) :: list_iG(nG_max)
+    integer, intent(out) :: ngk, list_iG(nG_max)
     complex(dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
     real(dp), intent(out), optional :: QE_eig(num_bands_intw)
 
@@ -134,8 +134,9 @@ contains
       i_folder = QE_folder_nosym(ikpt)
       k_QE = kpoints_QE(:,i_folder)
       !
-      wfc_k(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
+      ngk = ngk_all(ikpt)
       list_iG_irr(:) = list_iG_all(ikpt,:)
+      wfc_k(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
       if (present(QE_eig)) QE_eig(:) = QE_eig_irr_all(ikpt,:)
       !
       G_sym = kpoint - k_QE
@@ -159,8 +160,9 @@ contains
       sym = s(:,:,(i_sym))
       !
       ! Load the corresponding irreducible wfcs in kpoints_QE
-      wfc_k_irr(:,:,:) = wfc_k_irr_all(i_folder,:,:,:)
+      ngk = ngk_all(i_folder)
       list_iG_irr(:) = list_iG_all(i_folder,:)
+      wfc_k_irr(:,:,:) = wfc_k_irr_all(i_folder,:,:,:)
       if (present(QE_eig)) QE_eig(:) = QE_eig_irr_all(i_folder,:)
       !
       ktest = matmul(sym ,k_QE)
