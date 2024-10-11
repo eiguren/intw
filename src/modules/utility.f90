@@ -571,10 +571,10 @@ end function intgr_spline_gaussq
     end do
 
     ! check how many point will we actually generate
-    if ( sum(nkstage) - nkpath .ne. 0) &
-        write(*,*)' Actual path will have', sum(nkstage), ' points instead of ', nkpath
+    if ( sum(nkstage)+1 - nkpath .ne. 0) &
+        write(*,*)' Actual path will have', sum(nkstage)+1, ' points instead of ', nkpath
 
-    nkpath = sum(nkstage)
+    nkpath = sum(nkstage)+1
     allocate(kpath(3,nkpath))
 
     ! Build path points in cartesians
@@ -590,6 +590,8 @@ end function intgr_spline_gaussq
                       (kspecial_cart(:,i) - kspecial_cart(:,i-1) ) * real(j-1,dp) / real(nkstage(i-1),dp)
        end do
     end do
+    ! last point is the last special point
+    kpath(:,nkpath) = kspecial_cart(:,nkspecial)
 
     !compute accumulated distance (cartesians, atomic units, incl. 2pi/alat factor) along path if requested
     if (present(dkpath)) then
