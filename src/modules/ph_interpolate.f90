@@ -358,6 +358,8 @@ module intw_ph_interpolate
   logical :: in_ws
   integer :: Rs(3,n_wss_q), r_cryst_int(3), ndegen_ws(nq1*nq2*nq3*n_wss_q,nat,nat), irvec_ws(3,nq1*nq2*nq3*n_wss_q,nat,nat)
   real(kind=dp) :: r_cryst(3), r_length_l, r_length_l1, r_cart(3)
+
+  irvec_ws = 0
   !
   ! generate superlattice replica vectors search mesh
   l = 0
@@ -374,6 +376,7 @@ module intw_ph_interpolate
   nrpts_q = 0
   !
   allocate( nrpts_qtau12(nat,nat) )
+  nrpts_qtau12 = 0
   !
   do iat1=1,nat
   do iat2=1,nat
@@ -562,7 +565,7 @@ module intw_ph_interpolate
   do iat2=1,nat
      do ir = 1,nrpts_qtau12(iat1,iat2)
         do iq = 1, nqmesh
-           fac = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq),(irvec_qtau(:,ir,iat1,iat2) + tau_cryst(:,iat2) - tau_cryst(:,iat1))))
+           fac = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq), irvec_qtau(:,ir,iat1,iat2)))
            dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, ir ) = &
                    dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, ir ) + &
                    fac*dyn_q((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq)
@@ -622,7 +625,7 @@ module intw_ph_interpolate
   do iat1 = 1,nat
   do iat2 = 1,nat
      do ir = 1,nrpts_qtau12(iat1,iat2)
-       fac = exp(cmplx_i*tpi*dot_product(qpoint(:),(irvec_qtau(:,ir,iat1,iat2) - tau_cryst(:,iat2) + tau_cryst(:,iat1))))/real(ndegen_qtau(ir,iat1,iat2),dp)
+       fac = exp(cmplx_i*tpi*dot_product(qpoint(:), irvec_qtau(:,ir,iat1,iat2)))/real(ndegen_qtau(ir,iat1,iat2),dp)
        dyn_qint((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3) = &
            dyn_qint((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3) + &
            fac * dyn_rtau((iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3,ir)

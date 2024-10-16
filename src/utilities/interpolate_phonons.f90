@@ -51,7 +51,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !       Read in the necessary information from standard input
 !================================================================================
     call read_input(read_status)
- 
+
     if (read_status ) then
        stop
     end if
@@ -61,12 +61,12 @@ write(*,'(A)') '|    waiting for input file...                      |'
     if ( .not. exist_qpath) then
        write(*,*)' Q_PATH not found. Phonon bands/DOS cannot be interpolated. Stopping.'
        stop
-    end if        
+    end if
 
 !================================================================================
 !       read the parameters from the SCF QE calculation
 !================================================================================
-    call read_parameters_data_file_xml()  
+    call read_parameters_data_file_xml()
 
 !================================================================================
 !   Build qpoint path to plot bands.
@@ -74,10 +74,10 @@ write(*,'(A)') '|    waiting for input file...                      |'
 !================================================================================
 
     call generate_and_allocate_kpath (at, bg, tpiba, nqpath, nqspecial, qspecial, qpath, dqpath)
-    !write(*,*) nqpath
-    !do iq=1,nqpath
-    !   print *,  qpath(:,iq), dqpath
-    !end do
+    ! write(*,*) nqpath
+    ! do iq=1,nqpath
+    !   print"(i,3f,f)", iq, qpath(:,iq), dqpath(iq)
+    ! end do
 
 !================================================================================
 !   Phonon meshes
@@ -107,9 +107,9 @@ write(*,'(A)') '|    waiting for input file...                      |'
   print *,' get dyn_q matrices'
   if (read_for_dynmat == 'fc' ) then ! read force constants
           call allocate_and_build_dyn_qmesh(fc_mat)
-  else if (read_for_dynmat == 'dynq' ) then ! read dyn files        
+  else if (read_for_dynmat == 'dynq' ) then ! read dyn files
           call allocate_and_build_dyn_qmesh2()
-  end if        
+  end if
 
   ! do iq=1,nqmesh
   !   ! print"(i,3f,x,100f)", iq, qmesh(:,iq), sign(sqrt(abs(w2_q(:,iq))), w2_q(:,iq)) ! a.u.
@@ -122,7 +122,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
   ! transform to R space with atom position correction
   print *,' transform to R space'
   call dyn_q_to_dyn_rtau()
-  
+
   ! test decay of dyn_r elements with distance
 !  do ir=1,nrpts_q
 !     rcart = real(irvec_q(:,ir),dp)
@@ -174,17 +174,17 @@ write(*,'(A)') '|    waiting for input file...                      |'
         ! Interpolate frequency in qpoint
         call dyn_interp_1q_tau(qpoint, dyn_qint)
         call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
-        w_qint=sign(sqrt(abs(w2_qint)),w2_qint) 
+        w_qint=sign(sqrt(abs(w2_qint)),w2_qint)
         !phonon frequency in a.u.: pass to Ry
         w_qint= w_qint*Ha_to_Ry
         ! Smear omega(q) for DOS (gaussian)
         do imode = 1,3*nat
            do iomega=1, nomega  !frequencies in Ry
               omega = omega_ini + omega_step*real(iomega-1,dp)
-              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)  
+              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)
               dosph(imode,iomega) = dosph(imode,iomega) + rfacq
-           end do   
-       end do    
+           end do
+       end do
 
    end do
    end do
@@ -202,8 +202,8 @@ write(*,'(A)') '|    waiting for input file...                      |'
    end do
    close(ph_unit)
 
-   write(*,'(A)') '|  DOS sum test:                                    |' 
-   write(*,*)'       DOS integral (trapeze) = ', omega_step*sum(dosph(:,:)) 
+   write(*,'(A)') '|  DOS sum test:                                    |'
+   write(*,*)'       DOS integral (trapeze) = ', omega_step*sum(dosph(:,:))
    write(*,*)'       Number of modes =', 3*nat
    write(*,*)' Phonon DOS interpolation finished and written to file', phband_file_name
 
