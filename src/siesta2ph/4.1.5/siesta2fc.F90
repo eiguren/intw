@@ -499,9 +499,9 @@ contains
     complex(kind=dp), allocatable, dimension(:,:,:) :: dm
     real(kind=dp), allocatable, dimension(:) :: w
     complex(kind=dp), dimension(3,3) :: dm_local
-    real(kind=dp), dimension(3,27) :: vecs_cryst
+    real(kind=dp), dimension(3,27) :: R_vecs_cryst
     real(kind=dp), dimension(27) :: vecs_lenght
-    real(kind=dp), dimension(3) :: R_cryst, vec_cart
+    real(kind=dp), dimension(3) :: R_cryst, vec_cryst, vec_cart
     complex(kind=dp) :: phase
     real(kind=dp) :: sqrt_mm, min_lenght
     integer :: ia, ja, ka
@@ -582,10 +582,14 @@ contains
                     !
                     R_cryst = (/ir1, ir2, ir3/) ! lattice vector of the supercell in supercell crystal coordinates
                     !
-                    vecs_cryst(:, ivec) = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ia)) ! vector from tau(ia) to tau(ka)+R in supercell crystal coordinates
-                    vec_cart = matmul(at, vecs_cryst(:, ivec))
+                    ! lattice vector from tau(ja) to tau(ka)+R
+                    R_vecs_cryst(:, ivec) = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ja)) ! in supercell crystal coordinates
+                    R_vecs_cryst(:, ivec) = R_vecs_cryst(:, ivec)*(/nr1, nr2, nr3/) ! transform to unit cell crystal coordinates
+                    !
+                    ! lenght of the vector from tau(ia) to tau(ka)+R
+                    vec_cryst = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ia)) ! in supercell crystal coordinates
+                    vec_cart = matmul(at, vec_cryst)
                     vecs_lenght(ivec) = sqrt(sum(vec_cart**2))
-                    vecs_cryst(:, ivec) = vecs_cryst(:, ivec)*(/nr1, nr2, nr3/) ! transform to th unit cell crystal coordinates
                     !
                   enddo
                 enddo
@@ -598,7 +602,7 @@ contains
               do ivec=1,27
                 if ( abs( vecs_lenght(ivec) - min_lenght ) < 1.0d-5 ) then
                   n_vecs = n_vecs + 1
-                  phase = phase + exp(tpi*cmplx_i*dot_product(qmesh_cryst(:, jq), vecs_cryst(:, ivec)))
+                  phase = phase + exp(tpi*cmplx_i*dot_product(qmesh_cryst(:, jq), R_vecs_cryst(:, ivec)))
                 endif
               enddo
               !
@@ -656,9 +660,9 @@ contains
     complex(kind=dp), allocatable, dimension(:,:) :: dm
     real(kind=dp), allocatable, dimension(:) :: w
     complex(kind=dp), dimension(3,3) :: dm_local
-    real(kind=dp), dimension(3,27) :: vecs_cryst
+    real(kind=dp), dimension(3,27) :: R_vecs_cryst
     real(kind=dp), dimension(27) :: vecs_lenght
-    real(kind=dp), dimension(3) :: q_cryst, R_cryst, vec_cart
+    real(kind=dp), dimension(3) :: q_cryst, R_cryst, vec_cryst, vec_cart
     complex(kind=dp) :: phase
     real(kind=dp) :: sqrt_mm, min_lenght, dist
     integer :: ia, ja, ka
@@ -729,11 +733,15 @@ contains
                   !
                   ivec = ivec + 1
                   !
-                  R_cryst = (/ir1, ir2, ir3/) ! lattice vector of the supercell
+                  R_cryst = (/ir1, ir2, ir3/) ! lattice vector of the supercell in supercell crystal coordinates
                   !
-                  vecs_cryst(:, ivec) = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ia)) ! vector from tau(ia) to tau(ka)+R in supercell crytal basis
-                  vecs_cryst(:, ivec) = vecs_cryst(:, ivec)*(/nr1, nr2, nr3/) ! transform to unit cell crytal basis
-                  vec_cart = matmul(at, vecs_cryst(:, ivec))
+                  ! lattice vector from tau(ja) to tau(ka)+R
+                  R_vecs_cryst(:, ivec) = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ja)) ! in supercell crystal coordinates
+                  R_vecs_cryst(:, ivec) = R_vecs_cryst(:, ivec)*(/nr1, nr2, nr3/) ! transform to unit cell crystal coordinates
+                  !
+                  ! lenght of the vector from tau(ia) to tau(ka)+R
+                  vec_cryst = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ia)) ! in supercell crystal coordinates
+                  vec_cart = matmul(at, vec_cryst)
                   vecs_lenght(ivec) = sqrt(sum(vec_cart**2))
                   !
                 enddo
@@ -747,7 +755,7 @@ contains
             do ivec=1,27
               if ( abs( vecs_lenght(ivec) - min_lenght ) < 1.0d-5 ) then
                 n_vecs = n_vecs + 1
-                phase = phase + exp(tpi*cmplx_i*dot_product(q_cryst, vecs_cryst(:, ivec)))
+                phase = phase + exp(tpi*cmplx_i*dot_product(q_cryst, R_vecs_cryst(:, ivec)))
               endif
             enddo
             !
