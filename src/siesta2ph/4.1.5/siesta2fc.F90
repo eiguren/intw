@@ -499,16 +499,13 @@ contains
     complex(kind=dp), allocatable, dimension(:,:,:) :: dm
     real(kind=dp), allocatable, dimension(:) :: w
     complex(kind=dp), dimension(3,3) :: dm_local
-    real(kind=dp), dimension(3,27) :: R_vecs_cryst
-    real(kind=dp), dimension(27) :: vecs_lenght
-    real(kind=dp), dimension(3) :: R_cryst, vec_cryst, vec_cart
+    real(kind=dp), dimension(3) :: R_cryst
     complex(kind=dp) :: phase
     real(kind=dp) :: sqrt_mm, min_lenght
     integer :: ia, ja, ka
     integer :: id, jd
     integer :: ir1, ir2, ir3
     integer :: iq, jq, iqirr
-    integer :: ivec, n_vecs
     integer :: nat_uc
     character(len=256) :: filename
     integer :: iounit
@@ -573,40 +570,12 @@ contains
               !
               if ( .not. eqvect(tau_cryst(:,ja)*(/nr1, nr2, nr3/), tau_cryst(:,ka)*(/nr1, nr2, nr3/)) ) cycle ! i.e. if the atoms are equivalent by translation
               !
-              ivec = 0
-              do ir1=-1,1
-                do ir2=-1,1
-                  do ir3=-1,1
-                    !
-                    ivec = ivec + 1
-                    !
-                    R_cryst = (/ir1, ir2, ir3/) ! lattice vector of the supercell in supercell crystal coordinates
-                    !
-                    ! lattice vector from tau(ja) to tau(ka)+R
-                    R_vecs_cryst(:, ivec) = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ja)) ! in supercell crystal coordinates
-                    R_vecs_cryst(:, ivec) = R_vecs_cryst(:, ivec)*(/nr1, nr2, nr3/) ! transform to unit cell crystal coordinates
-                    !
-                    ! lenght of the vector from tau(ia) to tau(ka)+R
-                    vec_cryst = ((tau_cryst(:,ka) + R_cryst) - tau_cryst(:,ia)) ! in supercell crystal coordinates
-                    vec_cart = matmul(at, vec_cryst)
-                    vecs_lenght(ivec) = sqrt(sum(vec_cart**2))
-                    !
-                  enddo
-                enddo
-              enddo
+              R_cryst = (tau_cryst(:,ka) - tau_cryst(:,ja)) ! in supercell crystal coordinates
+              R_cryst = R_cryst*(/nr1, nr2, nr3/) ! transform to unit cell crystal coordinates
               !
-              min_lenght = minval(vecs_lenght)
+              phase = exp(tpi*cmplx_i*dot_product(qmesh_cryst(:, jq), R_cryst))
               !
-              n_vecs = 0
-              phase = cmplx_0
-              do ivec=1,27
-                if ( abs( vecs_lenght(ivec) - min_lenght ) < 1.0d-5 ) then
-                  n_vecs = n_vecs + 1
-                  phase = phase + exp(tpi*cmplx_i*dot_product(qmesh_cryst(:, jq), R_vecs_cryst(:, ivec)))
-                endif
-              enddo
-              !
-              dm_local = dm_local + fc(:,:,ia,ka) * phase / sqrt_mm / n_vecs ! in a.u. (Hartree/Bohr^2*/me = Hartree^2/hbar^2)
+              dm_local = dm_local + fc(:,:,ia,ka) * phase / sqrt_mm ! in a.u. (Hartree/Bohr^2*/me = Hartree^2/hbar^2)
               !
             enddo ! ka
             !
