@@ -521,7 +521,9 @@ contains
               read(dynq_unit,*) i,j ! not used
 
               ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
-              read(dynq_unit,*) ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3) ! in Ry/Bohr^2
+              do i = 1,3
+                read(dynq_unit,*) (dynq_re(i,j), dynq_im(i,j), j=1,3) ! in Ry/Bohr^2
+              enddo
 
               ! save in dynq
               dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &

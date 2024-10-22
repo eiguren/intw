@@ -505,7 +505,7 @@ contains
     complex(kind=dp) :: phase
     real(kind=dp) :: sqrt_mm, min_lenght
     integer :: ia, ja, ka
-    integer :: id
+    integer :: id, jd
     integer :: ir1, ir2, ir3
     integer :: iq, jq, iqirr
     integer :: ivec, n_vecs
@@ -622,7 +622,9 @@ contains
           do ja=1,nat_uc
             sqrt_mm = sqrt(amass(ityp(ia)) * amass(ityp(ja))) * pmass ! in a.u.
             write(iounit,"(2i5)") ia, ja
-            write(iounit,"(3(2f12.8),2x)") ( dm(((ia-1)*3+1):((ia-1)*3+3), (ja-1)*3+id, jq)*sqrt_mm, id=1,3 )
+            do id=1,3
+              write(iounit,"(3(2f12.8),2x)") ( dm((ia-1)*3+id, (ja-1)*3+jd, jq)*sqrt_mm, jd=1,3 )
+            enddo
           enddo
         enddo
         !
