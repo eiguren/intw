@@ -59,12 +59,15 @@ Similarly, CMake's variable `CMAKE_<LANG>_FLAGS` or `FFLAGS` and `CFLAGS` enviro
 
 To build intw in [Atlas](https://dipc.ehu.eus/en/supercomputing-center?set_language=en), one also needs to first load a toolchain and CMake.
 
-In atlas-fdf use for example `module load intel/2019b` and `
-module load CMake/3.15.3-GCCcore-8.3.0`
+In atlas-fdf use for example `module load intel/2019b` and `module load CMake/3.15.3-GCCcore-8.3.0`.
 
-In atlas-edr, use for example `module load intel/2019b`. However, CMake is not available in atlas-edr, and must be installed by the user.
+In atlas-edr, use for example `module load intel/2019b`, `module load CMake/3.20.1-GCCcore-10.3.0` and `module load Python/3.7.6-Anaconda3-2020.02`.
 
+In addition, the compilers and the QE, SIESTA or W90 directories need to be specified as follows:
 
+```bash
+cmake -DCMAKE_Fortran_COMPILER=mpiifort -DCMAKE_C_Compiler=mpiicc -DQE_HOME=/path/to/QE -DW_HOME=/path/to/W90 -DSIESTA_HOME=/path/to/SIESTA  ..
+```
 
 ## Dependencies
 
