@@ -9,24 +9,14 @@ PROGRAM pw2intw
   USE mp_world, ONLY: world_comm
   USE mp_images, ONLY: intra_image_comm
 
-  USE cell_base, ONLY: at, bg
-  USE lsda_mod, ONLY: nspin, isk
-  USE klist, ONLY: nkstot
-  USE io_files, ONLY: prefix, tmp_dir
-  USE noncollin_module, ONLY: noncolin
-  USE control_flags, ONLY: gamma_only
+  USE io_files, ONLY: prefix_QE => prefix
   USE environment, ONLY: environment_start, environment_end
-!  USE wannier
-  USE basis, ONLY: natomwfc, starting_wfc
-  USE uspp_param, ONLY: upf
-  USE lsda_mod, ONLY: lsda
+  USE basis, ONLY: starting_wfc
 
   IMPLICIT NONE
-  !
-  CHARACTER(LEN=256), EXTERNAL :: trimcheck
-  !
-  INTEGER :: iostat
 
+  ! I/O
+  CHARACTER(len=256) :: prefix = " "
   CHARACTER(len=256) :: mesh_dir = "./"
   CHARACTER(len=256) :: data_dir = "./"
   CHARACTER(len=256) :: rho_dir = "./"
@@ -36,26 +26,25 @@ PROGRAM pw2intw
   CHARACTER(len=256) :: dvscf_dir = "./"
   integer :: nqirr = 0
   logical :: dynxml = .false.
-  CHARACTER(len=256) :: fildyn = "matdyn", fildvscf = "dvscf"
+  CHARACTER(len=256) :: fildyn = "matdyn"
+  CHARACTER(len=256) :: fildvscf = "dvscf"
 
   CHARACTER(len=256) :: intwdir
-  INTEGER :: kunittmp, strlen, file_exists
+  INTEGER :: iostat, strlen
 
   NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir, fildyn, fildvscf
 
-  starting_wfc = "file"
-  prefix = " "
 
-
+  !
+  ! Initialize MPI and environment
 #if defined(__MPI)
-  CALL mp_startup ( )
+  CALL mp_startup( )
 #endif
 
-  CALL environment_start ( 'pw2intw' )
+  CALL environment_start( "pw2intw" )
 
-  CALL start_clock( 'init_pw2intw' )
-
-
+  !
+  ! Read input file
   READ (5, inputpp, iostat=iostat)
   if (iostat /= 0) call errore( "pw2intw", "ERROR: pw2intw: error reading inputpp", iostat )
 
@@ -70,18 +59,22 @@ PROGRAM pw2intw
   strlen = len_trim(ph_dir)
   if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
 
+  !
+  ! Create intwdir
   intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
 
   call system("mkdir -p "//intwdir)
 
-  WRITE(*,*)
-  WRITE(*,*) ' Reading nscf_save data'
+  !
+  ! Read QE data
+  prefix_QE = prefix
+  starting_wfc = "file"
   CALL read_file()
-  WRITE(*,*)
-
-  call write_pp_intw()
-
   CALL wfcinit()
+
+  !
+  ! Write all data in intw format
+  call write_pp_intw()
 
   call write_crystal_info_and_bands ()
 
@@ -92,14 +85,18 @@ PROGRAM pw2intw
   call write_wfc()
 
   if (phonons) call write_phonon_info()
-!
-contains
 
+  !
+  ! End job
+  call environment_end( "pw2intw" )
+
+contains
 
 
   SUBROUTINE write_pp_intw()
 
     USE ions_base, ONLY: nsp
+    USE uspp_param, ONLY: upf
 
     implicit none
 
@@ -210,7 +207,7 @@ contains
     datafile = trim(intwdir)//"scf_vr.dat"
     inquire(iolength=record_length) v%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
-        status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
+        status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
     if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_vr.dat", ios )
     !
     do ispin=1, nspin
@@ -224,7 +221,7 @@ contains
     datafile = trim(intwdir)//"scf_rhor.dat"
     inquire(iolength=record_length) rho%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
-        status="unknown", action="write", form="unformatted", access='direct', recl=record_length)
+        status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
     if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_rhor.dat", ios )
     !
     do ispin=1, nspin
@@ -236,34 +233,52 @@ contains
   END SUBROUTINE scf_v_and_rho
 
 
-  SUBROUTINE write_phonon_info()
+  subroutine write_phonon_info()
+
+    implicit none
+
+    !
+    ! Irreducible patterns
+    call write_paterns()
+
+    !
+    ! Induced potentials
+    call write_dV()
+
+    !
+    ! Dynamical matrices
+    if (dynxml) call errore( "pw2intw", "write_phonon_info: dynxml not implemented yet", 1 )
+    call write_dyn()
+
+    !
+    ! Induced charge density
+    call write_drho()
+
+  end subroutine write_phonon_info
+
+
+  subroutine write_paterns()
 
     USE xmltools, ONLY: xml_openfile, xml_closefile, &
                         xmlr_opentag, xmlr_readtag, xmlr_closetag, i2c
     USE ions_base, ONLY: nat
-    USE fft_base, ONLY: dfftp
-    USE spin_orb, ONLY: domag
-    USE noncollin_module, ONLY: noncolin
 
     implicit none
 
     ! loop variables
-    integer :: imode, jmode, ispin, iq
+    integer :: imode, jmode, iq
     ! irreducible patterns variables
     complex(kind=dp) :: u_irr(1:3*nat,1:3*nat)
     integer :: nirr, ipert, imode0, irr
     integer, dimension(48) :: npert=-1
-    ! induced potential variables
-    complex(kind=dp), allocatable :: dvq(:, :)
     ! i/o variables
-    character(len=256) :: datafile, q_dir, dv_file, rho_file, dyn_file
-    integer :: rl, io_unit_write, io_unit_read, ios
+    character(len=256) :: datafile, q_dir
+    integer :: io_unit_write, io_unit_read, ios
     logical :: existitu
     integer, external :: find_free_unit
 
 
-    !
-    ! Irreducible patterns
+    ! Open file for writing
     io_unit_write = find_free_unit()
     datafile = trim(intwdir)//"/irrq_patterns.dat"
     open(unit=io_unit_write, file=datafile, status="replace", form="formatted", iostat=ios)
@@ -312,8 +327,29 @@ contains
     !
     close(unit=io_unit_write)
 
-    !
-    ! Induced potentials
+  end subroutine write_paterns
+
+  subroutine write_dV()
+
+    USE ions_base, ONLY: nat
+    USE fft_base, ONLY: dfftp
+    USE spin_orb, ONLY: domag
+    USE noncollin_module, ONLY: noncolin
+    USE lsda_mod, ONLY: lsda
+
+    implicit none
+
+    ! loop variables
+    integer :: imode, iq
+    ! induced potential variables
+    complex(kind=dp), allocatable :: dvq(:, :)
+    ! i/o variables
+    character(len=256) :: datafile, q_dir, dv_file
+    integer :: rl, io_unit_write, io_unit_read, ios
+    integer, external :: find_free_unit
+
+
+    ! Allocate dvq array
     if (lsda) then
       allocate(dvq(dfftp%nr1*dfftp%nr2*dfftp%nr3, 2))
     else
@@ -330,17 +366,19 @@ contains
       !
       call write_tag("qq", iq, q_dir)
       !
+      ! Open file for reading
       io_unit_read = find_free_unit()
       datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
       open( unit=io_unit_read, file=trim(datafile), iostat=ios, &
-            form='unformatted', status='old', action='read', access='direct', recl=rl )
+            form="unformatted", status="old", action="read", access="direct", recl=rl )
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to read", ios )
       !
+      ! Open file for writing
       io_unit_write = find_free_unit()
       call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
       datafile = trim(intwdir)//trim(dv_file)
       open( unit=io_unit_write, file=trim(datafile), iostat=ios, &
-            form='unformatted', status='replace', action='write', access='direct', recl=rl )
+            form="unformatted", status="replace", action="write", access="direct", recl=rl )
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to write", ios )
       !
       do imode=1,3*nat
@@ -362,8 +400,61 @@ contains
       !
     enddo
 
-    !
-    ! Induced charge density
+  end subroutine write_dV
+
+
+  subroutine write_dyn()
+
+    USE cell_base, ONLY: at
+    USE ions_base, ONLY: nat, nsp, tau
+
+    implicit none
+
+    ! loop variables
+    integer :: imode, jmode, ispin, iq
+    ! i/o variables
+    character(len=256) :: datafile, q_dir, dyn_file
+    integer :: io_unit_write, io_unit_read, ios
+    logical :: existitu
+    integer, external :: find_free_unit
+    character(len=100) :: comentario
+    integer :: ntyp_, nat_, ibrav_
+    integer :: ia, ja, it, i, j, k
+    real(dp) :: celldm_(6), at_(3,3), fracpos(3)
+    real(dp) :: qpoint_cart(3), qpoint_cryst(3)
+    real(dp) ::  dynq_re(3,3), dynq_im(3,3)
+    ! TODO add to useful_constants
+    real(dp), parameter :: Ry2Hartree = 0.5_dp
+
+
+    do iq=1,nqirr
+      !
+      call write_tag("qq", iq, q_dir)
+      !
+      datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
+      inquire(file=datafile, exist=existitu)
+      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
+      !
+      call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
+      call system("cp " // &
+                  trim(datafile)//" " // &
+                  trim(intwdir)//trim(dyn_file) )
+      !
+    enddo ! iq
+
+  end subroutine write_dyn
+
+  subroutine write_drho()
+
+    implicit none
+
+    ! loop variables
+    integer :: iq
+    ! i/o variables
+    character(len=256) :: datafile, q_dir, rho_file
+    logical :: existitu
+
+
     do iq=1,nqirr
       !
       call write_tag("qq", iq, q_dir)
@@ -379,39 +470,12 @@ contains
       !
     enddo
 
-    !
-    ! Dynamical matrices
-    do iq=1,nqirr
-      !
-      call write_tag("qq", iq, q_dir)
-      !
-      if (dynxml) then
-        !
-        call errore( "pw2intw", "write_phonon_info: dynxml not implemented yet", 1 )
-        ! call system("cp " // &
-        !             trim(ph_dir)//"qq"//trim(adjustl(numq_str))//"/"//trim(prefix)//".dyn.xml " // &
-        !             trim(prefix)//".dyn"//trim(adjustl(numq_str))//".xml" )
-        !
-      else
-        !
-        datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
-        inquire(file=datafile, exist=existitu)
-        if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
-        !
-        call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
-        call system("cp " // &
-                    trim(datafile)//" " // &
-                    trim(intwdir)//trim(dyn_file) )
-        !
-      end if
-      !
-    enddo
-
-  end SUBROUTINE write_phonon_info
+  end subroutine write_drho
 
 
-  SUBROUTINE write_fft_information ()
+  SUBROUTINE write_fft_information()
 
+    USE cell_base, ONLY: at
     USE gvect, ONLY: ngm, g
     USE wvfct, ONLY: npwx
     USE klist, ONLY: nks, xk, igk_k, ngk
@@ -463,6 +527,7 @@ contains
     USE noncollin_module, ONLY: noncolin
     USE wvfct, ONLY: nbnd, et
     USE constants, ONLY: rytoev
+    USE lsda_mod, ONLY: lsda
 
     implicit none
 
@@ -473,7 +538,7 @@ contains
     !
     complex(dp), allocatable :: evc_down(:, :) !JLB
 
-    100 format('wfc'I5.5'.dat')
+    100 format("wfc"I5.5".dat")
 
     io_unit = find_free_unit()
 
@@ -507,8 +572,8 @@ contains
           write(unit=io_unit) evc(1:ngk(ik), ibnd), 0.0*evc(1:ngk(ik), ibnd)
           write(unit=io_unit) 0.d0*evc_down(1:ngk(ik), ibnd), evc_down(1:ngk(ik), ibnd)
         enddo
-        write(*,'(4ES18.6)') evc(1, nbnd), evc(npwx+1, nbnd)
-        write(*,'(4ES18.6)') evc_down(1, nbnd), evc_down(npwx+1, nbnd)
+        write(*,"(4ES18.6)") evc(1, nbnd), evc(npwx+1, nbnd)
+        write(*,"(4ES18.6)") evc_down(1, nbnd), evc_down(npwx+1, nbnd)
         !
         close(unit=io_unit)
 
@@ -555,8 +620,6 @@ contains
     USE spin_orb, ONLY: lspinorb, domag
     USE symm_base, ONLY: nrot, nsym, invsym, s, ft, irt, &
                          t_rev, sname, time_reversal, no_t_rev, ft
-    !USE symme, ONLY: nrot, nsym, invsym, s, ft, irt, &
-    !                 t_rev, sname, time_reversal, no_t_rev, ftau
     USE fft_base, ONLY: dfftp
     USE gvecw, ONLY: ecutwfc
     USE gvect, ONLY: ecutrho
@@ -565,6 +628,9 @@ contains
     USE io_files, ONLY: psfile
     USE wvfct, ONLY: npwx
     USE ener, ONLY: ef
+    USE noncollin_module, ONLY: noncolin
+    USE control_flags, ONLY: gamma_only
+    USE lsda_mod, ONLY: lsda
 
     IMPLICIT NONE
     !
@@ -733,7 +799,5 @@ contains
     500 format(I5)
 
   end subroutine write_tag
-
-
 
 end PROGRAM pw2intw
