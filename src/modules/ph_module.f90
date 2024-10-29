@@ -25,7 +25,7 @@ module intw_ph
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
-            read_dynq, set_asr_frc,  set_asr_dynq
+            read_dynq, set_asr_frc, set_asr_dynq, rotate_dyn
   !
   ! functions
   public :: wsweight, rot_k_index
@@ -564,6 +564,61 @@ contains
       return
       end subroutine read_dynq
   !====================================================================
+
+
+  subroutine rotate_dyn(isym, q_cryst, dynq, dynRq)
+    ! Rotate dynamical matrix to the symmetry equivalent q point
+
+    use intw_reading, only: ntyp, nat, at, amass, ityp, bg
+    use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
+    use intw_utility, only: cryst_to_cart, find_free_unit, &
+                            triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
+                                      apply_asr
+    use intw_reading, only: s, ftau, can_use_TR, tau_cryst
+    use intw_symmetries, only: rtau_index, inverse_indices, rtau_cryst, rtau
+    use intw_utility, only: ainv, det
+
+    implicit none
+
+    ! I/O
+    integer, intent(in) :: isym ! Index of the symmetry operation used
+    real(kind=dp), intent(in) :: q_cryst(3) ! q point of the input dynamical matrix
+    complex(kind=dp), intent(in) :: dynq(3,3,nat,nat) ! input dynamical matrix
+    complex(kind=dp), intent(out) :: dynRq(3,3,nat,nat) ! dynamical matrix of the symmetry equivalent q point
+
+    ! Local
+    real(kind=dp) :: q_cart(3), Rq_cart(3), s_cryst(3,3), s_cart(3,3)
+    integer :: ia, ja, Sia, Sja
+    logical :: TR
+    complex(kind=dp) :: phase
+
+
+    ! Get the rotation matrix of the symmetry operation
+    s_cryst = dble(s(:,:,isym))
+    TR = can_use_TR(isym)
+    s_cart = transpose(matmul(at, matmul(transpose(s_cryst), ainv(at))))
+
+    ! Rotate the Q point
+    q_cart = matmul(bg, q_cryst)
+    Rq_cart = matmul(s_cart, q_cart)
+
+    ! Rotate the dynamical matrix
+    dynRq = cmplx_0
+    do ia = 1, nat
+      do ja = 1, nat
+        !
+        Sia = rtau_index(ia,isym)
+        Sja = rtau_index(ja,isym)
+        !
+        phase = exp(-tpi*cmplx_i*dot_product(Rq_cart, rtau(:, isym, ia) - rtau(:, isym, ja)))
+        !
+        dynRq(:, :, Sia, Sja) = phase * matmul(s_cart, matmul(dynq(:, :, ia, ja), ainv(s_cart)))
+        !
+      enddo
+    enddo
+
+  end subroutine rotate_dyn
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
