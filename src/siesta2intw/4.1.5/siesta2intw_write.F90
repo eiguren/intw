@@ -386,7 +386,7 @@ contains
     integer :: iq
     character(len=6) :: iq_str
 
-    integer :: io_unit, io_unit_read, io_unit_write, ios, rl
+    integer :: io_unit, io_unit_read, io_unit_write, io_unit_write_sym, ios, rl
     integer :: imode, jmode, ispin, i, j, ia, ja
     complex(kind=dp) :: u_irr(3*na_u)
     character(len=256) :: filename_read, filename_write
@@ -407,6 +407,7 @@ contains
     q_irr_cart = 0.0_dp
     io_unit_read = find_free_unit()
     io_unit_write = find_free_unit()
+    io_unit_write_sym = find_free_unit()
     do iq = 1, nqirr
       !
       write(filename_read,"(a3,i4.4,a4)") "dyn", iq, ".dat"
@@ -421,6 +422,11 @@ contains
       open( unit=io_unit_write, file=trim(intwdir)//trim(filename_write), iostat=ios, &
             action="write", status="replace" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening intw's dynamical matrix file."
+      !
+      filename_write = trim(prefix)//".dyn"//trim(iq_str)//"_sym"
+      open( unit=io_unit_write_sym, file=trim(intwdir)//trim(filename_write), iostat=ios, &
+            action="write", status="replace" )
+      if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening intw's dynamical matrix sym file."
 
       ! header
       write(io_unit_write, "(a)") "Dynamical matrix file"
@@ -458,6 +464,7 @@ contains
         ! write(io_unit_write,"(a11,3f14.9,a2)") "q_cart = ( ", matmul(bg, qpoint), " )"
         write(io_unit_write,"(a11,3f14.9,a3)") "     q = ( ", matmul(bg, qpoint), " ) "
         write(io_unit_write, "(a)") ""
+        if (iq_star==1) write(io_unit_write_sym,"(a11,3f14.9,a2)") "q_cryst = ( ", qpoint, " )"
         !
         ! FC
         do ia=1,na_u
@@ -471,6 +478,11 @@ contains
             do i=1,3
               write(io_unit_write, "(3(f12.8,1x,f12.8,3x))") (dynq_re(i,j)*Ha2Ry, dynq_im(i,j)*Ha2Ry, j=1,3)
             enddo
+            if (iq_star==1) then
+              do i=1,3
+                write(io_unit_write_sym, "(3(a,f16.10,a,f16.10,a))") ("(", dynq_re(i,j), ",", dynq_im(i,j), ") ", j=1,3)
+              enddo
+            endif
           enddo
         enddo
         !
@@ -487,6 +499,7 @@ contains
     !
     close(unit=io_unit_read)
     close(unit=io_unit_write)
+    close(unit=io_unit_write_sym)
 
     ! Write irreducible q points
     io_unit = find_free_unit()
