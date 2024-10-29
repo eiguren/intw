@@ -178,9 +178,6 @@ contains
     !
     ! Make the save.intw directory
     intwdir = trim(outdir)//trim(prefix)//".save.intw/"
-    write(stdout,*) "haritz "//trim(outdir)
-    write(stdout,*) "haritz "//trim(prefix)
-    write(stdout,*) "haritz "//trim(intwdir)
     call system("mkdir -p "//trim(intwdir))
 
     ! Clear save.intw directory
@@ -439,7 +436,7 @@ contains
 
       ! positions
       do i = 1, na_u
-        write(io_unit_write, "(2i5,3f12.8)") i, isa(i), xa(:,i) ! i,j, fracpos(:)  !not used, not stored
+        write(io_unit_write, "(2i5,3f12.8)") i, isa(i), xa(:,i)/alat ! i,j, fracpos(:)  !not used, not stored
       end do
 
       ! Read number of q-points in the star
@@ -466,10 +463,14 @@ contains
         do ia=1,na_u
           do ja=1,na_u
             read(io_unit_read, *) !ia, ja
-            read(io_unit_read, "(3(2f12.8),2x)") ( (dynq_re(i,j), dynq_im(i,j), j=1,3),i=1,3)
+            do i=1,3
+              read(io_unit_read, "(3(2f12.8),2x)") (dynq_re(i,j), dynq_im(i,j), j=1,3)
+            enddo
 
             write(io_unit_write, "(2i5)") ia, ja
-            write(io_unit_write, "(3(f12.8,1x,f12.8,3x))") ( (dynq_re(i,j)*Ha2Ry, dynq_im(i,j)*Ha2Ry, j=1,3),i=1,3)
+            do i=1,3
+              write(io_unit_write, "(3(f12.8,1x,f12.8,3x))") (dynq_re(i,j)*Ha2Ry, dynq_im(i,j)*Ha2Ry, j=1,3)
+            enddo
           enddo
         enddo
         !
