@@ -224,7 +224,7 @@ contains
 
     use intw_reading, only: nat, ntyp, at, alat, amass, ityp, tau
     use intw_utility, only: find_free_unit
-    use intw_useful_constants, only: cmplx_1, eps_6
+    use intw_useful_constants, only: cmplx_1, eps_6, Ry_to_Ha, pmass
     use intw_input_parameters, only: nq1, nq2, nq3, apply_asr
 
     IMPLICIT NONE
@@ -244,8 +244,6 @@ contains
     INTEGER :: i, j, na, nb, m1, m2, m3
     INTEGER :: ibid, jbid, nabid, nbbid, m1bid,m2bid,m3bid
     integer :: io_unit, ios
-    real(dp), parameter :: Ry2Hartree = 0.5_dp
-    real(dp), parameter :: pmass = 1822.88848426_dp
     real(dp) :: frc_R(nq1,nq2,nq3,3,3,nat,nat)
     !
     !
@@ -318,7 +316,7 @@ contains
     !
     CLOSE(unit=io_unit)
     !
-    frc_R = frc_R * Ry2Hartree ! Transform to a.u.
+    frc_R = frc_R * Ry_to_Ha ! Transform to a.u.
     !
     !MBR 21/05/2024
     ! Instead of that set_asr module, use only the "simple" method
@@ -420,7 +418,7 @@ contains
       subroutine read_dynq (dynq)
 
       use intw_reading, only: ntyp, nat, at, tau_cryst
-      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
+      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi, Ry_to_Ha
       use intw_utility, only: cryst_to_cart, find_free_unit, &
               triple_to_joint_index_g, find_k_1BZ_and_G
       use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
@@ -442,8 +440,6 @@ contains
       real(dp) :: celldm_(6), at_(3,3), dist
       real(dp) ::  fracpos(3), qpoint(3), qpoint1(3), qpoint_cart(3,nqmesh)
       real(dp) ::  dynq_re(3,3), dynq_im(3,3)
-      ! TODO add to useful_constants
-      real(dp), parameter :: Ry2Hartree = 0.5_dp
 
 
       iq_done=0
@@ -527,7 +523,7 @@ contains
 
               ! save in dynq
               dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
-                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) * Ry2Hartree ! in a.u.
+                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) * Ry_to_Ha ! in a.u.
 
            end do
          end do !atoms

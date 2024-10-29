@@ -19,6 +19,9 @@ module intw_useful_constants
   ! Energy conversion factors
   public :: eV_to_Ha, eV_to_Ry, Ha_to_eV, Ha_to_Ry, Ry_to_eV, Ry_to_Ha
   !
+  ! Mass conversion factors
+  public :: pmass
+  !
   ! Pauli matrices
   public :: I2, sig_x, sig_y, sig_z
   !
@@ -62,6 +65,9 @@ module intw_useful_constants
   real(kind=dp), parameter :: Ry_to_Ha = 1.0_dp/Ha_to_Ry
   real(kind=dp), parameter :: Ry_to_eV = Ry_to_Ha*Ha_to_eV
   real(kind=dp), parameter :: eV_to_Ry = 1.0_dp/Ry_to_eV
+  !
+  ! Mass conversion factors
+  real(kind=dp), parameter :: pmass = 1822.88848426_dp ! 1 Dalton in atomic units
   !
   ! Pauli matrices
   complex(kind=dp), dimension(2,2), parameter ::    I2 = transpose(reshape((/ cmplx_1, cmplx_0, &

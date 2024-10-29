@@ -646,6 +646,7 @@ module intw_ph_interpolate
     !
     use intw_reading, only: nat, amass, ityp
     use intw_utility, only: diagonalize_cmat
+    use intw_useful_constants, only: pmass
     !
     implicit none
     !
@@ -655,8 +656,6 @@ module intw_ph_interpolate
     real(dp), intent(out) :: w2q(n) ! Phonon frequencies^2 in a.u.
     !
     integer :: iat1, iat2
-    real(dp), parameter :: pmass = 1822.88848426_dp
-    real(dp), parameter :: aumev = 27211.396132_dp
     !
     !
     ! Add mass factor
