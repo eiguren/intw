@@ -22,10 +22,10 @@ program interpolatephonons
                      read_ph_information_xml
 
   use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
-                                 dyn_q_to_dyn_rtau, dyn_interp_1q_tau, &
+                                 dyn_q_to_dyn_r, dyn_interp_1q, &
                                  allocate_and_build_ws_irvec_qtau, &
                                  allocate_and_build_dyn_qmesh, &
-                                 allocate_and_build_dyn_qmesh2
+                                 allocate_and_build_dyn_qmesh_from_fc
   use intw_symmetries, only: rtau, rtau_cryst, rtau_index, rot_atoms, find_size_of_irreducible_k_set, &
                              set_symmetry_relations, find_inverse_symmetry_matrices_indices
 
@@ -199,9 +199,9 @@ program interpolatephonons
   write(*,20) '|       - Reading dynamical matrices...             |'
   !
   if (read_for_dynmat == 'fc' ) then ! read force constants
-    call allocate_and_build_dyn_qmesh(fc_mat)
+    call allocate_and_build_dyn_qmesh_from_fc(fc_mat)
   else if (read_for_dynmat == 'dynq' ) then ! read dyn files
-    call allocate_and_build_dyn_qmesh2()
+    call allocate_and_build_dyn_qmesh()
   end if
   !
   ! diagonalize
@@ -217,7 +217,7 @@ program interpolatephonons
   !
   write(*,20) '|       - Compute force constants...                |'
   !
-  call dyn_q_to_dyn_rtau()
+  call dyn_q_to_dyn_r()
   !
   ! test decay of dyn_r elements with distance
   ! do ir=1,nrpts_q
@@ -243,7 +243,7 @@ program interpolatephonons
   write(ph_unit,'(A)') '# q-point   omega(imode=1)[meV]  omega(2)[meV]   omega(3)[meV] ...'
   do iq=1,nqpath
     qpoint = qpath(:,iq)
-    call dyn_interp_1q_tau(qpoint, dyn_qint)
+    call dyn_interp_1q(qpoint, dyn_qint)
     call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint) ! freqs are given in a.u
     w_qint = sign(sqrt(abs(w2_qint)),w2_qint) * Ha_to_eV*1000.0_dp
     write(ph_unit,'(20e14.6)') dqpath(iq), w_qint ! meV
@@ -272,7 +272,7 @@ program interpolatephonons
         qpoint(3) = real(iq3-1,dp) / real(nq3_dosph,dp)
         !
         ! Interpolate frequency in qpoint
-        call dyn_interp_1q_tau(qpoint, dyn_qint)
+        call dyn_interp_1q(qpoint, dyn_qint)
         !
         call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
         w_qint=sign(sqrt(abs(w2_qint)),w2_qint)

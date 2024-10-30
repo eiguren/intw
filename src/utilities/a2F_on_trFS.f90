@@ -29,8 +29,8 @@ program a2F_on_trFS
                 q_irr, q_irr_cryst
 
         use intw_ph_interpolate, only: allocate_and_build_dyn_qmesh, &
-                allocate_and_build_dyn_qmesh2, dyn_diagonalize_1q, &
-                allocate_and_build_ws_irvec_qtau, dyn_interp_1q_tau, dyn_q_to_dyn_rtau, &
+                allocate_and_build_dyn_qmesh_from_fc, dyn_diagonalize_1q, &
+                allocate_and_build_ws_irvec_qtau, dyn_interp_1q, dyn_q_to_dyn_r, &
                 w2_q, u_q
 
     implicit none
@@ -422,13 +422,13 @@ end do
   print *,' get dyn_q matrices'
   ! Two options to get dyn_q:
   if (read_for_dynmat == 'fc' ) then ! read force constants
-          call allocate_and_build_dyn_qmesh(fc_mat)
+          call allocate_and_build_dyn_qmesh_from_fc(fc_mat)
   else if (read_for_dynmat == 'dynq' ) then ! read dyn files
-          call allocate_and_build_dyn_qmesh2()
+          call allocate_and_build_dyn_qmesh()
   end if
 
   ! transform to R space
-  call dyn_q_to_dyn_rtau()
+  call dyn_q_to_dyn_r()
 
   ! Now w2_q contains phonon frequencies and u_q contains the polarization vectors.
   ! Phonon frequencies (negative means unstable mode)
@@ -495,7 +495,7 @@ do iks = 1, nkpt_tr_ibz(ish)
       qpoint = kpoint_p-kpoint
 
       !interpolate phonon:
-      call dyn_interp_1q_tau(qpoint, dyn_qint)
+      call dyn_interp_1q(qpoint, dyn_qint)
       call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
       w_qint=sign(sqrt(abs(w2_qint)),w2_qint)
       !u_qint contains the polarization vector (each column is a mode)
