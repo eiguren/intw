@@ -26,7 +26,7 @@ endif()
 if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 
   set(SIESTA2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw build directory." FORCE)
-
+  set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
 
   set(SIESTA2INTW_OBJ_FILES ${SIESTA2INTW_BUILD_DIR}/cfftnd.o
                             ${SIESTA2INTW_BUILD_DIR}/siesta2intw.o
@@ -70,6 +70,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 else()
 
   set(SIESTA2INTW_BUILD_DIR ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2intw CACHE PATH "Path to the siesta2intw build directory." FORCE)
+  set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
 
   set(SIESTA2INTW_OBJ_FILES ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/cfftnd.f90.o
                             ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/siesta2intw.F.o
@@ -158,4 +159,3 @@ else()
 
 endif()
 
-set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
