@@ -25,7 +25,7 @@ module intw_ph
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
-            read_dynq, set_asr_frc,  set_asr_dynq
+            read_dynq, set_asr_frc, set_asr_dynq, read_dynq_sym, rotate_dyn
   !
   ! functions
   public :: wsweight, rot_k_index
@@ -564,6 +564,196 @@ contains
       return
       end subroutine read_dynq
   !====================================================================
+
+
+  subroutine read_dynq_sym(dynq)
+    ! Read dynamical matrices of irreducible q-points from
+    ! prefix.dyn_q(iq)_sym files in prefix.save.intw and store
+    ! into dynq for all q-points by using symmetries to get
+    ! dynamical matrices of the non-irreducible q-points
+
+    use intw_reading, only: nat, at, tau_cryst
+    use intw_useful_constants, only: cmplx_i, tpi, Ry_to_Ha
+    use intw_utility, only: cryst_to_cart, find_free_unit, &
+                            triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
+                                     apply_asr
+    use intw_reading, only: s
+    use intw_symmetries, only: rtau_index
+    use intw_utility, only: ainv
+
+    implicit none
+
+    ! I/O
+
+    complex(dp), intent(out) :: dynq(3*nat,3*nat,nqmesh)
+
+    ! Local
+
+    ! I/O variables
+    character(len=4) :: iq_str
+    character(256) :: dynq_file, intwdir
+    integer :: dynq_unit, ierr
+    ! q-point variables
+    real(dp) :: qirr_cart(3), qirr_cryst(3), qirr_1BZ(3)
+    integer :: Gq(3), i, j, k, iqirr2iq
+    logical :: iq_done(nqmesh)
+    ! Symmetry variables
+    integer :: isym, tr
+    ! Dynamical matrix variables
+    complex(dp) :: dynq_irr(3,3,nat,nat), dynRq_irr(3,3,nat,nat)
+    ! Loop variables
+    integer :: iqirr, iq, ia, ja
+
+
+    iq_done = .false.
+
+    ! INTW directory
+    intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
+
+    do iqirr = 1,nqirr
+      !
+      ! open file
+      if (                   iqirr <   10) write(iq_str,"(i1)") iqirr
+      if ( 10 <= iqirr .and. iqirr <  100) write(iq_str,"(i2)") iqirr
+      if (100 <= iqirr .and. iqirr < 1000) write(iq_str,"(i3)") iqirr
+      dynq_unit = find_free_unit()
+      dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//trim(adjustl(iq_str))//"_sym"
+      open(unit=dynq_unit, iostat=ierr, file=dynq_file, form='formatted', status='old')
+      if (ierr /= 0 ) then
+        write(*,*) 'Error opening .dyn_q file in ',  intwdir,' . Stopping.'
+        stop
+      end if
+      !
+      !
+      ! Read irreducible q-point
+      read(dynq_unit,'(11x,3(f14.9))') qirr_cryst
+      !
+      ! Find index of irreducible q point in q-mesh
+      call find_k_1BZ_and_G(qirr_cryst,nq1,nq2,nq3,i,j,k,qirr_1BZ,Gq)
+      call triple_to_joint_index_g(nq1,nq2,nq3,iqirr2iq,i,j,k)
+      !
+      !
+      ! And read dynamical matrix for the irreducible q-point
+      do ia = 1,nat
+        do ja = 1,nat
+          !
+          ! Cartesian 3x3 block of this atom pair in dynq matrix
+          do i=1,3
+            read(dynq_unit,*) (dynq_irr(i,j,ia,ja), j=1,3)
+          enddo
+          !
+        end do ! ja
+      end do ! ia
+      !
+      !
+      ! Loop over symmetry equivalent q-points
+      do iq = 1,nqmesh
+        !
+        if (QE_folder_sym_q(iq) /= QE_folder_sym_q(iqirr2iq)) cycle
+        !
+        ! Check for consistency
+        if (QE_folder_sym_q(iq) /= iqirr) stop "ERROR: read_dynq_sym"
+        !
+        ! Find symmetry operation
+        isym = symlink_q(iq,1)
+        tr = symlink_q(iq,2)
+        if (tr==1) stop "ERROR: read_synq: TR sym. not implemented"
+        !
+        ! Rotate dynamical matrix
+        call rotate_dyn(isym, qirr_cryst, dynq_irr(:,:,:,:), dynRq_irr)
+        !
+        do ia = 1,nat
+          do ja = 1,nat
+            !
+            ! Cartesian 3x3 block of this atom pair
+            dynq( (ia-1)*3+1:ia*3, (ja-1)*3+1:ja*3, iq ) = dynRq_irr(:,:,ia,ja)
+            !
+          enddo ! ja
+        enddo ! ia
+        !
+        iq_done(iq) = .true.
+        !
+      end do !iq
+      !
+      close(dynq_unit)
+      !
+    end do ! iqirr
+    !
+    !
+    ! Check that all the qpoints in the full mesh have been read
+    do iq=1,nqmesh
+      if ( .not. iq_done(iq) ) then
+        write(*,*) "ERROR: read_dynq_sym: Failed to read dynq for iq=", iq
+        stop
+      end if
+    end do
+    !
+    !
+    ! Apply ASR to q=0 matrix:
+    ! \sum_{ja} dynq( ia, i, ja, j, q=0) = 0
+    if (apply_asr) then
+      write(*,*) ' Applying ASR to all q vector indices'
+      iq = 1 !q=0 index in mesh
+      call set_asr_dynq(nqmesh, iq, nat, dynq)
+    end if
+
+  end subroutine read_dynq_sym
+
+
+  subroutine rotate_dyn(isym, q_cryst, dynq, dynRq)
+    ! Rotate dynamical matrix to the symmetry equivalent q point
+
+    use intw_reading, only: ntyp, nat, at, amass, ityp, bg
+    use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
+    use intw_utility, only: cryst_to_cart, find_free_unit, &
+                            triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
+                                      apply_asr
+    use intw_reading, only: s, ftau, can_use_TR, tau_cryst
+    use intw_symmetries, only: rtau_index, inverse_indices, rtau_cryst, rtau
+    use intw_utility, only: ainv, det
+
+    implicit none
+
+    ! I/O
+    integer, intent(in) :: isym ! Index of the symmetry operation used
+    real(kind=dp), intent(in) :: q_cryst(3) ! q point of the input dynamical matrix
+    complex(kind=dp), intent(in) :: dynq(3,3,nat,nat) ! input dynamical matrix
+    complex(kind=dp), intent(out) :: dynRq(3,3,nat,nat) ! dynamical matrix of the symmetry equivalent q point
+
+    ! Local
+    real(kind=dp) :: q_cart(3), Rq_cart(3), s_cryst(3,3), s_cart(3,3)
+    integer :: ia, ja, Sia, Sja
+    logical :: TR
+    complex(kind=dp) :: phase
+
+
+    ! Get the rotation matrix of the symmetry operation
+    s_cryst = dble(s(:,:,isym))
+    TR = can_use_TR(isym)
+    s_cart = transpose(matmul(at, matmul(transpose(s_cryst), ainv(at))))
+
+    ! Rotate the Q point
+    q_cart = matmul(bg, q_cryst)
+    Rq_cart = matmul(s_cart, q_cart)
+
+    ! Rotate the dynamical matrix
+    dynRq = cmplx_0
+    do ia = 1, nat
+      do ja = 1, nat
+        !
+        Sia = rtau_index(ia,isym)
+        Sja = rtau_index(ja,isym)
+        !
+        phase = exp(-tpi*cmplx_i*dot_product(Rq_cart, rtau(:, isym, ia) - rtau(:, isym, ja)))
+        !
+        dynRq(:, :, Sia, Sja) = phase * matmul(s_cart, matmul(dynq(:, :, ia, ja), ainv(s_cart)))
+        !
+      enddo
+    enddo
+
+  end subroutine rotate_dyn
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)

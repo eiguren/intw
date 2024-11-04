@@ -431,6 +431,7 @@ contains
       !
       call write_tag("qq", iq, q_dir)
       !
+      !!!!!!!!!!!!!!! JUST COPY DYN FILES !!!!!!!!!!!!!!!
       datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
       inquire(file=datafile, exist=existitu)
       if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
@@ -439,6 +440,80 @@ contains
       call system("cp " // &
                   trim(datafile)//" " // &
                   trim(intwdir)//trim(dyn_file) )
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !
+      !!!! READ AND WRITE ONLY IRREDUCIBLE Q DYN MAT !!!!
+      !
+      ! Open file for reading
+      io_unit_read = find_free_unit()
+      datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
+      open( unit=io_unit_read, file=trim(datafile), iostat=ios, status="old", action="read" )
+      if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to read", ios )
+      !
+      ! Open file for writing
+      io_unit_write = find_free_unit()
+      call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
+      datafile = trim(intwdir)//trim(dyn_file)//"_sym"
+      open( unit=io_unit_write, file=trim(datafile), iostat=ios, status="replace", action="write" )
+      if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to write", ios )
+      !
+      !
+      ! Read QE dyn file header: Information about lattice and atoms (not used but checked for
+      ! consistency in the parameters)
+      !
+      ! Dummy lines
+      read(io_unit_read,"(a)") comentario
+      read(io_unit_read,"(a)") comentario
+      ! Number of atomic species, number of atoms...
+      read(io_unit_read,*) ntyp_, nat_, ibrav_, celldm_
+      if ( ntyp_ /= nsp .or. nat_ /= nat ) call errore( "pw2intw", "write_dyn: Error reading parameters in dyn file", ios )
+      !
+      ! Cell parameters
+      if ( ibrav_ == 0 ) then
+        read(io_unit_read,"(a)") comentario ! symm_type not used
+        read(io_unit_read,*) ((at_(i,j),i=1,3),j=1,3)
+        if ( any( abs(at_-at)>1.d-8 ) ) call errore( "pw2intw", "write_dyn: Error reading parameters in dyn file", ios )
+      end if
+      !
+      ! Atomic species
+      do it=1,nsp
+        read(io_unit_read,"(a)") comentario !i, atom, amass, not used
+      end do
+      !
+      ! Atomic positions
+      do ia = 1,nat
+        read(io_unit_read,*) i,j, fracpos(:)
+        if ( any( abs(fracpos-tau(:,ia))>1.d-8 ) ) call errore( "pw2intw", "write_dyn: Error reading parameters in dyn file", ios )
+      end do
+      !
+      ! Dummy line
+      read(io_unit_read,"(/,a,/)") comentario
+      !
+      !
+      ! Read irreducible q point
+      read(io_unit_read,"(11x, 3(f14.9), / )") qpoint_cart
+      !
+      ! Transform from cartesian to crystalline
+      qpoint_cryst = qpoint_cart
+      call cryst_to_cart (1, qpoint_cryst, at, -1)
+      !
+      ! Write irreducible q point
+      write(io_unit_write,"(a11,3f14.9,a2)") "q_cryst = ( ",  qpoint_cryst, ")"
+      !
+      !
+      ! Read dynamical matrix of the irreducible q point ONLY and write it
+      do ia = 1,nat
+        do ja = 1,nat
+          !
+          read(io_unit_read,*) i, j ! not used
+          !
+          ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
+          read(io_unit_read,*) ((dynq_re(i,j), dynq_im(i,j), j=1,3), i=1,3) ! in Ry/Bohr^2
+          write(io_unit_write, "(3(a,f16.10,a,f16.10,a))") (("(", dynq_re(i,j)*Ry2Hartree, ",", dynq_im(i,j)*Ry2Hartree, ") ", j=1,3), i=1,3) ! in a.u.
+          !
+        end do ! ja
+      end do ! ia
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
     enddo ! iq
 
