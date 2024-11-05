@@ -1,8 +1,9 @@
 
+set(QE2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw src directory." FORCE)
+
 
 if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
 
-  set(QE2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw src directory." FORCE)
   set(QE2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw build directory." FORCE)
 
   # Add some debugging flags
@@ -12,15 +13,15 @@ if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
       set(QE2INTW_DFLAGS -DDEBUG)
   endif()
 
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/Makefile.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION}/Makefile" @ONLY)
+  configure_file("${QE2INTW_SRC_DIR}/Makefile.in"
+                "${QE2INTW_BUILD_DIR}/Makefile" @ONLY)
 
 
   add_custom_command(OUTPUT ${QE2INTW_BUILD_DIR}/pw2intw.x
     COMMAND make -C ${QE2INTW_BUILD_DIR} pw2intw.x
     COMMENT "Building pw2intw"
-    DEPENDS ${QE2INTW_SRC_FILES}
-    BYPRODUCTS ${QE2INTW_OBJ_FILES} ${QE2INTW_MOD_FILES}
+    DEPENDS ${QE2INTW_SRC_DIR}/pw2intw.f90
+    BYPRODUCTS ${QE2INTW_BUILD_DIR}/pw2intw.o
     )
 
   add_custom_target(pw2intw.x ALL
@@ -33,10 +34,10 @@ else()
 
   # If QE is built with CMake
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90" "${QE_HOME}/PP/src/pw2intw.f90"
+    COMMAND cp "${QE2INTW_SRC_DIR}/pw2intw.f90" "${QE_HOME}/PP/src/pw2intw.f90"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp"
     COMMENT "Copying pw2intw.f90 to QE/PP"
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/pw2intw.f90
+    DEPENDS ${QE2INTW_SRC_DIR}/pw2intw.f90
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp
@@ -46,7 +47,7 @@ else()
     VERBATIM
     )
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp
-    COMMAND cp "${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION}/CMakeLists.txt_intw" "${QE_HOME}/PP/CMakeLists.txt"
+    COMMAND cp "${QE2INTW_SRC_DIR}/CMakeLists.txt_intw" "${QE_HOME}/PP/CMakeLists.txt"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp
     COMMENT "Copying CMakeLists.txt to QE/PP"
