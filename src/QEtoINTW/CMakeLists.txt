@@ -24,8 +24,19 @@ if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
     BYPRODUCTS ${QE2INTW_BUILD_DIR}/pw2intw.o
     )
 
+    add_custom_command(OUTPUT ${QE2INTW_BUILD_DIR}/create_intw_q_dirs.x
+    COMMAND make -C ${QE2INTW_BUILD_DIR} create_intw_q_dirs.x
+    COMMENT "Building create_intw_q_dirs"
+    DEPENDS ${QE2INTW_SRC_DIR}/create_intw_q_dirs.f90
+    BYPRODUCTS ${QE2INTW_BUILD_DIR}/create_intw_q_dirs.o
+    )
+
   add_custom_target(pw2intw.x ALL
     DEPENDS ${QE2INTW_BUILD_DIR}/pw2intw.x
+    )
+
+  add_custom_target(create_intw_q_dirs.x ALL
+    DEPENDS ${QE2INTW_BUILD_DIR}/create_intw_q_dirs.x
     )
 
 else()
@@ -38,6 +49,13 @@ else()
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp"
     COMMENT "Copying pw2intw.f90 to QE/PP"
     DEPENDS ${QE2INTW_SRC_DIR}/pw2intw.f90
+    )
+
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/create_intw_q_dirs.f90.stamp
+    COMMAND cp "${QE2INTW_SRC_DIR}/create_intw_q_dirs.f90" "${QE_HOME}/PP/src/create_intw_q_dirs.f90"
+    COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/create_intw_q_dirs.f90.stamp"
+    COMMENT "Copying create_intw_q_dirs.f90 to QE/PP"
+    DEPENDS ${QE2INTW_SRC_DIR}/create_intw_q_dirs.f90
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp
@@ -56,7 +74,7 @@ else()
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_configure.stamp
     COMMAND cmake -S "${QE_HOME}" -B "${QE_BUILD_DIR}"
     COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_configure.stamp
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/create_intw_q_dirs.f90.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp
     COMMENT "Configuring QE"
     )
 
@@ -65,13 +83,21 @@ else()
     BYPRODUCTS ${QE_BUILD_DIR}/PP/mod/qe_pp_pw2intw_exe ${QE_BUILD_DIR}/PP/CMakeFiles/qe_pp_pw2intw_exe.dir ${QE_BUILD_DIR}/bin/pw2intw.x
     )
 
+  add_custom_target(create_intw_q_dirs.x ALL cmake --build "${QE_BUILD_DIR}" -t qe_pp_create_intw_q_dirs_exe
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_configure.stamp
+    BYPRODUCTS ${QE_BUILD_DIR}/PP/mod/qe_pp_create_intw_q_dirs_exe ${QE_BUILD_DIR}/PP/CMakeFiles/qe_pp_create_intw_q_dirs_exe.dir ${QE_BUILD_DIR}/bin/create_intw_q_dirs.x
+    )
+
   add_custom_target(restore-qe
     COMMAND rm -rf "${QE_BUILD_DIR}/bin/pw2intw.x" "${QE_BUILD_DIR}/PP/mod/qe_pp_pw2intw_exe" "${QE_BUILD_DIR}/PP/CMakeFiles/qe_pp_pw2intw_exe.dir"
     COMMAND rm -rf "${QE_HOME}/PP/src/pw2intw.f90"
+    COMMAND rm -rf "${QE_BUILD_DIR}/bin/create_intw_q_dirs.x" "${QE_BUILD_DIR}/PP/mod/qe_pp_create_intw_q_dirs_exe" "${QE_BUILD_DIR}/PP/CMakeFiles/qe_pp_create_intw_q_dirs_exe.dir"
+    COMMAND rm -rf "${QE_HOME}/PP/src/create_intw_q_dirs.f90"
     COMMAND bash -c "if [ -f ${QE_HOME}/PP/CMakeLists.txt_qe ]; then cp ${QE_HOME}/PP/CMakeLists.txt_qe ${QE_HOME}/PP/CMakeLists.txt; fi"
     COMMAND bash -c "if [ -f ${QE_HOME}/PP/CMakeLists.txt_qe ]; then cmake -S ${QE_HOME} -B ${QE_BUILD_DIR}; fi"
     COMMAND rm -rf "${QE_HOME}/PP/CMakeLists.txt_qe"
-    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_configure.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp"
+    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/pw2intw.f90.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/create_intw_q_dirs.f90.stamp"
+    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_configure.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt_backup.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/QE_CMakeLists.txt.stamp"
     COMMENT "QE restored"
     VERBATIM
     )
