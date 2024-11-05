@@ -5,7 +5,6 @@
 # List of supported QE versions
 set(SUPPORTED_QE
   "6.6"
-  "6.7+"
   "6.7MaX"
   "6.8"
   )
