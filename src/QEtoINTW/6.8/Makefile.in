@@ -23,11 +23,15 @@ QEMODS = $(QE_BUILD_DIR)/Modules/libqemod.a $(QE_BUILD_DIR)/upflib/libupf.a $(QE
 
 MODULES = $(PWOBJS) $(QEMODS)
 
-all : pw2intw.x
+all : pw2intw.x create_intw_q_dirs.x
 
 pw2intw.x : pw2intw.o $(MODULES) $(LIBOBJS)
 	$(LD) $(LDFLAGS) -o $@ \
 		pw2intw.o $(MODULES) $(LIBOBJS) $(QELIBS)
+
+create_intw_q_dirs.x : create_intw_q_dirs.o $(MODULES) $(LIBOBJS)
+	$(LD) $(LDFLAGS) -o $@ \
+		create_intw_q_dirs.o $(MODULES) $(LIBOBJS) $(QELIBS)
 
 
 clean :
