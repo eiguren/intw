@@ -509,7 +509,8 @@ contains
           !
           ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
           read(io_unit_read,*) ((dynq_re(i,j), dynq_im(i,j), j=1,3), i=1,3) ! in Ry/Bohr^2
-          write(io_unit_write, "(3(a,f16.10,a,f16.10,a))") (("(", dynq_re(i,j)*Ry2Hartree, ",", dynq_im(i,j)*Ry2Hartree, ") ", j=1,3), i=1,3) ! in a.u.
+          write(io_unit_write, "(3(a,f16.10,a,f16.10,a))") (("(", dynq_re(i,j)*Ry2Hartree, &
+                                                             ",", dynq_im(i,j)*Ry2Hartree, ") ", j=1,3), i=1,3) ! in a.u.
           !
         end do ! ja
       end do ! ia
