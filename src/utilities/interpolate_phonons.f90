@@ -33,10 +33,11 @@ program interpolatephonons
 
   character(256) :: phband_file_name
   logical :: read_status
+  logical :: q_points_consistent, full_mesh_q, IBZ_q
   integer :: iq, iq1, iq2, iq3, iomega, imode
   integer :: qmesh_nqirr
-  logical :: q_points_consistent, full_mesh_q, IBZ_q
   integer :: ph_unit
+  integer , allocatable :: qspecial_indices(:)
   real(dp) :: omega_step, omega, rfacq
   real(dp) :: qpoint(3)
   real(dp), allocatable :: qpath(:,:), dqpath(:), dosph(:,:)
@@ -174,11 +175,14 @@ program interpolatephonons
   !================================================================================
   !   Build qpoint path to plot bands.
   !   The nqpath number of points from the input might fluctuate.
+  !   Use qspecial_indices option to print out the special q-points 
+  !   along the path (useful for plotting).
   !================================================================================
   !
   write(*,20) '|       - Building q-path...                        |'
   !
-  call generate_and_allocate_kpath(at, bg, tpiba, nqpath, nqspecial, qspecial, qpath, dqpath)
+  call generate_and_allocate_kpath(at, bg, tpiba, nqpath, nqspecial, qspecial, qpath, dqpath, &
+          qspecial_indices)
   !
   !
   !================================================================================
@@ -249,6 +253,15 @@ program interpolatephonons
     write(ph_unit,'(20e14.6)') dqpath(iq), w_qint ! meV
     ! write(ph_unit,'(20e14.6)') dqpath(iq)/tpiba, w_qint*8.065610_dp ! Matdyn (cm^-1)
   end do
+  !
+  ! Print special q-points information in the phonon bands file
+  write(ph_unit,*) '#'
+  write(ph_unit,*) '#Special q-points in the .qbnd_int file are:'
+  do iq=1,nqspecial
+         write(ph_unit,'(a,3f10.4,a,i4,e14.6)') '#', qspecial(:,iq), ' --> ', qspecial_indices(iq), dqpath(qspecial_indices(iq))
+  end do
+  write(ph_unit,*) '#'
+  !
   close(ph_unit)
   write(*,*)' Phonon bands interpolation finished and written to file', phband_file_name
   !
@@ -300,11 +313,11 @@ program interpolatephonons
   ph_unit = find_free_unit()
   open(ph_unit,file=phband_file_name,status='unknown')
   !
-  write(ph_unit,'(A)') '# omega[Ry]   PDOS(imode=1)  PDOS(imode=2)  PDOS(imode=3) ...'
+  write(ph_unit,'(A)') '# omega[Ry]  phonon-DOS(total)  PDOS(imode=1)  PDOS(imode=2)  PDOS(imode=3) ...'
   !
   do iomega=1,nomega
     omega = omega_ini + omega_step*real(iomega-1,dp)
-    write(ph_unit,'(20e14.6)') omega, dosph(:,iomega)
+    write(ph_unit,'(40e14.6)') omega, sum(dosph(:,iomega)), dosph(:,iomega)
   end do
   !
   close(ph_unit)

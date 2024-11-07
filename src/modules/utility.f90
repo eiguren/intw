@@ -525,7 +525,8 @@ end function intgr_spline_gaussq
   end subroutine generate_kmesh
 
 
-  subroutine generate_and_allocate_kpath(at, bg, tpiba, nkpath, nkspecial, kspecial, kpath, dkpath)
+  subroutine generate_and_allocate_kpath(at, bg, tpiba, nkpath, nkspecial, kspecial, kpath, &
+                                         dkpath, kspecial_indices)
     ! --------------------------------------------------
     ! MBR 03/05/2024
     ! This generates the path of nearly equispaced k-points in cartesians
@@ -544,6 +545,7 @@ end function intgr_spline_gaussq
 
     integer, intent(in) :: nkspecial
     integer, intent(inout) :: nkpath
+    integer, allocatable, intent(out), optional :: kspecial_indices(:)
     real(dp), intent(in) :: at(3,3), bg(3,3), tpiba
     real(dp), intent(in) :: kspecial(3,nkspecial)
     real(dp), allocatable , intent(out) :: kpath(:,:)
@@ -567,7 +569,7 @@ end function intgr_spline_gaussq
 
     ! number of points in the path per stage
     do i=2,nkspecial
-        nkstage(i-1) = nint( real(nkpath-1,dp) * lstage(i-1) / lpath)
+        nkstage(i-1) = nint( real(nkpath-1,dp) * lstage(i-1) / lpath) + 1
     end do
 
     ! check how many point will we actually generate
@@ -576,6 +578,11 @@ end function intgr_spline_gaussq
 
     nkpath = sum(nkstage)+1
     allocate(kpath(3,nkpath))
+
+    if (present(kspecial_indices)) then
+            allocate(kspecial_indices(nkspecial))
+            kspecial_indices(1) = 1
+    end if
 
     ! Build path points in cartesians
     kpath = 0.0_dp
@@ -589,9 +596,17 @@ end function intgr_spline_gaussq
           kpath(:,ik) = kspecial_cart(:,i-1) + &
                       (kspecial_cart(:,i) - kspecial_cart(:,i-1) ) * real(j-1,dp) / real(nkstage(i-1),dp)
        end do
+       !  index in k-path corresponding to this special k-point(end of stage)
+       if (present(kspecial_indices))  kspecial_indices(i)=ik+1  
     end do
     ! last point is the last special point
     kpath(:,nkpath) = kspecial_cart(:,nkspecial)
+
+    ! check we made all the points
+    if ( ik+1 .ne. nkpath ) then
+            write(*,*)' ERROR nkpath not fulfilled. Stopping.'
+            stop
+    end if
 
     !compute accumulated distance (cartesians, atomic units, incl. 2pi/alat factor) along path if requested
     if (present(dkpath)) then
