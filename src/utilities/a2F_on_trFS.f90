@@ -13,8 +13,11 @@
 program a2F_on_trFS
 
         use kinds, only: dp
+
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
-        use intw_utility, only: find_free_unit, cryst_to_cart, area_vec, smeared_delta, smeared_lorentz, &
+
+        use intw_utility, only: ainv, find_free_unit, cryst_to_cart, area_vec, &
+                smeared_delta, smeared_lorentz, &
                 generate_kmesh
 
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
@@ -22,27 +25,35 @@ program a2F_on_trFS
                 nomega, omega_ini, omega_fin, osmear_q, &
                 read_for_dynmat, &
                 ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
+
         use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                 nspin, at, bg, volume0, alat, nat, ntyp, ityp, amass, &
-                num_bands_intw
-        use intw_ph, only: nqmesh, qmesh, read_ph_information_xml, &
-                q_irr, q_irr_cryst
+                num_bands_intw, nsym, tau
 
-        use intw_ph_interpolate, only: allocate_and_build_dyn_qmesh, &
-                allocate_and_build_dyn_qmesh_from_fc, dyn_diagonalize_1q, &
-                allocate_and_build_ws_irvec_qtau, dyn_interp_1q, dyn_q_to_dyn_r, &
-                w2_q, u_q
+        use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
+                     nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
+                     read_ph_information_xml
+
+        use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
+                                 dyn_q_to_dyn_r, dyn_interp_1q, &
+                                 allocate_and_build_ws_irvec_qtau, &
+                                 allocate_and_build_dyn_qmesh, &
+                                 allocate_and_build_dyn_qmesh_from_fc
+        use intw_symmetries, only: rtau, rtau_cryst, rtau_index, rot_atoms, find_size_of_irreducible_k_set, &
+                             set_symmetry_relations, find_inverse_symmetry_matrices_indices
 
     implicit none
 
         logical :: read_status
-        character(5) :: is_loc, ik_loc, comenta
+        logical :: q_points_consistent, full_mesh_q, IBZ_q
+        character(5) :: is_loc, js_loc, ik_loc, comenta
         character(70) :: linea, lleft
         character(100) :: file_off, dir_scf, dir_nscf, file_a2f
         character(200) :: comando
         integer :: unit_off, unit_a2f
         integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-        integer :: is, js, ikpt, ik, ik1, i,j,k, iface, ir, ir1, ir2, ir3
+        integer :: qmesh_nqirr
+        integer :: is, js, ikpt, ik, ik1, iq, i,j,k, iface, ir, ir1, ir2, ir3
         integer  :: nfs_sheets_tot ! number of sheets considered
         integer , allocatable :: nfs_sheet(:), &    ! band indices of the sheets (num_bands_intw set)
                                  nkpt_tr(:), &      ! number of kpoints in each FS sheet
@@ -310,7 +321,7 @@ do is=1,nfs_sheets_tot
    end if
 
    do ik=1,nkpt_tr_ibz(is)
-      read(unit_off,*) i, vk_tr_ibz(:,ik1+ik), vabsk_tr_ibz(ik1+ik)  !velocity xyz and its modulus. DUDA 2pi/alat???
+      read(unit_off,*) i, vk_tr_ibz(:,ik1+ik), vabsk_tr_ibz(ik1+ik)  !velocity xyz and its modulus (in units 2pi/alat, Hartree a.u.)
    end do
 
    close(unit_off)
@@ -326,12 +337,12 @@ end do
   write(*,'(A)') '|   DOS at Fermi:                                   |'
   dosef = 0.0_dp
   do ik = 1,nkpt_tr_tot
-     dosef = dosef + kpts_tr_area(ik) * (tpi/alat)**2 / vabsk_tr(ik)
+     dosef = dosef + kpts_tr_area(ik) * (tpi/alat)**2 / (vabsk_tr(ik) * Ha_to_Ry) ! velocities in Hartree a.u., pass to Ry a.u.
   end do
   vol1bz = tpi**3 / volume0
-  dosef = 2.0_dp * dosef / vol1bz
-  write(*,*) 'Volume of BZ (bohr**-3) =', vol1bz
-  write(*,*) 'DOS at FS = ', dosef, 'a.u.'
+  dosef = dosef / vol1bz
+  write(*,*) 'Volume of BZ (bohr^-3) =', vol1bz
+  write(*,*) 'DOS at FS (Ry^-1) = ', dosef
 
    !Ratio of areas of the FS in the full and irreducible BZ
   allocate(area_fbz(nfs_sheets_tot), area_ibz(nfs_sheets_tot), factor_area_ibz(nfs_sheets_tot))
@@ -383,8 +394,8 @@ end do
     open(unit_ep, file=file_ep, status='old')
     read(unit_ep,*) comenta
 
-    do i = 1,nkpt_tr_tot*nspin
-    do j = 1,nkpt_tr_ibz_tot*nspin
+    do i = 1,nkpt_tr_tot
+    do j = 1,nkpt_tr_ibz_tot
         do js=1,nspin
         do is=1,nspin
 !           read(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpoint, &
@@ -407,27 +418,89 @@ end do
 ! Calculate dynamical matrices in qmesh and transform to real space
 !================================================================================
 
+  ! Read q-points and irreducible patterns
+  call read_ph_information_xml()
+
+  allocate(q_irr_cryst(3,nqirr))
+  do iq=1,nqirr
+    q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
+  enddo
+
   ! Generate full zone coarse qmesh
   nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
   call generate_kmesh(qmesh,nq1,nq2,nq3)
+
+
+  ! Set symmetry arrays
+  !
+  ! Set the rotation table for each atom and symmetry
+  allocate(rtau_index(nat,nsym))
+  allocate(rtau(3,nsym,nat))
+  allocate(rtau_cryst(3,nsym,nat))
+  !
+  call rot_atoms(nat,nsym,tau)
+  !
+  ! Compute the indices of the inverse rotation matrices
+  call find_inverse_symmetry_matrices_indices()
+
+
+  ! Symmetry relations between irreducible q-points and full q-mesh
+  allocate(QE_folder_nosym_q(nqmesh))
+  allocate(QE_folder_sym_q(nqmesh))
+  allocate(nosym_G_q(3,nqmesh))
+  allocate(sym_G_q(3,nqmesh))
+  allocate(symlink_q(nqmesh,2))
+  !
+  ! Find the size of the irreducible set of q-points (IBZ)
+  call find_size_of_irreducible_k_set(nq1,nq2,nq3,qmesh,qmesh_nqirr)
+  !
+  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
+                              QE_folder_nosym_q, QE_folder_sym_q, &
+                              nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
+  !
+  ! Check that the number of kpoints corresponds to either a full mesh or the IBZ
+  !
+  if (full_mesh_q .and. IBZ_q) then
+    write(*,*) '|       - the qpoints present in the QE folders     |'
+    write(*,*) '|         are consistent with a full 1BZ and a      |'
+    write(*,*) '|         IBZ has also been found.                  |'
+    write(*,*) '|           ---------------------------------       |'
+  else if(IBZ_q) then
+    write(*,*) '|       - the qpoints present in the QE folders     |'
+    write(*,*) '|         are consistent with an IBZ.               |'
+    write(*,*) '|           ---------------------------------       |'
+  else
+    write(*,*) '**********************************************************'
+    write(*,*) '* The qpoints present in the QE folders are not consistent'
+    write(*,*) '* with the parameters of the input file!                 '
+    write(*,*) '**********************************************************'
+    write(*,*) '* debug information:                                *'
+    write(*,*) '*        nqpoints_QE = ', nqirr
+    write(*,*) '*        nqmesh      = ', nqmesh
+    write(*,*) '*        qmesh_nqirr = ', qmesh_nqirr
+    stop
+  end if  
+
+
   ! This Wigner-Seitz mesh will be needed to interpolate w_q below
   ! (q->R space will be done on that grid of nrpts_q lattice points).
   call allocate_and_build_ws_irvec_qtau()
 
-  ! q_irr vectors info is obtained through this (it is contained in qlist.txt file)
-  call read_ph_information_xml()
-
-
   print *,' get dyn_q matrices'
-  ! Two options to get dyn_q:
   if (read_for_dynmat == 'fc' ) then ! read force constants
-          call allocate_and_build_dyn_qmesh_from_fc(fc_mat)
+    call allocate_and_build_dyn_qmesh_from_fc(fc_mat)
   else if (read_for_dynmat == 'dynq' ) then ! read dyn files
-          call allocate_and_build_dyn_qmesh()
+    call allocate_and_build_dyn_qmesh()
   end if
 
-  ! transform to R space
+   print *,' diagonalize'
+  do iq=1,nqmesh
+    qpoint = qmesh(:,iq)
+    call dyn_diagonalize_1q(3*nat, dyn_q(:,:,iq), u_q(:,:,iq), w2_q(:,iq))
+  end do
+
+  print *,' transform dyn_q to R space'
   call dyn_q_to_dyn_r()
 
   ! Now w2_q contains phonon frequencies and u_q contains the polarization vectors.
@@ -447,7 +520,6 @@ end do
 
 !================================================================================
 ! Calculate a2F integral
-! TODO duda spin index in a2F??
 !================================================================================
 
 
@@ -519,11 +591,15 @@ do iks = 1, nkpt_tr_ibz(ish)
             if (w_qint(imode)>eps_8) then !stable mode frequency
                do iat=1,3*nat
                   k=((iat-1)/3)+1  !atom index
-                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * pmass
+                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * (pmass / Ha_to_Ry)   ! pmass is in Ha a.u., so pass to Ry 
                   gep_int(imode) = gep_int(imode)  +  &
                       aep_mat_el(ikp,ik,is,js,iat) * u_qint(iat,imode) / sqrt(rfacq)
                end do
             end if
+            !
+            ! for testing:
+            !write(999,fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
+            !
          end do
 
         ! Sum over modes and weight with areas and velocities v_k * v_k' for contribution of k',k pair to a2F.
@@ -531,12 +607,19 @@ do iks = 1, nkpt_tr_ibz(ish)
         ! Add weight of this irreducible wedge (IBZ) to the integral using factor_area_ibz.
 
         dsk_vk_2 = kpts_tr_ibz_area(ik) * factor_area_ibz(ish) * kpts_tr_area(ikp) * &
-                   (tpi/alat)**4 / (vabsk_tr_ibz(ik) * vabsk_tr(ikp) )
+                   (tpi/alat)**4 / (vabsk_tr_ibz(ik) * vabsk_tr(ikp) * Ha_to_Ry * Ha_to_Ry )  ! velocities in Hartree a.u., pass to Ry
         do iomega = 1, nomega  !frequencies
            omega = omega_ini + omega_step*real(iomega-1,dp)
            do imode = 1,3*nat
-              !rfacq = smeared_delta(omega-w_qint(imode), osmear_q)  !smear omega(q)
-              rfacq = smeared_lorentz(omega-w_qint(imode), osmear_q)  !smear omega(q)
+              !
+              ! smear with a gaussian
+              rfacq = smeared_delta(omega-w_qint(imode), osmear_q)  !smear omega(q)
+              rfacq = rfacq - smeared_delta(omega+w_qint(imode), osmear_q) ! add antisymmetric term at -wq to remove divergence at w=0
+              !
+              ! or with a lorentzian
+              !rfacq = smeared_lorentz(omega-w_qint(imode), osmear_q)  !smear omega(q)
+              !rfacq =  rfacq - smeared_lorentz(omega+w_qint(imode), osmear_q)  ! add antisymmetric term at -wq to remove divergence at w=0
+              !
               alpha2F(is,js,imode,iomega) = alpha2F(is,js,imode,iomega) + &
                       (abs(gep_int(imode)))**2 * rfacq * dsk_vk_2
            end do !imode
@@ -551,17 +634,29 @@ do iks = 1, nkpt_tr_ibz(ish)
 end do !k  (kpoint)
 end do !k  (sheet)
 
-  ! divide by N(E_F) and 1BZ volume
-  ! TODO:
-  ! DUDA con la normalizacion... para variar...
-  ! DUDA con el spin...
-  alpha2F=alpha2F/dosef/vol1bz
+  ! divide by the N(E_F) factor and by 1BZ-volume^2 (because of k and k' integrals)
+  alpha2F=alpha2F/dosef/vol1bz**2
+
+  ! print out by spin blocks (one file per block if nspin=2).
+  ! output unit for a2F:
+  unit_a2f=find_free_unit()
 
   !  print out by spin blocks
   do is=1,nspin
   do js=1,nspin
 
-     write(unit_a2f,*) '#spins = ', is,js
+     if ( nspin .eq. 1) then
+       file_a2f=trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+       open(unit_a2f, file=file_a2f, status='unknown')
+       write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
+     else
+       write(is_loc,"(i1)") is
+       write(js_loc,"(i1)") js
+       file_a2f=trim(mesh_dir)//trim(prefix)//trim('_s')//trim(adjustl(is_loc))//trim(adjustl(js_loc))//trim('_a2F_interp.dat')
+       open(unit_a2f, file=file_a2f, status='unknown')
+       write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
+       write(unit_a2f,*) '#spins = ', is,js
+     end if
 
      ! print a2F(omega)
      omega = omega_ini
@@ -571,27 +666,28 @@ end do !k  (sheet)
         omega = omega + omega_step
      end do
 
-     ! calculate lambda
-     write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
-     do imode = 1,3*nat
-        lambda(imode) = 0.0_dp
-        omega = omega_ini + omega_step
-        do iomega=2,nomega !skip omega=0 value
-           lambda(imode) = lambda(imode) + alpha2F(is,js,imode,iomega) / omega
-           omega = omega + omega_step
-        end do
-        lambda(imode) = lambda(imode) * 2.0_dp * omega_step
-        write(unit_a2f,*) '#imode = ', imode, ', lambda = ', lambda(imode)
-     end do
-     write(unit_a2f,*) '#total lambda = ', sum(lambda)
+     ! calculate lambda for spin diagonal 
 
-     write(unit_a2f,*) ' '
-     write(unit_a2f,*) ' '
+     if (is .eq. js) then
+       lambda = 0.0_dp
+       do imode = 1,3*nat
+          omega = omega_ini + omega_step
+          do iomega=2,nomega !skip omega=0 value
+             lambda(imode) = lambda(imode) + alpha2F(is,js,imode,iomega) / omega
+             omega = omega + omega_step
+          end do
+          lambda(imode) = lambda(imode) * 2.0_dp * omega_step
+       end do
+       write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
+       write(unit_a2f,'(a,i3,a,20e14.4)') '#imode = ', imode, ', lambda = ', lambda(:)
+       write(unit_a2f,*) '#total lambda = ', sum(lambda)
+     end if        
+
+     close(unit_a2f)
 
    end do    !js
    end do    !is
 
-  close(unit_a2f)
 
 !================================================================================
 !   Finish
