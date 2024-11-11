@@ -183,6 +183,9 @@ allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
 allocate(vk_tr_ibz(3,nkpt_tr_ibz_tot), vabsk_tr_ibz(nkpt_tr_ibz_tot) )
 allocate(vk_tr(3,nkpt_tr_tot), vabsk_tr(nkpt_tr_tot) )
 
+kpts_tr_ibz_area=0.0_dp
+kpts_tr_area=0.0_dp 
+
 !open .off's again, read k-points and read velocity files
 ik1 = 0
 do is=1,nfs_sheets_tot
@@ -231,6 +234,7 @@ do is=1,nfs_sheets_tot
       kpts_tr_area(ik1+ir2) = kpts_tr_area(ik1+ir2) + kwei
       kpts_tr_area(ik1+ir3) = kpts_tr_area(ik1+ir3) + kwei
    end do
+
 
    close(unit_off)
 
@@ -598,7 +602,7 @@ do iks = 1, nkpt_tr_ibz(ish)
             end if
             !
             ! for testing:
-            !write(999,fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
+            write(999,fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
             !
          end do
 
