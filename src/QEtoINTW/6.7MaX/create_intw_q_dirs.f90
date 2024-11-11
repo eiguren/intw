@@ -4,17 +4,14 @@ PROGRAM create_intw_q_dirs
   !
   USE Kinds
   USE mp_global, ONLY: mp_startup
-  USE mp_pools, ONLY: npool
-  USE mp, ONLY: mp_bcast
-  USE mp_world, ONLY: world_comm
-  USE mp_images, ONLY: intra_image_comm
 
   USE io_files, ONLY: prefix_QE => prefix
   USE environment, ONLY: environment_start, environment_end
-  USE basis, ONLY: starting_wfc
   USE cell_base, ONLY: bg
 
   IMPLICIT NONE
+
+  EXTERNAL :: errore, read_file, system
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
@@ -27,7 +24,7 @@ PROGRAM create_intw_q_dirs
   real(kind=dp), allocatable, dimension(:,:) :: qirr_cryst
   real(kind=dp), dimension(3) :: qirr_cart
   integer :: nq_irr
-  character(len=256) :: datafile, q_dir
+  character(len=256) :: q_dir
   integer :: iq
   integer :: iounit, iostat, strlen
   integer, external :: find_free_unit
@@ -265,7 +262,6 @@ contains
     character(len=256) :: line
     integer :: iounit_reference, iounit
     logical :: fildvscf_found = .false.
-    integer :: ia, id
     integer :: ios
     integer, external :: find_free_unit
 

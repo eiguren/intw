@@ -4,16 +4,14 @@ PROGRAM pw2intw
   !
   USE Kinds
   USE mp_global, ONLY: mp_startup
-  USE mp_pools, ONLY: npool
-  USE mp, ONLY: mp_bcast
-  USE mp_world, ONLY: world_comm
-  USE mp_images, ONLY: intra_image_comm
 
   USE io_files, ONLY: prefix_QE => prefix
   USE environment, ONLY: environment_start, environment_end
   USE basis, ONLY: starting_wfc
 
   IMPLICIT NONE
+
+  EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio, system
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
@@ -411,7 +409,7 @@ contains
     implicit none
 
     ! loop variables
-    integer :: imode, jmode, ispin, iq
+    integer :: iq
     ! i/o variables
     character(len=256) :: datafile, q_dir, dyn_file
     integer :: io_unit_write, io_unit_read, ios
@@ -419,7 +417,7 @@ contains
     integer, external :: find_free_unit
     character(len=100) :: comentario
     integer :: ntyp_, nat_, ibrav_
-    integer :: ia, ja, it, i, j, k
+    integer :: ia, ja, it, i, j
     real(dp) :: celldm_(6), at_(3,3), fracpos(3)
     real(dp) :: qpoint_cart(3), qpoint_cryst(3)
     real(dp) ::  dynq_re(3,3), dynq_im(3,3)
@@ -554,7 +552,7 @@ contains
     USE cell_base, ONLY: at
     USE gvect, ONLY: ngm, g
     USE wvfct, ONLY: npwx
-    USE klist, ONLY: nks, xk, igk_k, ngk
+    USE klist, ONLY: nks, igk_k, ngk
 
     IMPLICIT NONE
 
@@ -599,7 +597,7 @@ contains
     USE wavefunctions, ONLY: evc
     USE io_files, ONLY: nwordwfc, iunwfc
     USE klist, ONLY: nks
-    USE klist, ONLY: nkstot, xk, igk_k, ngk
+    USE klist, ONLY: igk_k, ngk
     USE noncollin_module, ONLY: noncolin
     USE wvfct, ONLY: nbnd, et
     USE constants, ONLY: rytoev
@@ -607,7 +605,7 @@ contains
 
     implicit none
 
-    integer :: ik, ibnd, is, npol, ig
+    integer :: ik, ibnd, is, npol
     character(256) :: wfc_file, datafile
     integer :: io_unit, ios
     integer, external :: find_free_unit
@@ -688,22 +686,19 @@ contains
 
   SUBROUTINE write_crystal_info_and_bands
 
-    USE wvfct, ONLY: nbnd, et
-    USE klist, ONLY: nks
+    USE wvfct, ONLY: nbnd
     USE constants, ONLY: rytoev
-    USE klist, ONLY: xk, ngk, nks, nkstot
-    USE cell_base, ONLY: at, bg, alat, omega, tpiba2
+    USE klist, ONLY: xk, nkstot
+    USE cell_base, ONLY: at, bg, alat
     USE spin_orb, ONLY: lspinorb, domag
-    USE symm_base, ONLY: nrot, nsym, invsym, s, ft, irt, &
-                         t_rev, sname, time_reversal, no_t_rev, ft
+    USE symm_base, ONLY: nsym, s, ft, t_rev, ft
     USE fft_base, ONLY: dfftp
     USE gvecw, ONLY: ecutwfc
     USE gvect, ONLY: ecutrho
     USE spin_orb, ONLY: lspinorb
-    USE ions_base, ONLY: nat, ityp, nsp, tau, atm, amass, tau_format
+    USE ions_base, ONLY: nat, ityp, nsp, tau, atm, amass
     USE io_files, ONLY: psfile
     USE wvfct, ONLY: npwx
-    USE ener, ONLY: ef
     USE noncollin_module, ONLY: noncolin
     USE control_flags, ONLY: gamma_only
     USE lsda_mod, ONLY: lsda
@@ -712,9 +707,8 @@ contains
     !
     INTEGER, EXTERNAL :: find_free_unit
     !
-    INTEGER ik, ibnd, ibnd1, ikevc, i, j
+    INTEGER ik, i, j
 
-    REAL(DP), allocatable, dimension(:,:) :: eigval
     INTEGER :: isym
     CHARACTER(LEN=256) :: datafile
     integer :: io_unit, ios
