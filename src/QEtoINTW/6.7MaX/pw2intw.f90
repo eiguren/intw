@@ -512,6 +512,10 @@ contains
           !
         end do ! ja
       end do ! ia
+      !
+      close(unit=io_unit_read)
+      close(unit=io_unit_write)
+      !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
     enddo ! iq
