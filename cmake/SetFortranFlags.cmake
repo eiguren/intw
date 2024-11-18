@@ -60,20 +60,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-fallow-argument-mismatch" # GNU
                 )
 
-# There is some bug where -march=native doesn't work on Mac
-IF(APPLE)
-    SET(GNUNATIVE "-mtune=native")
-ELSE()
-    SET(GNUNATIVE "-march=native")
-ENDIF()
-# Optimize for the host's architecture
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-xHost"     # Intel
-                         "/QxHost"    # Intel Windows
-                         ${GNUNATIVE} # GNU
-                         "-ta=host"   # Portland Group
-                )
-
 # Allow any line length in free format
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-ffree-line-length-none" # GNU
@@ -160,6 +146,20 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
 #####################
 
 # NOTE: agressive optimizations (-O3) are already turned on by default
+
+# There is some bug where -march=native doesn't work on Mac
+IF(APPLE)
+    SET(GNUNATIVE "-mtune=native")
+ELSE()
+    SET(GNUNATIVE "-march=native")
+ENDIF()
+# Optimize for the host's architecture
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS}"
+                 Fortran "-xHost"     # Intel
+                         "/QxHost"    # Intel Windows
+                         ${GNUNATIVE} # GNU
+                         "-ta=host"   # Portland Group
+                )
 
 # Unroll loops
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
