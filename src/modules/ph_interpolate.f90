@@ -64,7 +64,7 @@ module intw_ph_interpolate
     use intw_useful_constants, only: eps_8
     use intw_utility, only:  cryst_to_cart
     use intw_input_parameters, only: nq1, nq2, nq3
-    use intw_ph, only: nqmesh, qmesh
+    use intw_ph, only: qmesh
     !
     implicit none
     !
@@ -159,7 +159,7 @@ module intw_ph_interpolate
     use intw_useful_constants, only: eps_8
     use intw_utility, only: cryst_to_cart, HPSORT_real
     use intw_input_parameters, only: nq1, nq2, nq3
-    use intw_ph, only: nqmesh, qmesh
+    use intw_ph, only: qmesh
     !
     implicit none
     !
@@ -269,14 +269,13 @@ module intw_ph_interpolate
     ! Read the dynamical matrices and compute eiegnvectors and omega^2 on the full qmesh
     !----------------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-    use intw_input_parameters, only: nq1, nq2, nq3
-    use intw_reading, only:  alat, nat, ntyp, amass
+    use intw_reading, only: nat
     use intw_ph, only: nqmesh, qmesh, read_dynq, read_dynq_sym
     !
     implicit none
     !
-    integer :: ir, iq, i,j,k
-    real(dp) :: at_frc(3,3), qpoint(3)
+    integer :: iq
+    real(dp) :: qpoint(3)
     !
     !
     ! allocate and calculate dynmat at qmesh
@@ -305,8 +304,8 @@ module intw_ph_interpolate
     implicit none
     !
     character(256) , intent(in) :: fcfile
-    integer :: ir, iq, i,j,k
-    real(dp) :: at_frc(3,3), qpoint(3)
+    integer :: iq
+    real(dp) :: qpoint(3)
     complex(dp) :: frc(nq1,nq2,nq3,3,3,nat,nat)
     !
     !
@@ -330,7 +329,7 @@ module intw_ph_interpolate
     ! allocate_and_build_ws_irvec_qtau and allocate_and_build_dyn_qmesh must have been previously run
     !----------------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-    use intw_reading, only:  nat, tau_cryst
+    use intw_reading, only: nat
     use intw_ph, only: nqmesh, qmesh
     !
     implicit none
@@ -365,7 +364,7 @@ module intw_ph_interpolate
     ! as this uses irvec_qtau and dyn_r variables.
     !----------------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-    use intw_reading, only:  nat, tau_cryst
+    use intw_reading, only: nat
     !
     implicit none
     !
@@ -373,7 +372,7 @@ module intw_ph_interpolate
     !
     complex(dp) , intent(out) :: dyn_qint(3*nat,3*nat)
     !
-    integer :: ir, iq, iat1, iat2
+    integer :: ir, iat1, iat2
     complex(kind=dp) :: fac
     !
     !
