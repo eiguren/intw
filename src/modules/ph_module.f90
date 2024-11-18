@@ -417,7 +417,7 @@ contains
 
       subroutine read_dynq (dynq)
 
-      use intw_reading, only: ntyp, nat, at, tau_cryst
+      use intw_reading, only: ntyp, nat, at
       use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi, Ry_to_Ha
       use intw_utility, only: cryst_to_cart, find_free_unit, &
               triple_to_joint_index_g, find_k_1BZ_and_G
@@ -572,14 +572,12 @@ contains
     ! into dynq for all q-points by using symmetries to get
     ! dynamical matrices of the non-irreducible q-points
 
-    use intw_reading, only: nat, at, tau_cryst
+    use intw_reading, only: nat
     use intw_useful_constants, only: cmplx_i, tpi, Ry_to_Ha
     use intw_utility, only: cryst_to_cart, find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
                                      apply_asr
-    use intw_reading, only: s
-    use intw_symmetries, only: rtau_index
     use intw_utility, only: ainv
 
     implicit none
@@ -595,7 +593,7 @@ contains
     character(256) :: dynq_file, intwdir
     integer :: dynq_unit, ierr
     ! q-point variables
-    real(dp) :: qirr_cart(3), qirr_cryst(3), qirr_1BZ(3)
+    real(dp) :: qirr_cryst(3), qirr_1BZ(3)
     integer :: Gq(3), i, j, k, iqirr2iq
     logical :: iq_done(nqmesh)
     ! Symmetry variables
@@ -704,14 +702,12 @@ contains
   subroutine rotate_dyn(isym, q_cryst, dynq, dynRq)
     ! Rotate dynamical matrix to the symmetry equivalent q point
 
-    use intw_reading, only: ntyp, nat, at, amass, ityp, bg
+    use intw_reading, only: nat, at, bg
     use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
     use intw_utility, only: cryst_to_cart, find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
-    use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
-                                      apply_asr
-    use intw_reading, only: s, ftau, can_use_TR, tau_cryst
-    use intw_symmetries, only: rtau_index, inverse_indices, rtau_cryst, rtau
+    use intw_reading, only: s, can_use_TR
+    use intw_symmetries, only: rtau_index, rtau
     use intw_utility, only: ainv, det
 
     implicit none
@@ -724,8 +720,7 @@ contains
 
     ! Local
     real(kind=dp) :: q_cart(3), Rq_cart(3), s_cryst(3,3), s_cart(3,3)
-    integer :: ia, ja, Sia, Sja
-    logical :: TR
+    integer :: ia, ja, Sia, Sja, tr
     complex(kind=dp) :: phase
 
 
