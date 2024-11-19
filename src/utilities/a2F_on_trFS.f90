@@ -16,9 +16,11 @@ program a2F_on_trFS
 
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
 
-        use intw_utility, only: ainv, find_free_unit, cryst_to_cart, area_vec, &
+        use intw_utility, only: find_free_unit, cryst_to_cart, &
                 smeared_delta, smeared_lorentz, &
                 generate_kmesh
+
+        use intw_matrix_vector, only: ainv, area_vec
 
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
                 nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir, fc_mat, &
@@ -184,7 +186,7 @@ allocate(vk_tr_ibz(3,nkpt_tr_ibz_tot), vabsk_tr_ibz(nkpt_tr_ibz_tot) )
 allocate(vk_tr(3,nkpt_tr_tot), vabsk_tr(nkpt_tr_tot) )
 
 kpts_tr_ibz_area=0.0_dp
-kpts_tr_area=0.0_dp 
+kpts_tr_area=0.0_dp
 
 !open .off's again, read k-points and read velocity files
 ik1 = 0
@@ -484,7 +486,7 @@ end do
     write(*,*) '*        nqmesh      = ', nqmesh
     write(*,*) '*        qmesh_nqirr = ', qmesh_nqirr
     stop
-  end if  
+  end if
 
 
   ! This Wigner-Seitz mesh will be needed to interpolate w_q below
@@ -595,7 +597,7 @@ do iks = 1, nkpt_tr_ibz(ish)
             if (w_qint(imode)>eps_8) then !stable mode frequency
                do iat=1,3*nat
                   k=((iat-1)/3)+1  !atom index
-                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * (pmass / Ha_to_Ry)   ! pmass is in Ha a.u., so pass to Ry 
+                  rfacq=2.0_dp * w_qint(imode) * amass(ityp(k)) * (pmass / Ha_to_Ry)   ! pmass is in Ha a.u., so pass to Ry
                   gep_int(imode) = gep_int(imode)  +  &
                       aep_mat_el(ikp,ik,is,js,iat) * u_qint(iat,imode) / sqrt(rfacq)
                end do
@@ -670,7 +672,7 @@ end do !k  (sheet)
         omega = omega + omega_step
      end do
 
-     ! calculate lambda for spin diagonal 
+     ! calculate lambda for spin diagonal
 
      if (is .eq. js) then
        lambda = 0.0_dp
@@ -685,7 +687,7 @@ end do !k  (sheet)
        write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
        write(unit_a2f,'(a,i3,a,20e14.4)') '#imode = ', imode, ', lambda = ', lambda(:)
        write(unit_a2f,*) '#total lambda = ', sum(lambda)
-     end if        
+     end if
 
      close(unit_a2f)
 

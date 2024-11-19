@@ -1,17 +1,18 @@
       ! MBR 24/04/2024
 
-      ! This utility reads the electron-phonon matrix elements calculated by the utility 
+      ! This utility reads the electron-phonon matrix elements calculated by the utility
       ! ep_melements.f90 of INTW and interpolates them on a triangulated Fermi surface,
       ! following the method of:
       ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
       ! Finally, elements are printed to file.
-     
+
 program ep_on_trFS_wannier
 
         use kinds, only: dp
     use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
     use intw_utility, only: find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
-            generate_kmesh, cryst_to_cart, area_vec
+            generate_kmesh, cryst_to_cart
+    use intw_matrix_vector, only: area_vec
     use intw_w90_setup, only: nrpts, irvec, ndegen, &
             allocate_and_read_ham_r, allocate_and_read_u_mesh, &
             allocate_and_build_ws_irvec, &
@@ -110,7 +111,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
     end if
 
     if ( use_exclude_bands .ne. "wannier") then
-       write(*,*) ' use_exclude_bands /= wannier in input. Stopping.'    
+       write(*,*) ' use_exclude_bands /= wannier in input. Stopping.'
        stop
     end if
 
@@ -146,9 +147,9 @@ write(*,'(A)') '|    waiting for input file...                      |'
     end if
 
 
-    ! Control: for the Wannier interpolation we need all coarse ep elements in the 
+    ! Control: for the Wannier interpolation we need all coarse ep elements in the
     ! ep_bands == 'intw' set (otherwise we cannot rotate with the U matrices).
-    ! Therefore, check if we will have all the elements, even though custom_bands 
+    ! Therefore, check if we will have all the elements, even though custom_bands
     ! was set.
 
     if (ep_bands == 'custom' .and. &
@@ -157,7 +158,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
                ep_bands_initial, ' to', ep_bands_final,' band subset only.'
        write(*,*)' This means that we cannot Wannier interpolate. Stopping.'
          stop
-    end if     
+    end if
 
 
 
@@ -269,11 +270,11 @@ do is=1,nfs_sheets_tot
 
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges) 
+   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
    write(*,*) 'sheet, vertices, faces = ', nfs_sheet(is), nkpt_tr(is), nface_tr(is)
    close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is). 
+   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
    !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
@@ -462,19 +463,19 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
 
 
 !================================================================================
-! Interpolate elements 
+! Interpolate elements
 !================================================================================
 
  ! the interpolation grid is formed by the triangulated FS points
  ! In principle, in the trianglulated k-point list up to nkpt_tr_tot
  ! the index carries the information about the band implicitly.
- ! We will retrieve U rotation matrices and eigenvalues on the 
+ ! We will retrieve U rotation matrices and eigenvalues on the
  ! full num_wann_intw list for those k-points, as the w90_setup
  ! routines give that info, but then we will intepolate the ep element only
  ! for the bands index at Fermi given by nfs_sheet().
 
 
- ! interpolated bands in nkpt_tr_tot vertices 
+ ! interpolated bands in nkpt_tr_tot vertices
  ! u_kint_all, contains the rotation matrices (row is bloch and column is wannier,
  ! i.e. the "orbital weights" for each band is in the columns)
  ! Store frequencies in Ry.
@@ -484,7 +485,7 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
 
  do ik=1,nkpt_tr_tot
      ! this is cartesians x 2pi/alat. Transform to crystal before interpolation
-     kpoint = kpts_tr(:,ik)     
+     kpoint = kpts_tr(:,ik)
      call cryst_to_cart (1, kpoint, at, -1)
      call interpolate_1k (kpoint, eig_kint, u_kint)
      eig_kint = eig_kint * 2.0_dp / Ha_to_eV
@@ -518,7 +519,7 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
   ik1 = 0
   do ish = 1, nfs_sheets_tot
       ib = nfs_sheet(ish) !band index for k
-  do iks = 1, nkpt_tr_ibz(ish) 
+  do iks = 1, nkpt_tr_ibz(ish)
       ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
       ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
       ik = ik + 1
@@ -566,7 +567,7 @@ allocate (u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_in
               gmat_aux1(:,:,:) = gmat_aux1(:,:,:) + facq*gmatL_wann(iat,:,:,js,is,irq,:)
            end do
            call wann_FT_1index_1k (kpoint, gmat_aux1(:,:,:), gmat_int(:,:))
-           gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, u_kint))   
+           gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, u_kint))
            aep_mat_el(ikp,ik,js,is,iat) = gmat_int_rot(ibp,ib)  !TODO DUDA exclude bands ?? (ver junto al comentario JLB en w90_setup)
         end do
 
@@ -601,4 +602,3 @@ write(*,'(A)') '|================================================== |'
 stop
 
 end program ep_on_trFS_wannier
-

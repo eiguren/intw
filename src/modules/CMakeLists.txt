@@ -13,6 +13,7 @@ set(SOURCES
   intw_pseudo_local.f90
   intw_pseudo_non_local.f90
   matrix_elements.f90
+  matrix_vector.f90
   ph_module.f90
   reading.f90
   symmetries.f90

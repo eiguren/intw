@@ -8,7 +8,8 @@ program interpolatephonons
   use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry
   use intw_utility, only: find_free_unit, &
                           generate_kmesh, cryst_to_cart, smeared_delta, &
-                          generate_and_allocate_kpath, ainv
+                          generate_and_allocate_kpath
+  use intw_matrix_vector, only: ainv
   use intw_input_parameters, only: read_input, read_cards, &
                                    mesh_dir, prefix, &
                                    nq1, nq2, nq3, nqirr, fc_mat, &

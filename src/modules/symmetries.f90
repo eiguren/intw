@@ -307,7 +307,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
     use intw_reading, only: s, at, bg
-    use intw_utility, only: det
+    use intw_matrix_vector, only: det
 
     implicit none
 
@@ -529,7 +529,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: ZERO, ONE, pi, eps_8
     use intw_reading, only: at, bg
-    use intw_utility, only: det
+    use intw_matrix_vector, only: det
 
     implicit none
 

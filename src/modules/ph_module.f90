@@ -578,7 +578,6 @@ contains
                             triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
                                      apply_asr
-    use intw_utility, only: ainv
 
     implicit none
 
@@ -708,7 +707,7 @@ contains
                             triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_reading, only: s, can_use_TR
     use intw_symmetries, only: rtau_index, rtau
-    use intw_utility, only: ainv, det
+    use intw_matrix_vector, only: ainv, det
 
     implicit none
 
@@ -974,10 +973,11 @@ contains
   subroutine get_dv(qpoint, nmode, nspin, dv)
 !-------------------------------------------------------------------
 
-    use intw_utility, only: cmplx_trace, triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_utility, only: triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_reading, only: s, nr1, nr2,nr3
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
     use intw_input_parameters, only: nq1, nq2, nq3
+    use intw_matrix_vector, only: cmplx_trace
 
     implicit none
 
@@ -1067,9 +1067,10 @@ contains
   subroutine rot_dvq(q_point_crys,q_point_crys_irr,nr1,nr2,nr3,nmode,s_index,GKQ,dv_in,dv_out)
 !--------------------------------------------------------------------------------------------------------
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
-    use intw_utility, only: cmplx_ainv, triple_to_joint_index_r
+    use intw_utility, only: triple_to_joint_index_r
     use intw_reading, only: s, ftau, nspin, spinorb_mag, at, bg, tau, nat
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
+    use intw_matrix_vector, only: cmplx_ainv
 
     implicit none
 
