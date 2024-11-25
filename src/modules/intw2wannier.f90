@@ -553,7 +553,7 @@ contains
 
       ! print out the eigenvalues
       do nb =1, num_bands_intw
-        write(io_unit_eig,'(2I5,F18.12)') nb, ikpt_1, QE_eig(nb)
+        write(io_unit_eig,'(2(I6,x),F18.12)') nb, ikpt_1, QE_eig(nb)
       end do
 
       ! loop on neighbors
