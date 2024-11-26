@@ -323,7 +323,7 @@ contains
   !
   use intw_reading, only: alat, at
   use intw_useful_constants, only: eps_6
-  use intw_utility, only: generate_kmesh, cryst_to_cart, HPSORT_real 
+  use intw_utility, only: generate_kmesh, cryst_to_cart, hpsort_real
   !
   implicit none
   !
@@ -361,7 +361,7 @@ contains
      end do   
      !
      ! order by ascending length
-     call HPSORT_real(n_wss,r_length,permu)
+     call hpsort_real(n_wss,r_length,permu)
      ! store first vector (shortest)
      r_ws_max(:,1,ik) = r_cryst_int(:,permu(1))
      rdeg_ws_max(ik) = 1

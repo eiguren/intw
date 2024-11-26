@@ -22,7 +22,7 @@ use kinds, only: dp
             generate_kmesh, generate_and_allocate_kpath, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
-            HPSORT, HPSORT_real, hpsort_eps, &
+            hpsort_integer, hpsort_real, &
             find_r_in_WS_cell, errore, simpson, sphb, &
             real_ylmr2
   !
@@ -674,13 +674,14 @@ end function intgr_spline_gaussq
   end subroutine cryst_to_cart
 
 
-    SUBROUTINE HPSORT(N,RA,P)
+  subroutine hpsort_integer(n, ia, p)
     !------------------------------------------------------------
     ! subroutine which performs heap sort on a list of integers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
     !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
+    ! adapted from Quantum Espresso v6.8 Modules/sort.f90,
+    ! Copyright (C) 2001 PWSCF group
     !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
@@ -695,298 +696,215 @@ end function intgr_spline_gaussq
     !*                                                   *
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
-    !* ------------------------------------------------- *
-    !* REFERENCE:                                        *
-    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
-    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
-    !*   University Press, 1986".                        *
     !*****************************************************
+    !------------------------------------------------------------
 
     implicit none
 
-    integer, intent(in) :: N
-    integer, intent(inout) :: RA(N)
-    integer, intent(out) :: P(N)
+    integer, intent(in) :: n
+    integer, intent(inout) :: ia(n)
+    integer, intent(out) :: p(n)
 
-    integer :: I, L, IR, RRA, PP, J
+    integer :: i, j, l, ir, iia, pp
+
+
+    ! initialize permutation array
+    do i = 1, n
+      p(i) = i
+    enddo
 
     ! nothing to order
-    if (N < 2) return
+    if ( n < 2 ) return
 
-    do I=1,N
-      P(I) = I
-    end do
-
-    L=N/2+1
-    IR=N
-    !The index L will be decremented from its initial value during the
-    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-    !will be decremented from its initial value down to 1 during the
-    !"retirement-and-promotion" (heap selection) phase.
-  10 continue
-    if(L > 1)then
-      L=L-1
-
-      RRA=RA(L)
-      PP =P(L)
-
+    ! initialize indices for hiring and retirement-promotion phase
+    l = n / 2 + 1
+    ir = n
+    10 continue
+    ! still in hiring phase
+    if ( l > 1 ) then
+      l = l - 1
+      iia = ia(l)
+      pp = p(l)
+      ! in retirement-promotion phase.
     else
-      RRA=RA(IR)
-      PP =P (IR)
-
-      RA(IR)=RA(1)
-      P(IR) =P(1)
-
-      IR=IR-1
-      if(IR.eq.1)then
-
-        RA(1)=RRA
-        P (1)=PP
-
+      ! clear a space at the end of the array
+      iia = ia(ir)
+      !
+      pp = p(ir)
+      ! retire the top of the heap into it
+      ia(ir) = ia(1)
+      !
+      p(ir) = p(1)
+      ! decrease the size of the corporation
+      ir = ir - 1
+      ! done with the last promotion
+      if ( ir == 1 ) then
+        ! the least competent worker at all !
+        ia(1) = iia
+        !
+        p(1) = pp
         return
-      end if
-    end if
-    I=L
-    J=L+L
-  20 if(J.le.IR)then
-    if(J < IR)then
-      if(RA(J) < RA(J+1))  J=J+1
-    end if
-    if(RRA < RA(J))then
-      RA(I)=RA(J)
-      P (I)=P (J)
-
-      I=J; J=J+J
-    else
-      J=IR+1
-    end if
-    goto 20
-    end if
-    RA(I)=RRA
-    P (I)=PP
+      endif
+    endif
+    ! wheter in hiring or promotion phase, we
+    i = l
+    ! set up to place iia in its proper level
+    j = l + l
+    !
+    do while ( j <= ir )
+      if ( j < ir ) then
+        ! compare to better underling
+        if ( ia(j) < ia(j + 1) ) then
+          j = j + 1
+        elseif ( ia(j) == ia(j + 1) ) then
+          if ( p(j) < p(j + 1) ) j = j + 1
+        endif
+      endif
+      ! demote iia
+      if ( iia < ia(j) ) then
+        ia(i) = ia(j)
+        p(i) = p(j)
+        i = j
+        j = j + j
+      elseif ( iia == ia(j) ) then
+        ! demote iia
+        if ( pp < p(j) ) then
+          ia(i) = ia(j)
+          p(i) = p(j)
+          i = j
+          j = j + j
+        else
+          ! set j to terminate do-while loop
+          j = ir + 1
+        endif
+        ! this is the right place for iia
+      else
+        ! set j to terminate do-while loop
+        j = ir + 1
+      endif
+    enddo
+    ia(i) = iia
+    p(i) = pp
     goto 10
 
-  END SUBROUTINE HPSORT
+  end subroutine hpsort_integer
 
 
-  SUBROUTINE HPSORT_real(N,RA,P)
+  subroutine hpsort_real(n, ra, p)
     !------------------------------------------------------------
     ! subroutine which performs heap sort on a list of real numbers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
     !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
+    ! adapted from Quantum Espresso v6.8 Modules/sort.f90
+    ! Copyright (C) 2001 PWSCF group
     !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
     !*                by the Heapsort method             *
     !* ------------------------------------------------- *
     !* INPUTS:                                           *
-    !*      N   size of table RA                         *
-    !*      RA  table to be sorted                       *
+    !*      n   size of table RA                         *
+    !*      ra  table to be sorted                       *
     !* OUTPUT:                                           *
-    !*      RA  table sorted in ascending order          *
-    !*      P   table of indices showing transform       *
+    !*      ra  table sorted in ascending order          *
+    !*      p   table of indices showing transform       *
     !*                                                   *
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
-    !* ------------------------------------------------- *
-    !* REFERENCE:                                        *
-    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
-    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
-    !*   University Press, 1986".                        *
     !*****************************************************
+    !------------------------------------------------------------
 
     implicit none
 
-    integer, intent(in) :: N
-    real(dp), intent(inout) :: RA(N)
-    integer, intent(out) :: P(N)
-
-    integer :: I, L, IR, RRA, PP, J
-
-
-    ! nothing to order
-    if (N < 2) return
-
-    do I=1,N
-      P(I) = I
-    end do
-
-    L=N/2+1
-    IR=N
-    !The index L will be decremented from its initial value during the
-    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-    !will be decremented from its initial value down to 1 during the
-    !"retirement-and-promotion" (heap selection) phase.
-    10 continue
-    if(L > 1)then
-      L=L-1
-
-      RRA=RA(L)
-      PP =P(L)
-
-    else
-      RRA=RA(IR)
-      PP =P (IR)
-
-      RA(IR)=RA(1)
-      P(IR) =P(1)
-
-      IR=IR-1
-      if(IR.eq.1)then
-
-        RA(1)=RRA
-        P (1)=PP
-
-        return
-      end if
-    end if
-    I=L
-    J=L+L
-  20 if(J.le.IR)then
-    if(J < IR)then
-      if(RA(J) < RA(J+1))  J=J+1
-    end if
-    if(RRA < RA(J))then
-      RA(I)=RA(J)
-      P (I)=P (J)
-
-      I=J; J=J+J
-    else
-      J=IR+1
-    end if
-    goto 20
-    end if
-    RA(I)=RRA
-    P (I)=PP
-    goto 10
-  END SUBROUTINE HPSORT_real
-
-
-  subroutine hpsort_eps(n, ra, ind, eps)
-    !---------------------------------------------------------------------
-    ! sort an array ra(1:n) into ascending order using heapsort algorithm,
-    ! and considering two elements being equal if their values differ
-    ! for less than "eps".
-    ! n is input, ra is replaced on output by its sorted rearrangement.
-    ! create an index table (ind) by making an exchange in the index array
-    ! whenever an exchange is made on the sorted data array (ra).
-    ! in case of equal values in the data array (ra) the values in the
-    ! index array (ind) are used to order the entries.
-    ! if on input ind(1)  = 0 then indices are initialized in the routine,
-    ! if on input ind(1) != 0 then indices are assumed to have been
-    !                initialized before entering the routine and these
-    !                indices are carried around during the sorting process
-    !
-    ! no work space needed !
-    ! free us from machine-dependent sorting-routines !
-    !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
-    !
-
-    implicit none
-
-    !-input/output variables
     integer, intent(in) :: n
-    integer, intent(inout) :: ind(*)
-    real(dp), intent(inout) :: ra(*)
-    real(dp), intent(in) :: eps
+    real(dp), intent(inout) :: ra(n)
+    integer, intent(out) :: p(n)
 
-    !-local variables
-    integer :: i, ir, j, l, iind
+    integer :: i, j, l, ir, pp
     real(dp) :: rra
 
 
-    ! nothing to order
-    if (n < 2) return
+    ! initialize permutation array
+    do i = 1, n
+      p(i) = i
+    enddo
 
-    ! initialize index array
-    if (ind(1) == 0) then
-      do i = 1, n
-          ind(i) = i
-      enddo
-    endif
+    ! nothing to order
+    if ( n < 2 ) return
 
     ! initialize indices for hiring and retirement-promotion phase
     l = n / 2 + 1
-
     ir = n
-
-    sorting: do
-
-      ! still in hiring phase
-      if ( l > 1 ) then
-        l    = l - 1
-        rra  = ra(l)
-        iind = ind(l)
-        ! in retirement-promotion phase.
-      else
-        ! clear a space at the end of the array
-        rra  = ra(ir)
+    10 continue
+    ! still in hiring phase
+    if ( l > 1 ) then
+      l = l - 1
+      rra = ra(l)
+      pp = p(l)
+      ! in retirement-promotion phase.
+    else
+      ! clear a space at the end of the array
+      rra = ra(ir)
+      !
+      pp = p(ir)
+      ! retire the top of the heap into it
+      ra(ir) = ra(1)
+      !
+      p(ir) = p(1)
+      ! decrease the size of the corporation
+      ir = ir - 1
+      ! done with the last promotion
+      if ( ir == 1 ) then
+        ! the least competent worker at all !
+        ra(1) = rra
         !
-        iind = ind(ir)
-        ! retire the top of the heap into it
-        ra(ir) = ra(1)
-        !
-        ind(ir) = ind(1)
-        ! decrease the size of the corporation
-        ir = ir - 1
-        ! done with the last promotion
-        if ( ir == 1 ) then
-            ! the least competent worker at all !
-            ra(1)  = rra
-            !
-            ind(1) = iind
-            exit sorting
+        p(1) = pp
+        return
+      endif
+    endif
+    ! wheter in hiring or promotion phase, we
+    i = l
+    ! set up to place rra in its proper level
+    j = l + l
+    !
+    do while ( j <= ir )
+      if ( j < ir ) then
+        ! compare to better underling
+        if ( ra(j) < ra(j + 1) ) then
+          j = j + 1
+        elseif ( ra(j) == ra(j + 1) ) then
+          if ( p(j) < p(j + 1) ) j = j + 1
         endif
       endif
-      ! wheter in hiring or promotion phase, we
-      i = l
-      ! set up to place rra in its proper level
-      j = l + l
-      !
-      do while ( j <= ir )
-        if ( j < ir ) then
-            ! compare to better underling
-            if ( abs(ra(j)-ra(j+1)) >= eps ) then
-              if (ra(j) < ra(j+1)) j = j + 1
-            else
-              ! this means ra(j) == ra(j+1) within tolerance
-              if (ind(j) < ind(j + 1) ) j = j + 1
-            endif
-        endif
+      ! demote rra
+      if ( rra < ra(j) ) then
+        ra(i) = ra(j)
+        p(i) = p(j)
+        i = j
+        j = j + j
+      elseif ( rra == ra(j) ) then
         ! demote rra
-        if ( abs(rra - ra(j)) >= eps ) then
-            if (rra < ra(j)) then
-              ra(i) = ra(j)
-              ind(i) = ind(j)
-              i = j
-              j = j + j
-            else
-              ! set j to terminate do-while loop
-              j = ir + 1
-            end if
+        if ( pp < p(j) ) then
+          ra(i) = ra(j)
+          p(i) = p(j)
+          i = j
+          j = j + j
         else
-            !this means rra == ra(j) within tolerance
-            ! demote rra
-            if (iind < ind(j) ) then
-              ra(i) = ra(j)
-              ind(i) = ind(j)
-              i = j
-              j = j + j
-            else
-              ! set j to terminate do-while loop
-              j = ir + 1
-            endif
-        end if
-      enddo
-      ra(i) = rra
-      ind(i) = iind
+          ! set j to terminate do-while loop
+          j = ir + 1
+        endif
+        ! this is the right place for rra
+      else
+        ! set j to terminate do-while loop
+        j = ir + 1
+      endif
+    enddo
+    ra(i) = rra
+    p(i) = pp
+    goto 10
 
-    end do sorting
-    !
-  end subroutine hpsort_eps
+  end subroutine hpsort_real
 
 
   subroutine find_r_in_WS_cell(at,rvec_cryst,nr1,nr2,nr3,rvec_WS_cryst)
