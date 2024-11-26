@@ -20,19 +20,19 @@ module intw_input_parameters
   !
   ! variables
   ! &input
-  public :: mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
+  public :: input, mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
             use_exclude_bands, include_bands_initial, include_bands_final
   ! &intw2W
-  public :: intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
+  public :: intw2W, intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
   ! &ph
-  public :: ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, &
+  public :: ph, ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, &
             nq1, nq2, nq3, nqirr, apply_asr
   ! &DOS
-  public :: ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos
+  public :: DOS, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos
   ! &DOS_ph
-  public :: nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
+  public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
   ! &elphon
-  public :: ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
+  public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
             ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir
   ! K_PATH
   public :: exist_kpath, nkpath, nkspecial, kspecial
