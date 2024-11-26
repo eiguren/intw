@@ -46,3 +46,22 @@ install(TARGETS intw_modules
 )
 
 install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
+
+
+if(TRIFS)
+
+  set(SOURCES_TRIFS
+    geometry.f90
+    isosurface.f90
+    mesh_opt.f90
+  )
+
+
+  add_library(triFS_modules STATIC ${SOURCES_TRIFS})
+  target_link_libraries(triFS_modules PUBLIC intw_modules)
+  target_include_directories(triFS_modules INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
+  if(USE_OPENMP)
+    target_link_libraries(triFS_modules PUBLIC OpenMP::OpenMP_Fortran)
+  endif()
+
+endif()
