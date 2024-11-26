@@ -29,7 +29,7 @@ use kinds, only: dp
   ! functions
   public :: intgr_spline_gaussq, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
-            smeared_delta, smeared_lorentz, fermi_dirac
+            smeared_delta, smeared_lorentz, fermi_dirac, int2str
   !
   private
   !
@@ -1368,5 +1368,21 @@ end function intgr_spline_gaussq
     ! fermi_dirac = 0.5_dp* (-sign(1.0_dp,x) + 1.0_dp)
   return
   end function fermi_dirac
+
+
+  function int2str(i)
+
+    implicit none
+
+    integer, intent(in) :: i
+    character(len=16) :: f1, frm, int2str
+
+
+    write(f1,"(I8)") floor(log10(i*1.0) + 1)
+    frm = "i"//trim(adjustl(f1))
+
+    write(int2str,"("//trim(frm)//")") i
+
+  end function int2str
 
 end module intw_utility
