@@ -192,7 +192,8 @@ contains
     ! as well as symmetry data from the prefix.save.intw folder.
     !------------------------------------------------------------------
     use intw_input_parameters, only: mesh_dir, prefix, TR_symmetry
-    use intw_utility, only: find_free_unit, ainv
+    use intw_utility, only: find_free_unit
+    use intw_matrix_vector, only: ainv
     use intw_useful_constants, only: tpi
 
     implicit none

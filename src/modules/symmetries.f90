@@ -307,7 +307,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_1, cmplx_i, i2, sig_x, sig_y, sig_z, eps_5
     use intw_reading, only: s, at, bg
-    use intw_utility, only: det
+    use intw_matrix_vector, only: det
 
     implicit none
 
@@ -529,7 +529,7 @@ contains
     !------------------------------------------------------------------
     use intw_useful_constants, only: ZERO, ONE, pi, eps_8
     use intw_reading, only: at, bg
-    use intw_utility, only: det
+    use intw_matrix_vector, only: det
 
     implicit none
 
@@ -1900,7 +1900,7 @@ contains
     !--------------------------------------------------------------------------------------------------------
     use intw_fft, only: find_iG
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
-    use intw_utility, only: HPSORT
+    use intw_utility, only: hpsort_integer
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
     implicit none
@@ -1959,7 +1959,7 @@ contains
       !
     enddo
     !
-    call HPSORT(nG,list_iG_k,permutations)
+    call hpsort_integer(nG,list_iG_k,permutations)
     !
     do i=1,nG
       !
@@ -2207,7 +2207,7 @@ contains
     !-----------------------------------------------------------------------------
     use intw_fft, only: find_iG
     use intw_useful_constants, only: cmplx_0
-    use intw_utility, only: HPSORT
+    use intw_utility, only: hpsort_integer
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
     implicit none
@@ -2265,7 +2265,7 @@ contains
     ! the indices to be sorted.
     ! Sort the indices using a canned heap sort subroutine.
     !
-    call HPSORT(nG,list_iG_tmp,permutations)
+    call hpsort_integer(nG,list_iG_tmp,permutations)
     !
     ! To understand how this works, consider an example:
     !

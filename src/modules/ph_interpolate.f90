@@ -157,7 +157,7 @@ module intw_ph_interpolate
     !----------------------------------------------------------------------------!
     use intw_reading, only: at, alat, nat, tau_cryst
     use intw_useful_constants, only: eps_8
-    use intw_utility, only: cryst_to_cart, HPSORT_real
+    use intw_utility, only: cryst_to_cart
     use intw_input_parameters, only: nq1, nq2, nq3
     use intw_ph, only: qmesh
     !

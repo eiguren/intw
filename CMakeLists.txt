@@ -129,6 +129,9 @@ if (USE_WANNIER)
 endif()
 
 
+include(SetTriFS)
+
+
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
 if (USE_QE)
@@ -218,6 +221,11 @@ endif()
 if (USE_WANNIER)
   message("-- W_HOME: ${W_HOME}")
   message("-- W_VERSION: ${W_VERSION}")
+endif()
+message("-- TETGEN_EXE: ${TETGEN_EXE}")
+message("-- TRIANGLE_EXE: ${TRIANGLE_EXE}")
+if(NOT TRIFS)
+  message("-- Disabled utilities: triFS.x")
 endif()
 if(DISABLED_TESTS)
   message("-- Disabled tests: ${DISABLED_TESTS}")

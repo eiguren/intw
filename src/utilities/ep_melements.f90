@@ -23,8 +23,8 @@ program ep_melements
                           find_free_unit, &
                           generate_kmesh, &
                           conmesurate_and_coarser, &
-                          ainv, &
                           find_k_1BZ_and_G
+  use intw_matrix_vector, only: ainv
   use intw_useful_constants, only: cmplx_0, cmplx_1
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, &
                              symtable, rtau_index, rtau, rtau_cryst, &

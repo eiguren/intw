@@ -22,14 +22,14 @@ use kinds, only: dp
             generate_kmesh, generate_and_allocate_kpath, &
             find_neighbor, find_maximum_index_int, test_qpt_on_fine_mesh, &
             find_k_1BZ_and_G, cryst_to_cart, &
-            HPSORT, HPSORT_real, hpsort_eps, &
+            hpsort_integer, hpsort_real, &
             find_r_in_WS_cell, errore, simpson, sphb, &
             real_ylmr2
   !
   ! functions
-  public :: intgr_spline_gaussq, ainv, det, cmplx_ainv, cmplx_det, cmplx_trace, multiple, weight_ph, &
+  public :: intgr_spline_gaussq, multiple, weight_ph, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
-            smeared_delta, smeared_lorentz, fermi_dirac, area_vec
+            smeared_delta, smeared_lorentz, fermi_dirac, int2str
   !
   private
   !
@@ -126,226 +126,6 @@ end function intgr_spline_gaussq
     time = dsecnd()
 
   end subroutine get_timing
-
-
-  function ainv(A)
-
-    implicit none
-
-    real(kind=dp), intent(in) :: A(:,:)
-    real(kind=dp) :: ainv(size(A, dim=1),size(A, dim=2))
-
-    real(kind=dp), parameter :: eps = 1.0d-13
-    real(kind=dp) :: determinant
-    real(kind=dp) :: cofactor(size(A, dim=1),size(A, dim=2))
-    integer :: N, M, i, j
-
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    if  ( N /= M ) stop "ERROR: ainv: A must be a square matrix"
-
-    determinant =  det(A)
-
-    if (abs(determinant) < eps) then
-      ainv = 0.0d0
-      write(*,*)"ERROR IN CALCULATING MATRIX INVERSE"
-      stop
-    end if
-
-    do i = 1, N
-      do j = 1, M
-       cofactor(i,j) = cof(A, i, j)
-      enddo
-    end do
-
-    ainv = transpose(cofactor) / determinant
-
-  end function ainv
-
-
-  recursive function det(A)
-
-    implicit none
-
-    real(kind=dp), intent(in) :: A(:,:)
-    real(kind=dp) :: det
-
-    integer :: N, M, i
-
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    if  ( N /= M ) stop "ERROR: det: A must be a square matrix"
-
-    if (N == 1) then
-      det = A(1,1)
-    else if (N > 1) then
-      det = 0.0_dp
-      do i=1,N
-        det = det + A(1,i) * cof(A, 1, i)
-      enddo
-    else
-      stop "ERROR: det: Wrong size"
-    end if
-
-  end function det
-
-
-  function cof(A, ROW, COL)
-
-    implicit none
-
-    real(kind=dp), intent(in) :: A(:,:)
-    integer, intent(in) :: ROW, COL
-
-    real(kind=dp) :: cof
-
-
-    cof = (-1)**(ROW+COL)*det(minor_matrix(A, ROW, COL))
-
-  end function cof
-
-
-  function minor_matrix(A, ROW, COL)
-
-    implicit none
-
-    real(kind=dp), intent(in) :: A(:,:)
-    integer, intent(in) :: ROW, COL
-
-    real(kind=dp) :: minor_matrix(size(A, dim=1)-1, size(A, dim=2)-1)
-
-    integer :: N, M, i, ii, j, jj
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    ii = 0
-    do i = 1, N
-      if (i==ROW) cycle
-      ii = ii + 1
-      jj = 0
-      do j = 1, N
-        if (j==COL) cycle
-        jj = jj + 1
-        minor_matrix(ii, jj) = A(i, j)
-      end do
-    end do
-
-  end function minor_matrix
-
-
-  function cmplx_ainv(A)
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: A(:,:)
-    complex(kind=dp) :: cmplx_ainv(size(A, dim=1),size(A, dim=2))
-
-    real(kind=dp), parameter :: eps = 1.0d-13
-    complex(kind=dp) :: determinant
-    complex(kind=dp) :: cofactor(size(A, dim=1),size(A, dim=2))
-    integer :: N, M, i, j
-
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    if  ( N /= M ) stop "ERROR: cmplx_ainv: A must be a square matrix"
-
-    determinant =  cmplx_det(A)
-
-    if (abs(determinant) < eps) then
-      cmplx_ainv = 0.0d0
-      write(*,*)"ERROR IN CALCULATING MATRIX INVERSE"
-      stop
-    end if
-
-    do i = 1, N
-      do j = 1, M
-       cofactor(i,j) = cmplx_cof(A, i, j)
-      enddo
-    end do
-
-    cmplx_ainv = transpose(cofactor) / determinant
-
-  end function cmplx_ainv
-
-
-  recursive function cmplx_det(A)
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: A(:,:)
-    complex(kind=dp) :: cmplx_det
-
-    integer :: N, M, i
-
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    if  ( N /= M ) stop "ERROR: cmplx_det: A must be a square metrix"
-
-    if (N == 1) then
-      cmplx_det = A(1,1)
-    else if (N > 1) then
-      cmplx_det = 0.0_dp
-      do i=1,N
-        cmplx_det = cmplx_det + A(1,i) * cmplx_cof(A, 1, i)
-      enddo
-    else
-      stop "ERROR: cmplx_det: Wrong size"
-    end if
-
-  end function cmplx_det
-
-
-  function cmplx_cof(A, ROW, COL)
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: A(:,:)
-    integer, intent(in) :: ROW, COL
-
-    real(kind=dp) :: cmplx_cof
-
-
-    cmplx_cof = (-1)**(ROW+COL)*cmplx_det(cmplx_minor_matrix(A, ROW, COL))
-
-  end function cmplx_cof
-
-
-  function cmplx_minor_matrix(A, ROW, COL)
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: A(:,:)
-    integer, intent(in) :: ROW, COL
-
-    complex(kind=dp) :: cmplx_minor_matrix(size(A, dim=1)-1, size(A, dim=2)-1)
-
-    integer :: N, M, i, ii, j, jj
-
-    N = size(A, dim=1)
-    M = size(A, dim=2)
-
-    ii = 0
-    do i = 1, N
-      if (i==ROW) cycle
-      ii = ii + 1
-      jj = 0
-      do j = 1, N
-        if (j==COL) cycle
-        jj = jj + 1
-        cmplx_minor_matrix(ii, jj) = A(i, j)
-      end do
-    end do
-
-  end function cmplx_minor_matrix
 
 
   function conmesurate_and_coarser (nk1, nk2, nk3, nq1, nq2, nq3)
@@ -597,7 +377,7 @@ end function intgr_spline_gaussq
                       (kspecial_cart(:,i) - kspecial_cart(:,i-1) ) * real(j-1,dp) / real(nkstage(i-1),dp)
        end do
        !  index in k-path corresponding to this special k-point(end of stage)
-       if (present(kspecial_indices))  kspecial_indices(i)=ik+1  
+       if (present(kspecial_indices))  kspecial_indices(i)=ik+1
     end do
     ! last point is the last special point
     kpath(:,nkpath) = kspecial_cart(:,nkspecial)
@@ -894,13 +674,14 @@ end function intgr_spline_gaussq
   end subroutine cryst_to_cart
 
 
-    SUBROUTINE HPSORT(N,RA,P)
+  subroutine hpsort_integer(n, ia, p)
     !------------------------------------------------------------
     ! subroutine which performs heap sort on a list of integers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
     !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
+    ! adapted from Quantum Espresso v6.8 Modules/sort.f90,
+    ! Copyright (C) 2001 PWSCF group
     !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
@@ -915,298 +696,215 @@ end function intgr_spline_gaussq
     !*                                                   *
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
-    !* ------------------------------------------------- *
-    !* REFERENCE:                                        *
-    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
-    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
-    !*   University Press, 1986".                        *
     !*****************************************************
+    !------------------------------------------------------------
 
     implicit none
 
-    integer, intent(in) :: N
-    integer, intent(inout) :: RA(N)
-    integer, intent(out) :: P(N)
+    integer, intent(in) :: n
+    integer, intent(inout) :: ia(n)
+    integer, intent(out) :: p(n)
 
-    integer :: I, L, IR, RRA, PP, J
+    integer :: i, j, l, ir, iia, pp
+
+
+    ! initialize permutation array
+    do i = 1, n
+      p(i) = i
+    enddo
 
     ! nothing to order
-    if (N < 2) return
+    if ( n < 2 ) return
 
-    do I=1,N
-      P(I) = I
-    end do
-
-    L=N/2+1
-    IR=N
-    !The index L will be decremented from its initial value during the
-    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-    !will be decremented from its initial value down to 1 during the
-    !"retirement-and-promotion" (heap selection) phase.
-  10 continue
-    if(L > 1)then
-      L=L-1
-
-      RRA=RA(L)
-      PP =P(L)
-
+    ! initialize indices for hiring and retirement-promotion phase
+    l = n / 2 + 1
+    ir = n
+    10 continue
+    ! still in hiring phase
+    if ( l > 1 ) then
+      l = l - 1
+      iia = ia(l)
+      pp = p(l)
+      ! in retirement-promotion phase.
     else
-      RRA=RA(IR)
-      PP =P (IR)
-
-      RA(IR)=RA(1)
-      P(IR) =P(1)
-
-      IR=IR-1
-      if(IR.eq.1)then
-
-        RA(1)=RRA
-        P (1)=PP
-
+      ! clear a space at the end of the array
+      iia = ia(ir)
+      !
+      pp = p(ir)
+      ! retire the top of the heap into it
+      ia(ir) = ia(1)
+      !
+      p(ir) = p(1)
+      ! decrease the size of the corporation
+      ir = ir - 1
+      ! done with the last promotion
+      if ( ir == 1 ) then
+        ! the least competent worker at all !
+        ia(1) = iia
+        !
+        p(1) = pp
         return
-      end if
-    end if
-    I=L
-    J=L+L
-  20 if(J.le.IR)then
-    if(J < IR)then
-      if(RA(J) < RA(J+1))  J=J+1
-    end if
-    if(RRA < RA(J))then
-      RA(I)=RA(J)
-      P (I)=P (J)
-
-      I=J; J=J+J
-    else
-      J=IR+1
-    end if
-    goto 20
-    end if
-    RA(I)=RRA
-    P (I)=PP
+      endif
+    endif
+    ! wheter in hiring or promotion phase, we
+    i = l
+    ! set up to place iia in its proper level
+    j = l + l
+    !
+    do while ( j <= ir )
+      if ( j < ir ) then
+        ! compare to better underling
+        if ( ia(j) < ia(j + 1) ) then
+          j = j + 1
+        elseif ( ia(j) == ia(j + 1) ) then
+          if ( p(j) < p(j + 1) ) j = j + 1
+        endif
+      endif
+      ! demote iia
+      if ( iia < ia(j) ) then
+        ia(i) = ia(j)
+        p(i) = p(j)
+        i = j
+        j = j + j
+      elseif ( iia == ia(j) ) then
+        ! demote iia
+        if ( pp < p(j) ) then
+          ia(i) = ia(j)
+          p(i) = p(j)
+          i = j
+          j = j + j
+        else
+          ! set j to terminate do-while loop
+          j = ir + 1
+        endif
+        ! this is the right place for iia
+      else
+        ! set j to terminate do-while loop
+        j = ir + 1
+      endif
+    enddo
+    ia(i) = iia
+    p(i) = pp
     goto 10
 
-  END SUBROUTINE HPSORT
+  end subroutine hpsort_integer
 
 
-  SUBROUTINE HPSORT_real(N,RA,P)
+  subroutine hpsort_real(n, ra, p)
     !------------------------------------------------------------
     ! subroutine which performs heap sort on a list of real numbers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
     !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
+    ! adapted from Quantum Espresso v6.8 Modules/sort.f90
+    ! Copyright (C) 2001 PWSCF group
     !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
     !*                by the Heapsort method             *
     !* ------------------------------------------------- *
     !* INPUTS:                                           *
-    !*      N   size of table RA                         *
-    !*      RA  table to be sorted                       *
+    !*      n   size of table RA                         *
+    !*      ra  table to be sorted                       *
     !* OUTPUT:                                           *
-    !*      RA  table sorted in ascending order          *
-    !*      P   table of indices showing transform       *
+    !*      ra  table sorted in ascending order          *
+    !*      p   table of indices showing transform       *
     !*                                                   *
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
-    !* ------------------------------------------------- *
-    !* REFERENCE:                                        *
-    !*  "NUMERICAL RECIPES by W.H. Press, B.P. Flannery, *
-    !*   S.A. Teukolsky and W.T. Vetterling, Cambridge   *
-    !*   University Press, 1986".                        *
     !*****************************************************
+    !------------------------------------------------------------
 
     implicit none
 
-    integer, intent(in) :: N
-    real(dp), intent(inout) :: RA(N)
-    integer, intent(out) :: P(N)
-
-    integer :: I, L, IR, RRA, PP, J
-
-
-    ! nothing to order
-    if (N < 2) return
-
-    do I=1,N
-      P(I) = I
-    end do
-
-    L=N/2+1
-    IR=N
-    !The index L will be decremented from its initial value during the
-    !"hiring" (heap creation) phase. Once it reaches 1, the index IR
-    !will be decremented from its initial value down to 1 during the
-    !"retirement-and-promotion" (heap selection) phase.
-    10 continue
-    if(L > 1)then
-      L=L-1
-
-      RRA=RA(L)
-      PP =P(L)
-
-    else
-      RRA=RA(IR)
-      PP =P (IR)
-
-      RA(IR)=RA(1)
-      P(IR) =P(1)
-
-      IR=IR-1
-      if(IR.eq.1)then
-
-        RA(1)=RRA
-        P (1)=PP
-
-        return
-      end if
-    end if
-    I=L
-    J=L+L
-  20 if(J.le.IR)then
-    if(J < IR)then
-      if(RA(J) < RA(J+1))  J=J+1
-    end if
-    if(RRA < RA(J))then
-      RA(I)=RA(J)
-      P (I)=P (J)
-
-      I=J; J=J+J
-    else
-      J=IR+1
-    end if
-    goto 20
-    end if
-    RA(I)=RRA
-    P (I)=PP
-    goto 10
-  END SUBROUTINE HPSORT_real
-
-
-  subroutine hpsort_eps(n, ra, ind, eps)
-    !---------------------------------------------------------------------
-    ! sort an array ra(1:n) into ascending order using heapsort algorithm,
-    ! and considering two elements being equal if their values differ
-    ! for less than "eps".
-    ! n is input, ra is replaced on output by its sorted rearrangement.
-    ! create an index table (ind) by making an exchange in the index array
-    ! whenever an exchange is made on the sorted data array (ra).
-    ! in case of equal values in the data array (ra) the values in the
-    ! index array (ind) are used to order the entries.
-    ! if on input ind(1)  = 0 then indices are initialized in the routine,
-    ! if on input ind(1) != 0 then indices are assumed to have been
-    !                initialized before entering the routine and these
-    !                indices are carried around during the sorting process
-    !
-    ! no work space needed !
-    ! free us from machine-dependent sorting-routines !
-    !
-    ! adapted from Numerical Recipes pg. 329 (new edition)
-    !
-
-    implicit none
-
-    !-input/output variables
     integer, intent(in) :: n
-    integer, intent(inout) :: ind(*)
-    real(dp), intent(inout) :: ra(*)
-    real(dp), intent(in) :: eps
+    real(dp), intent(inout) :: ra(n)
+    integer, intent(out) :: p(n)
 
-    !-local variables
-    integer :: i, ir, j, l, iind
+    integer :: i, j, l, ir, pp
     real(dp) :: rra
 
 
-    ! nothing to order
-    if (n < 2) return
+    ! initialize permutation array
+    do i = 1, n
+      p(i) = i
+    enddo
 
-    ! initialize index array
-    if (ind(1) == 0) then
-      do i = 1, n
-          ind(i) = i
-      enddo
-    endif
+    ! nothing to order
+    if ( n < 2 ) return
 
     ! initialize indices for hiring and retirement-promotion phase
     l = n / 2 + 1
-
     ir = n
-
-    sorting: do
-
-      ! still in hiring phase
-      if ( l > 1 ) then
-        l    = l - 1
-        rra  = ra(l)
-        iind = ind(l)
-        ! in retirement-promotion phase.
-      else
-        ! clear a space at the end of the array
-        rra  = ra(ir)
+    10 continue
+    ! still in hiring phase
+    if ( l > 1 ) then
+      l = l - 1
+      rra = ra(l)
+      pp = p(l)
+      ! in retirement-promotion phase.
+    else
+      ! clear a space at the end of the array
+      rra = ra(ir)
+      !
+      pp = p(ir)
+      ! retire the top of the heap into it
+      ra(ir) = ra(1)
+      !
+      p(ir) = p(1)
+      ! decrease the size of the corporation
+      ir = ir - 1
+      ! done with the last promotion
+      if ( ir == 1 ) then
+        ! the least competent worker at all !
+        ra(1) = rra
         !
-        iind = ind(ir)
-        ! retire the top of the heap into it
-        ra(ir) = ra(1)
-        !
-        ind(ir) = ind(1)
-        ! decrease the size of the corporation
-        ir = ir - 1
-        ! done with the last promotion
-        if ( ir == 1 ) then
-            ! the least competent worker at all !
-            ra(1)  = rra
-            !
-            ind(1) = iind
-            exit sorting
+        p(1) = pp
+        return
+      endif
+    endif
+    ! wheter in hiring or promotion phase, we
+    i = l
+    ! set up to place rra in its proper level
+    j = l + l
+    !
+    do while ( j <= ir )
+      if ( j < ir ) then
+        ! compare to better underling
+        if ( ra(j) < ra(j + 1) ) then
+          j = j + 1
+        elseif ( ra(j) == ra(j + 1) ) then
+          if ( p(j) < p(j + 1) ) j = j + 1
         endif
       endif
-      ! wheter in hiring or promotion phase, we
-      i = l
-      ! set up to place rra in its proper level
-      j = l + l
-      !
-      do while ( j <= ir )
-        if ( j < ir ) then
-            ! compare to better underling
-            if ( abs(ra(j)-ra(j+1)) >= eps ) then
-              if (ra(j) < ra(j+1)) j = j + 1
-            else
-              ! this means ra(j) == ra(j+1) within tolerance
-              if (ind(j) < ind(j + 1) ) j = j + 1
-            endif
-        endif
+      ! demote rra
+      if ( rra < ra(j) ) then
+        ra(i) = ra(j)
+        p(i) = p(j)
+        i = j
+        j = j + j
+      elseif ( rra == ra(j) ) then
         ! demote rra
-        if ( abs(rra - ra(j)) >= eps ) then
-            if (rra < ra(j)) then
-              ra(i) = ra(j)
-              ind(i) = ind(j)
-              i = j
-              j = j + j
-            else
-              ! set j to terminate do-while loop
-              j = ir + 1
-            end if
+        if ( pp < p(j) ) then
+          ra(i) = ra(j)
+          p(i) = p(j)
+          i = j
+          j = j + j
         else
-            !this means rra == ra(j) within tolerance
-            ! demote rra
-            if (iind < ind(j) ) then
-              ra(i) = ra(j)
-              ind(i) = ind(j)
-              i = j
-              j = j + j
-            else
-              ! set j to terminate do-while loop
-              j = ir + 1
-            endif
-        end if
-      enddo
-      ra(i) = rra
-      ind(i) = iind
+          ! set j to terminate do-while loop
+          j = ir + 1
+        endif
+        ! this is the right place for rra
+      else
+        ! set j to terminate do-while loop
+        j = ir + 1
+      endif
+    enddo
+    ra(i) = rra
+    p(i) = pp
+    goto 10
 
-    end do sorting
-    !
-  end subroutine hpsort_eps
+  end subroutine hpsort_real
 
 
   subroutine find_r_in_WS_cell(at,rvec_cryst,nr1,nr2,nr3,rvec_WS_cryst)
@@ -1285,30 +983,6 @@ end function intgr_spline_gaussq
 
   end subroutine find_r_in_WS_cell
 
-  function cmplx_trace (mat)
-
-    use intw_useful_constants, only: cmplx_0
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: mat(:,:)
-    complex(kind=dp) :: cmplx_trace
-    integer :: d1, d2, i
-
-    d1 = size(mat(:,1))
-    d2 = size(mat(1,:))
-
-    if (d1.ne.d2) then
-      write(*,*)"Errorea cmplx_trace"
-      stop
-    end if
-
-    cmplx_trace = cmplx_0
-    do i=1,d1
-      cmplx_trace = cmplx_trace + mat(i,i)
-    enddo
-
-  end function  cmplx_trace
 
   function weight_ph(x)
 
@@ -1696,17 +1370,19 @@ end function intgr_spline_gaussq
   end function fermi_dirac
 
 
-  ! MBR 24/04/24
-  ! triangle area (taken from FSH/modules/geometry.f90)
-  function  area_vec(v1,v2)
-    use kinds, only: dp
+  function int2str(i)
+
     implicit none
-    real(kind=dp), dimension(3), intent(in) :: v1,v2
-    real(kind=dp) :: area_vec
-    area_vec =  (v1(2)*v2(3) - v1(3)*v2(2))**2 + &
-                (v1(3)*v2(1) - v1(1)*v2(3))**2 + &
-                (v1(1)*v2(2) - v1(2)*v2(1))**2
-    area_vec = sqrt(area_vec)*0.5_dp
-  end function area_vec
+
+    integer, intent(in) :: i
+    character(len=16) :: f1, frm, int2str
+
+
+    write(f1,"(I8)") floor(log10(i*1.0) + 1)
+    frm = "i"//trim(adjustl(f1))
+
+    write(int2str,"("//trim(frm)//")") i
+
+  end function int2str
 
 end module intw_utility

@@ -54,8 +54,9 @@ program ep_on_trFS_dV
 
         use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
-        use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, ainv, &
-                joint_to_triple_index_r, area_vec
+        use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, &
+                joint_to_triple_index_r
+        use intw_matrix_vector, only: area_vec
         use intw_input_parameters, only: mesh_dir, prefix, read_input,&
                 intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
                 nq1, nq2, nq3, nqirr, ph_dir,  &

@@ -286,7 +286,7 @@ contains
     !-------------------------------------------------------------------------------------------------------
 
     use intw_reading, only: gvec, bg
-    use intw_utility, only: HPSORT
+    use intw_utility, only: hpsort_integer
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -335,7 +335,7 @@ contains
       !
     enddo
     !
-    call HPSORT(nG,list_iG_k,permutations)
+    call hpsort_integer(nG,list_iG_k,permutations)
     wfc_k_irr=wfc_k
     wfc_k=cmplx_0
     !
