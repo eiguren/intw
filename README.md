@@ -106,6 +106,20 @@ cmake -DSPGLIB_PREFER_PKGCONFIG=ON ..
 Remember adjusting the `PKG_CONFIG_PATH` environmental variable if you installed Spglib in a non-standard location.
 
 
+### triangle and tetgen (optional)
+
+[triangle](https://www.cs.cmu.edu/~quake/triangle.html) is a Two-Dimensional Quality Mesh Generator and Delaunay Triangulator. And [tetgen](https://wias-berlin.de/software/index.jsp?id=TetGen) is a program to generate tetrahedral meshes of any 3D polyhedral domains.
+
+Both, `triangle` and `tetgen` codes, are used by INTW's `triFS.x` utility to obtain a fully symmetric triangulated Fermi surface. In order to `triFS.x` be compiled, ensure that both codes are installed and available in your system's `PATH`. Both codes can be downloaded directly from their official websites or, alternatively, in some distributions they can also be installed from the system's package repositories. E.g.:
+
+```bash
+# Ubuntu
+sudo apt install triangle-bin tetgen
+```
+
+If `triangle` and `tetgen` executables are not found by CMake in the configuring step, `triFS.x` utility will not be compiled, however, the rest of the utilities will still be successfully built.
+
+
 ### OpenMP (optional experimental)
 
 Some parts of intw are parallelized using OpenMP.
