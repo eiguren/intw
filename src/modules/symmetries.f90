@@ -1856,7 +1856,7 @@ contains
   end subroutine rot_atoms
 
 
-  subroutine rotate_wfc_test(wfc_k_irr, list_iG, wfc_k, list_iG_k, i_sym, sym, ftau, G_sym)
+  subroutine rotate_wfc_test(wfc_k_irr, list_iG_irr, wfc_k, list_iG_k, i_sym, sym, ftau, G_sym)
     !--------------------------------------------------------------------------------------------------------
     ! This subroutine takes in the periodic part of a wavefunction psi_{nk} and
     ! returns the periodic part of psi_{n Rk}, where Rk is the rotated k-vector.
@@ -1898,7 +1898,7 @@ contains
     !           u_{nk}(sym_l*G+G_sym) =  e^{i R*G*tau} u_{nk_irr}(G)
     !--------------------------------------------------------------------------------------------------------
     use intw_fft, only: find_iG
-    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
+    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, cmplx_1
     use intw_utility, only: hpsort_integer
     use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
 
@@ -1909,9 +1909,9 @@ contains
     integer, intent(in) :: i_sym ! index of the symmetry operation
     integer, intent(in) :: G_sym(3) ! G vector such that  R*k + G_sym = sym_l * k_irr
     integer, intent(in) :: sym(3,3) ! inverse point group operation the one acting on k (cryst.coord.)
-    integer, intent(in) :: list_iG(nG_max) ! G vector indices for k_irr
     real(kind=dp), intent(in) :: ftau(3) ! fractional translation associated with point group operation
-    complex(kind=dp), intent(inout) :: wfc_k_irr(nG_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
+    integer, intent(in) :: list_iG_irr(nG_max) ! G vector indices for k_irr
+    complex(kind=dp), intent(in) :: wfc_k_irr(nG_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
     integer, intent(out) :: list_iG_k(nG_max) ! G vector indices for k, sorted
     complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
 
@@ -1923,9 +1923,10 @@ contains
     integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
-    integer :: ibnd, ispin, jspin
+    integer :: ibnd, ispin
     integer :: nG  ! counter on the number of G vectors in the array
-    complex(kind=dp) :: phases(nG_max)
+    complex(kind=dp) :: phases(nG_max), spin_symmetry(2,2)
+
 
     phases(:) = cmplx_0
     wfc_k(:,:,:) = cmplx_0
@@ -1936,9 +1937,9 @@ contains
     !
     ! loop on all Gk, the coefficients of the wavefunction at the IBZ k point
     !
-    do i=1,nG_max
+    do i = 1, nG_max
       !
-      iGk = list_iG(i)
+      iGk = list_iG_irr(i)
       !
       if (iGk==0) exit  ! the index array is zero-padded at the end.
       nG = nG + 1 ! only increment if iGk /= 0!
@@ -1949,25 +1950,25 @@ contains
       !
       !ASIER: Gk and NOT RGk!!!
       ! - sign is well checked below.
-      phases(nG) = exp(- cmplx_I*tpi*sum(dble(Gk) * ftau))
+      phases(nG) = exp(-cmplx_I*tpi*dot_product(Gk, ftau))
 
       G_k(:) = RGk(:) + G_sym(:)
-      call find_iG(G_k,iG_k)
+      call find_iG(G_k, iG_k)
       !
       list_iG_k(nG) = iG_k
       !
     enddo
     !
-    call hpsort_integer(nG,list_iG_k,permutations)
+    call hpsort_integer(nG, list_iG_k, permutations)
     !
-    do i=1,nG
+    do i = 1, nG
       !
       ! compute the wfc element
       !
       p_i = permutations(i)
       !
-      do ibnd=1,num_bands_intw
-        do ispin=1,nspin
+      do ibnd = 1, num_bands_intw
+        do ispin = 1, nspin
           !
           wfc_k(i,ibnd,ispin) = wfc_k_irr(p_i,ibnd,ispin) * phases(p_i)
           !
@@ -1980,25 +1981,18 @@ contains
     if (nspin==2) then
       !
       wfc_k_aux = wfc_k
-      wfc_k     = cmplx_0
+      spin_symmetry = spin_symmetry_matrices(:,:,inverse_indices(i_sym))
       !
-      do i=1,nG
-        do ibnd=1,num_bands_intw
-          do ispin=1,nspin
-            do jspin=1,nspin
-              !
-              ! JLB, MBR 29/06/2023
-              ! wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,i_sym) * wfc_k_aux(i,ibnd,jspin)
-              wfc_k(i,ibnd,ispin) = wfc_k(i,ibnd,ispin) + spin_symmetry_matrices(ispin,jspin,inverse_indices(i_sym)) * wfc_k_aux(i,ibnd,jspin)
-              !
-            enddo !jspin
-          enddo !ispin
+      do i = 1, nG
+        do ibnd = 1, num_bands_intw
+          !
+          ! JLB, MBR 29/06/2023
+          wfc_k(i,ibnd,:) = matmul(spin_symmetry, wfc_k_aux(i,ibnd,:))
+          !
         enddo !ibnd
       enddo !i
       !
     endif ! If non-collinear
-    !
-    return
 
   end subroutine rotate_wfc_test
 
