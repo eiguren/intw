@@ -38,9 +38,8 @@ module intw_symmetries
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, irr_kp_grid_to_full, calculate_star_r, &
             calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
-            get_psi_general_k, intw_check_mesh, apply_TR_to_wfc, &
-            find_size_of_irreducible_k_set, find_the_irreducible_k_set_irr, &
-            multable
+            intw_check_mesh, apply_TR_to_wfc, find_size_of_irreducible_k_set, &
+            find_the_irreducible_k_set_irr, multable
   !
   ! functions
   public :: eqvect
@@ -2002,118 +2001,6 @@ contains
     return
 
   end subroutine rotate_wfc_test
-
-
-  subroutine get_psi_general_k(kpoint, use_IBZ, list_iG, wfc_k, QE_eig)
-    !----------------------------------------------------------------------------!
-    !     This subroutine is a driver which performs all the necessary operations
-    !     to obtain the periodic part of the wavefunction at the specified k point.
-    !
-    !     Asier&&Idoia 24 06 2014 Compared to "get_psi_k", here the input
-    !     is a general k(3) (dp, crystal) which may be far from original kmesh.
-    !
-    !     It will extract the appropriate information from the QE folder, and
-    !     rotate the wfc if necessary.
-    !
-    !     If use_IBZ is set to TRUE, the subroutine will obtain the wavefunction
-    !     by rotation. If it is False, the subroutine will try to fetch
-    !     the wavefunction from the QE directory; if this is not possible,
-    !     it will throw an error.
-    !----------------------------------------------------------------------------!
-    use intw_input_parameters, only: nk1, nk2, nk3
-    use intw_reading, only: get_K_folder_data
-    use intw_reading, only: s, ftau, nG_max, nspin, num_bands_intw
-    use intw_useful_constants, only: ZERO
-    use intw_fft, only: wfc_by_expigr
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
-
-    implicit none
-
-    real(kind=dp), intent(in) :: kpoint(3)
-    logical, intent(in) :: use_IBZ
-
-    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin)
-    integer, intent(out) :: list_iG(nG_max)
-    real(kind=dp), intent(out) :: QE_eig(num_bands_intw)
-
-    complex(kind=dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
-    integer :: list_iG_irr(nG_max)
-
-
-    integer :: ikpt, i_folder
-
-    integer :: i_sym, TR
-    integer :: G_sym(3), G_plus(3)
-    integer :: sym(3,3)
-    integer :: nG
-
-
-    real(kind=dp) :: ftau_sym(3)
-    integer :: i_1bz, j_1bz, k_1bz
-
-    real(kind=dp) :: kpoint_1BZ(3)
-
-
-    if (.not. use_IBZ .and. .not. full_mesh) then
-      ! the parameters are not consistent
-      write(*,*) '*****************************************************'
-      write(*,*) '*                 subroutine get_psi_k              *'
-      write(*,*) '*               --------------------------          *'
-      write(*,*) '*      A wavefunction obtained without rotation     *'
-      write(*,*) '*      was requested, but the QE folders do not     *'
-      write(*,*) '*      contain a full mesh! Review code...          *'
-      write(*,*) '*        Program continues at your own risks!       *'
-      write(*,*) '*****************************************************'
-      !stop
-    end if
-
-    call find_k_1BZ_and_G(kpoint,nk1,nk2,nk3,i_1bz,j_1bz, k_1bz, kpoint_1bz, G_plus)
-
-    call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i_1bz,j_1bz,k_1bz)
-
-    if (.not.use_IBZ) then
-      ! do not use the IBZ; just fetch the wavefunction from the QE folders
-      i_folder = QE_folder_nosym(ikpt)
-      G_sym    = nosym_G(:,ikpt) + G_plus(:) !Asier&&Idoia 24 06 2014
-      ftau_sym = ZERO
-      sym      = s(:,:,identity_matrix_index)
-      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
-
-      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG,         &
-                           identity_matrix_index, sym, ftau_sym, G_sym)
-    else
-
-      ! Use the IBZ and symmetry!
-
-      ! identify the right folder
-      i_folder = QE_folder_sym(ikpt)
-
-      call get_K_folder_data(i_folder, list_iG_irr, wfc_k_irr, QE_eig, nG)
-
-      ! The symmetry which takes k_irr to k
-      i_sym    = symlink(ikpt,1)
-      TR       = symlink(ikpt,2)
-      G_sym    = sym_G(:,ikpt) !+ G_plus(:) !Asier&&Idoia 24 06 2014
-      ftau_sym = ftau(:,i_sym)
-      sym      = s(:,:,inverse_indices(i_sym))
-
-      call rotate_wfc_test(wfc_k_irr,list_iG_irr,wfc_k, list_iG, &
-                           i_sym, sym, ftau_sym, G_sym)
-
-      ! If time-reversal is present, the wavefunction currently stored
-      ! in wfc_k is actually for (-k). Complex conjugation must now
-      ! be applied to recover wfc_k.
-      if ( TR == 1)  then
-        call apply_TR_to_wfc(wfc_k,list_iG)
-      end if
-
-    end if
-
-    list_iG_irr = list_iG
-
-    call wfc_by_expigr(kpoint, num_bands_intw, nspin, ng_max, list_iG_irr, list_iG, wfc_k, G_plus)
-
-  end subroutine get_psi_general_k
 
 
   subroutine intw_check_mesh(nk_1, nk_2, nk_3, kmesh, nk_irr, k_irr, nkpoints_QE, kpoints_QE)
