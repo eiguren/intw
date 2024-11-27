@@ -280,12 +280,11 @@ contains
     enddo
 
   end subroutine generate_nl
-!*******************************************************************************************************
-!-------------------------------------------------------------------------------------------------------
-  subroutine  wfc_by_expigr (kpoint, num_bands, nspin, ng_max, list_iG_k_irr, list_iG_k, wfc_k, G_sym_l)
-    !-------------------------------------------------------------------------------------------------------
 
-    use intw_reading, only: gvec, bg
+
+  subroutine wfc_by_expigr(num_bands, nspin, G, list_iG, wfc)
+
+    use intw_reading, only: gvec, nG_max
     use intw_utility, only: hpsort_integer
     use intw_useful_constants, only: cmplx_0
 
@@ -293,95 +292,70 @@ contains
 
     !I/O variables
 
-    integer,intent(in) :: num_bands, nspin, ng_max, list_iG_k_irr(nG_max) ! G vector indices for k_irr
-    integer,intent(in) :: G_sym_l(3)                               ! G vector such that  R*k + G_sym_l = sym_l * k_irr
-    real(dp),intent(in) :: kpoint(3)
-    complex(dp),intent(inout) :: wfc_k(ng_max,num_bands,nspin)
-    integer,intent(out) :: list_iG_k(nG_max)                       ! G vector indices for k, sorted
+    integer, intent(in) :: num_bands, nspin
+    integer, intent(in) :: G(3) ! G vector such that k_out = k_in + G
+    integer, intent(inout) :: list_iG(nG_max) ! On input, G vector indices for k, sorted
+                                              ! On output, G vector indices for k + G, sorted
+    complex(dp), intent(inout) :: wfc(ng_max,num_bands,nspin) ! On input, wave function components for k
+                                                              ! On output, wave function components for k + G
 
     !local variables
 
+    integer :: list_iG_k_irr(nG_max)
     complex(dp) :: wfc_k_irr(ng_max,num_bands,nspin)
-    integer :: list_iG(nG_max)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
     integer :: permutations(nG_max) ! index permutation which orders list_G_k
     integer :: nb, ispin, nG
-    real(dp) :: kpoint_cart(1:3), gkmod (1:nG_max)
+
 
     !Initialization
     !
-    list_iG_k = 0
+    list_iG_k_irr = list_iG
     list_iG = 0
-    kpoint_cart=matmul(bg,kpoint)
     !
     ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
     !
-    nG=0
-    !
-    do i=1,nG_max
+    nG = 0
+    do i = 1, nG_max
       !
       iG_k_irr = list_iG_k_irr(i)
       !
       if (iG_k_irr == 0) exit ! the index array is zero-padded at the end.
       !
-      nG=nG+1
+      nG = nG+1
       !
-      G_k(:) = gvec(:,iG_k_irr) - G_sym_l(:) ! minus, zeren horrela da konbentzioa exp(-igr) (testatuta dago intw2wan).
+      G_k(:) = gvec(:,iG_k_irr) - G(:) ! minus, zeren horrela da konbentzioa exp(-igr) (testatuta dago intw2wan).
       !
-      call find_iG(G_k,iG_k)
+      call find_iG(G_k, iG_k)
       !
-      list_iG_k(nG) = iG_k
+      list_iG(nG) = iG_k
       !
     enddo
     !
-    call hpsort_integer(nG,list_iG_k,permutations)
-    wfc_k_irr=wfc_k
-    wfc_k=cmplx_0
+    call hpsort_integer(nG, list_iG, permutations)
+    wfc_k_irr = wfc
+    wfc = cmplx_0
     !
-    do i= 1, nG
+    do i = 1, nG
       !
       p_i = permutations(i)
       !
       ! compute the wfc element
       !
-      do nb=1,num_bands
-        do ispin=1,nspin
+      do nb = 1, num_bands
+        do ispin = 1, nspin
           !
-          wfc_k(i,nb,ispin) = wfc_k_irr(p_i,nb,ispin)
+          wfc(i,nb,ispin) = wfc_k_irr(p_i,nb,ispin)
           !
         enddo
       enddo
       !
-      gkmod (i) = sum( (kpoint_cart(:) + gvec_cart(:, list_iG_k(i)) )**2 )
-      !
     enddo
 
-    !I think this can be deleted, because we have decided to sort our components in another fashion
-    !    permutations=0
-    !    call hpsort_eps (nG, gkmod(1:nG) , permutations(1:nG), 1.0E-8_dp)
-    !    wfc_k_irr =  wfc_k
-    !    wfc_k=cmplx_0
-    !    list_iG=list_iG_k
-    !    list_iG_k=0
-    !    do i= 1, nG
-    !       p_i          = permutations(i)
-    !       list_iG_k(i) = list_iG(p_i)
-    !       ! compute the wfc element
-    !       do nb = 1,num_bands
-    !          do ispin=1,nspin
-    !             wfc_k(i,nb,ispin) =  wfc_k_irr(p_i,nb,ispin)
-    !          enddo
-    !       end do
-    !
-    !    end do
-    !
-    !
-    return
-
   end subroutine wfc_by_expigr
-!*************************************************************
-!
+
+
   subroutine wfc_from_g_to_r (list_iG,wfc_g, wfc_r)
     !--------------------------------------------------------
     !  This subroutine is a driver which uses the 3D-FFT

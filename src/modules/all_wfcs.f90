@@ -135,13 +135,13 @@ contains
       k_QE = kpoints_QE(:,i_folder)
       !
       ngk = ngk_all(ikpt)
-      list_iG_irr(:) = list_iG_all(ikpt,:)
+      list_iG(:) = list_iG_all(ikpt,:)
       wfc_k(:,:,:) = wfc_k_irr_all(ikpt,:,:,:)
       if (present(QE_eig)) QE_eig(:) = QE_eig_irr_all(ikpt,:)
       !
       G_sym = kpoint - k_QE
       !
-      call wfc_by_expigr(kpoint,num_bands_intw,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
+      call wfc_by_expigr(num_bands_intw, nspin, G_sym, list_iG, wfc_k)
       !
     else
       !
@@ -191,15 +191,13 @@ contains
         !
       endif
       !
-      list_iG_irr = list_iG
-      !
       if ( sum( abs( ktest + dble(G_sym) - kpoint ) )>eps_5 ) then
           write(*,*) "ERROR in get_psi_general_k_all_wfc:"
           write(*,"(a,100f12.6)") "Aimed kpoint is     :", kpoint
           write(*,"(a,100f12.6)") "Symmetry induced is :", ktest + G_sym
       end if
       !
-      call wfc_by_expigr(kpoint,num_bands_intw,nspin,ng_max,list_iG_irr,list_iG,wfc_k,G_sym)
+      call wfc_by_expigr(num_bands_intw, nspin, G_sym, list_iG, wfc_k)
       !
     endif
 
