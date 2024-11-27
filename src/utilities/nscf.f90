@@ -17,7 +17,6 @@ program nscf
   use intw_fft, only: generate_nl, allocate_fft, nl
 
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
-  use intw_allwfcs, only: wfc_k_irr_all, list_iG_all, QE_eig_irr_all
 
 
   !================================================================================
