@@ -1,16 +1,33 @@
-      ! MBR 26/04/2024
-
-      ! Calculate Eliashberg function from electron-phonon coupling
-      ! matrix elements interpolated on a triangulated Fermi surface.
-
-      ! a2F integral = double loop on kpoints of the FS triangulation.
-      ! The ep element calculated for q=k'-k is read from a file.
-      ! The needed phonons and  dynamical matrices calculated by QE are
-      ! read in and then interpolated as in the method of:
-      ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
-
-
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 program a2F_on_trFS
+
+  ! MBR 26/04/2024
+
+  ! Calculate Eliashberg function from electron-phonon coupling
+  ! matrix elements interpolated on a triangulated Fermi surface.
+
+  ! a2F integral = double loop on kpoints of the FS triangulation.
+  ! The ep element calculated for q=k'-k is read from a file.
+  ! The needed phonons and  dynamical matrices calculated by QE are
+  ! read in and then interpolated as in the method of:
+  ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
 
         use kinds, only: dp
 

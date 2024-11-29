@@ -1,16 +1,35 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module triFS_geometry
 
-!------------------------------------------------------------------!
-! Module that contains all the necessary variables and subroutines !
-! related to triangles and tetrahedra                              !
-!------------------------------------------------------------------!
-use kinds, only: dp
+  !------------------------------------------------------------------!
+  ! Module that contains all the necessary variables and subroutines !
+  ! related to triangles and tetrahedra.                             !
+  !------------------------------------------------------------------!
 
-public :: wigner_seitz_cell, plot_poly, polyhedra_off, plot_tetra_off, normal_of_tri, &
-          tetrasym, rot_tetra, compact_tetra, overlap_tetra, overlap_tri, overlap_edge, overlap_face, &
-          overlap_faces_int, equal_tetra, tetraIBZ_2_vert_faces_edges, irr_faces, sort_edges, &
-          write_node_list_face, nodes_on_face_and_rotate_to_plane, triangulate_faces, add_nodes_IBZ_volume
-private
+  use kinds, only: dp
+
+  public :: wigner_seitz_cell, plot_poly, polyhedra_off, plot_tetra_off, normal_of_tri, &
+            tetrasym, rot_tetra, compact_tetra, overlap_tetra, overlap_tri, overlap_edge, overlap_face, &
+            overlap_faces_int, equal_tetra, tetraIBZ_2_vert_faces_edges, irr_faces, sort_edges, &
+            write_node_list_face, nodes_on_face_and_rotate_to_plane, triangulate_faces, add_nodes_IBZ_volume
+  private
 
 
 contains
@@ -337,116 +356,6 @@ contains
     close(io_unit1)
 
   end subroutine wigner_seitz_cell
-
-
-!   subroutine hp_sort(n, ra, ind)
-!     !Subroutine directly taken from QE
-!     !---------------------------------------------------------------------
-!     ! sort an array ra(1:n) into ascending order using heapsort algorithm.
-!     ! n is input, ra is replaced on output by its sorted rearrangement.
-!     ! create an index table (ind) by making an exchange in the index array
-!     ! whenever an exchange is made on the sorted data array (ra).
-!     ! in case of equal values in the data array (ra) the values in the
-!     ! index array (ind) are used to order the entries.
-!     ! if on input ind(1)  = 0 then indices are initialized in the routine,
-!     ! if on input ind(1) != 0 then indices are assumed to have been
-!     !                initialized before entering the routine and these
-!     !                indices are carried around during the sorting process
-!     !
-!     ! no work space needed !
-!     ! free us from machine-dependent sorting-routines !
-!     !
-!     ! adapted from Numerical Recipes pg. 329 (new edition)
-!     !
-
-!     implicit none
-!     !-input/output variables
-!     integer, intent(in) :: n
-!     integer, intent(out) :: ind (n)
-!     real(dp), intent(inout) :: ra (n)
-!     !-local variables
-!     integer :: i, ir, j, l, iind
-!     real(dp) :: rra
-!     ! initialize index array
-!     if (ind (1)==0) then
-!         do i = 1, n
-!           ind (i) = i
-!         enddo
-!     endif
-!     ! nothing to order
-!     if (n<2) return
-!     ! initialize indices for hiring and retirement-promotion phase
-!     l = n / 2 + 1
-!     ir = n
-! 10  continue
-!     ! still in hiring phase
-!     if (l>1) then
-!         l = l - 1
-!         rra = ra (l)
-!         iind = ind (l)
-!         ! in retirement-promotion phase.
-!     else
-!         ! clear a space at the end of the array
-!         rra = ra (ir)
-!         !
-!         iind = ind (ir)
-!         ! retire the top of the heap into it
-!         ra (ir) = ra (1)
-!         !
-!         ind (ir) = ind (1)
-!         ! decrease the size of the corporation
-!         ir = ir - 1
-!         ! done with the last promotion
-!         if (ir==1) then
-!           ! the least competent worker at all !
-!           ra (1) = rra
-!           !
-!           ind (1) = iind
-!           return
-!         endif
-!     endif
-!     ! wheter in hiring or promotion phase, we
-!     i = l
-!     ! set up to place rra in its proper level
-!     j = l + l
-!     !
-!     do while (j<=ir)
-!         if (j<ir) then
-!           ! compare to better underling
-!           if ( ra(j) < ra(j + 1) ) then
-!               j = j + 1
-!           elseif ( ra(j) == ra(j + 1) ) then
-!               if ( ind(j) < ind(j + 1) ) j = j + 1
-!           endif
-!         endif
-!         ! demote rra
-!         if (rra<ra(j)) then
-!           ra (i) = ra (j)
-!           ind (i) = ind (j)
-!           i = j
-!           j = j + j
-!         elseif ( rra == ra(j) ) then
-!           ! demote rra
-!           if (iind<ind(j) ) then
-!               ra (i) = ra (j)
-!               ind (i) = ind (j)
-!               i = j
-!               j = j + j
-!           else
-!               ! set j to terminate do-while loop
-!               j = ir + 1
-!           endif
-!           ! this is the right place for rra
-!         else
-!           ! set j to terminate do-while loop
-!           j = ir + 1
-!         endif
-!     enddo
-!     ra (i) = rra
-!     ind (i) = iind
-!     goto 10
-!     !
-!   end subroutine hp_sort
 
 
   subroutine plot_poly()

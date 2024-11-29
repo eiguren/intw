@@ -1,3 +1,21 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module siesta2intw_ph
 
   use precision, only: dp
@@ -82,7 +100,12 @@ contains
 
   subroutine phq_init(tpiba, bg, qcryst)
     !
-    !
+    ! This subroutine is based on the phq_init subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2008 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
 
     ! variables
@@ -116,6 +139,13 @@ contains
     !    part of the pseudopotential in the q+G vectors.
     !    In order to perform the Fourier transform, a term erf(r)/r
     !    is subtracted in real space and added again in G space
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
 
     ! variables

@@ -1,29 +1,42 @@
-!----------------------------------------------------------------------------!
-!       intw project.
 !
-!----------------------------------------------------------------------------!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_w90_setup
-  !
-  !----------------------------------------------------------------------------!
-  !
-  ! TODO in new version, what is the module that contains num_bands, num_wann?
-  ! I think it should be intw_intw2wannier.
-  !
-  ! The utility W902INTW should:
-  ! 1.- call read_nnkp_file in intw_intw2wannier to obtain nnkp_exclude_bands, nnkp_kpoints, etc (see use line)
-  ! 2.- call this read_w90_chk
-  ! 3.- call allocate_and_build_u_mesh
-  ! 4.- write_formatted_u_mesh
-  !
-  ! Then, any utility using u_mesh can simply use the information obtained by
-  ! read_formatted_u_mesh
-  !
-  ! TODO think of a wannier type. It may be filled up when doing read_formatted_u_mesh.
-  !
-  !----------------------------------------------------------------------------!
-  !
+
+  !-------------------------------------------------------------------------------------!
+  ! TODO in new version, what is the module that contains num_bands, num_wann?          !
+  ! I think it should be intw_intw2wannier.                                             !
+  !                                                                                     !
+  ! The utility W902INTW should:                                                        !
+  ! 1.- call read_nnkp_file in intw_intw2wannier to obtain nnkp_exclude_bands,          !
+  !     nnkp_kpoints, etc (see use line)                                                !
+  ! 2.- call this read_w90_chk                                                          !
+  ! 3.- call allocate_and_build_u_mesh                                                  !
+  ! 4.- call write_formatted_u_mesh                                                     !
+  !                                                                                     !
+  ! Then, any utility using u_mesh can simply use the information obtained by           !
+  ! read_formatted_u_mesh                                                               !
+  !                                                                                     !
+  ! TODO think of a wannier type. It may be filled up when doing read_formatted_u_mesh. !
+  !-------------------------------------------------------------------------------------!
+
   use kinds, only: dp
+
   implicit none
   !
   ! variables
@@ -1105,5 +1118,3 @@ end subroutine wann_FT_1index_1k
 !----------------------------------------------------------------------------!
 end module intw_w90_setup
 !----------------------------------------------------------------------------!
-
-

@@ -1,17 +1,36 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+program ep_on_trFS_dV
 
-      ! MBR 24/04/2024
+  ! MBR 24/04/2024
 
-      ! This utility calculates electron-phonon matrix elements interpolated on a Fermi surface triangulation
-      ! following the method of:
+  ! This utility calculates electron-phonon matrix elements interpolated on a Fermi surface triangulation
+  ! following the method of:
 
-      ! A. Eiguren, C. Ambrosch-Draxl, Phys. Rev. B 78, 045124 (2008)
+  ! A. Eiguren, C. Ambrosch-Draxl, Phys. Rev. B 78, 045124 (2008)
 
-      ! For that, the induced potentials calculated with QE on the q-grid are read in
-      ! and interpolated to the non-uniform q-list corresponding to the triangulation (q=k'-k)
-      ! Needed wavefunctions on the triangulated k-points are calculated on the fly by calling QE and stored.
-      ! If such calculations preexist, those wavefunctions are read.
+  ! For that, the induced potentials calculated with QE on the q-grid are read in
+  ! and interpolated to the non-uniform q-list corresponding to the triangulation (q=k'-k)
+  ! Needed wavefunctions on the triangulated k-points are calculated on the fly by calling QE and stored.
+  ! If such calculations preexist, those wavefunctions are read.
 
-! 1st part:
+  ! 1st part:
 
       ! This utility uses < intw.in as others.
       ! It uses mesh_dir, prefix, and info on which FS sheets are needed.
@@ -35,7 +54,7 @@
 
       ! (2-4 done only in case prefix.nscf.out does not exist)
 
-! 2nd part:
+  ! 2nd part:
 
       ! Read derivative of local potential (dvq_local) on the real space unit cell for
       ! q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
@@ -48,9 +67,6 @@
       ! Interpolate the potential.
       ! Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
       ! Write to file
-
-
-program ep_on_trFS_dV
 
         use kinds, only: dp
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8

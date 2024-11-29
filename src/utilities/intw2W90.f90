@@ -1,23 +1,27 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! program intw2W90
-! -----------------------------------
 !
-! This is a "utility" program which is part of the intw project.
+! Copyright (C) 2024 INTW group
 !
-! The purpose of this utility is to perform the same tasks as the
-! program "pw2wannier90" which is part of the QE distribution, but
-! utilizing a minimum set of (QE generated) Bloch functions, using
-! symmetry.
+! This file is part of INTW.
 !
-! The code is heavily inspired from pw2wannier90.
-! Mad props to the QE people; their code is a bit above my paygrade,
-! however, so I've taken some bits and modified them so that a monkey
-! could understand.
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
 !
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 program intw2W90
+
+  ! The purpose of this utility is to perform the same tasks as the
+  ! program "pw2wannier90" which is part of the QE distribution, but
+  ! utilizing a minimum set of (QE generated) Bloch functions, using
+  ! symmetry.
 
   use kinds, only: dp
   use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, nnkp_n_proj, &

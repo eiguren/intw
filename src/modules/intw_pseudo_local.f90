@@ -1,11 +1,36 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module intw_pseudo_local
+
+  !--------------------------------------------------------------------!
+  ! This module contains variables and subroutines to obtain the local !
+  ! part of the pseudo-potentials.                                     !
+  !--------------------------------------------------------------------!
 
   use kinds, only: dp
 
   implicit none
 
+  ! variables
   public :: vlocq
 
+  ! subroutines
   public :: init_local_PP, init_vlocq, deallocate_vlocq, &
             calculate_local_part_v, calculate_local_part_dv, &
             dvqpsi_local
@@ -33,7 +58,13 @@ contains
 
 
   subroutine init_vlocq(q_cryst)
-    !----------------------------------------------------------------------------
+    !
+    ! This subroutine is based on the phq_init subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2008 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use intw_reading, only: ntyp, tpiba2, ngm, bg, volume0
     use intw_fft, only: gvec_cart
@@ -259,11 +290,15 @@ contains
   subroutine setlocq(q_cart, mesh, msh, rab, r, vloc_at, zp, tpiba2, ngm, g_cart, omega, vloc)
     !----------------------------------------------------------------------
     !
-    !    This routine computes the Fourier transform of the local
-    !    part of the pseudopotential in the q+G vectors.
+    ! This routine computes the Fourier transform of the local
+    ! part of the pseudopotential in the q+G vectors.
     !
-    !    The local pseudopotential of the US case is always in
-    !    numerical form, expressed in Ry units.
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use kinds, only: dp
     use intw_useful_constants, only: TWO, fpi, pi
@@ -346,8 +381,15 @@ contains
   subroutine setlocq_coul(q_cart, zp, tpiba2, ngm, g_cart, omega, vloc)
     !----------------------------------------------------------------------
     !
-    !    Fourier transform of the Coulomb potential - For all-electron
-    !    calculations, in specific cases only, for testing purposes
+    ! Fourier transform of the Coulomb potential - For all-electron
+    ! calculations, in specific cases only, for testing purposes
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use kinds, only: dp
     use intw_useful_constants, only: fpi, TWO, eps_8
