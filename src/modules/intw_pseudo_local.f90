@@ -73,9 +73,9 @@ contains
     ! Add the local part of the PP (V_loc) to v_local                     !
     !======================================================================
 
-    use intw_reading, only: nat, nr1, nr2, nr3, ngm, ityp
-    use intw_fft, only: eigts1, eigts2, eigts3, nl, mill
-    use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
+    use intw_reading, only: nr1, nr2, nr3, ngm, ntyp
+    use intw_fft, only: nl, strf
+    use intw_useful_constants, only: cmplx_0
 
 
     implicit none
@@ -87,23 +87,20 @@ contains
     complex(kind=dp), intent(inout) :: v_local(nr1*nr2*nr3) ! spin idependentea da baina koherentzia mantenduko dugu.
 
     !local variables
-    integer :: na, nt, ig
-    complex(kind=dp) :: aux(nr1*nr2*nr3), gtau
+    integer :: nt, ig
+    complex(kind=dp) :: aux(nr1*nr2*nr3)
 
 
     aux = cmplx_0
-    do na = 1, nat
-      !
-      nt = ityp(na)
+    do nt = 1, ntyp
       !
       do ig = 1, ngm
         !
-        gtau = eigts1(mill(1,ig),na) * eigts2(mill(2,ig),na) * eigts3(mill(3,ig),na)
-        aux(nl(ig)) = aux(nl(ig)) + gtau * vlocq(ig,nt)
+        aux(nl(ig)) = aux(nl(ig)) + strf(ig,nt) * vlocq(ig,nt)
         !
-      enddo !ig
+      enddo ! ig
       !
-    end do
+    end do ! nt
     !
     call cfftnd(3, (/nr1,nr2,nr3/), 1, aux)
     !
@@ -118,7 +115,7 @@ contains
     !======================================================================
 
     use intw_reading, only: nat, nspin, nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
-    use intw_fft, only: eigts1, eigts2, eigts3, nl, mill, gvec_cart
+    use intw_fft, only: nl, gvec_cart, phase
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
     implicit none
@@ -133,7 +130,7 @@ contains
     !local variables
     complex(kind=dp) :: eigqts(nat)
     integer :: imode, na, nt, ipol, ig, ispin, ir
-    complex(kind=dp) :: aux(nr1*nr2*nr3), fact, gtau
+    complex(kind=dp) :: aux(nr1*nr2*nr3), fact
     real(kind=dp) :: q_cart(3)
     real(kind=dp) :: arg
 
@@ -161,8 +158,7 @@ contains
       !
       do ig = 1, ngm
         !
-        gtau = eigts1(mill(1,ig),na) * eigts2(mill(2,ig),na) * eigts3(mill(3,ig),na)
-        aux(nl(ig)) = aux(nl(ig)) + gtau * fact * ( q_cart(ipol)+gvec_cart(ipol,ig) ) * vlocq(ig,nt)
+        aux(nl(ig)) = aux(nl(ig)) + phase(ig,na) * fact * ( q_cart(ipol)+gvec_cart(ipol,ig) ) * vlocq(ig,nt)
         !
       enddo !ig
       !

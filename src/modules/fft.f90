@@ -18,8 +18,7 @@ module intw_fft
 
   !
   ! variables
-  public :: nl, g_fft_map, ig1, ig2, ig3, gvec_cart, gg, phase, eigts1, &
-            eigts2, eigts3, strf, mill
+  public :: nl, g_fft_map, gvec_cart, gg, phase, strf
   !
   ! subroutines
   public :: allocate_fft, deallocate_fft, &
@@ -31,18 +30,18 @@ module intw_fft
   !
 
 
-  ! correspondence between the nr1 nr2 nr3 FFT grid with the G list (calculations).
+  ! Correspondence between the nr1 nr2 nr3 FFT grid with the G list (calculations).
   integer, allocatable :: nl(:)
   integer, allocatable :: g_fft_map(:,:,:)
-  integer, allocatable :: ig1(:), ig2(:), ig3(:)
+  ! The G vectors in cartesian coordinates
+  real(dp), allocatable :: gvec_cart(:,:)
+  ! The module squared of the G vectors
+  real(dp), allocatable :: gg(:)
 
-  real(dp), allocatable :: gvec_cart(:,:), gg(:)
-
-  !The complex phases for each G and atomic position: exp( -2 pi i tau(1:nat).G )
+  ! The complex phases for each G and atomic position: exp( -2 pi i tau(1:nat).G )
   complex(dp), allocatable :: phase(:,:)
-
-  complex(dp), allocatable :: eigts1(:,:), eigts2(:,:), eigts3(:,:), strf(:,:)
-  integer, allocatable :: mill(:,:)
+  ! The structure factor
+  complex(dp), allocatable :: strf(:,:)
   !
   save
 
@@ -59,16 +58,10 @@ contains
     implicit none
 
     allocate (nl(ngm), g_fft_map( nr1, nr2, nr3) )
-    allocate (ig1(ngm), ig2(ngm), ig3(ngm))
     allocate (phase(ngm,nat) )
     allocate (gvec_cart(3,ngm))
     allocate (gg(ngm))
-    allocate (eigts1(-nr1:nr1, nat))
-    allocate (eigts2(-nr2:nr2, nat))
-    allocate (eigts3(-nr3:nr3, nat))
     allocate (strf(ngm, ntyp))
-
-    allocate (mill(3,ngm))
 
   end subroutine allocate_fft
 
@@ -77,18 +70,11 @@ contains
     ! This subroutine simply deallocates the arrays needed
     ! by the fft algorithms.
     !--------------------------------------------------------
-    deallocate (nl, g_fft_map )
-    deallocate (ig1, ig2, ig3)
-    deallocate (phase )
+    deallocate (nl, g_fft_map)
+    deallocate (phase)
     deallocate (gvec_cart)
     deallocate (gg)
-
-    deallocate (eigts1)
-    deallocate (eigts2)
-    deallocate (eigts3)
-    deallocate (strf  )
-
-    deallocate (mill)
+    deallocate (strf)
 
   end subroutine deallocate_fft
 
@@ -152,52 +138,33 @@ contains
     !                    phase(ng,na) = Exp ( -2 pi i gvec(ng) * tau(na) )
     !
     !------------------------------------------------------------------------
-    use intw_reading, only: ngm, gvec, bg, nat, tau, ntyp, ityp, nr1, nr2, nr3
+    use intw_reading, only: ngm, gvec, bg, nat, tau, ntyp, ityp, nr1, nr2, nr3, tpiba2
     use intw_utility, only: triple_to_joint_index_r, cryst_to_cart
-    use intw_useful_constants, only: tpi, cmplx_i
+    use intw_useful_constants, only: tpi, cmplx_i, cmplx_0
 
     implicit none
 
     !local
 
-    integer :: n1, n2, n3
-    integer :: ng, na
-
     logical :: assigned(nr1,nr2,nr3)
+    integer :: n1, n2, n3
+    integer :: ng, na, nt
 
-    integer :: nt, ipol
-
-    real(dp) :: arg, bgtau(3)
-    !output :: nl and ig1 ig2 ig3 and phase
 
     g_fft_map(:,:,:) = 0
     nl(:) = 0
-    assigned = .false.
-
-
-
+    assigned(:,:,:) = .false.
     ! loop on all G vectors in the global array gvec
     do ng = 1, ngm
       ! find the triple index corresponding to the G_fft mesh
       ! NOTE: the function "modulo" always returns a positive number in FORTRAN90
       !       the function "mod" is more dangerous.
 
-      !n1 = nint (sum(g (:, ng) * at (:, 1))) + 1
-      !mill (1,ng) = n1 - 1
-
-      n1 = modulo(gvec(1,ng), nr1)+1 !modulo(gvec(1,ng), nr1)+1
-      ig1 (ng) = n1 - 1
+      n1 = modulo(gvec(1,ng), nr1)+1
 
       n2 = modulo(gvec(2,ng), nr2)+1
-      ig2 (ng) = n2 - 1
 
       n3 = modulo(gvec(3,ng), nr3)+1
-      ig3 (ng) = n3 - 1
-
-
-      mill (1, ng) = gvec(1,ng) !ig1 (ng)
-      mill (2, ng) = gvec(2,ng) !ig2 (ng)
-      mill (3, ng) = gvec(3,ng) !ig3 (ng)
 
       if (.not. assigned(n1,n2,n3) ) then
 
@@ -218,64 +185,33 @@ contains
 
         stop
       endif
-    end do
 
-    !--------------------------------------------------
-    ! I think the code that follows is not useful
-    ! and should be removed (Bruno)
-    !--------------------------------------------------
+    end do ! ng
 
-    ! Obtain the G vectors in cartesian coordinates.
+    ! Obtain the G vectors in cartesian coordinates
     gvec_cart(1:3,1:ngm) = gvec(1:3,1:ngm)
     call cryst_to_cart (ngm, gvec_cart, bg, 1)
 
+    ! Calculate module squared of the G vectors
     do ng=1, ngm
-      gg(ng) = (gvec_cart(1,ng)**2 + gvec_cart(2,ng)**2 + gvec_cart(3,ng)**2 )
+      gg(ng) = tpiba2*dot_product(gvec_cart(:,ng), gvec_cart(:,ng))
     enddo
 
     ! Compute the phases
     do na=1,nat
       do ng=1,ngm
         ! the tau vectors are in cartesian, alat units.
-
-        phase(ng,na) = Exp ( -tpi*cmplx_i* &
-                          (  gvec_cart(1,ng)*tau(1,na) &
-                           + gvec_cart(2,ng)*tau(2,na) &
-                           + gvec_cart(3,ng)*tau(3,na) ) )
+        phase(ng,na) = exp ( -tpi*cmplx_i*dot_product(gvec_cart(:,ng), tau(:,na)) )
       enddo
     enddo
 
-    strf(:,:) = (0.d0,0.d0)
+    ! Compute structure factor
+    strf(:,:) = cmplx_0
     do nt = 1, ntyp
       do na = 1, nat
-        if (ityp (na) .eq.nt) then
-          do ng = 1, ngm
-            arg = ( gvec_cart (1, ng) * tau (1, na) + &
-                    gvec_cart (2, ng) * tau (2, na) + &
-                    gvec_cart (3, ng) * tau (3, na) ) * tpi
-            strf (ng, nt) = strf (ng, nt) + CMPLX(cos (arg), -sin (arg),kind=DP)
-          enddo
+        if ( ityp(na) == nt ) then
+          strf(:,nt) = strf(:,nt) + phase(:,na)
         endif
-      enddo
-    enddo
-
-    do na = 1, nat
-      do ipol = 1, 3
-        bgtau (ipol) = bg (1, ipol) * tau (1, na) + &
-                       bg (2, ipol) * tau (2, na) + &
-                       bg (3, ipol) * tau (3, na)
-      enddo
-      do n1 = - nr1, nr1
-        arg = tpi * n1 * bgtau (1)
-        eigts1 (n1, na) = CMPLX(cos (arg), - sin (arg),kind=DP)
-      enddo
-      do n2 = - nr2, nr2
-        arg = tpi * n2 * bgtau (2)
-        eigts2 (n2, na) = CMPLX(cos (arg), - sin (arg),kind=DP)
-      enddo
-      do n3 = - nr3, nr3
-        arg = tpi * n3 * bgtau (3)
-        eigts3 (n3, na) = CMPLX(cos (arg), - sin (arg),kind=DP)
       enddo
     enddo
 
@@ -461,7 +397,7 @@ contains
     !  This subroutine is a driver which uses the 3D-FFT
     !  code to go from f(G) to f(r).
     !--------------------------------------------------------
-    use intw_reading, only: nr1, nr2, nr3, nspin, ngm
+    use intw_reading, only: nr1, nr2, nr3, ngm
     use intw_useful_constants, only: cmplx_0
 
     implicit none
