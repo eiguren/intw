@@ -373,8 +373,7 @@ contains
     use intw_reading, only: ecutwfc, ntyp, volume0
     use intw_pseudo, only: upf
     use intw_useful_constants, only: fpi, ZERO
-    use intw_utility, only: sphb, simpson
-    use mcf_spline, only: spline_mcf
+    use intw_utility, only: sphb, simpson, spline
 
     implicit none
 
@@ -398,7 +397,7 @@ contains
     !
     ! Fill the interpolation table
     !
-    allocate(tab(2*nqx,nbetam,ntyp)) ! ASIER originala nqx, errepasatu
+    allocate(tab(nqx,nbetam,ntyp))
     allocate(tab_d2y(nqx,nbetam,ntyp))
     !
     ndm = maxval(upf(:)%kkbeta)
@@ -429,7 +428,7 @@ contains
     !
     do nt = 1, ntyp
       do nb = 1, upf(nt)%nbeta
-        call spline_mcf(xdata, tab(:,nb,nt), nqx, tab_d2y(:,nb,nt))
+        call spline(xdata, tab(:,nb,nt), 0.0_dp, 0.0_dp, tab_d2y(:,nb,nt))
       end do
     end do
 
@@ -445,9 +444,8 @@ contains
     use intw_reading, only: nat, nG_max, ntyp, ityp, tau, bg, tpiba
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
     use intw_fft, only: gvec_cart
-    use mcf_spline, only: splint_mcf
     use intw_pseudo, only: upf
-    use intw_utility, only: real_ylmr2
+    use intw_utility, only: real_ylmr2, splint
 
     implicit none
 
@@ -515,7 +513,7 @@ contains
           !
           if (igk(ig)==0) exit
           !
-          call splint_mcf(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), nqx, qg(ig), vq(ig))
+          vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
           !
         end do !ig
         !
