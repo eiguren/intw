@@ -7,7 +7,8 @@ module siesta2intw_io
   public :: stdout, siesta_output_file, intwdir
   public :: outdir, prefix, phdir, dvscfdir, &
             nk1, nk2, nk3, cutoff, nbnd_initial, nbnd_final, &
-            phonons, nqirr, dynxml, use_sym
+            phonons, nqirr, dynxml, use_sym, &
+            kmesh, nkpoints, kpoints
 
   public :: read_input, find_free_unit
 
@@ -20,15 +21,19 @@ module siesta2intw_io
 
   ! input variables
   character(len=256) :: outdir, prefix, phdir, dvscfdir
-  integer :: nk1, nk2, nk3
+  integer :: nk1, nk2, nk3 ! k mesh, if they are negative, a list of k points given in the input is used instead of a regular k mesh.
   real(kind=dp) :: cutoff
   integer :: nbnd_initial, nbnd_final
   logical:: phonons
   integer :: nqirr
   logical :: dynxml
   logical :: use_sym
+  !
+  logical :: kmesh ! .true. if nk1, nk2, nk3 are specified
+  integer :: nkpoints
+  real(kind=dp), allocatable, dimension(:,:) :: kpoints
 
-  namelist / inputpp / outdir, prefix,  phdir, dvscfdir, &
+  namelist / inputpp / outdir, prefix, phdir, dvscfdir, &
                        nk1, nk2, nk3, cutoff, nbnd_initial, nbnd_final, &
                        phonons, nqirr, dynxml, use_sym
 
@@ -41,19 +46,25 @@ contains
     ! Read input file s2intw.in
     !
 
+    use, intrinsic :: iso_fortran_env, only: iostat_end ! end of file
+
     implicit none
 
     integer :: ios, iunit
     integer :: strlen
+    character(80) :: cardname
+    integer :: i
+    logical :: exist_kpoints
+
 
     ! Set default values
     outdir = "./"
     prefix = "siesta"
     phdir ="ph/"
     dvscfdir = "dvscf/"
-    nk1 = 1
-    nk2 = 1
-    nk3 = 1
+    nk1 = 0
+    nk2 = 0
+    nk3 = 0
     cutoff = 300.0_dp
     nbnd_initial = -1
     nbnd_final = -1
@@ -61,6 +72,9 @@ contains
     nqirr = 1
     dynxml = .false.
     use_sym = .true.
+    !
+    nkpoints = 0
+    kpoints = 0.0_dp
 
     iunit = find_free_unit()
     open(unit=iunit, file="s2intw.in", status="unknown", iostat=ios)
@@ -69,9 +83,6 @@ contains
     read(iunit, inputpp, iostat=ios)
     if (ios/=0) stop "ERROR reading s2intw.in file"
 
-    close(unit=iunit, iostat=ios)
-    if (ios/=0) stop "ERROR closing s2intw.in file"
-
     ! Some checks
     strlen = len_trim(outdir)
     if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
@@ -79,6 +90,52 @@ contains
     if ( dvscfdir(strlen:strlen+1) .ne. "/" ) dvscfdir(strlen+1:strlen+2) = "/"
     strlen = len_trim(phdir)
     if ( phdir(strlen:strlen+1) .ne. "/" ) phdir(strlen+1:strlen+2) = "/"
+
+    ! Read KPOINTS
+    ! Format:
+    !   KPOINTS
+    !      nkpoints
+    !      k1 k2 k3
+    !      k1 k2 k3
+    !      ....
+    ! where k points are given in crystal coordinates.
+
+    exist_kpoints = .false.
+    ! Read until KPOINTS is found
+    do
+      !
+      read(iunit, *, iostat=ios) cardname
+      if ( ios == iostat_end ) exit
+      !
+      if ( trim(cardname) == 'KPOINTS') then
+        !
+        exist_kpoints = .true.
+        read(iunit,*) nkpoints
+        !
+        allocate (kpoints(3,nkpoints))
+        do i=1,nkpoints
+          read(iunit,*) kpoints(:,i)
+        end do
+        !
+      end if
+      !
+    end do
+    !
+    ! Some checks
+    if ( nk1 <= 0 .and. nk2 <= 0 .and. nk3 <= 0 ) then
+      kmesh = .false.
+      if ( .not. exist_kpoints ) then
+        stop "ERROR: You must specify (nk1, nk2, nk3) or KPOINTS."
+      end if
+    else
+      kmesh = .true.
+      if ( exist_kpoints ) then
+        write(stdout, *) "WARNINRG: Both (nk1, nk2, nk3) and KPOINTS are specified, (nk1, nk2, nk3) will be used."
+      endif
+    endif
+    !
+    close(unit=iunit, iostat=ios)
+    if (ios/=0) stop "ERROR closing s2intw.in file"
 
   end subroutine read_input
 

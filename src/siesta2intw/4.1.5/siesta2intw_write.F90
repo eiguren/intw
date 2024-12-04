@@ -43,7 +43,8 @@ contains
     use siesta_geom, only: ucell
     use writewave, only: nwk, wfk, gamma_wavefunctions
     use parallel, only: ionode
-    use siesta2intw_io, only: stdout, nk1, nk2, nk3, nbnd_initial, nbnd_final, use_sym, cutoff
+    use siesta2intw_io, only: stdout, nbnd_initial, nbnd_final, use_sym, cutoff, &
+                              nk1, nk2, nk3, kmesh, nkpoints, kpoints
     use siesta2intw_fft, only: gamma_only
     ! functions and subroutines
     use alloc, only: re_alloc
@@ -112,13 +113,24 @@ contains
     call compute_symmetry(use_sym)
     if (ionode) call print_symmetry_data()
 
-    ! Compute irreducible k-points
-    allocate(kirr_cryst(3, nk1*nk2*nk3))
-    allocate(kirr_cart(3, nk1*nk2*nk3))
-    kirr_cryst = 0.0_dp
-    kirr_cart = 0.0_dp
-
-    call irreduciblek(nk1, nk2, nk3, nkirr, kirr_cryst)
+    if (kmesh) then
+      ! Compute irreducible k-points
+      allocate(kirr_cryst(3, nk1*nk2*nk3))
+      allocate(kirr_cart(3, nk1*nk2*nk3))
+      kirr_cryst = 0.0_dp
+      kirr_cart = 0.0_dp
+      !
+      call irreduciblek(nk1, nk2, nk3, nkirr, kirr_cryst)
+      !
+    else
+      ! Use KPOINTS list
+      allocate(kirr_cryst(3, nkpoints))
+      allocate(kirr_cart(3, nkpoints))
+      nkirr = nkpoints
+      kirr_cryst = kpoints
+      !
+    endif
+    !
     do ik = 1, nkirr
       kirr_cart(:, ik) = tpiba*matmul(bg, kirr_cryst(:, ik))
     enddo
@@ -132,17 +144,33 @@ contains
 
     ! Allocate and set k points structure
     nwk = nkirr
-    if (nk1 == 1 .and. nk2 == 1 .and. nk3 == 1) then
-      gamma_wavefunctions  = .true.
-    else
-      gamma_wavefunctions  = .false.
-    endif
-    gamma_only = gamma_wavefunctions .and. (spin%Grid /= 4)
-    gamma_only = .false. ! For compatibility with the first version of intw (it does not support gamma_only wave functions)
     call re_alloc( wfk, 1, 3, 1, nwk, 'kpoint', 'setup_write_intw' )
     do ik = 1, nkirr
       wfk(:, ik) = kirr_cart(:, ik)
     enddo
+
+    ! gamma_wavefunctions indicates to siesta to write the wave functions as real
+    if ( kmesh ) then
+      !
+      if ( nk1 == 1 .and. nk2 == 1 .and. nk3 == 1 ) then
+        gamma_wavefunctions = .true.
+      else
+        gamma_wavefunctions = .false.
+      endif
+      !
+    else
+      !
+      if ( nkpoints == 1 .and. all(kpoints(:,1) < 0.000001_dp) ) then
+        gamma_wavefunctions = .true.
+      else
+        gamma_wavefunctions = .false.
+      endif
+      !
+    endif
+
+    ! gamma_only indicates to siesta2intw to write the wave functions only for the positive G vectors
+    gamma_only = gamma_wavefunctions .and. (spin%Grid /= 4)
+    gamma_only = .false. ! For compatibility with the first version of intw (it does not support gamma_only wave functions)
 
     ! Allocate and set nwflist and iwf structures
     call setup_wfs_list(nwk, max_nwf, nbnd_initial, nbnd_final, .false., .false.)
@@ -166,7 +194,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, outdir, prefix, phonons
-    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec, gvec_cart, gamma_only
+    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec, gvec_cart
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
