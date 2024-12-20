@@ -11,7 +11,7 @@ PROGRAM pw2intw
 
   IMPLICIT NONE
 
-  EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio, system
+  EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio!, system
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
@@ -30,7 +30,11 @@ PROGRAM pw2intw
   CHARACTER(len=256) :: intwdir
   INTEGER :: iostat, strlen
 
-  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file, nqirr, dynxml, ph_dir, fildyn, fildvscf
+  LOGICAL :: files4nscf = .false.
+  CHARACTER(len=256) :: datafile
+
+  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file,&
+                       nqirr, dynxml, ph_dir, fildyn, fildvscf, files4nscf
 
 
   !
@@ -83,6 +87,14 @@ PROGRAM pw2intw
   call write_wfc()
 
   if (phonons) call write_phonon_info()
+
+  ! MBR 9/12/24
+  if (files4nscf) then  !copy scf schema and charge_density for later QE nscf jobs  
+          datafile = trim(mesh_dir)//trim(prefix)//".save/charge-density.dat"
+          call system("cp "//trim(datafile)//" "//trim(intwdir) )
+          datafile = trim(mesh_dir)//trim(prefix)//".save/data-file-schema.xml"
+          call system("cp "//trim(datafile)//" "//trim(intwdir) )
+  end if        
 
   !
   ! End job

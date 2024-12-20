@@ -11,7 +11,7 @@ PROGRAM create_intw_q_dirs
 
   IMPLICIT NONE
 
-  EXTERNAL :: errore, read_file, system
+  EXTERNAL :: errore, read_file!, system
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "

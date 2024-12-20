@@ -33,7 +33,8 @@ module intw_input_parameters
   public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
   ! &elphon
   public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
-            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir
+            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir, &
+            command_pwx, command_pw2intw
   ! K_PATH
   public :: exist_kpath, nkpath, nkspecial, kspecial
   ! Q_PATH
@@ -169,7 +170,6 @@ module intw_input_parameters
   ! If ep_bands = 'custom', use the range ep_bands_initial:ep_bands_final subset
   ! from the num_bands_intw set
 
-  ! MBR 10/05/2024
   ! For ep elements interpolation utilities:
   character(256) :: ep_interp_method = 'unassigned'
   !    ep_interp_method = 'wannier'
@@ -189,7 +189,11 @@ module intw_input_parameters
   character(len=256) :: pwx_dir = 'unassigned'
   ! Directory where pw.x and pw2intw.x are to be found (only needed if
   ! ep_interp_method = 'dV_interpolate' is chosen and there are no nscf
-  ! calculations on the triangulated k-points are present)
+  ! calculations on the triangulated k-points present)
+  character(len=256) :: command_pwx = 'unassigned'
+  character(len=256) :: command_pw2intw = 'unassigned'
+  ! Optional running options for pw.x and pw2intw.x executables.
+  ! They go ahead of the executable and can be for example: 'mpirun -np N', 'nice', etc.
 
   !----------------------------------------------------------------------------!
   ! K_PATH card variables
@@ -239,7 +243,8 @@ module intw_input_parameters
 
   NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
                       ep_interp_method, ep_interp_bands, &
-                      nfs_sheets_initial, nfs_sheets_final, pwx_dir
+                      nfs_sheets_initial, nfs_sheets_final, pwx_dir, &
+                      command_pwx, command_pw2intw
 
   ! ----------------------------------------------------------------------
   !  END namelist
@@ -443,6 +448,8 @@ contains
       write(*,*) "             nfs_sheets_initial = integer"
       write(*,*) "             nfs_sheets_final   = integer"
       write(*,*) "             pwx_dir            = 'directory'"
+      write(*,*) "             command_pw         = 'string'"
+      write(*,*) "             command_pw2intw    = 'string'"
       write(*,*) "/"
     end if
 

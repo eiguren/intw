@@ -7,9 +7,6 @@ module intw_w90_setup
   !
   !----------------------------------------------------------------------------!
   !
-  ! TODO in new version, what is the module that contains num_bands, num_wann?
-  ! I think it should be intw_intw2wannier.
-  !
   ! The utility W902INTW should:
   ! 1.- call read_nnkp_file in intw_intw2wannier to obtain nnkp_exclude_bands, nnkp_kpoints, etc (see use line)
   ! 2.- call this read_w90_chk
@@ -19,8 +16,6 @@ module intw_w90_setup
   ! Then, any utility using u_mesh can simply use the information obtained by
   ! read_formatted_u_mesh
   !
-  ! TODO think of a wannier type. It may be filled up when doing read_formatted_u_mesh.
-  !
   !----------------------------------------------------------------------------!
   !
   use kinds, only: dp
@@ -28,14 +23,13 @@ module intw_w90_setup
   !
   ! variables
   public :: use_disentanglement
-  public :: n_wss, n_ws_search     !!! search space for WS vectors
-  public :: irvec, nrpts, ndegen   !!! these will substitute w90_hamiltonian: irvec, nrpts, ndegen
-  public :: ham_k, ham_r           !!! ham_k, ham_r
-  public :: ndimwin, lwindow   !!! DUDA ... probably we do not need these outside the module 
-                                 !!! if the information is contained in u_mesh...
-  public :: u_mesh
-  public :: eigenval_intw          !!! coarse-mesh eigenvalues used in wannier (read from .eig)
-  !
+  public :: n_wss, n_ws_search     ! search space for WS vectors
+  public :: irvec, nrpts, ndegen   ! these will substitute w90_hamiltonian: irvec, nrpts, ndegen
+  public :: ham_k, ham_r           ! ham_k, ham_r
+  public :: ndimwin, lwindow       ! NOTE probably we do not need these outside the module 
+  public :: u_mesh                 ! unitary matrices
+  public :: eigenval_intw          ! coarse-mesh eigenvalues used in wannier (read from .eig)
+  
   ! subroutines
   public :: read_w90_chk, allocate_and_build_u_mesh, write_formatted_u_mesh, allocate_and_build_ws_irvec, &
             allocate_and_build_ham_k, allocate_and_build_ham_r, read_eig, write_ham_r, &
@@ -51,8 +45,9 @@ module intw_w90_setup
   logical, allocatable :: lwindow(:,:)
   integer :: nrpts
   integer, allocatable :: ndegen(:), ndimwin(:)
-  integer, parameter :: n_wss=27  !! TODO give somewhere as input
-  integer, dimension(3) , parameter :: n_ws_search =(/ 1,1,1 /) !! TODO give somewhere as input
+  ! NOTE n_wss and n_ws_search  could be given somewhere as input
+  integer, parameter :: n_wss=27
+  integer, dimension(3) , parameter :: n_ws_search =(/ 1,1,1 /) 
   !real(kind=dp), allocatable :: irvec(:,:)
   integer, allocatable :: irvec(:,:)
   real(kind=dp), allocatable :: eigenval_intw(:,:)
@@ -70,6 +65,7 @@ contains
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
+  use intw_useful_constants, only: eps_8
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
                                nnkp_num_kpoints, nnkp_kpoints  
   implicit none
@@ -80,16 +76,12 @@ contains
   integer :: io_unit_chk, nb, nexc, nkpt, nw, nntot
   integer :: n1, n2, n3, i, j, ik, iw, ib
   integer :: exc_bands(nnkp_exclude_bands)
-  real(kind=dp) :: dir_latt(3,3), rec_latt(3,3), omega_invariant
+  real(kind=dp) :: dir_latt(3,3), rec_latt(3,3), omega_invariant, kp(3)
   real(kind=dp), allocatable  :: kpts(:,:)
 
   io_unit_chk = find_free_unit()
   filename = trim(mesh_dir)//trim(prefix)//trim('.chk')
   open(unit=io_unit_chk,file=filename,status='old',form='unformatted')
-
-  ! TODO add comments in consistency check with existing data from nnkp
-  ! (I think that full-zone k-list should be read from there, since 
-  ! in the intw2wannier step it was checked that both lists coincide)
 
   ! .nnkp file should be read before calling this subroutine
 
@@ -99,14 +91,17 @@ contains
   !JLB
   !if ( nb .ne. nbands ) then
   if ( nb .ne. num_bands_intw ) then
-   write(*,*) "Number of bands in .chk is not the same as nbands-exclude_bands in .nnkp file"
-   write(*,*) "Stopping..."
-   stop
+     write(*,*) "Number of bands in .chk is not the same as num_bands_intw = nbands-exclude_bands in .nnkp file"
+     write(*,*) "Stopping..."
+     stop
   end if
   read (io_unit_chk) nexc  ! no. of excluded bands
-  if ( nnkp_exclude_bands .ne. nexc) stop
+  if ( nnkp_exclude_bands .ne. nexc) then 
+     write(*,*) " nexc in .chk is not the same as nnkp_exclude_bands in .nnkp file"
+     write(*,*) "Stopping..."
+     stop
+  end if        
   read (io_unit_chk) exc_bands(1:nexc)  ! excluded bands
-  !! TODO check if ( nnkp_excluded_bands .ne. exc_bands ) stop
   
   ! lattice
   read (io_unit_chk) ((dir_latt(i,j), i=1,3), j=1,3)  ! direct
@@ -115,15 +110,29 @@ contains
   ! k grid
   read (io_unit_chk) nkpt
   if ( nkpt .ne. nnkp_num_kpoints) then
-   write(*,*) "Number of k-points in .chk is not the same as in .nnkp file"
-   write(*,*) "Stopping..."
-   stop
+     write(*,*) "Number of k-points in .chk is not the same as in .nnkp file"
+     write(*,*) "Stopping..."
+     stop
   end if
   read (io_unit_chk) n1, n2, n3
-  if ( (n1 .ne. nk1) .or. (n2 .ne. nk2) .or. (n3 .ne. nk3) ) stop
+  if ( (n1 .ne. nk1) .or. (n2 .ne. nk2) .or. (n3 .ne. nk3) ) then
+     write(*,*) " nk1, nk2, nk3 in .chk is not the same as in INTW"
+     write(*,*) "Stopping..." 
+     stop
+  end if        
   allocate (kpts(3,nkpt))
-  read (io_unit_chk) ((kpts(i,ik), i=1,3), ik=1,nkpt)
-  ! TODO check if ( kpts == nnkp_kpoints )
+  read (io_unit_chk) ((kpts(i,ik), i=1,3), ik=1,nkpt)   
+  ! Check if kpts == nnkp_kpoints.
+  ! Note that in intw2W90 we already checked that nnkp_kpoints
+  ! coincide with the full-zone points provided by generate_kmesh
+  do ik = 1,nkpt
+     kp=kpts(:,ik)-nnkp_kpoints(:,ik)
+     if ( sqrt(sum(kp*kp)) > eps_8 ) then
+        write(*,*) "kpts list in .chk different from nnkp_kpoints (and INTW mesh)"
+        write(*,*) "Stopping..."
+        stop
+     end if
+  end do
 
   read (io_unit_chk) nntot ! no. of neighbours, not used
   read (io_unit_chk) nw
@@ -151,7 +160,7 @@ contains
   allocate (u_matrix(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
   read (io_unit_chk) (((u_matrix(ib,iw,ik),ib=1,num_wann_intw),iw=1,num_wann_intw),ik=1,nnkp_num_kpoints)
 
-  ! These are also contained in chk, but we will not use them in INTW:
+  ! These are also contained in .chk but, as for now, we do not use them in INTW:
   !
   ! m_matrix
   ! centers
@@ -210,7 +219,6 @@ contains
   ! is defined in the variable num_kpts. Consistency demands that this number
   ! be equal to nkmesh, the same quantity in the intw program.
   !
-  ! TODO explore the possibility of symmetrization...
   !----------------------------------------------------------------------------!
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
@@ -240,7 +248,7 @@ contains
           do n2=1,num_wann_intw
             do i=1,num_wann_intw
                !u_mesh(n1,n2,ik) = u_mesh(n1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)   
-               !MBR 10/05/24. I think it should be:
+               !MBR 10/05/24 correction. It should be:
                u_mesh(nb1,n2,ik) = u_mesh(nb1,n2,ik) + u_matrix_opt(n1,i,ik)*u_matrix(i,n2,ik)
             enddo !i
           enddo !n2
@@ -252,8 +260,7 @@ contains
 
   endif
   !
-  !JLB: These are written to file. We should think of a good way of cleaning up all the alllocations.
-  !! deallocate arrays which are no longer useful
+  !deallocate arrays which are no longer useful
   !if (use_disentanglement) deallocate(u_matrix_opt)
   !deallocate(u_matrix)
   !
@@ -290,121 +297,35 @@ contains
   write(io_unit_u,*) use_disentanglement
 
   do ik = 1,nnkp_num_kpoints
+     !
+     ! MBR 20/12/24 change format: remove blank lines
      write(io_unit_u,*) 'K-POINT', ik
      write(io_unit_u,"(3f16.10)") (nnkp_kpoints(i,ik), i=1,3 )
      write(io_unit_u,*) 'LWINDOW'
      write(io_unit_u,*) (lwindow(ib,ik), ib=1,num_bands_intw)
      write(io_unit_u,*) 'EIGENVALUES'
-     write(io_unit_u,"(5es18.8,/)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
+     write(io_unit_u,"(5es18.8)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
      write(io_unit_u,*) 'u_mesh'
      do ib = 1,num_bands_intw
-        write(io_unit_u,"(5es18.8,/)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
+        write(io_unit_u,"(5es18.8)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
      end do
+     !
      if (use_disentanglement) then
        write(io_unit_u,*) 'u_matrix_opt'
        do ib = 1,num_bands_intw
-          write(io_unit_u,"(5es18.8,/)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
+          write(io_unit_u,"(5es18.8)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
        end do
        write(io_unit_u,*) 'u_matrix'
        do ib = 1,num_wann_intw
-          write(io_unit_u,"(5es18.8,/)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
+          write(io_unit_u,"(5es18.8)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
        end do
      end if
+     !
   end do
 
   close(io_unit_u)
   end subroutine write_formatted_u_mesh
   !
-  !----------------------------------------------------------------------------!
-  subroutine allocate_and_build_ws_irvec_hold(nk1,nk2,nk3)
-  !----------------------------------------------------------------------------!
-  !  Calculate real-space Wigner-Seitz lattice vectors
-  !----------------------------------------------------------------------------!
-  !
-  use intw_reading, only: alat, at
-  use intw_useful_constants, only: eps_6
-  use intw_utility, only: generate_kmesh, cryst_to_cart, hpsort_real
-  !
-  implicit none
-  !
-  integer, intent(in) :: nk1,nk2,nk3
-  !
-  integer :: ik, nws, i,j,k,l
-  integer :: permu(n_wss), rdeg_ws_max(nk1*nk2*nk3) 
-  integer :: r_ws_max(3,n_wss,nk1*nk2*nk3)
-  integer :: r_cryst_int(3,n_wss)
-  real(kind=dp) :: kmesh(3,nk1*nk2*nk3), dist0
-  real(kind=dp) :: r_cryst(3,n_wss), r_length(n_wss), r_cart(3)
-  !
-  call generate_kmesh (kmesh,nk1,nk2,nk3)
-  !
-  nws = 0  ! total number of WS vectors
-  do ik = 1,nk1*nk2*nk3
-      !
-      l = 0
-      do i = -n_ws_search(1),n_ws_search(1)
-      do j = -n_ws_search(2),n_ws_search(2)
-      do k = -n_ws_search(3),n_ws_search(3)
-         l = l + 1
-         ! generate equivalents to point kmesh(:,ik)
-         r_cryst(1,l) =  kmesh(1,ik) + real(i,dp)
-         r_cryst(2,l) =  kmesh(2,ik) + real(j,dp)
-         r_cryst(3,l) =  kmesh(3,ik) + real(k,dp)
-         r_cart = r_cryst(:,l) * (/ nk1, nk2, nk3 /)   
-         r_cryst_int(:,l) = nint(r_cart)
-         !R-vector from crystallographic to cartesian
-         call cryst_to_cart (1, r_cart, at, 1)
-         r_cart = r_cart * alat  ! bohr units
-         r_length(l) = sqrt ( sum(r_cart*r_cart) )
-     end do   
-     end do   
-     end do   
-     !
-     ! order by ascending length
-     call hpsort_real(n_wss,r_length,permu)
-     ! store first vector (shortest)
-     r_ws_max(:,1,ik) = r_cryst_int(:,permu(1))
-     rdeg_ws_max(ik) = 1
-     nws = nws + 1
-     ! detect degeneracies and store vectors if degenerate
-     do l = 2,n_wss
-        !if ( abs(r_length(l) - r_length(l-1))<eps_6) then
-        if ( abs(r_length(l) - r_length(1))<eps_6) then
-           r_ws_max(:,l,ik) = r_cryst_int(:,permu(l))
-           rdeg_ws_max(ik) = rdeg_ws_max(ik) + 1
-           nws = nws + 1
-        else
-           exit
-        end if
-     end do  
-     !
-  end do
-  !
-  ! Data for Wannier
-  !
-  ! build WS kpoint list and degeneracies
-  nrpts = nws
-  allocate ( irvec(3,nrpts) )
-  allocate ( ndegen(nrpts) )
-  ! allocate and build WS kpoint list and degeneracies (irvec, ndegen)
-  i = 0
-  do ik = 1,nk1*nk2*nk3
-     do l = 1, rdeg_ws_max(ik)
-         i = i + 1
-         irvec(:,i) = r_ws_max(:,l,ik) 
-         ndegen(i) = rdeg_ws_max(ik)
-     end do
-  end do
-
-  !JLB test
-  !write (*, '(I5)') nrpts
-  !write (*, '(15I5)') (ndegen(i), i=1, nrpts)
-  !do i = 1, nrpts
-  !      write (*, '(i5,3I6)') i, irvec(:, i)
-  !end do
-
-  return
-  end subroutine allocate_and_build_ws_irvec_hold
   !
   subroutine allocate_and_build_ws_irvec(nk1,nk2,nk3)
   !----------------------------------------------------------------------------!
@@ -528,7 +449,7 @@ contains
        do iw = 1,jw 
            ! JLB: Needs to be checked. I think lwindow has been incorporated in u_mesh building so here just multiply.
            if (use_disentanglement) then
-                   !  DUDA ver mi comentario sobre lwindow en allocate_and_build_u_mesh...
+                   !  According to comment on lwindow in allocate_and_build_u_mesh,
                    !  excl_bands should have been already excluded.
               ! Pick up eigenvalues inside the opt window for this k.
               ! They correspond to the first items in u_matrix_opt.
@@ -765,25 +686,26 @@ contains
   !
   do ik = 1,nnkp_num_kpoints
      !
+     ! MBR 20/12/24 change format: remove blank lines
      read (io_unit_u,*) varname ! 'K-POINT', ik
      read(io_unit_u,"(3f16.10)") (nnkp_kpoints(i,ik), i=1,3 )
      read(io_unit_u,*) varname ! 'LWINDOW'
      read(io_unit_u,*) (lwindow(ib,ik), ib=1,num_bands_intw)
      read(io_unit_u,*) varname ! 'EIGENVALUES'
-     read(io_unit_u,"(5es18.8,/)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
+     read(io_unit_u,"(5es18.8)") (eigenval_intw(ib,ik), ib=1,num_bands_intw)
      read(io_unit_u,*) varname ! 'u_mesh'
      do ib = 1,num_bands_intw
-        read(io_unit_u,"(5es18.8,/)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
+        read(io_unit_u,"(5es18.8)")  (u_mesh(ib,iw,ik), iw=1,num_wann_intw)
      end do
      !
      if (use_disentanglement) then
        read(io_unit_u,*) varname ! 'u_matrix_opt'
        do ib = 1,num_bands_intw
-          read(io_unit_u,"(5es18.8,/)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
+          read(io_unit_u,"(5es18.8)")  (u_matrix_opt(ib,iw,ik), iw=1,num_wann_intw)
        end do
        read(io_unit_u,*) varname ! 'u_matrix'
        do ib = 1,num_wann_intw
-          read(io_unit_u,"(5es18.8,/)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
+          read(io_unit_u,"(5es18.8)")  (u_matrix(ib,iw,ik), iw=1,num_wann_intw)
        end do
      end if
      ! 
@@ -1070,7 +992,7 @@ subroutine wann_IFT_1index (nks, kpoints, matk, matL)
 end subroutine wann_IFT_1index
 
 
-subroutine wann_FT_1index_1k (kpoint, matL, matk)  ! AQUI ! UNTESTED
+subroutine wann_FT_1index_1k (kpoint, matL, matk)  
   !
   !----------------------------------------------------------------------------!
   !  MBR 9/1/24:

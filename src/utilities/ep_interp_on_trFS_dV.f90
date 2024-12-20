@@ -61,7 +61,8 @@ program ep_on_trFS_dV
                 intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
                 nq1, nq2, nq3, nqirr, ph_dir,  &
                 use_exclude_bands, &
-                ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir
+                ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir,&
+                command_pw2intw, command_pwx
         use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
                 nG_max, ngm, gvec, get_gvec,  &
                 nkpoints_QE, kpoints_QE, nspin, &
@@ -93,10 +94,11 @@ program ep_on_trFS_dV
 
         ! for part I
         logical :: read_status, have_nscf , have_wfcN, have_wfc1
+        logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
         character(5) :: is_loc, ik_loc, comenta
         character(70) :: linea, lleft
         character(100) :: file_off, file_nscf, file_nscf_out, file_scf, file_pw2intw, dir_scf, dir_nscf
-        character(200) :: comando
+        character(200) :: comando, datafile
         integer :: unit_off, unit_pw2intw, unit_scf, unit_nscf
         integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
         integer :: is, js, ikpt, ik, ik1, i,j,k, iface, iks, ish,  iksp, ishp, ibp
@@ -326,6 +328,8 @@ print *,  kpts_tr_area(1), vabsk_tr(1)
 print *,  kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
 print *, 'total area FS = ', sum(kpts_tr_area) ,' (2 x pi / alat)^2 ' !OK
 
+!!!! HARITZ: aqui empieza el cáculo nscf con QE.
+!!!! Habría que poner aquí el "if" o pensar otra cosa.
 
 !================================================================================
 ! Read prefix.scf.in file line by line and dump information to prefix.nscf.in .
@@ -400,21 +404,13 @@ close(unit_pw2intw)
 !   Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
 !================================================================================
 
-dir_scf=trim(mesh_dir)//trim(prefix)//".save/"
-dir_nscf=trim(mesh_dir)//trim(prefix)//"-nscf.save/"
 
-! creat directory for nscf calculation prefix-nscf.save
+! Create directory for nscf calculation prefix-nscf.save
+dir_nscf=trim(mesh_dir)//trim(prefix)//"-nscf.save/"
 comando='mkdir -p '//trim(dir_nscf)  !it will not create it if it already exists
 call system (comando)
 
-! copy scf input files (force copy)
-comando='cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
-call system (comando)
-comando='cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
-call system (comando)
-
-! run pw.x and pw2intw.x
-! check if first and last wfc are present. If so, it probably means that the nscf
+! Check if first and last wfc are present. If so, it probably means that the nscf
 ! calculation was already made, so skip this step
 
 inquire(file=trim(dir_nscf)//'wfc1.dat',exist=have_wfc1)
@@ -422,24 +418,81 @@ write(ik_loc,"(i5)") nkpt_tr_tot
 inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat',exist=have_wfcN)
 
 if (have_wfc1 .and. have_wfcN) then
-   write(*,*)' nscf calculation seems to have already been performed (check!).'
+   write(*,*)' nscf calculation seems to have already been performed (please check!).'
    write(*,*)' Skipping pw.x and pw2intw.x'
 else
-   ! invoke QE pw.x
-   ! (eventually, mpirun can be used if these system call is modified)
-   comando=trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
-   write(*,*)' Running ', comando
+   write(*,*)' performing  nscf calculation '
+
+   ! copy scf input files (force copy) to prefix-nscf.save 
+
+   ! If charge-density.dat and data-file-schema.xml have already been stored in  
+   ! prefix.save.intw directory, first try to get them from there.
+   ! Otherwise, attempt to get them from prefix.save (the scf QE calculation directory,
+   ! if it still exists)
+
+   ! Try INTW directory (.save.intw)
+   dir_scf = trim(mesh_dir)//trim(prefix)//".save.intw/"
+   datafile=trim(dir_scf)//'charge-density.dat'
+   inquire(file=datafile, exist=exists_charge_density)
+   datafile=trim(dir_scf)//'data-file-schema.xml'
+   inquire(file=datafile, exist=exists_schema)
+
+   if ( .not. exists_schema .or. .not. exists_charge_density) then 
+        ! Try searching them in QE scf directory (.save)
+        write(*,*) 'Continuation files for nscf not present in: ', dir_scf
+        dir_scf=trim(mesh_dir)//trim(prefix)//".save/"
+        write(*,*) 'Searching:', dir_scf
+        datafile=trim(dir_scf)//'charge-density.dat'
+        inquire(file=datafile, exist=exists_charge_density_qe)
+        datafile=trim(dir_scf)//'data-file-schema.xml'
+        inquire(file=datafile, exist=exists_schema_qe)
+        if ( .not. exists_schema_qe .or. .not. exists_charge_density_qe) then
+            write(*,*) 'Continuation files for nscf neither present in: ', dir_scf
+            write(*,*) 'Error. Stopping'
+            stop
+        end if        
+   end if        
+
+   write(*,*) 'Using continuation files for nscf from directory: ', dir_scf
+
+   ! copy scf input files (force copy)
+   comando='cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
    call system (comando)
-   ! Convert to INTW format
-   comando=trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
-   write(*,*)' Running ', comando
+   comando='cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
    call system (comando)
+
+   ! invoke QE pw.x to do nscf.
+   ! command_pwx may contain running options (e.g. mpirun)
+   if ( command_pwx == 'unassigned' ) then
+      comando=trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
+   else        
+      comando=trim(command_pwx)//' '//trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
+   end if
+   write(*,*)' Running QE with command:', comando
+   call system (comando)
+
+   ! Convert to INTW format invoking pw2intw.x
+   ! command_pw2intw may contain running options (e.g. mpirun)
+   if ( command_pw2intw == 'unassigned' ) then
+      comando=trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
+   else   
+      comando=trim(command_pw2intw)//' '//trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
+   end if   
+   write(*,*)' Running pw2intw with command:', comando
+   call system (comando)
+
 end if
 
 
 else ! have_nscf = yes
    write(*,*)' File ', trim(file_nscf_out),' already exists, so nscf calculation is skipped'
 end if ! have_nscf
+
+!!!! HARITZ: aqui termina el cáculo nscf con QE.
+
+print *,' stop for TEST purpose'
+stop
+
 
  write(*,*)' !  ---------------- Part I completed ----------------------'
 

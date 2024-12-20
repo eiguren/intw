@@ -56,7 +56,7 @@ implicit none
         real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
 
         ! wannier
-    character(256) :: nnkp_file, ep_mat_file, ep_mat_file_int, fc_file_name, qband_file_name
+    character(256) :: nnkp_file, ep_mat_file, fc_file_name, qband_file_name
     character(4)   :: iq_loc
     integer        :: record_lengh, ierr, ep_unit, nomega, qpt_unit
     integer :: Gkq_1bz(3), is1,is2, iq, ik, ikq, i,j,k,ik_int, iq_int, ir, irq, nq
@@ -230,7 +230,6 @@ write(*,'(A)') '|    waiting for input file...                      |'
 
     allocate(ep_mat_el_coarse(nqmesh,nkmesh,num_bands_intw,num_bands_intw,nspin,nspin,3*nat))
     inquire(iolength=record_lengh) ep_mat_el_coarse(1,:,:,:,:,:,:)
-    ep_mat_file=trim("ep_mat.dat")
 
     write(*,*) 'reading ep_mat.dat files...'
     do iq = 1,nqmesh
