@@ -11,7 +11,11 @@ PROGRAM pw2intw
 
   IMPLICIT NONE
 
-  EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio!, system
+  !Select declaration of system command according to compiler
+  EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio
+  #ifdef __INTEL_COMPILER
+     EXTERNAL :: system
+  #endif  
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "

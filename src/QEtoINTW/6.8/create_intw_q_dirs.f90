@@ -11,7 +11,11 @@ PROGRAM create_intw_q_dirs
 
   IMPLICIT NONE
 
-  EXTERNAL :: errore, read_file!, system
+  !Select declaration of system command according to compiler
+  EXTERNAL :: errore, read_file
+  #ifdef __INTEL_COMPILER
+     EXTERNAL :: system
+  #endif
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
