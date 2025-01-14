@@ -336,7 +336,7 @@ print *, 'total area FS = ', sum(kpts_tr_area) ,' (2 x pi / alat)^2 ' !OK
 if ( nscf_code == "QE" ) then
   call QE_nscf()
 else if ( nscf_code == "SIESTA" ) then
-  stop "Not implemented"
+  call SIESTA_nscf()
 else
   stop "ERROR: Invalid value for nscf_code variable."
 endif
@@ -874,5 +874,127 @@ contains
     stop
 
   end subroutine QE_nscf
+
+
+  subroutine SIESTA_nscf()
+
+    use intw_input_parameters, only: file_scf, command_siesta2intw
+
+    implicit none
+
+    logical :: have_nscf , have_wfcN, have_wfc1, write_nk
+    logical :: exists_density_matrix
+    character(5) :: ik_loc
+    character(70) :: linea, lleft
+    character(100) :: file_s2intw, file_s2intw_nscf, file_nscf_out
+    character(200) :: comando, datafile
+    integer :: unit_s2intw, unit_s2intw_nscf
+    integer :: ikpt
+    real(dp), dimension(3) :: kpts_tr_cryst
+
+    !================================================================================
+    ! Read s2intw.in file line by line and dump information to s2intw.in_nscf.
+    ! nscf data will be written in prefix-nscf.save.intw directory.
+    ! For that, the prefix is modified.
+    ! The triangle list is added to the s2intw.in_nscf file.
+    ! Note: this is done only in case the siesta2intw-nscf.out does not exist (otherwise,
+    ! it is assumed that the wfcs have already been calculated and transformed to intw format)
+    !================================================================================
+
+    ! file_s2intw = trim(mesh_dir)//'s2intw.in'
+    ! file_s2intw_nscf = trim(mesh_dir)//'s2intw.in_nscf'
+    file_s2intw = 's2intw.in'
+    file_s2intw_nscf = 's2intw.in_nscf'
+
+    file_nscf_out = 'siesta2intw-nscf.out'
+
+    inquire(file=file_nscf_out, exist=have_nscf)
+
+    if ( .not. have_nscf ) then
+      write(*,'(A)') '|   Calculating nscf wfcs with SIESTA...            |'
+
+      unit_s2intw = find_free_unit()
+      open(unit_s2intw, file=trim(file_s2intw), status='old')
+
+      unit_s2intw_nscf = find_free_unit()
+      open(unit_s2intw_nscf, file=trim(file_s2intw_nscf), status='unknown')
+
+      write_nk = .true.
+      do
+        read(unit_s2intw,'(a)',end=100) linea
+        lleft = trim(adjustl(linea))
+        if ( lleft(1:6) == 'prefix' ) then
+          write(unit_s2intw_nscf,*) " prefix = '", trim(prefix), "-nscf'"
+        else if ( lleft(1:7) == 'phonons' ) then
+          write(unit_s2intw_nscf,*) " phonons = .false."
+        else if ( lleft(1:3) == 'nk1' .or. lleft(1:3) == 'nk2' .or. lleft(1:3) == 'nk3' ) then
+          if (write_nk) write(unit_s2intw_nscf,*) " nk1=0, nk2=0, nk3=0"
+          write_nk = .false.
+        else if ( lleft(1:1) == '/' ) then
+          exit
+        else
+          write(unit_s2intw_nscf,*) linea
+        end if
+      end do
+
+      close(unit_s2intw)
+
+      write(unit_s2intw_nscf,*) "/"
+      write(unit_s2intw_nscf,*) "KPOINTS"
+      write(unit_s2intw_nscf,*) nkpt_tr_tot
+      do ikpt = 1, nkpt_tr_tot
+        kpts_tr_cryst = kpts_tr(:,ikpt) ! this is cartesians x 2pi/alat. Transform to cryst.
+        call cryst_to_cart (1, kpts_tr_cryst, at, -1)
+        write(unit_s2intw_nscf,'(3f16.9,2x,f4.1)') kpts_tr_cryst
+      end do
+
+      close(unit_s2intw_nscf)
+
+      ! Create a backup of the original s2intw.in file
+      call execute_command_line("cp "//trim(file_s2intw)//" s2intw.in_backup")
+
+      !================================================================================
+      !   Run the nscf calculation and convert into intw format with siesta2intw.x
+      !================================================================================
+
+      write(*,*) ' performing  nscf calculation'
+
+      call execute_command_line("cp "//trim(file_s2intw_nscf)//" "//trim(file_s2intw))
+
+      ! Check if density matrix file is present
+      datafile = trim(mesh_dir)//trim(prefix)//".DM"
+      inquire(file=datafile, exist=exists_density_matrix)
+
+      if ( .not. exists_density_matrix ) then
+        write(*,*) 'Density matrix file needed for nscf not present: ', trim(datafile)
+        write(*,*) 'Error. Stopping'
+        stop
+      end if
+
+      write(*,*) 'Using density matrix file: ', trim(datafile)
+
+      ! invoke siesta2intw to save wfc's in INTW format.
+      ! command_siesta2intw may contain running options (e.g. mpirun)
+      if ( command_siesta2intw == "unassigned" ) then
+        stop "ERROR: Unassigned command_siesta2intw variable."
+      else
+        comando = trim(command_siesta2intw)//" < "//trim(file_scf)//" > "//trim(file_nscf_out)
+      end if
+      write(*,*) " Running siesta2intw with command:", comando
+      call execute_command_line(comando)
+
+    else ! have_nscf = yes
+      write(*,*) ' File ', trim(file_nscf_out), ' already exists, so nscf calculation is skipped'
+    end if ! have_nscf
+
+    ! Restore the original s2intw.in file
+    call execute_command_line("cp s2intw.in_backup "//trim(file_s2intw))
+
+    return
+
+    100 write(*,*) " ERROR READING scf file !!!. Stopping."
+    stop
+
+  end subroutine SIESTA_nscf
 
 end program ep_on_trFS_dV

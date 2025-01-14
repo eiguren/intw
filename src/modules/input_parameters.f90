@@ -34,7 +34,7 @@ module intw_input_parameters
   ! &elphon
   public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
             ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
-            command_pwx, command_pw2intw
+            command_pwx, command_pw2intw, command_siesta2intw
   ! K_PATH
   public :: exist_kpath, nkpath, nkspecial, kspecial
   ! Q_PATH
@@ -200,6 +200,10 @@ module intw_input_parameters
   ! pw.x and pw2intw.x executables, with optional running options
   ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
 
+  character(len=256) :: command_siesta2intw = 'unassigned'
+  ! siesta2intw.x executable, with optional running options
+  ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
+
   !----------------------------------------------------------------------------!
   ! K_PATH card variables
   !----------------------------------------------------------------------------!
@@ -249,7 +253,7 @@ module intw_input_parameters
   NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
                       ep_interp_method, ep_interp_bands, &
                       nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
-                      command_pwx, command_pw2intw
+                      command_pwx, command_pw2intw, command_siesta2intw
 
   ! ----------------------------------------------------------------------
   !  END namelist
@@ -393,7 +397,10 @@ contains
           write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw2intw not specified!'
         endif
       else if ( trim(nscf_code) == 'SIESTA' ) then
-        stop "SIESTA nscf not implemented yet"
+        if ( trim(command_siesta2intw) == 'unassigned' ) then
+          read_status = .true.
+          write(*,*) 'Error: dV_interpolate method chosen with SIESTA, but command_siesta2intw not specified!'
+        endif
       else
         read_status = .true.
         write(*,*) 'Error: dV_interpolate method chosen with unknown nscf_code!'
@@ -493,6 +500,7 @@ contains
       write(*,*) "             file_scf            = 'file'"
       write(*,*) "             command_pw          = 'string'"
       write(*,*) "             command_pw2intw     = 'string'"
+      write(*,*) "             command_siesta2intw = 'string'"
       write(*,*) "/"
     end if
 
