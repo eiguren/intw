@@ -764,7 +764,7 @@ contains
     ! Open the dvscf.info file
     iounit = find_free_unit()
     filename = trim(outdir)//trim(phdir)//trim(dvscfdir)//"dvscf.info"
-    call system("mkdir -p "//trim(outdir)//trim(phdir)//trim(dvscfdir))
+    call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dvscfdir))
     open( unit=iounit, file=trim(filename), iostat=iostat, form="formatted", &
           status="replace", action="write" )
     if (iostat .ne. 0) stop "ERROR: write_dvscf_info: Error opening file."

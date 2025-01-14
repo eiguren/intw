@@ -154,7 +154,7 @@ contains
     at_sc(:,2) = at(:,2)*nr2
     at_sc(:,3) = at(:,3)*nr3
     !
-    call system("mkdir -p "//trim(outdir)//trim(v0dir))
+    call execute_command_line("mkdir -p "//trim(outdir)//trim(v0dir))
     call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(v0dir)//"supercell-"//trim(prefix))
     !
     ! Check kgrid
@@ -213,7 +213,7 @@ contains
         !
         tau_sc(id,ia) = tau(id,ia) + dx/alat ! add the positive displacement to the atom
         !
-        call system("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispp_folder))
+        call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispp_folder))
         call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         !
         if (any(kgrid_sc /= 0)) then
@@ -231,7 +231,7 @@ contains
           !
           tau_sc(id,ia) = tau(id,ia) - dx/alat ! add the negative displacement to the atom
           !
-          call system("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispn_folder))
+          call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispn_folder))
           call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           !
           if (any(kgrid_sc /= 0)) then
@@ -339,7 +339,7 @@ contains
     endif
     !
     ! Backup the original fdf
-    call system("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
     !
     ! Modify kgrid
     iounit_reference = find_free_unit()
@@ -389,7 +389,7 @@ contains
     if (backup) then
       write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
     else
-      call system("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_kgrid
@@ -547,7 +547,7 @@ contains
     endif
     !
     ! Backup the original fdf
-    call system("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
     !
     ! Modify MeshCutoff
     iounit_reference = find_free_unit()
@@ -590,7 +590,7 @@ contains
     if (backup) then
       write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
     else
-      call system("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_MeshCutoff
@@ -629,7 +629,7 @@ contains
     defined_block = fdf_isblock("Mesh.Sizes")
     !
     ! Backup the original fdf
-    call system("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
     !
     ! Modify MeshCutoff
     iounit_reference = find_free_unit()
@@ -691,7 +691,7 @@ contains
     if (backup) then
       write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
     else
-      call system("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_MeshSizes

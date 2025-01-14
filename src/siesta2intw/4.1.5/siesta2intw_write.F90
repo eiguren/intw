@@ -206,10 +206,10 @@ contains
     !
     ! Make the save.intw directory
     intwdir = trim(outdir)//trim(prefix)//".save.intw/"
-    call system("mkdir -p "//trim(intwdir))
+    call execute_command_line("mkdir -p "//trim(intwdir))
 
     ! Clear save.intw directory
-    call system("rm -rf "//trim(intwdir)//"*")
+    call execute_command_line("rm -rf "//trim(intwdir)//"*")
 
     ! Write crystal.dat file
     call write_crystal_dat()

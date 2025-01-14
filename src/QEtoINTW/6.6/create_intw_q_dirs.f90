@@ -11,11 +11,7 @@ PROGRAM create_intw_q_dirs
 
   IMPLICIT NONE
 
-  !Select declaration of system command according to compiler
   EXTERNAL :: errore, read_file
-  #ifdef __INTEL_COMPILER
-     EXTERNAL :: system
-  #endif
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
@@ -56,7 +52,7 @@ PROGRAM create_intw_q_dirs
   if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
 
   ! create ph_dir
-  call system("mkdir -p "//trim(mesh_dir)//trim(ph_dir))
+  call execute_command_line("mkdir -p "//trim(mesh_dir)//trim(ph_dir))
   !
   ! Read QE data
   prefix_QE = prefix
@@ -76,7 +72,7 @@ PROGRAM create_intw_q_dirs
     call write_tag("qq", iq, q_dir)
     !
     ! Create directory
-    call system("mkdir -p "//trim(ph_dir)//trim(q_dir))
+    call execute_command_line("mkdir -p "//trim(ph_dir)//trim(q_dir))
     !
     ! Write input file
     qirr_cart = matmul(bg, qirr_cryst(:, iq))

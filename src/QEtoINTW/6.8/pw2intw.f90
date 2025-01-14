@@ -11,11 +11,7 @@ PROGRAM pw2intw
 
   IMPLICIT NONE
 
-  !Select declaration of system command according to compiler
   EXTERNAL :: errore, read_file, wfcinit, cryst_to_cart, davcio
-  #ifdef __INTEL_COMPILER
-     EXTERNAL :: system
-  #endif  
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
@@ -69,7 +65,7 @@ PROGRAM pw2intw
   ! Create intwdir
   intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
 
-  call system("mkdir -p "//intwdir)
+  call execute_command_line("mkdir -p "//intwdir)
 
   !
   ! Read QE data
@@ -93,12 +89,12 @@ PROGRAM pw2intw
   if (phonons) call write_phonon_info()
 
   ! MBR 9/12/24
-  if (files4nscf) then  !copy scf schema and charge_density for later QE nscf jobs  
+  if (files4nscf) then  !copy scf schema and charge_density for later QE nscf jobs
           datafile = trim(mesh_dir)//trim(prefix)//".save/charge-density.dat"
-          call system("cp "//trim(datafile)//" "//trim(intwdir) )
+          call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
           datafile = trim(mesh_dir)//trim(prefix)//".save/data-file-schema.xml"
-          call system("cp "//trim(datafile)//" "//trim(intwdir) )
-  end if        
+          call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
+  end if
 
   !
   ! End job
@@ -451,9 +447,9 @@ contains
       if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
       !
       call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
-      call system("cp " // &
-                  trim(datafile)//" " // &
-                  trim(intwdir)//trim(dyn_file) )
+      call execute_command_line("cp " // &
+                                trim(datafile)//" " // &
+                                trim(intwdir)//trim(dyn_file) )
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
       !!!! READ AND WRITE ONLY IRREDUCIBLE Q DYN MAT !!!!
@@ -557,9 +553,9 @@ contains
       inquire(file=datafile, exist=existitu)
       if (existitu) then
         call write_tag(trim(prefix)//".rho_q", iq, rho_file)
-        call system("cp " // &
-                    trim(datafile)//" " // &
-                    trim(intwdir)//trim(rho_file) )
+        call execute_command_line("cp " // &
+                                  trim(datafile)//" " // &
+                                  trim(intwdir)//trim(rho_file) )
       end if
       !
     enddo
