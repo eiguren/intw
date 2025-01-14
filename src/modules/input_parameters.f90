@@ -33,7 +33,7 @@ module intw_input_parameters
   public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
   ! &elphon
   public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
-            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir, &
+            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
             command_pwx, command_pw2intw
   ! K_PATH
   public :: exist_kpath, nkpath, nkspecial, kspecial
@@ -186,14 +186,19 @@ module intw_input_parameters
   ! If ef_crossing, use the range nfs_sheets_initial:nfs_sheets_final
   ! subset from the num_bands_intw set
 
-  character(len=256) :: pwx_dir = 'unassigned'
-  ! Directory where pw.x and pw2intw.x are to be found (only needed if
-  ! ep_interp_method = 'dV_interpolate' is chosen and there are no nscf
-  ! calculations on the triangulated k-points present)
+  character(len=256) :: nscf_code = 'unassigned'
+  ! The DFT code used for running the nscf calculation (only needed if
+  ! ep_interp_method = 'dV_interpolate' is chosen).
+  !   nscf_code = 'QE'
+  !   nscf_code = 'SIESTA'
+
+  character(len=256) :: file_scf = 'unassigned'
+  ! The input file for executing the SCF calculation with the DFT code.
+
   character(len=256) :: command_pwx = 'unassigned'
   character(len=256) :: command_pw2intw = 'unassigned'
-  ! Optional running options for pw.x and pw2intw.x executables.
-  ! They go ahead of the executable and can be for example: 'mpirun -np N', 'nice', etc.
+  ! pw.x and pw2intw.x executables, with optional running options
+  ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
 
   !----------------------------------------------------------------------------!
   ! K_PATH card variables
@@ -243,7 +248,7 @@ module intw_input_parameters
 
   NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
                       ep_interp_method, ep_interp_bands, &
-                      nfs_sheets_initial, nfs_sheets_final, pwx_dir, &
+                      nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
                       command_pwx, command_pw2intw
 
   ! ----------------------------------------------------------------------
@@ -373,11 +378,48 @@ contains
       endif
     end if
 
-    if (      trim(ep_interp_method) == 'dV_interpolate' &
-        .and. trim(pwx_dir) == 'unassigned' ) then
-      read_status = .true.
-      write(*,*) 'Warning: dV_interpolate method chosen, but no pwx_dir specified!'
+    if ( trim(ep_interp_method) == 'dV_interpolate' ) then
+      !
+      if ( trim(nscf_code) == 'unassigned' ) then
+        read_status = .true.
+        write(*,*) 'Error: dV_interpolate method chosen, but nscf_code not specified!'
+      else if ( trim(nscf_code) == 'QE' ) then
+        if ( trim(command_pwx) == 'unassigned' ) then
+          read_status = .true.
+          write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pwx not specified!'
+        endif
+        if ( trim(command_pw2intw) == 'unassigned' ) then
+          read_status = .true.
+          write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw2intw not specified!'
+        endif
+      else if ( trim(nscf_code) == 'SIESTA' ) then
+        stop "SIESTA nscf not implemented yet"
+      else
+        read_status = .true.
+        write(*,*) 'Error: dV_interpolate method chosen with unknown nscf_code!'
+      endif
+      !
+      if ( trim(file_scf) == 'unassigned' ) then
+        read_status = .true.
+        write(*,*) 'Error: dV_interpolate method chosen, but file_scf not specified!'
+      endif
+      !
     end if
+
+    if (      trim(ep_interp_method) == 'dV_interpolate' &
+        .and. trim(nscf_code) == 'QE' &
+        .and. trim(command_pwx) == 'unassigned' ) then
+      read_status = .true.
+      write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pwx not specified!'
+    end if
+
+    if (      trim(ep_interp_method) == 'dV_interpolate' &
+        .and. trim(nscf_code) == 'QE' &
+        .and. trim(command_pw2intw) == 'unassigned' ) then
+      read_status = .true.
+      write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw2intw not specified!'
+    end if
+
 
     if (      trim(read_for_dynmat) /= 'dynq' &
         .and. trim(read_for_dynmat) /= 'fc' ) then
@@ -439,17 +481,18 @@ contains
       write(*,*) "             osmear_q  = real"
       write(*,*) "/"
       write(*,*) "&elphon"
-      write(*,*) "             ep_mat_file        = 'file'"
-      write(*,*) "             ep_bands           = 'intw' or 'custom'"
-      write(*,*) "             ep_bands_initial   = integer"
-      write(*,*) "             ep_bands_final     = integer"
-      write(*,*) "             ep_interp_method   = 'wannier' or 'dV_interpolate'"
-      write(*,*) "             ep_interp_bands    = 'intw_bands' or 'ef_crossing' "
-      write(*,*) "             nfs_sheets_initial = integer"
-      write(*,*) "             nfs_sheets_final   = integer"
-      write(*,*) "             pwx_dir            = 'directory'"
-      write(*,*) "             command_pw         = 'string'"
-      write(*,*) "             command_pw2intw    = 'string'"
+      write(*,*) "             ep_mat_file         = 'file'"
+      write(*,*) "             ep_bands            = 'intw' or 'custom'"
+      write(*,*) "             ep_bands_initial    = integer"
+      write(*,*) "             ep_bands_final      = integer"
+      write(*,*) "             ep_interp_method    = 'wannier' or 'dV_interpolate'"
+      write(*,*) "             ep_interp_bands     = 'intw_bands' or 'ef_crossing' "
+      write(*,*) "             nfs_sheets_initial  = integer"
+      write(*,*) "             nfs_sheets_final    = integer"
+      write(*,*) "             nscf_code           = 'QE' or 'SIESTA'"
+      write(*,*) "             file_scf            = 'file'"
+      write(*,*) "             command_pw          = 'string'"
+      write(*,*) "             command_pw2intw     = 'string'"
       write(*,*) "/"
     end if
 
@@ -459,8 +502,6 @@ contains
     if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
     strlen = len_trim(dvscf_dir)
     if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
-    strlen = len_trim(pwx_dir)
-    if ( pwx_dir(strlen:strlen+1) .ne. "/" ) pwx_dir(strlen+1:strlen+2) = "/"
 
     return
 

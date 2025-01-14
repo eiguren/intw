@@ -53,61 +53,65 @@
 program ep_on_trFS_dV
 
         use kinds, only: dp
+
         use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
+
         use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, &
-                joint_to_triple_index_r
+                                joint_to_triple_index_r
+
         use intw_matrix_vector, only: area_vec
-        use intw_input_parameters, only: mesh_dir, prefix, read_input,&
-                intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
-                nq1, nq2, nq3, nqirr, ph_dir,  &
-                use_exclude_bands, &
-                ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, pwx_dir,&
-                command_pw2intw, command_pwx
+
+        use intw_input_parameters, only: mesh_dir, prefix, read_input, &
+                                         intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
+                                         nq1, nq2, nq3, nqirr, ph_dir, &
+                                         use_exclude_bands, &
+                                         ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
+                                         nscf_code
+
         use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
-                nG_max, ngm, gvec, get_gvec,  &
-                nkpoints_QE, kpoints_QE, nspin, &
-                volume0, alat, at, bg, nr1, nr2, nr3, &
-                nat, ntyp, ityp, amass, &
-                tau, nsym, s, &
-                get_K_folder_data
+                                nG_max, ngm, gvec, get_gvec, &
+                                nkpoints_QE, kpoints_QE, nspin, &
+                                volume0, alat, at, bg, nr1, nr2, nr3, &
+                                nat, ntyp, ityp, amass, &
+                                tau, nsym, s, &
+                                get_K_folder_data
 
         use intw_pseudo, only: read_all_pseudo
+
         use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
+
         use intw_pseudo_non_local, only: vkb, vkqb, &
-                                   init_KB_PP, &
-                                   init_KB_projectors, &
-                                   multiply_psi_by_dvKB
+                                         init_KB_PP, &
+                                         init_KB_projectors, &
+                                         multiply_psi_by_dvKB
 
         use intw_symmetries, only: set_symmetry_relations, multable, rot_atoms, &
-                symtable, rtau_index, rtau, rtau_cryst
+                                   symtable, rtau_index, rtau, rtau_cryst
 
-        use intw_fft, only: generate_nl, allocate_fft, nl, wfc_from_g_to_r, func_from_g_to_r
+        use intw_fft, only: generate_nl, allocate_fft
 
         use intw_ph, only: nqmesh, qmesh, read_ph_information_xml, &
-                q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
-                QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q, &
-                dvq_local, dvpsi
+                           q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
+                           QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q, &
+                           dvq_local, dvpsi
 
         use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
 
         implicit none
 
         ! for part I
-        logical :: read_status, have_nscf , have_wfcN, have_wfc1
-        logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
-        character(5) :: is_loc, ik_loc, comenta
-        character(70) :: linea, lleft
-        character(100) :: file_off, file_nscf, file_nscf_out, file_scf, file_pw2intw, dir_scf, dir_nscf
-        character(200) :: comando, datafile
-        integer :: unit_off, unit_pw2intw, unit_scf, unit_nscf
+        logical :: read_status
+        character(5) :: is_loc, comenta
+        character(100) :: file_off
+        integer :: unit_off
         integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-        integer :: is, js, ikpt, ik, ik1, i,j,k, iface, iks, ish,  iksp, ishp, ibp
+        integer :: is, js, ik, ik1, i, j, k, iface, iks, ish,  iksp, ishp, ibp
         integer  :: nfs_sheets_tot ! number of sheets considered
         integer , allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
                                  nkpt_tr(:), &  ! number of kpoints in each FS sheet
                                  nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
                                  nface_tr(:)  ! number of faces in each FS sheet
-        real(dp) :: k1(3), k2(3), k3(3), kwei, vol1bz, dsk_vk_2
+        real(dp) :: k1(3), k2(3), k3(3), kwei
         real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
 
         ! for part II
@@ -328,173 +332,17 @@ print *,  kpts_tr_area(1), vabsk_tr(1)
 print *,  kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
 print *, 'total area FS = ', sum(kpts_tr_area) ,' (2 x pi / alat)^2 ' !OK
 
-!!!! HARITZ: aqui empieza el cáculo nscf con QE.
-!!!! Habría que poner aquí el "if" o pensar otra cosa.
 
-!================================================================================
-! Read prefix.scf.in file line by line and dump information to prefix.nscf.in .
-! For that, the lines containing calculation and prefix are modified.
-! When arriving at KPOINTS, reading stops and the triangle list is dumped to the
-! prefix.nscf.in file .
-! Note: this is done only in case the .nscf.out does not exist (otherwise,
-! it is assumed that the wfcs have already been calculated and transformed to intw format)
-!================================================================================
-
-file_scf=trim(mesh_dir)//trim(prefix)//trim('.scf.in')
-file_nscf=trim(mesh_dir)//trim(prefix)//trim('.nscf.in')
-file_nscf_out=trim(mesh_dir)//trim(prefix)//trim('.nscf.out')
-
-inquire(file=file_nscf_out,exist=have_nscf)
-
-if ( .not. have_nscf) then
-    write(*,'(A)') '|   Calculating nscf wfcs with QE...                |'
-
-unit_scf=find_free_unit()
-unit_nscf= unit_scf + 1
-
-open(unit_scf, file=trim(file_scf), status='old')
-open(unit_nscf, file=trim(file_nscf), status='unknown')
-
-do
-        read(unit_scf,'(a)',end=100) linea
-        lleft=trim(adjustl(linea))
-        if (lleft(1:11)=='calculation') then
-           write(unit_nscf,*) " calculation = 'nscf' "
-        else if (lleft(1:6)=='prefix') then
-           !write(unit_nscf,*) " prefix = 'cu-nscf' "
-           write(unit_nscf,*) " prefix = '", trim(prefix), "-nscf' "
-        else if (lleft(1:8) == 'K_POINTS') then
-           exit
-        else
-           write(unit_nscf,*) linea
-        end if
-end do
-close(unit_scf)
-
-write(unit_nscf,*) " K_POINTS {tpiba} "
-write(unit_nscf,*) nkpt_tr_tot
-kwei = 1.0_dp
-do ik = 1,nkpt_tr_tot
-   write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ik), kwei
-end do
-
-close(unit_nscf)
-
-
-!================================================================================
-!     Write nscf-pw2intw.in file.
-!     nscf data will be written in prefix-nscf.save directory
-!================================================================================
-
-unit_pw2intw=find_free_unit()
-file_pw2intw=trim(mesh_dir)//'nscf-pw2intw.in'
-open(unit_pw2intw, file=file_pw2intw, status='unknown')
-
-write(unit_pw2intw, *) trim(prefix)
-write(unit_pw2intw, *)"&inputpp"
-   write(unit_pw2intw, *)"   mesh_dir='./' ,"
-   write(unit_pw2intw, *)"   ph_dir='./' ,"
-   write(unit_pw2intw, *)"   prefix= '",trim(prefix),"-nscf'"
-write(unit_pw2intw, *)"/"
-
-close(unit_pw2intw)
-
-
-!================================================================================
-!   Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
-!================================================================================
-
-
-! Create directory for nscf calculation prefix-nscf.save
-dir_nscf=trim(mesh_dir)//trim(prefix)//"-nscf.save/"
-comando='mkdir -p '//trim(dir_nscf)  !it will not create it if it already exists
-call system (comando)
-
-! Check if first and last wfc are present. If so, it probably means that the nscf
-! calculation was already made, so skip this step
-
-inquire(file=trim(dir_nscf)//'wfc1.dat',exist=have_wfc1)
-write(ik_loc,"(i5)") nkpt_tr_tot
-inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat',exist=have_wfcN)
-
-if (have_wfc1 .and. have_wfcN) then
-   write(*,*)' nscf calculation seems to have already been performed (please check!).'
-   write(*,*)' Skipping pw.x and pw2intw.x'
+if ( nscf_code == "QE" ) then
+  call QE_nscf()
+else if ( nscf_code == "SIESTA" ) then
+  stop "Not implemented"
 else
-   write(*,*)' performing  nscf calculation '
-
-   ! copy scf input files (force copy) to prefix-nscf.save 
-
-   ! If charge-density.dat and data-file-schema.xml have already been stored in  
-   ! prefix.save.intw directory, first try to get them from there.
-   ! Otherwise, attempt to get them from prefix.save (the scf QE calculation directory,
-   ! if it still exists)
-
-   ! Try INTW directory (.save.intw)
-   dir_scf = trim(mesh_dir)//trim(prefix)//".save.intw/"
-   datafile=trim(dir_scf)//'charge-density.dat'
-   inquire(file=datafile, exist=exists_charge_density)
-   datafile=trim(dir_scf)//'data-file-schema.xml'
-   inquire(file=datafile, exist=exists_schema)
-
-   if ( .not. exists_schema .or. .not. exists_charge_density) then 
-        ! Try searching them in QE scf directory (.save)
-        write(*,*) 'Continuation files for nscf not present in: ', dir_scf
-        dir_scf=trim(mesh_dir)//trim(prefix)//".save/"
-        write(*,*) 'Searching:', dir_scf
-        datafile=trim(dir_scf)//'charge-density.dat'
-        inquire(file=datafile, exist=exists_charge_density_qe)
-        datafile=trim(dir_scf)//'data-file-schema.xml'
-        inquire(file=datafile, exist=exists_schema_qe)
-        if ( .not. exists_schema_qe .or. .not. exists_charge_density_qe) then
-            write(*,*) 'Continuation files for nscf neither present in: ', dir_scf
-            write(*,*) 'Error. Stopping'
-            stop
-        end if        
-   end if        
-
-   write(*,*) 'Using continuation files for nscf from directory: ', dir_scf
-
-   ! copy scf input files (force copy)
-   comando='cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
-   call system (comando)
-   comando='cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
-   call system (comando)
-
-   ! invoke QE pw.x to do nscf.
-   ! command_pwx may contain running options (e.g. mpirun)
-   if ( command_pwx == 'unassigned' ) then
-      comando=trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
-   else        
-      comando=trim(command_pwx)//' '//trim(pwx_dir)//'/pw.x<'//trim(file_nscf)//'>'//trim(file_nscf_out)
-   end if
-   write(*,*)' Running QE with command:', comando
-   call system (comando)
-
-   ! Convert to INTW format invoking pw2intw.x
-   ! command_pw2intw may contain running options (e.g. mpirun)
-   if ( command_pw2intw == 'unassigned' ) then
-      comando=trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
-   else   
-      comando=trim(command_pw2intw)//' '//trim(pwx_dir)//'/pw2intw.x<'//trim(file_pw2intw)
-   end if   
-   write(*,*)' Running pw2intw with command:', comando
-   call system (comando)
-
-end if
+  stop "ERROR: Invalid value for nscf_code variable."
+endif
 
 
-else ! have_nscf = yes
-   write(*,*)' File ', trim(file_nscf_out),' already exists, so nscf calculation is skipped'
-end if ! have_nscf
-
-!!!! HARITZ: aqui termina el cáculo nscf con QE.
-
-print *,' stop for TEST purpose'
-stop
-
-
- write(*,*)' !  ---------------- Part I completed ----------------------'
+write(*,*)' !  ---------------- Part I completed ----------------------'
 
 
     !******************************** Part II ************************************
@@ -846,9 +694,185 @@ stop
 !================================================================================
     stop
 
-100 write(*,*) " ERROR READING scf file !!!. Stopping."
+
+contains
+
+  subroutine QE_nscf()
+
+    use intw_input_parameters, only: file_scf, command_pw2intw, command_pwx
+
+    implicit none
+
+    logical :: have_nscf , have_wfcN, have_wfc1
+    logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
+    character(5) :: ik_loc
+    character(70) :: linea, lleft
+    character(100) :: file_nscf, file_nscf_out, file_pw2intw, dir_scf, dir_nscf
+    character(200) :: comando, datafile
+    integer :: unit_pw2intw, unit_scf, unit_nscf
+    integer :: ikpt
+
+    !================================================================================
+    ! Read prefix.scf.in file line by line and dump information to prefix.nscf.in .
+    ! For that, the lines containing calculation and prefix are modified.
+    ! When arriving at KPOINTS, reading stops and the triangle list is dumped to the
+    ! prefix.nscf.in file .
+    ! Note: this is done only in case the .nscf.out does not exist (otherwise,
+    ! it is assumed that the wfcs have already been calculated and transformed to intw format)
+    !================================================================================
 
 
+    file_nscf = trim(mesh_dir)//trim(prefix)//'.nscf.in'
+    file_nscf_out = trim(mesh_dir)//trim(prefix)//'.nscf.out'
 
+    inquire(file=file_nscf_out, exist=have_nscf)
+
+    if ( .not. have_nscf ) then
+      write(*,'(A)') '|   Calculating nscf wfcs with QE...                |'
+
+      unit_scf = find_free_unit()
+      open(unit_scf, file=trim(file_scf), status='old')
+
+      unit_nscf = find_free_unit()
+      open(unit_nscf, file=trim(file_nscf), status='unknown')
+
+      do
+        read(unit_scf,'(a)',end=100) linea
+        lleft = trim(adjustl(linea))
+        if ( lleft(1:11) == 'calculation' ) then
+          write(unit_nscf,*) " calculation = 'nscf'"
+        else if ( lleft(1:6) == 'prefix' ) then
+          !write(unit_nscf,*) " prefix = 'cu-nscf' "
+          write(unit_nscf,*) " prefix = '", trim(prefix), "-nscf'"
+        else if ( lleft(1:8) == 'K_POINTS' ) then
+          exit
+        else
+          write(unit_nscf,*) linea
+        end if
+      end do
+
+      close(unit_scf)
+
+      write(unit_nscf,*) " K_POINTS {tpiba} "
+      write(unit_nscf,*) nkpt_tr_tot
+      do ikpt = 1, nkpt_tr_tot
+        write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ikpt), 1.0_dp
+      end do
+
+      close(unit_nscf)
+
+      !================================================================================
+      !     Write nscf-pw2intw.in file.
+      !     nscf data will be written in prefix-nscf.save directory
+      !================================================================================
+
+      unit_pw2intw = find_free_unit()
+      file_pw2intw = trim(mesh_dir)//'nscf-pw2intw.in'
+      open(unit_pw2intw, file=trim(file_pw2intw), status='unknown')
+
+      write(unit_pw2intw, *) trim(prefix)
+      write(unit_pw2intw, *) "&inputpp"
+      write(unit_pw2intw, *) "  mesh_dir = './'"
+      write(unit_pw2intw, *) "  ph_dir = './'"
+      write(unit_pw2intw, *) "  prefix = '",trim(prefix),"-nscf'"
+      write(unit_pw2intw, *) "/"
+
+      close(unit_pw2intw)
+
+
+      !================================================================================
+      !   Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
+      !================================================================================
+
+
+      ! Create directory for nscf calculation prefix-nscf.save
+      dir_nscf = trim(mesh_dir)//trim(prefix)//"-nscf.save/"
+      comando = 'mkdir -p '//trim(dir_nscf) !it will not create it if it already exists
+      call execute_command_line(comando)
+
+      ! Check if first and last wfc are present. If so, it probably means that the nscf
+      ! calculation was already made, so skip this step
+
+      inquire(file=trim(dir_nscf)//'wfc1.dat', exist=have_wfc1)
+      write(ik_loc,"(i5)") nkpt_tr_tot
+      inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_wfcN)
+
+      if ( have_wfc1 .and. have_wfcN ) then
+        write(*,*) ' nscf calculation seems to have already been performed (please check!).'
+        write(*,*) ' Skipping pw.x and pw2intw.x'
+      else
+        write(*,*) ' performing  nscf calculation'
+
+        ! copy scf input files (force copy) to prefix-nscf.save
+
+        ! If charge-density.dat and data-file-schema.xml have already been stored in
+        ! prefix.save.intw directory, first try to get them from there.
+        ! Otherwise, attempt to get them from prefix.save (the scf QE calculation directory,
+        ! if it still exists)
+
+        ! Try INTW directory (.save.intw)
+        dir_scf = trim(mesh_dir)//trim(prefix)//".save.intw/"
+        datafile = trim(dir_scf)//'charge-density.dat'
+        inquire(file=datafile, exist=exists_charge_density)
+        datafile = trim(dir_scf)//'data-file-schema.xml'
+        inquire(file=datafile, exist=exists_schema)
+
+        if ( (.not. exists_schema) .or. (.not. exists_charge_density) ) then
+          ! Try searching them in QE scf directory (.save)
+          write(*,*) 'Continuation files for nscf not present in: ', trim(dir_scf)
+          dir_scf = trim(mesh_dir)//trim(prefix)//".save/"
+          write(*,*) 'Searching: ', trim(dir_scf)
+          datafile = trim(dir_scf)//'charge-density.dat'
+          inquire(file=datafile, exist=exists_charge_density_qe)
+          datafile = trim(dir_scf)//'data-file-schema.xml'
+          inquire(file=datafile, exist=exists_schema_qe)
+          if ( (.not. exists_schema_qe) .or. (.not. exists_charge_density_qe) ) then
+            write(*,*) 'Continuation files for nscf neither present in: ', trim(dir_scf)
+            write(*,*) 'Error. Stopping'
+            stop
+          end if
+        end if
+
+        write(*,*) 'Using continuation files for nscf from directory: ', dir_scf
+
+        ! copy scf input files (force copy)
+        comando = 'cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
+        call execute_command_line(comando)
+        comando = 'cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
+        call execute_command_line(comando)
+
+        ! invoke QE pw.x to do nscf.
+        ! command_pwx may contain running options (e.g. mpirun)
+        if ( command_pwx == "unassigned" ) then
+          stop "ERROR: Unassigned command_pwx variable."
+        else
+          comando = trim(command_pwx)//" < "//trim(file_nscf)//" > "//trim(file_nscf_out)
+        end if
+        write(*,*) " Running QE with command:", comando
+        call execute_command_line(comando)
+
+        ! Convert to INTW format invoking pw2intw.x
+        ! command_pw2intw may contain running options (e.g. mpirun)
+        if ( command_pw2intw == "unassigned" ) then
+          stop "ERROR: Unassigned command_pw2intw variable."
+        else
+          comando = trim(command_pw2intw)//" < "//trim(file_pw2intw)
+        end if
+        write(*,*) " Running pw2intw with command:", comando
+        call execute_command_line(comando)
+
+      end if
+
+
+    else ! have_nscf = yes
+      write(*,*) ' File ', trim(file_nscf_out), ' already exists, so nscf calculation is skipped'
+    end if ! have_nscf
+
+    return
+
+    100 write(*,*) " ERROR READING scf file !!!. Stopping."
+    stop
+
+  end subroutine QE_nscf
 
 end program ep_on_trFS_dV
