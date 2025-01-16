@@ -4,7 +4,6 @@
 set(PROGS
   nscf
   ep_melements
-  read_pp_test
   intw2W90
   w902intw
   interpolate
