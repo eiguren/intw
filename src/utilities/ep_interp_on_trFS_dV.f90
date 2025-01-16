@@ -85,11 +85,10 @@ program ep_on_trFS_dV
                                          nscf_code
 
         use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
-                                nG_max, ngm, gvec, get_gvec, &
-                                nkpoints_QE, kpoints_QE, nspin, &
-                                volume0, alat, at, bg, nr1, nr2, nr3, &
-                                nat, ntyp, ityp, amass, &
-                                tau, nsym, s, &
+                                nG_max, ngm, get_gvec, &
+                                nspin, &
+                                alat, at, nr1, nr2, nr3, &
+                                nat, tau, nsym, s, &
                                 get_K_folder_data
 
         use intw_pseudo, only: read_all_pseudo
@@ -133,15 +132,15 @@ program ep_on_trFS_dV
         ! for part II
         logical                  :: q_points_consistent
         logical                  :: full_mesh_q, IBZ_q
-        integer                  :: iq, irq, ir, ir_p, jr, ir1, ir2, ir3, i1,i2,i3, j1,j2,j3
+        integer                  :: iq, ir, ir_p, jr, ir1, ir2, ir3
         real(dp)                 :: qpoint(3), rvec(3)
-        complex(dp)              :: facq, facqr
+        complex(dp)              :: facq
         complex(dp), allocatable :: dvq_local_R(:,:,:,:,:)
 
         ! for part III
         logical                  :: have_ep
         character(256) :: altprefix, file_ep
-        integer :: ib,jb,iat,imode,ikp, iG, unit_ep
+        integer :: ib, iat, ikp, iG, unit_ep
         integer :: nG, nG_p
         integer , allocatable :: list_iG(:), list_iG_p(:)
         real(dp) :: kpoint(3), kpoint_p(3)
@@ -152,7 +151,7 @@ program ep_on_trFS_dV
         complex(dp), external :: zdotc
 
         ! time analysis
-        real(dp) :: time1, time2, time3, time4, time5
+        real(dp) :: time1, time2
 
 
         20 format(A)
@@ -898,9 +897,8 @@ contains
 
     implicit none
 
-    logical :: have_nscf , have_wfcN, have_wfc1, write_nk
+    logical :: have_nscf, write_nk
     logical :: exists_density_matrix
-    character(5) :: ik_loc
     character(70) :: linea, lleft
     character(100) :: file_s2intw, file_s2intw_nscf, file_nscf_out
     character(200) :: comando, datafile
