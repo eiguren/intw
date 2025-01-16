@@ -73,9 +73,6 @@ program triFS
   NAMELIST /tri_FS/ TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
   NAMELIST /FS_opt/ collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
 
-  real(kind=dp) :: time1, time2
-  logical :: read_status
-
 
   20 format(A)
   30 format(A,F8.2,6X,A)
@@ -84,8 +81,6 @@ program triFS
   !================================================================================
   ! Begining
   !================================================================================
-  !
-  call get_timing(time1)
   !
   write(*,20) '====================================================='
   write(*,20) '|                  program me                       |'
