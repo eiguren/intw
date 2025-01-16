@@ -46,7 +46,7 @@ program a2F_on_trFS
                 ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
         use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                nspin, at, bg, volume0, alat, nat, ntyp, ityp, amass, &
+                nspin, at, bg, volume0, alat, nat, ityp, amass, &
                 num_bands_intw, nsym, tau
 
         use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
@@ -65,14 +65,12 @@ program a2F_on_trFS
 
         logical :: read_status
         logical :: q_points_consistent, full_mesh_q, IBZ_q
-        character(5) :: is_loc, js_loc, ik_loc, comenta
-        character(70) :: linea, lleft
-        character(100) :: file_off, dir_scf, dir_nscf, file_a2f
-        character(200) :: comando
+        character(5) :: is_loc, js_loc, comenta
+        character(100) :: file_off, file_a2f
         integer :: unit_off, unit_a2f
         integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
         integer :: qmesh_nqirr
-        integer :: is, js, ikpt, ik, ik1, iq, i,j,k, iface, ir, ir1, ir2, ir3
+        integer :: is, js, ik, ik1, iq, i,j,k, iface, ir1, ir2, ir3
         integer  :: nfs_sheets_tot ! number of sheets considered
         integer , allocatable :: nfs_sheet(:), &    ! band indices of the sheets (num_bands_intw set)
                                  nkpt_tr(:), &      ! number of kpoints in each FS sheet
@@ -85,12 +83,12 @@ program a2F_on_trFS
         real(dp) , allocatable :: area_ibz(:), area_fbz(:), factor_area_ibz(:)
 
         logical                  :: have_ep
-        character(256) :: altprefix, file_ep
-        integer :: ib,jb,iat,imode,ikp, iG, unit_ep
+        character(256) :: file_ep
+        integer :: ib, iat, imode, ikp, unit_ep
 
         real(dp) , allocatable :: w_q(:,:)
 
-        integer :: nener, iomega, iks, ish,  iksp, ishp, ibp
+        integer :: iomega, iks, ish,  iksp, ishp, ibp
         real(dp) :: omega, omega_step, rfacq, dosef, dsk_vk_2
         real(dp) :: qpoint(3), kpoint(3), kpoint_p(3)
         real(dp) , allocatable :: alpha2F(:,:,:,:), w2_qint(:), w_qint(:), lambda(:)
