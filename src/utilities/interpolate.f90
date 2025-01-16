@@ -32,7 +32,7 @@ program interpolate
             nk1_dos, nk2_dos, nk3_dos, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, &
             chemical_potential
     use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                            num_bands_intw, num_wann_intw, &
+                            num_wann_intw, &
                             at, bg, tpiba
 
 !================================================================================
@@ -40,11 +40,11 @@ program interpolate
 !================================================================================
     implicit none
 
-    character(256) :: nnkp_file, bpath_file, dos_file
+    character(256) :: bpath_file, dos_file
     logical        :: read_status
-    integer :: io_unit_k, io_unit_b, io_unit_d, ik, ie, iw
+    integer :: io_unit_b, io_unit_d, ik, ie, iw
     integer , allocatable :: kspecial_indices(:)
-    real(dp) :: kpoint(3), kpoint_dist
+    real(dp) :: kpoint(3)
     real(dp) :: estep, ener, num_elec
     real(dp) , allocatable :: eig_int(:), DOS(:), PDOS(:,:), weights(:)
     real(dp) , allocatable :: kpath(:,:), dkpath(:)
