@@ -26,89 +26,89 @@ program ep_on_trFS_wannier
   ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
   ! Finally, elements are printed to file.
 
-    use kinds, only: dp
-    use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
-    use intw_utility, only: find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
-            generate_kmesh, cryst_to_cart
-    use intw_matrix_vector, only: area_vec
-    use intw_w90_setup, only: nrpts, irvec, ndegen, &
-            allocate_and_read_ham_r, allocate_and_read_u_mesh, &
-            allocate_and_build_ws_irvec, &
-            wann_rotate_matrix, wann_IFT_1index, wann_FT_1index_1k, &
-            interpolate_1k, &
-            eigenval_intw, u_mesh
-    use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input, &
-            nq1, nq2, nq3, ph_dir, chemical_potential, &
-            ep_bands, ep_bands_initial, ep_bands_final, &
-            use_exclude_bands, &
-            ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
-    use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                            nat, nspin, &
-                            num_bands_intw, num_wann_intw, &
-                            ntyp, ityp, amass, alat, bg, at
-    use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
+  use kinds, only: dp
 
-    use intw_ph, only: nqmesh, qmesh,  read_ph_information_xml
-    use intw_ph_interpolate, only: allocate_and_build_ws_irvec_q, &
-            !allocate_and_build_dyn_qmesh, allocate_and_build_dyn_qmesh2, dyn_q_to_dyn_r, &
-            irvec_q, nrpts_q, ndegen_q
+  use intw_useful_constants, only: cmplx_0, cmplx_i, Ha_to_eV, tpi
 
-implicit none
+  use intw_utility, only: find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
+                          generate_kmesh, cryst_to_cart
 
-        ! read triangulation
-        logical :: read_status, have_nscf , have_wfcN, have_wfc1
-        character(5) :: is_loc, ik_loc, comenta
-        character(70) :: linea, lleft
-        character(100) :: file_off
-        character(200) :: comando
-        integer :: unit_off
-        integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-        integer :: ik1, iface
-        integer :: nfs_sheets_tot ! number of sheets considered
-        integer :: nfs_sheets_initial_, nfs_sheets_final_ ! those selected sheets
-        integer , allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
-                                 nkpt_tr(:), &  ! number of kpoints in each FS sheet
-                                 nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
-                                 nface_tr(:)  ! number of faces in each FS sheet
-        real(dp) :: k1(3), k2(3), k3(3), kwei
-        real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
+  use intw_matrix_vector, only: area_vec
 
-        ! wannier
-    character(256) :: nnkp_file, ep_mat_file, fc_file_name, qband_file_name
-    character(4)   :: iq_loc
-    integer        :: record_lengh, ierr, ep_unit, nomega, qpt_unit
-    integer :: Gkq_1bz(3), is1,is2, iq, ik, ikq, i,j,k,ik_int, iq_int, ir, irq, nq
-    integer :: nkmesh, is, js, ikp
-    integer :: nq1_int,nq2_int,nq3_int, nk1_int,nk2_int,nk3_int, nkmesh_int, nqmesh_int, &
-            iomega, iw,jw, imode, jmode, iat, nint_k, nint_q, nener
-    integer , allocatable :: kqmap(:,:), kqmap_int(:,:)
-    real(dp) :: kpoint(3), qpoint(3), kqpoint(3), kq_1bz(3), qpoint_cart(3), rcart(3)
-    real(dp), allocatable :: kmesh(:,:), kqmesh(:,:,:), kmesh_int(:,:), qmesh_int(:,:), kqmesh_int(:,:,:)
-    real(dp) , allocatable :: eig_kint(:), eig_kqint(:), eig_kint_all(:,:)
-    real(dp) :: ener
-    complex(dp) :: fac, facq, fack, gep_ij, cdum
-    complex(dp) , allocatable ::  u_kint(:,:), u_kqint(:,:), u_kint_all(:,:,:)
-    complex(dp), allocatable :: gmatkqk_wann(:,:,:,:), gmatL_wann(:,:,:,:,:,:,:), gmat_aux(:,:,:,:), &
-            gmat_int(:,:), gmat_int_rot(:,:), gmat_aux1(:,:,:), gep_int(:,:)
-    complex(dp), allocatable :: ep_mat_el_coarse(:,:,:,:,:,:,:)
+  use intw_w90_setup, only: nrpts, &
+                            allocate_and_read_ham_r, allocate_and_read_u_mesh, &
+                            wann_rotate_matrix, wann_IFT_1index, wann_FT_1index_1k, &
+                            interpolate_1k
 
-    real(dp), external :: smeared_delta, fermi_dirac
+  use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input, &
+                                   nq1, nq2, nq3, &
+                                   ep_bands, ep_bands_initial, ep_bands_final, &
+                                   use_exclude_bands, &
+                                   ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
-         ! elements
-         logical                  :: have_ep
-        character(256) :: altprefix, file_ep
-        integer :: ib,jb, unit_ep, ibp
-        integer :: ipb, iksp, iks, ish, ishp, ir1,ir2,ir3
-        real(dp) :: kpoint_p(3)
-        complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
+  use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
+                          nat, nspin, &
+                          num_bands_intw, num_wann_intw, &
+                          alat, at
 
+  use intw_intw2wannier, only: nnkp_kpoints
 
-    ! From mat_inv_four_t, see IGG's comments
-      ! TODO add to useful_constants
-      real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.396d0
+  use intw_ph, only: nqmesh, qmesh, read_ph_information_xml
+
+  use intw_ph_interpolate, only: allocate_and_build_ws_irvec_q, &
+                                 irvec_q, nrpts_q, ndegen_q
+
+  implicit none
+
+  ! read triangulation
+  logical :: read_status
+  character(5) :: is_loc, comenta
+  character(100) :: file_off
+  integer :: unit_off
+  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
+  integer :: ik1, iface
+  integer :: nfs_sheets_tot ! number of sheets considered
+  integer :: nfs_sheets_initial_, nfs_sheets_final_ ! those selected sheets
+  integer , allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+                           nkpt_tr(:), &  ! number of kpoints in each FS sheet
+                           nkpt_tr_ibz(:), &  ! number of kpoints in each FS sheet irreducible BZ wedge
+                           nface_tr(:)  ! number of faces in each FS sheet
+  real(dp) :: k1(3), k2(3), k3(3), kwei
+  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
+
+  ! wannier
+  character(256) :: ep_mat_file
+  character(4)   :: iq_loc
+  integer        :: record_lengh, ierr, ep_unit
+  integer :: Gkq_1bz(3), is1, is2, iq, ik, ikq, i, j, k, ir, irq
+  integer :: nkmesh, is, js, ikp
+  integer :: imode, iat
+  integer , allocatable :: kqmap(:,:)
+  real(dp) :: kpoint(3), qpoint(3), kqpoint(3), kq_1bz(3)
+  real(dp), allocatable :: kmesh(:,:), kqmesh(:,:,:)
+  real(dp), allocatable :: eig_kint(:), eig_kqint(:), eig_kint_all(:,:)
+  complex(dp) :: facq
+  complex(dp), allocatable :: u_kint(:,:), u_kqint(:,:), u_kint_all(:,:,:)
+  complex(dp), allocatable :: gmatkqk_wann(:,:,:,:), gmatL_wann(:,:,:,:,:,:,:), gmat_aux(:,:,:,:), &
+                              gmat_int(:,:), gmat_int_rot(:,:), gmat_aux1(:,:,:), gep_int(:,:)
+  complex(dp), allocatable :: ep_mat_el_coarse(:,:,:,:,:,:,:)
+
+  real(dp), external :: smeared_delta, fermi_dirac
+
+  ! elements
+  logical                  :: have_ep
+  character(256) :: file_ep
+  integer :: ib, unit_ep, ibp
+  integer :: iksp, iks, ish, ishp, ir1, ir2, ir3
+  real(dp) :: kpoint_p(3)
+  complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
 
 
-      !--------------------------------------------------------------------------------
+  ! From mat_inv_four_t, see IGG's comments
+  ! TODO add to useful_constants
+  real(dp), parameter :: pmass=1822.88848426_dp, aumev=  27211.396d0
+
+
 !================================================================================
 !       Talk to the user
 !================================================================================
