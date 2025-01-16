@@ -20,19 +20,19 @@ program nscf
 
   use kinds, only: dp
   use intw_input_parameters, only: intw2W_method, read_input
-  use intw_reading, only: nspin, noncolin, ngm, nsym, &
-       spinorb_mag, can_use_TR, s, nbands, nG_max, nat, alat, &
-       ntyp, amass, nspin, tau, bg, nr1, nr2, nr3, nbands, nkpoints_QE, &
-       get_gvec, &
-       read_parameters_data_file_xml, &
-       read_kpoints_data_file_xml, &
-       get_K_folder_data
+  use intw_reading, only: nspin, &
+                          nbands, nG_max, &
+                          nr1, nr2, nr3, nbands, nkpoints_QE, &
+                          get_gvec, &
+                          read_parameters_data_file_xml, &
+                          read_kpoints_data_file_xml, &
+                          get_K_folder_data
   use intw_pseudo, only: read_all_pseudo
-  use intw_utility, only: get_timing, find_free_unit
+  use intw_utility, only: get_timing
 
-  use intw_useful_constants, only: cmplx_0, cmplx_1
+  use intw_useful_constants, only: cmplx_0
 
-  use intw_fft, only: generate_nl, allocate_fft, nl
+  use intw_fft, only: generate_nl, allocate_fft, find_iG
 
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
 
@@ -42,28 +42,20 @@ program nscf
   !================================================================================
   implicit none
 
-  integer, allocatable     :: list_igk (:,:), ngk(:)
+  integer, allocatable     :: list_igk(:,:), ngk(:)
 
-  complex(dp), allocatable :: wfc_k (:,:,:,:) ! nG_max is defined in reading
+  complex(dp), allocatable :: wfc_k(:,:,:,:) ! nG_max is defined in reading
   real(dp), allocatable    :: QE_eig_k(:,:)
-  !fft related
-  integer                  :: nr(3)
 
   !local/aux variables
-  integer                  :: nbands_loc
-  integer                  :: npw
-
-  integer                  :: i, j, k, ik
-  integer                  :: ig, ibnd, jbnd, ipol, jpol
+  integer                  :: i, ik
+  integer                  :: ipol, jpol
   logical                  :: read_status
   character(256)           :: method
 
   complex(dp),allocatable :: wfc_k_r(:)
-  integer :: nG
-  complex(dp), external :: zdotc
   real(kind=dp) :: time1, time2
-
-  real(kind=dp), allocatable            :: kpoints_QE(:,:)
+  real(kind=dp), allocatable :: kpoints_QE(:,:)
 
   !
   !================================================================================
@@ -136,7 +128,6 @@ program nscf
   write(*,20) '|                                                   |'
   !
   call read_all_pseudo ()
-  !if (.not.lspinorb) call average_pp(ntyp)
   !
   write(*,20) '|                    PPs are OK                     |'
   write(*,20) '|           ---------------------------------       |'
@@ -201,7 +192,7 @@ contains
     !
     !--------------------------------------------------------------------------------
     use intw_useful_constants, only: zero, one, cmplx_0
-    use intw_reading, only: nG_max, gvec, nspin, nbands, ngm
+    use intw_reading, only: gvec
 
     implicit none
 
@@ -209,11 +200,11 @@ contains
     !Input list_iG_1(:), instead of list_iG_1(nG_max).
 
     integer,intent(in)      :: list_iG_1(:),ngk1,list_iG_2(:),ngk2
-    complex(dp),intent(in)  :: wfc_1(:,:,:), wfc_2(:,:,:) !wfc_1(nG_max,num_bands,nspin),wfc_2(nG_max,num_bands,nspin)
+    complex(dp),intent(in)  :: wfc_1(:,:,:), wfc_2(:,:,:)
 
     ! In output, we have nbndxnbnd functions in (G), but G in the full ngm list
 
-    complex(dp),intent(out) :: product_wfc (:,:,:,:,:) !(num_bands,num_bands,nspin,nspin,ngm)
+    complex(dp),intent(out) :: product_wfc (:,:,:,:,:)
 
     !local variables
     integer :: nbnd_l
@@ -221,10 +212,8 @@ contains
     integer :: nspin_l
 
     integer :: G2pG1(3)
-    integer :: i,j,ibnd,jbnd,iG_1,iG_2, iG
-    integer :: nG_max_non_zero
-    !complex(dp) :: pw_mat_el_local(num_bands,num_bands,nspin,nspin)
-    logical :: found
+    integer :: ibnd, jbnd, iG_1, iG_2, iG
+
 
     nG_max_l  = size(wfc_1,1) !
     nbnd_l    = size(wfc_1,2)
@@ -258,17 +247,19 @@ contains
 
   subroutine diagonalize_cmat (n,a,w)
 
-    integer, intent(in)  :: n
-    complex(dp),intent(inout) :: a(n,n)
-    real(dp),intent(out) :: w(n)
+    integer, intent(in) :: n
+    complex(dp), intent(inout) :: a(n,n)
+    real(dp), intent(out) :: w(n)
 
     complex(dp) :: a_pack(n*(n+1)/2)
 
-    integer :: i,j, nfound
+    integer :: i, j, nfound
 
     complex(dp) :: cwork(2*n)
     real   (dp) :: rwork(7*n)
     integer     :: iwork(5*n), ifail(n), info
+
+    external :: ZHPEVX
 
 
     do j=1,n
