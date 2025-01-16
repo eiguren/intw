@@ -80,8 +80,7 @@ contains
   use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
   use intw_useful_constants, only: eps_8
-  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
-                               nnkp_num_kpoints, nnkp_kpoints
+  use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_num_kpoints, nnkp_kpoints
   implicit none
 
   character(20) :: checkpoint
@@ -236,7 +235,7 @@ contains
   !----------------------------------------------------------------------------!
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_excluded_bands
+  use intw_intw2wannier, only: nnkp_num_kpoints
   implicit none
 
   integer :: i, ik, n1, n2, nb1
@@ -357,7 +356,7 @@ contains
   logical :: in_ws
   integer :: ik, nboundary, i,j,k,l, l0,l1
   integer :: r_cryst_int(3), Rs(3,n_wss), ndegen_ws(nk1*nk2*nk3*n_wss), irvec_ws(3,nk1*nk2*nk3*n_wss)
-  real(kind=dp) :: kmesh(3,nk1*nk2*nk3), dist0
+  real(kind=dp) :: kmesh(3,nk1*nk2*nk3)
   real(kind=dp) :: r_cryst(3), r_length_l, r_length_l1, r_cart(3)
   !
   call generate_kmesh (kmesh,nk1,nk2,nk3)
@@ -446,8 +445,8 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0
-  use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
+  use intw_reading, only: num_wann_intw
+  use intw_intw2wannier, only: nnkp_num_kpoints
   !
   implicit none
   !
@@ -494,7 +493,7 @@ contains
   !  Construct ham_r by Fourier transform of ham_k, k in the fullzone k-mesh
   !----------------------------------------------------------------------------!
   !
-  use intw_reading, only: alat, bg, num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
   use intw_intw2wannier, only: nnkp_num_kpoints, nnkp_kpoints
   !
@@ -575,7 +574,7 @@ contains
   !
   use intw_useful_constants, only: cmplx_0
   use intw_utility, only: find_free_unit
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   use intw_input_parameters, only: mesh_dir, prefix
   !
   implicit none
@@ -746,7 +745,7 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   !
   implicit none
   !
@@ -762,6 +761,8 @@ contains
   integer :: iwork(5*num_wann_intw), ifail(num_wann_intw)
   real(kind=dp) :: rwork(7*num_wann_intw)
   complex(kind=dp) :: cwork(2*num_wann_intw)
+  !
+  external :: ZHPEVX
   !
   ! generate ham_k directly packed at this point
   !
@@ -814,11 +815,11 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
-  use intw_reading, only: num_bands_intw, num_wann_intw
+  use intw_reading, only: num_wann_intw
   !
   implicit none
   !
-  integer :: ik, ik1, ik2, ik3, ie, iw
+  integer :: ik1, ik2, ik3, ie, iw
   integer, intent(in) :: nik1, nik2, nik3, ne
   real(kind=dp), intent(in) :: eini, efin, esmear
   real(kind=dp), intent(out) :: DOS(ne)
@@ -877,7 +878,6 @@ contains
   !
   use intw_useful_constants, only: cmplx_0
   use intw_reading, only: num_bands_intw, num_wann_intw
-  use intw_intw2wannier, only: nnkp_num_kpoints
   !
   implicit none
   !
@@ -885,7 +885,7 @@ contains
   complex(kind=dp) , intent(in) :: matin(num_bands_intw,num_bands_intw)
   complex(kind=dp) , intent(out) :: matout(num_wann_intw,num_wann_intw)
   !
-  integer :: iw,jw, ib,jb, ib1, jb1
+  integer :: iw, jw, ib, jb
   !
   matout=cmplx_0
   do iw=1,num_wann_intw
