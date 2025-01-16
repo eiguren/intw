@@ -984,7 +984,7 @@ contains
     !local variables
 
     integer :: iG, l
-    real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
+    real(dp) :: z, z2, z4, z6, z52, sqrt_z
     real(dp) :: p(ngk)
 
     ! from pw2wannier
