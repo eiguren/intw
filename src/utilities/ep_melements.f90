@@ -103,7 +103,7 @@ program ep_melements
   !local/aux variables
   integer                  :: npw, npwq
 
-  integer                  :: ig, ibnd, jbnd, ispin, jspin
+  integer                  :: ibnd, jbnd, ispin, jspin
   logical                  :: read_status
   character(len=4)         :: iq_loc
 
