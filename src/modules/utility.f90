@@ -63,6 +63,8 @@ contains
     complex(kind=dp), allocatable, dimension(:) :: WORK
     real(kind=dp), allocatable, dimension(:) :: RWORK
     integer :: N, LWORK, INFO
+    !
+    external :: zheev
 
 
     N = size((A),DIM=1)
@@ -344,7 +346,7 @@ end function intgr_spline_gaussq
     real(dp), allocatable , intent(out) , optional :: dkpath(:)
 
     integer :: i,j,ik, nkstage(nkspecial-1)
-    real(dp) :: lpath, lstep
+    real(dp) :: lpath
     real(dp) :: kspecial_cart(3,nkspecial), lstage(nkspecial-1), vec(3)
 
     ! cryst to cart of special points forming the path milestones
