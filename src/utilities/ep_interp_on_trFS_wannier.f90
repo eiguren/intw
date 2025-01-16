@@ -1,14 +1,32 @@
-      ! MBR 24/04/2024
-
-      ! This utility reads the electron-phonon matrix elements calculated by the utility
-      ! ep_melements.f90 of INTW and interpolates them on a triangulated Fermi surface,
-      ! following the method of:
-      ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
-      ! Finally, elements are printed to file.
-
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 program ep_on_trFS_wannier
 
-        use kinds, only: dp
+  ! MBR 24/04/2024
+
+  ! This utility reads the electron-phonon matrix elements calculated by the utility
+  ! ep_melements.f90 of INTW and interpolates them on a triangulated Fermi surface,
+  ! following the method of:
+  ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
+  ! Finally, elements are printed to file.
+
+    use kinds, only: dp
     use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
     use intw_utility, only: find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
             generate_kmesh, cryst_to_cart

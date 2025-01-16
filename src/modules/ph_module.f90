@@ -1,19 +1,29 @@
-!----------------------------------------------------------------------------!
-!	intw project.
 !
-!----------------------------------------------------------------------------!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_ph
-  !
+
+  !------------------------------------------------------------------!
+  ! This module contains the main variables related to phonon modes. !
+  !------------------------------------------------------------------!
+
   use kinds, only : dp
 
-  !----------------------------------------------------------------------------!
-  !
-  !  This module contains the main variables related to phonon modes.
-  !
-  !----------------------------------------------------------------------------!
-
-  !
   implicit none
   !
   save
@@ -220,8 +230,21 @@ contains
   end subroutine read_ph_information_xml
 
   SUBROUTINE readfc ( flfrc, frc )
+    !
     ! Read QE force constants file
-
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
+    !  Modifications by INTW group, 2024:
+    !   - Intent(in) variables specified explicitly.
+    !   - Remove MPI parts.
+    !   - Add some checks.
+    !
     use intw_reading, only: nat, ntyp, at, alat, amass, ityp, tau
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_1, eps_6, Ry_to_Ha, pmass
@@ -751,7 +774,15 @@ contains
 
 
   subroutine mat_inv_four_t(q_point, nkk1, nkk2, nkk3, nnmode, in_mat, out_mat)
-
+    !
+    ! This subroutine is based on the matdyn code distributed as part of
+    ! the Quantum Espresso project and has been adapted to INTW:
+    !
+    !   Copyright (C) 2001-2004 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     USE intw_reading, only : tau, at, bg, nat
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, Ry_to_eV
 
@@ -1269,7 +1300,13 @@ contains
 !************************************************************************
   !-----------------------------------------------------------------------
   subroutine wsinit(rws,nrwsx,nrws,atw)
-    !-----------------------------------------------------------------------
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     implicit none
     integer :: i, ii, ir, jr, kr, nrws, nrwsx, nx
@@ -1297,7 +1334,13 @@ contains
   !
   !-----------------------------------------------------------------------
   function wsweight(r,rws,nrws)
-    !-----------------------------------------------------------------------
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     implicit none
     integer :: ir, nreq, nrws

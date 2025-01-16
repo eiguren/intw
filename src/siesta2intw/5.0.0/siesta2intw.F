@@ -1,10 +1,29 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
-!  This file is distributed under the terms of the
-!  GNU General Public License: see COPYING in the top directory
-!  or http://www.gnu.org/copyleft/gpl.txt .
-! See Docs/Contributors.txt for a list of contributors.
-! ---
+!
+! This file is based on the siesta.F file from the SIESTA project:
+!   Copyright (C) 1996-2016 The SIESTA group
+!   Distributed under the terms of the GNU General Public License (GPL).
+!   See the COPYING file in the original SIESTA project source for license details.
+!   For the original source visit: https://siesta-project.org/siesta/
+!
       Program SIESTA
 
       ! INTW
@@ -125,7 +144,6 @@ C     Begin of coordinate relaxation iteration
 
       ! INTW
       call setup_write_intw()
-
 
 C     End of coordinate-relaxation loop
       call siesta_analysis( relaxd )

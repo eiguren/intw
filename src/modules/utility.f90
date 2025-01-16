@@ -1,17 +1,31 @@
-!----------------------------------------------------------------------------!
-! intw project.
 !
-!----------------------------------------------------------------------------!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module intw_utility
-!----------------------------------------------------------------------------!
-!
-!       This module contains useful functions which implement
-!       common tasks. It will be VERY useful to call these functions
-!       instead of reimplementing them every time they are needed,
-!       especially to insure CONSISTENCY.
-!
-!----------------------------------------------------------------------------!
-use kinds, only: dp
+
+  !---------------------------------------------------------------!
+  ! This module contains useful functions which implement common  !
+  ! tasks. It will be VERY useful to call these functions instead !
+  ! of reimplementing them every time they are needed, especially !
+  ! to ensure CONSISTENCY.                                        !
+  !---------------------------------------------------------------!
+
+  use kinds, only: dp
 
   implicit none
   !
@@ -583,10 +597,15 @@ end function intgr_spline_gaussq
 
 
   function find_free_unit()
-    !--------------------------------------------------------------------------
-    ! This function finds a free input/output unit. It is copied from
-    ! the QE distribution and slightly modified to suit our needs.
-    !--------------------------------------------------------------------------
+    !
+    ! This function finds a free input/output unit.
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2002-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     implicit none
     !
@@ -620,6 +639,13 @@ end function intgr_spline_gaussq
     ! Output cartesian coordinates are stored in the input ('vec') array
     !
     !-----------------------------------------------------------------------
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001-2003 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     implicit none
     !
@@ -677,10 +703,6 @@ end function intgr_spline_gaussq
     ! subroutine which performs heap sort on a list of integers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
-    !
-    ! adapted from Quantum Espresso v6.8 Modules/sort.f90,
-    ! Copyright (C) 2001 PWSCF group
-    !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
     !*                by the Heapsort method             *
@@ -695,8 +717,14 @@ end function intgr_spline_gaussq
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
     !*****************************************************
-    !------------------------------------------------------------
-
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     implicit none
 
     integer, intent(in) :: n
@@ -793,10 +821,6 @@ end function intgr_spline_gaussq
     ! subroutine which performs heap sort on a list of real numbers
     ! and also returns an array identifying the permutation
     ! which sorted the array.
-    !
-    ! adapted from Quantum Espresso v6.8 Modules/sort.f90
-    ! Copyright (C) 2001 PWSCF group
-    !
     !*****************************************************
     !*  Sorts an array RA of length N in ascending order *
     !*                by the Heapsort method             *
@@ -811,8 +835,14 @@ end function intgr_spline_gaussq
     !* NOTE: The Heapsort method is a N Log N routine,   *
     !*       and can be used for very large arrays.      *
     !*****************************************************
-    !------------------------------------------------------------
-
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     implicit none
 
     integer, intent(in) :: n
@@ -1002,6 +1032,7 @@ end function intgr_spline_gaussq
     stop
   end subroutine errore
 
+
   subroutine simpson (mesh, func, rab, asum)
     !-----------------------------------------------------------------------
     !
@@ -1015,6 +1046,13 @@ end function intgr_spline_gaussq
     !       r(i) = a(exp((i-1)*dx)-1) ==> rab(i)=(r(i)+a)*dx
     !     Output in asum = \sum_i c_i f(i)*rab(i) = \int_0^\infty f(r) dr
     !     where c_i are alternativaly 2/3, 4/3 except c_1 = c_mesh = 1/3
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     implicit none
 
@@ -1046,6 +1084,7 @@ end function intgr_spline_gaussq
 
   end subroutine simpson
 
+
   function qe_erf (x)
     !---------------------------------------------------------------------
     !
@@ -1054,6 +1093,13 @@ end function intgr_spline_gaussq
     !
     !     for abs(x) le 0.47 erf is calculated directly
     !     for abs(x) gt 0.47 erf is calculated via erf(x)=1-erfc(x)
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2002-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use kinds, only: DP
 
@@ -1087,10 +1133,18 @@ end function intgr_spline_gaussq
 
   end function qe_erf
 
+
   function qe_erfc (x)
     !---------------------------------------------------------------------
     !
     !     erfc(x) = 1-erf(x)  - See comments in erf
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2002-2009 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use kinds, only: DP
 
@@ -1199,6 +1253,14 @@ end function intgr_spline_gaussq
     ! Recipes but avoiding the calculation of factorials that generate
     ! overflow for lmax > 11
     !-----------------------------------------------------------------------
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     use kinds, only: dp
     use intw_useful_constants, only: pi, tpi, fpi
     !

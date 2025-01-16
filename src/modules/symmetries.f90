@@ -1,25 +1,35 @@
-!----------------------------------------------------------------------------!
-!	intw project.
 !
-!----------------------------------------------------------------------------!
+! Copyright (C) 2024 INTW group
 !
-
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module intw_symmetries
-  !
-  !----------------------------------------------------------------------------!
-  !
-  !       The subroutines in this module handle the space group symmetries
-  !       and their effect on wave-functions and matrix elements. They
-  !       also allow the identification of an irreducible set of k-vectors in
-  !       the 1BZ, forming the IBZ.
-  !
-  !       It is advantageous to perform symmetry operations in crystal coordinates;
-  !       indeed, in these coordinates, the zone is simply a cube and MP meshes
-  !       are nice and regular. However, the crystal coordinate system
-  !       introduces minor complications in the application of point group
-  !       symmetry. A full description is given in algorithms.pdf.
-  !
-  !----------------------------------------------------------------------------!
+
+  !---------------------------------------------------------------------------!
+  ! The subroutines in this module handle the space group symmetries and      !
+  ! their effect on wave-functions and matrix elements. They also allow the   !
+  ! identification of an irreducible set of k-vectors in the 1BZ, forming the !
+  ! IBZ.                                                                      !
+  !                                                                           !
+  ! It is advantageous to perform symmetry operations in crystal coordinates; !
+  ! indeed, in these coordinates, the zone is simply a cube and MP meshes are !
+  ! nice and regular. However, the crystal coordinate system introduces minor !
+  ! complications in the application of point group symmetry. A full          !
+  ! description is given in algorithms.pdf.                                   !
+  !---------------------------------------------------------------------------!
 
   use kinds, only: dp
 

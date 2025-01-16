@@ -1,11 +1,36 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 module intw_pseudo_non_local
+
+  !------------------------------------------------------------------------!
+  ! This module contains variables and subroutines to obtain the non-local !
+  ! part of the pseudo-potentials.                                         !
+  !------------------------------------------------------------------------!
 
   use kinds, only: dp
 
   implicit none
 
+  ! variables
   public :: nkb, DKB, vkb, vkqb
 
+  ! subroutines
   public :: init_KB_PP, init_KB_projectors, &
             multiply_psi_by_vKB, multiply_psi_by_dvKB
 
@@ -40,7 +65,18 @@ contains
 
   subroutine init_KB_PP()
     !
-
+    ! This subroutine is based on the init_us_1 subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2007 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
+    !  Modifications by INTW group, 2024:
+    !   - Split the subroutine in small parts that make certain tasks.
+    !   - Remove parts related to ultrasoft pseudo potentials.
+    !   - Calculate Dij matrix for the KB projectors of the solid.
+    !
     use intw_reading, only: nat, ntyp, ityp, nG_max
     use intw_pseudo, only: upf
     use intw_useful_constants, only: cmplx_0
@@ -88,7 +124,7 @@ contains
     !
     call init_Dion()
     !
-    ! Calclate Dij matrix for the solid
+    ! Calculate Dij matrix for the solid
     !
     call init_DKB()
     !
@@ -113,7 +149,14 @@ contains
     ! each atomic type with the index of the projetor of the PP file (nhtonbeta),
     ! with the angular momentum of the projetor (nhtol, nhtolm and nhtoj), and the
     ! index of the beta(lm) projector in the solid with the index of the atom (nkbtona).
-
+    !
+    ! This subroutine is based on the init_us_1 subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2007 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     use intw_reading, only: ntyp, nat, ityp
     use intw_pseudo, only: upf
 
@@ -192,7 +235,14 @@ contains
   subroutine init_Dion()
     ! Initialize the Dion matrix for the beta(lm) projetors for all atomic types
     ! Dion includes the spin indices in the case of a SO calculation
-
+    !
+    ! This subroutine is based on the init_us_1 subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2007 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     use intw_useful_constants, only: sqrt2, cmplx_0, cmplx_1, cmplx_i
     use intw_reading, only: ntyp, lspinorb, nspin
     use intw_pseudo, only: upf
@@ -369,7 +419,14 @@ contains
 
   subroutine init_interpolation_table()
     ! Initialize the interpoation table used to calculate the KB projectors in reciprocal space
-
+    !
+    ! This subroutine is based on the init_us_1 subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001-2007 Quantum ESPRESSO group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     use intw_reading, only: ecutwfc, ntyp, volume0
     use intw_pseudo, only: upf
     use intw_useful_constants, only: fpi, ZERO
@@ -438,8 +495,15 @@ contains
   subroutine init_KB_projectors(npw, igk, qpoint_cryst, kb_projectors)
     !----------------------------------------------------------------------
     !
-    !   Calculates beta functions (Kleinman-Bylander projectors), with
-    !   structure factor, for all atoms, in reciprocal space
+    ! Calculates beta functions (Kleinman-Bylander projectors), with
+    ! structure factor, for all atoms, in reciprocal space
+    !
+    ! This subroutine is based on the init_us_2 subroutine distributed as part of
+    ! the Quantum Espresso project:
+    !   Copyright (C) 2001 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
     !
     use intw_reading, only: nat, nG_max, ntyp, ityp, tau, bg, tpiba
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
@@ -767,8 +831,15 @@ contains
     ! momentum j, projection along z of the total angular momentum m+-1/2.
     ! Spin selects the up (spin=1) or down (spin=2) coefficient.
     !
-    ! Adapted from Quantum Espresso
-
+    ! This subroutine is originally distributed as part of the Quantum Espresso project:
+    !   Copyright (C) 2004 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
+    !  Modifications by INTW group, 2024:
+    !   - Intent(in) variables specified explicitly.
+    !
     use kinds, only: dp
     use intw_utility, ONLY : errore
 
@@ -808,8 +879,15 @@ contains
     ! projection along z of the total angular momentum m+-1/2. Spin selects
     ! the up (spin=1) or down (spin=2) coefficient.
     !
-    ! Adapted from Quantum Espresso
-
+    ! This subroutine is originally distributed as part of the Quantum Espresso project:
+    !   Copyright (C) 2004 PWSCF group
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
+    !  Modifications by INTW group, 2024:
+    !   - Intent(in) variables specified explicitly.
+    !
     use kinds, only: dp
     use intw_utility, ONLY : errore
 

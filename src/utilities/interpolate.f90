@@ -1,8 +1,27 @@
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 program interpolate
-        ! MBR 2024
-        ! Uses nnkp and ham_r files to write an interpolated band structure and DOS.
-        ! Projections on Wannier functions are also provided, so that "fatband" 
-        ! and PDOS plots can be made.
+
+    ! MBR 2024
+    ! Uses nnkp and ham_r files to write an interpolated band structure and DOS.
+    ! Projections on Wannier functions are also provided, so that "fatband"
+    ! and PDOS plots can be made.
 
     use kinds, only: dp
     use intw_utility, only: find_free_unit, generate_and_allocate_kpath, fermi_dirac
@@ -57,7 +76,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
     if ( .not. exist_kpath) then
        write(*,*)' K_PATH not found. Bands/DOS cannot be interpolated. Stopping.'
        stop
-    end if        
+    end if
 
 
 !================================================================================
@@ -69,7 +88,7 @@ write(*,'(A)') '|    waiting for input file...                      |'
     call read_parameters_data_file_xml()
 
 !================================================================================
-!   Build kpoint path to plot bands. 
+!   Build kpoint path to plot bands.
 !   The nkpath number of points from the input might fluctuate.
 !   Use kspecial_indices option to print out the special k-points
 !   along the path (useful for plotting).

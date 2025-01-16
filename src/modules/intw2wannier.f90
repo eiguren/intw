@@ -1,18 +1,32 @@
-!----------------------------------------------------------------------------!
-!	intw project.
 !
-!----------------------------------------------------------------------------!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_intw2wannier
-!
-!----------------------------------------------------------------------------!
-!       This module contains subroutines which will perform the same tasks
-!       as the Quantum Espresso utility program "pw2wannier", but utilizing
-!       symmetries.
-!
-!       In particular, this module will produce the file $seed.mmn
-!       using only the wavefunctions in the IBZ, rotating them appropriately.
-!----------------------------------------------------------------------------!
+
+  !---------------------------------------------------------------------------!
+  ! This module contains subroutines which will perform the same tasks        !
+  ! as the Quantum Espresso utility program "pw2wannier", but utilizing       !
+  ! symmetries.                                                               !
+  !                                                                           !
+  ! In particular, this module will produce the $seed.mmn and $seed.amn files !
+  ! using only the wavefunctions in the IBZ, rotating them appropriately.     !
+  !---------------------------------------------------------------------------!
+
   use kinds, only: dp
   use intw_reading, only: nbands, nG_max, ngm, nspin
   use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
@@ -945,8 +959,16 @@ contains
 
   subroutine get_radial_part_numerical(lmax, coef, proj_nr, zona, ngk, k_plus_G_cart, radial_l)
     ! MBR
-    ! Numerical integration, c+p from pw2wannier for testing
+    ! Numerical integration
     ! JLB: Extended to multiple l, needed for hybrid projections
+    !
+    ! This subroutine is based on radialpart subroutine distributed as part of the Quantum Espresso
+    ! code and has been adapted to INTW:
+    !   Copyright (C) 2003-2013 Quantum ESPRESSO and Wannier90 groups
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     use intw_reading, only: nG_max, volume0
     use intw_utility, ONLY : simpson, sphb
     use intw_useful_constants, only: fpi, ZERO
@@ -1205,11 +1227,7 @@ contains
 
 
   subroutine ylm_wannier(ylm,l,mr,r,nr)
-    !--------------------------------------------------------------------------
-    !     This subroutine has been taken from pw2wannier and modified
-    !     to suit my needs.
-    !     The original comments follow.
-    !--------------------------------------------------------------------------
+    !
     ! this routine returns in ylm(r) the values at the nr points r(1:3,1:nr)
     ! of the spherical harmonic identified  by indices (l,mr)
     ! in table 3.1 of the wannierf90 specification.
@@ -1219,8 +1237,14 @@ contains
     !
     ! If ordering in wannier90 code is changed or extended this should be the
     ! only place to be modified accordingly
-    !--------------------------------------------------------------------------
-
+    !
+    ! This subroutine is originally distributed as part of the Quantum Espresso code and has
+    ! been adapted to INTW:
+    !   Copyright (C) 2003-2013 Quantum ESPRESSO and Wannier90 groups
+    !   Distributed under the terms of the GNU General Public License.
+    !   See the LICENSE file in the original Quantum Espresso source for license details.
+    !   For the original source visit: https://www.quantum-espresso.org/
+    !
     implicit none
 
     !I/O variables
@@ -1607,8 +1631,14 @@ end module intw_intw2wannier
 !
 !
 !----------------------------------------------------------------------------!
-
-
+!
+! This functions are originally distributed as part of the Quantum Espresso code and has
+! been adapted to INTW:
+!   Copyright (C) 2003-2013 Quantum ESPRESSO and Wannier90 groups
+!   Distributed under the terms of the GNU General Public License.
+!   See the LICENSE file in the original Quantum Espresso source for license details.
+!   For the original source visit: https://www.quantum-espresso.org/
+!
 !======== l = 0 =====================================================================
 function s(cost,phi)
   use kinds, only: dp

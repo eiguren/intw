@@ -1,3 +1,11 @@
+!
+! This file is originally distributed as part of the Spglib library:
+!   Copyright (c) 2024, Spglib team
+!   All rights reserved.
+!   Distributed under the terms of the BSD 3-Clause License.
+!   See the COPYING file in the original Spglib library source for license details.
+!   For the original source visit: https://spglib.readthedocs.io/
+!
 module spglib_f08
 
   use iso_c_binding, only:  c_char, c_int, c_double, c_ptr, c_null_char, c_f_pointer, c_associated

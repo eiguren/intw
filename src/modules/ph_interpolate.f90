@@ -1,21 +1,38 @@
-!----------------------------------------------------------------------------!
-!       INTW project
 !
-! MBR 24/01/24
-! intw_ph_interpolate contains routines to generate Wigner-Seitz real meshes,
-! Fourier transforms of the dynamical matrix, interpolation at a given q-point.
-! So far, it contains the necessary tools to interpolate phonons.
+! Copyright (C) 2024 INTW group
 !
-! Those tools are similar to some routines in w90_setup, which have been
-! adapted here for phonon meshes.
+! This file is part of INTW.
 !
-! This is a mid result for EP interpolation. The goal is to have two ways of
-! doing this: Wannier and Asier's method.
-!----------------------------------------------------------------------------!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_ph_interpolate
 
+  !-------------------------------------------------------------------------------!
+  ! MBR 24/01/24                                                                  !
+  ! intw_ph_interpolate contains routines to generate Wigner-Seitz real meshes,   !
+  ! Fourier transforms of the dynamical matrix, interpolation at a given q-point. !
+  ! So far, it contains the necessary tools to interpolate phonons.               !
+  !                                                                               !
+  ! Those tools are similar to some routines in w90_setup, which have been        !
+  ! adapted here for phonon meshes.                                               !
+  !                                                                               !
+  ! This is a mid result for EP interpolation. The goal is to have two ways of    !
+  ! doing this: Wannier and Asier's method.                                       !
+  !-------------------------------------------------------------------------------!
+
   use kinds, only: dp
+
   implicit none
   !
   ! variables

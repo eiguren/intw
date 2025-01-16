@@ -1,7 +1,25 @@
-! MBR June 2024
-
-
+!
+! Copyright (C) 2024 INTW group
+!
+! This file is part of INTW.
+!
+! INTW is free software: you can redistribute it and/or modify
+! it under the terms of the GNU General Public License as published by
+! the Free Software Foundation, either version 3 of the License, or
+! (at your option) any later version.
+!
+! INTW is distributed in the hope that it will be useful,
+! but WITHOUT ANY WARRANTY; without even the implied warranty of
+! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+! GNU General Public License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 program interpolatephonons
+
+  ! MBR June 2024
+
   ! Interpolate dynamical matrices using atom-pair-adapted WS vectors
 
   use kinds, only: dp
@@ -176,7 +194,7 @@ program interpolatephonons
   !================================================================================
   !   Build qpoint path to plot bands.
   !   The nqpath number of points from the input might fluctuate.
-  !   Use qspecial_indices option to print out the special q-points 
+  !   Use qspecial_indices option to print out the special q-points
   !   along the path (useful for plotting).
   !================================================================================
   !

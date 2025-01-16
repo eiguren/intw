@@ -1,3 +1,10 @@
+!
+! This file is originally distributed as part of the exciting code:
+!   Copyright (C) 2005 J. K. Dewhurst
+!   Distributed under the terms of the GNU General Public License.
+!   See the LICENSE and COPYING files in the original exciting source for license details.
+!   For the original source visit: https://exciting-code.org/
+!
 module fftpack5
 integer, parameter :: prec=kind(1.d0)
 end module
