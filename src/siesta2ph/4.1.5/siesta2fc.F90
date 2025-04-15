@@ -227,7 +227,7 @@ contains
 
 
     iounit = find_free_unit()
-    open(unit=iounit, name=trim(outdir)//trim(phdir)//trim(filename), &
+    open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), &
          action="write", status="replace", iostat=ios)
     if (ios/=0) stop "ERROR: write_fc_phonopy: Error opening force constants file."
     !
@@ -269,7 +269,7 @@ contains
 
 
     iounit = find_free_unit()
-    open(unit=iounit, name=trim(outdir)//trim(phdir)//trim(filename), &
+    open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), &
          action="write", status="replace", iostat=ios)
     if (ios/=0) stop "ERROR: write_fc_QE: Error opening force constants file."
     !
