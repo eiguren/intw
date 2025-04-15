@@ -42,8 +42,8 @@ program siesta2ph
   !
   implicit none
   !
-  ! MPI variables
 #ifdef MPI
+  ! MPI variables
   logical :: initialized
   integer :: MPIerror
 #endif
@@ -298,8 +298,8 @@ contains
     kscell = 0
     displ = 0.0_dp
 
-    ! Read kgrid_Monkhorst_Pack block
-    if ( fdf_block("kgrid_Monkhorst_Pack",bfdf) ) then
+    ! Read kgridMonkhorstPack block
+    if ( fdf_block("kgridMonkhorstPack",bfdf) ) then
       !
       do i= 1, 3
         !
@@ -313,7 +313,7 @@ contains
             displ(i) = 0._dp
           end if
         else
-          stop "kgridinit: ERROR in kgrid_Monkhorst_Pack block"
+          stop "kgridinit: ERROR in kgridMonkhorstPack block"
         endif
         !
       enddo
@@ -325,7 +325,7 @@ contains
 
   subroutine modify_kgrid(kscell, displ, fdffilename, backup_in)
     !
-    ! Modifys the fdf fdffilename to set kgrid_Monkhorst_Pack to kscell and displ
+    ! Modifys the fdf fdffilename to set kgridMonkhorstPack to kscell and displ
     !
     use, intrinsic :: iso_fortran_env, only: iostat_end ! end of file
     use fdf, only: fdf_defined
@@ -353,8 +353,8 @@ contains
       backup = .false.
     endif
     !
-    ! Check if kgrid_Monkhorst_Pack is defined in the fdf
-    if (fdf_defined("kgrid_Monkhorst_Pack")) then
+    ! Check if kgridMonkhorstPack is defined in the fdf
+    if (fdf_defined("kgridMonkhorstPack")) then
       defined = .true.
     else
       defined = .false.
@@ -381,19 +381,20 @@ contains
       ! Exit the do loop if it is the last line
       if ( ios == iostat_end ) exit
       !
-      if (defined .and. word_in_string("kgrid_Monkhorst_Pack",line) .and. word_in_string("block",line)) then
+      if (defined .and. word_in_string("kgridMonkhorstPack",packlabel(line)) .and. word_in_string("%block",line)) then
         !
         found = .true.
-        do
-          read(unit=iounit_reference, fmt="(a)", iostat=ios) line
-          if (word_in_string("kgrid_Monkhorst_Pack",line) .and. word_in_string("endblock",line)) exit
-        enddo
-        !
-        write(iounit,"(a)") "%block kgrid_Monkhorst_Pack"
+        write(iounit,"(a)") trim(line)
         do id=1,3
           write(iounit,"(3i4,f6.1)") kscell(:,id), displ(id)
         enddo
-        write(iounit,"(a)") "%endblock kgrid_Monkhorst_Pack"
+        !
+        do
+          read(unit=iounit_reference, fmt="(a)", iostat=ios) line
+          if (word_in_string("kgridMonkhorstPack",packlabel(line)) .and. word_in_string("%endblock",line)) exit
+        enddo
+        !
+        write(iounit,"(a)") trim(line)
         !
       else
         !
@@ -403,7 +404,7 @@ contains
       !
     end do
     !
-    if ( defined .and. (.not. found) ) stop "ERROR: modify_kgrid: kgrid_Monkhorst_Pack defined but not found"
+    if ( defined .and. (.not. found) ) stop "ERROR: modify_kgrid: kgridMonkhorstPack defined but not found"
     !
     close(iounit)
     close(iounit_reference)
@@ -421,7 +422,7 @@ contains
     !
     ! Check if the unit cell and the supercell have a compatible
     ! Mesh Sizes. If the Mesh Sizes are compatible returns an
-    ! empty suggested_mesh_sizes array, if there are not compatible,
+    ! empty suggested_mesh_sizes array, if they are not compatible,
     ! suggested_mesh_sizes returns a compatible Mesh Sizes for the
     ! unit cell.
     !
@@ -449,26 +450,26 @@ contains
     ! Default output value
     suggested_mesh_sizes = (/0, 0, 0/)
     !
-    if ( fdf_defined("Mesh.Sizes") ) then
+    if ( fdf_defined("MeshSizes") ) then
       !
       ! Mesh sizes is given in the fdf
       !
-      if (fdf_islist("Mesh.Sizes") ) then
+      if (fdf_islist("MeshSizes") ) then
         !
         size = -1
-        call fdf_list("Mesh.Sizes", size, suggested_mesh_sizes)
-        if ( size /= 3 ) stop "check_mesh_sizes: ERROR in Mesh.Sizes list"
+        call fdf_list("MeshSizes", size, suggested_mesh_sizes)
+        if ( size /= 3 ) stop "check_mesh_sizes: ERROR in MeshSizes list"
         ! Do the actual read of the mesh sizes
-        call fdf_list("Mesh.Sizes", size, suggested_mesh_sizes)
+        call fdf_list("MeshSizes", size, suggested_mesh_sizes)
         !
-      else if ( fdf_block("Mesh.Sizes", bfdf) ) then
+      else if ( fdf_block("MeshSizes", bfdf) ) then
         !
         if ( fdf_bline(bfdf, pline) ) then
           suggested_mesh_sizes(1) = fdf_bintegers(pline,1)
           suggested_mesh_sizes(2) = fdf_bintegers(pline,2)
           suggested_mesh_sizes(3) = fdf_bintegers(pline,3)
         else
-            stop "check_mesh_sizes: ERROR in Mesh.Sizes block"
+            stop "check_mesh_sizes: ERROR in MeshSizes block"
         endif
         call fdf_bclose(bfdf)
         !
@@ -525,7 +526,7 @@ contains
       ! If MeshCutoff was not found try to find mesh sizes manually
       suggested_mesh_sizes = nint(dble(mesh_sizes_uc)/(2*3*5))*2*3*5
       !
-      write(stdout, "(a27,3i5,a1)") "WARNING: Using Mesh.Sizes [", suggested_mesh_sizes, "]"
+      write(stdout, "(a27,3i5,a1)") "WARNING: Using MeshSizes [", suggested_mesh_sizes, "]"
       call modify_MeshSizes(suggested_mesh_sizes, trim(outdir)//trim(prefix), .true.)
       !
     endif
@@ -589,7 +590,7 @@ contains
       ! Exit the do loop if it is the last line
       if ( ios == iostat_end ) exit
       !
-      if (defined .and. word_in_string("MeshCutoff",line)) then
+      if (defined .and. word_in_string("MeshCutoff",packlabel(line))) then
         !
         found = .true.
         write(iounit,"(a10,f8.1,a3)") "MeshCutoff", g2cut, " Ry"
@@ -647,8 +648,8 @@ contains
     endif
     !
     ! Check if Mesh.Sizes is defined in the fdf
-    defined_list = fdf_islist("Mesh.Sizes")
-    defined_block = fdf_isblock("Mesh.Sizes")
+    defined_list = fdf_islist("MeshSizes")
+    defined_block = fdf_isblock("MeshSizes")
     !
     ! Backup the original fdf
     call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
@@ -671,9 +672,9 @@ contains
       ! Exit the do loop if it is the last line
       if ( ios == iostat_end ) exit
       !
-      if (word_in_string("Mesh.Sizes",line)) then
+      if (word_in_string("MeshSizes",packlabel(line))) then
         !
-        if (defined_block .and. word_in_string("block", line)) then
+        if (defined_block .and. word_in_string("%block", line)) then
           !
           found = .true.
           !
@@ -681,15 +682,15 @@ contains
           write(iounit,"(3i5)") mesh_sizes
           do
             read(unit=iounit_reference, fmt="(a)", iostat=ios) line
-            if (word_in_string("block", line)) exit
+            if (word_in_string("%endblock", line)) exit
           end do
           write(iounit,"(a)") trim(line)
           !
-        else if (defined_list .and. (.not.word_in_string("block", line))) then
+        else if (defined_list .and. (.not.word_in_string("%block", line))) then
           !
           found = .true.
           !
-          write(iounit,"(a,3i5,a)") "Mesh.Sizes [", mesh_sizes, "]"
+          write(iounit,"(a,3i5,a)") "MeshSizes [", mesh_sizes, "]"
           !
         else
           write(iounit,"(a)") trim(line)
@@ -703,9 +704,9 @@ contains
       !
     end do
     !
-    if ( (defined_list.or.defined_block) .and. (.not. found) ) stop "ERROR: modify_MeshSizes: Mesh.Sizes defined but not found"
+    if ( (defined_list.or.defined_block) .and. (.not. found) ) stop "ERROR: modify_MeshSizes: MeshSizes defined but not found"
     !
-    if (.not. found ) write(iounit,"(a,3i5,a)") "Mesh.Sizes [", mesh_sizes, "]"
+    if (.not. found ) write(iounit,"(a,3i5,a)") "MeshSizes [", mesh_sizes, "]"
     !
     close(iounit)
     close(iounit_reference)
@@ -788,5 +789,21 @@ contains
     end do impose_cutoff
 
   end subroutine get_mesh_sizes
+
+
+  function packlabel(string)
+    !
+    ! Interface function to SIESTA's packable subroutine
+    !
+    use utils, only: packlabel_siesta => packlabel
+    !
+    implicit none
+    !
+    character(*), intent(in) :: string
+    character(len(string)) :: packlabel
+
+    call packlabel_siesta(string, packlabel)
+
+  end function packlabel
 
 end program siesta2ph
