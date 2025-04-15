@@ -1,12 +1,13 @@
 
+set(SIESTA2PH_MODULES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules CACHE PATH "Path to the siesta2ph modules src directory." FORCE)
 set(SIESTA2PH_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2ph src directory." FORCE)
 
-set(SIESTA2PH_SRC_FILES ${SIESTA2PH_SRC_DIR}/siesta2ph_io.f90
-                        ${SIESTA2PH_SRC_DIR}/siesta2ph_symmetry.f90
-                        ${SIESTA2PH_SRC_DIR}/siesta2ph_utils.f90
-                        ${SIESTA2PH_SRC_DIR}/siesta2ph_linalg.F90
-                        ${SIESTA2PH_SRC_DIR}/siesta2ph_system.f90
-                        ${SIESTA2PH_SRC_DIR}/spglib_f08.f90
+set(SIESTA2PH_SRC_FILES ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_io.f90
+                        ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_symmetry.f90
+                        ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_utils.f90
+                        ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_linalg.F90
+                        ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_system.f90
+                        ${SIESTA2PH_MODULES_SRC_DIR}/spglib_f08.f90
                         )
 
 
@@ -179,4 +180,4 @@ else()
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/utils/run-disps.bash.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/run-disps.x" @ONLY)
+               "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/run-disps.x" @ONLY)
