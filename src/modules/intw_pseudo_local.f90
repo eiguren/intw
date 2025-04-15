@@ -161,19 +161,14 @@ contains
     !local variables
     complex(kind=dp) :: eigqts(nat)
     integer :: imode, na, nt, ipol, ig, ispin, ir
-    complex(kind=dp) :: aux(nr1*nr2*nr3), fact
+    complex(kind=dp) :: aux(nr1*nr2*nr3)
     real(kind=dp) :: q_cart(3)
-    real(kind=dp) :: arg
 
     q_cart = matmul(bg, q_cryst)
 
     do na = 1, nat
       !
-      arg = (  q_cart(1) * tau(1,na) &
-             + q_cart(2) * tau(2,na) &
-             + q_cart(3) * tau(3,na) ) * tpi
-      !
-      eigqts(na) = cmplx( cos(arg), -sin(arg), kind=dp)
+      eigqts(na) = exp(-cmplx_i*tpi*dot_product(q_cart, tau(:,na)))
       !
     end do
     !
@@ -185,11 +180,10 @@ contains
       !
       aux = cmplx_0
       !
-      fact = -tpiba*cmplx_i*eigqts(na)
-      !
       do ig = 1, ngm
         !
-        aux(nl(ig)) = aux(nl(ig)) + phase(ig,na) * fact * ( q_cart(ipol)+gvec_cart(ipol,ig) ) * vlocq(ig,nt)
+        aux(nl(ig)) = aux(nl(ig)) - cmplx_i * tpiba * ( q_cart(ipol)+gvec_cart(ipol,ig) ) * &
+                                    eigqts(na) * phase(ig,na) * vlocq(ig,nt)
         !
       enddo !ig
       !
