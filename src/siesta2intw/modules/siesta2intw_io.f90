@@ -44,7 +44,7 @@ module siesta2intw_io
   integer :: nbnd_initial, nbnd_final
   logical:: phonons
   integer :: nqirr
-  logical :: dynxml
+  logical :: dynxml ! TODO: Remove it (it is not needed)
   logical :: use_sym
   !
   logical :: kmesh ! .true. if nk1, nk2, nk3 are specified
@@ -156,7 +156,6 @@ contains
     if (ios/=0) stop "ERROR closing s2intw.in file"
 
   end subroutine read_input
-
 
   function find_free_unit()
     !

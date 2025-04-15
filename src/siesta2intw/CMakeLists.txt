@@ -1,17 +1,18 @@
 
 
+set(SIESTA2INTW_MODULES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules CACHE PATH "Path to the siesta2intw modules src directory." FORCE)
 set(SIESTA2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw src directory." FORCE)
 
-set(SIESTA2INTW_SRC_FILES ${SIESTA2INTW_SRC_DIR}/cfftnd.f90
+set(SIESTA2INTW_SRC_FILES ${SIESTA2INTW_MODULES_SRC_DIR}/cfftnd.f90
                           ${SIESTA2INTW_SRC_DIR}/siesta2intw.F
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_io.f90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_ph.f90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_symmetry.f90
-                          ${SIESTA2INTW_SRC_DIR}/spglib_f08.f90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_write.F90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_fft.f90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_pp.f90
-                          ${SIESTA2INTW_SRC_DIR}/siesta2intw_utils.F90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_io.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_ph.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_symmetry.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/spglib_f08.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_write.F90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_fft.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_pp.f90
+                          ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_utils.F90
                           )
 
 
@@ -158,4 +159,3 @@ else()
   add_dependencies(restore-siesta remove-siesta2intw)
 
 endif()
-
