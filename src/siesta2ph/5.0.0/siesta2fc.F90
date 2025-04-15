@@ -24,7 +24,9 @@ program siesta2fc
   !
   use precision, only: dp
   use m_timestamp, only: timestamp
+#ifdef MPI
   use mpi_siesta, only: MPI_Comm_World
+#endif
   use parallel, only: Node, Nodes
   !
   use siesta2ph_io, only: stdout, outdir, prefix, v0dir, kpath_file, verbose
@@ -37,9 +39,11 @@ program siesta2fc
   !
   implicit none
   !
+#ifdef MPI
   ! MPI variables
   logical :: initialized
   integer :: MPIerror
+#endif
   !
   !
   real(kind=dp), allocatable, dimension(:,:,:,:) :: fc

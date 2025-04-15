@@ -24,7 +24,9 @@ program siesta2ph
   !
   use precision, only: dp
   use m_timestamp, only: timestamp
+#ifdef MPI
   use mpi_siesta, only: MPI_Comm_World
+#endif
   use parallel, only: Node, Nodes
   !
   use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, dx, verbose, stdout
@@ -39,9 +41,11 @@ program siesta2ph
   !
   implicit none
   !
+#ifdef MPI
   ! MPI variables
   logical :: initialized
   integer :: MPIerror
+#endif
   !
   ! supercell variables
   real(kind=dp), allocatable, dimension(:,:) :: tau_sc

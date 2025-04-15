@@ -24,7 +24,9 @@ program siesta2dv
   !
   use precision, only: dp
   use m_timestamp, only: timestamp
+#ifdef MPI
   use mpi_siesta, only: MPI_Comm_World
+#endif
   use parallel, only: Node, Nodes
   !
   use siesta2ph_io, only: stdout, outdir, prefix, v0dir, verbose
@@ -37,9 +39,11 @@ program siesta2dv
   !
   implicit none
   !
+#ifdef MPI
   ! MPI variables
   logical :: initialized
   integer :: MPIerror
+#endif
   !
   integer, dimension(3) :: mesh
   integer :: nsm, maxp, nspin
