@@ -136,7 +136,6 @@ contains
       allocate(kirr_cryst(3, nk1*nk2*nk3))
       allocate(kirr_cart(3, nk1*nk2*nk3))
       kirr_cryst = 0.0_dp
-      kirr_cart = 0.0_dp
       !
       call irreduciblek(nk1, nk2, nk3, nkirr, kirr_cryst)
       !

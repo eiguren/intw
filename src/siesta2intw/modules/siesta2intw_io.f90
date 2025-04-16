@@ -92,7 +92,7 @@ contains
     use_sym = .true.
     !
     nkpoints = 0
-    kpoints = 0.0_dp
+    ! kpoints = 0.0_dp ! it is allocatable so it cant be initialized here
 
     iunit = find_free_unit()
     open(unit=iunit, file="s2intw.in", status="unknown", iostat=ios)
