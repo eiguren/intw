@@ -154,7 +154,7 @@ ELSE()
     SET(GNUNATIVE "-march=native")
 ENDIF()
 # Optimize for the host's architecture
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS}"
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
                  Fortran "-xHost"     # Intel
                          "/QxHost"    # Intel Windows
                          ${GNUNATIVE} # GNU
