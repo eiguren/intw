@@ -11,10 +11,12 @@ set(SIESTA2PH_SRC_FILES ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_io.f90
                         )
 
 
-# Add some debugging flags
+# Add some flags
+set(SIESTA2PH_FFLAGS "${CMAKE_Fortran_FLAGS}")
+#
 string(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
 if(BT STREQUAL "DEBUG")
-  set(SIESTA2PH_FFLAGS "${CMAKE_Fortran_FLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
+  set(SIESTA2PH_FFLAGS "${SIESTA2PH_FFLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
   set(SIESTA2PH_FPPFLAGS -DDEBUG)
 endif()
 

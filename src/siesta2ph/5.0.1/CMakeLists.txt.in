@@ -19,6 +19,19 @@ target_link_libraries(
   ${SPGLIB_LIBRARIES}
   )
 
+target_compile_options(
+  siesta2ph-lib
+  PUBLIC
+  @SIESTA2PH_FFLAGS@
+  )
+
+if(@SIESTA2PH_FPPLAGS@)
+  target_compile_definitions(
+    siesta2ph-lib
+    PUBLIC
+    @SIESTA2PH_FPPLAGS@
+    )
+endif()
 
 # siesta2ph
 siesta_add_executable(siesta2ph_exe
@@ -38,19 +51,6 @@ target_link_libraries(
   siesta2ph-lib
   )
 
-target_compile_options(
-  siesta2ph_exe
-  PRIVATE
-  @SIESTA2PH_FFLAGS@
-  )
-
-if(@SIESTA2PH_FPPLAGS@)
-  target_compile_definitions(
-    siesta2ph_exe
-    @SIESTA2PH_FPPLAGS@
-    )
-endif()
-
 # siesta2fc
 siesta_add_executable(siesta2fc_exe
   siesta2fc.F90
@@ -68,19 +68,6 @@ target_link_libraries(
   PRIVATE
   siesta2ph-lib
   )
-
-target_compile_options(
-  siesta2fc_exe
-  PRIVATE
-  @SIESTA2PH_FFLAGS@
-  )
-
-if(@SIESTA2PH_FPPLAGS@)
-  target_compile_definitions(
-    siesta2fc_exe
-    @SIESTA2PH_FPPLAGS@
-    )
-endif()
 
 # siesta2dv
 siesta_add_executable(siesta2dv_exe
@@ -100,18 +87,6 @@ target_link_libraries(
   siesta2ph-lib
   )
 
-target_compile_options(
-  siesta2dv_exe
-  PRIVATE
-  @SIESTA2PH_FFLAGS@
-  )
-
-if(@SIESTA2PH_FPPLAGS@)
-  target_compile_definitions(
-    siesta2dv_exe
-    @SIESTA2PH_FPPLAGS@
-    )
-endif()
 
 add_custom_target(siesta2ph DEPENDS siesta2ph_exe siesta2fc_exe siesta2dv_exe)
 
