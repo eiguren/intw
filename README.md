@@ -11,10 +11,10 @@ To build INTW CMake (>=3.12), [a supported build tool](https://cmake.org/cmake/h
 
 Additionally, a supported version of [Quantum Espresso](https://www.quantum-espresso.org/) or [SIESTA](https://siesta-project.org/siesta/) (or both) is needed. Currently, the following versions are supported:
 
-| DFT code         | Supported versions                           |
-|------------------|----------------------------------------------|
-| Quantum Espresso | &bull; 6.6 <br> &bull; 6.7MaX <br>&bull; 6.8 |
-| SIESTA           | &bull; 4.1.5 <br> &bull; 5.0.0               |
+| DFT code         | Supported versions                               |
+|------------------|--------------------------------------------------|
+| Quantum Espresso | &bull; 6.6 <br> &bull; 6.7MaX <br>&bull; 6.8     |
+| SIESTA           | &bull; 4.1.5 <br> &bull; 5.0.0 <br> &bull; 5.0.1 |
 
 
 To build intw to work with both DFT codes:
