@@ -1,0 +1,56 @@
+
+set(SPGLIB_LIBRARIES @SPGLIB_LIBRARIES@)
+
+set(sources
+  cfftnd.f90
+  siesta2intw.F
+  siesta2intw_fft.f90
+  siesta2intw_io.f90
+  siesta2intw_ph.f90
+  siesta2intw_pp.f90
+  siesta2intw_symmetry.f90
+  siesta2intw_utils.F90
+  siesta2intw_write.F90
+  spglib_f08.f90
+  )
+
+siesta_add_executable(siesta2intw_exe
+  ${sources}
+  NAMESPACE_TARGET siesta2intw_exe
+  )
+
+set_target_properties(siesta2intw_exe
+  PROPERTIES
+  EXPORT_NAME siesta2intw.x
+  OUTPUT_NAME siesta2intw.x
+  )
+
+target_link_libraries(
+  siesta2intw_exe
+  PRIVATE
+  ${PROJECT_NAME}.libsiesta
+  ${SPGLIB_LIBRARIES}
+  )
+
+target_compile_options(
+  siesta2intw_exe
+  PRIVATE
+  @SIESTA2INTW_FFLAGS@
+  )
+
+if(@SIESTA2INTW_FPPLAGS@)
+  target_compile_definitions(
+    siesta2intw_exe
+    @SIESTA2INTW_FPPLAGS@
+    )
+endif()
+
+add_custom_target(siesta2intw DEPENDS siesta2intw_exe)
+
+
+if( SIESTA_INSTALL )
+  install(
+    TARGETS siesta2intw_exe
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
