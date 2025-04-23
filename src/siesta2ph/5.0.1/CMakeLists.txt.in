@@ -1,7 +1,7 @@
 
 set(SPGLIB_LIBRARIES @SPGLIB_LIBRARIES@)
 
-set(sources
+set(sources_modules
   siesta2ph_io.f90
   siesta2ph_symmetry.f90
   siesta2ph_utils.f90
@@ -10,24 +10,24 @@ set(sources
   spglib_f08.f90
 )
 
-add_library(siesta2ph-lib STATIC ${sources})
+add_library(siesta2ph_modules STATIC ${sources_modules})
 
 target_link_libraries(
-  siesta2ph-lib
+  siesta2ph_modules
   PUBLIC
   ${PROJECT_NAME}.libsiesta
   ${SPGLIB_LIBRARIES}
   )
 
 target_compile_options(
-  siesta2ph-lib
+  siesta2ph_modules
   PUBLIC
   @SIESTA2PH_FFLAGS@
   )
 
 if(@SIESTA2PH_FPPLAGS@)
   target_compile_definitions(
-    siesta2ph-lib
+    siesta2ph_modules
     PUBLIC
     @SIESTA2PH_FPPLAGS@
     )
@@ -48,7 +48,7 @@ set_target_properties(siesta2ph_exe
 target_link_libraries(
   siesta2ph_exe
   PRIVATE
-  siesta2ph-lib
+  siesta2ph_modules
   )
 
 # siesta2fc
@@ -66,7 +66,7 @@ set_target_properties(siesta2fc_exe
 target_link_libraries(
   siesta2fc_exe
   PRIVATE
-  siesta2ph-lib
+  siesta2ph_modules
   )
 
 # siesta2dv
@@ -84,7 +84,7 @@ set_target_properties(siesta2dv_exe
 target_link_libraries(
   siesta2dv_exe
   PRIVATE
-  siesta2ph-lib
+  siesta2ph_modules
   )
 
 
