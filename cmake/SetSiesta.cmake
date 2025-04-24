@@ -7,6 +7,7 @@ set(SUPPORTED_SIESTA
   "4.1.5"
   "5.0.0"
   "5.0.1"
+  "5.0.2"
   "5.2.0"
   "5.2.1"
   )
@@ -67,7 +68,7 @@ endif()
 # Check if the given SIESTA version is supported by intw
 list(FIND SUPPORTED_SIESTA ${SIESTA_VERSION} SIESTA_SUPPORTED)
 if("${SIESTA_SUPPORTED}" EQUAL "-1")
-  message("SIESTA especified by SIESTA_HOME is not suported!")
-  message("Supported SIESTA versions: ${SUPPORTED_SIESTA}")
-  message(FATAL_ERROR)
+  message(FATAL_ERROR
+    " SIESTA version especified by SIESTA_HOME is not suported!\n Supported SIESTA versions: ${SUPPORTED_SIESTA}"
+    )
 endif()

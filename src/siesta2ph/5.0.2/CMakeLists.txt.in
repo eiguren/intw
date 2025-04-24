@@ -1,0 +1,99 @@
+
+set(SPGLIB_LIBRARIES @SPGLIB_LIBRARIES@)
+
+set(sources_modules
+  siesta2ph_io.f90
+  siesta2ph_symmetry.f90
+  siesta2ph_utils.f90
+  siesta2ph_linalg.F90
+  siesta2ph_system.f90
+  spglib_f08.f90
+)
+
+add_library(siesta2ph_modules STATIC ${sources_modules})
+
+target_link_libraries(
+  siesta2ph_modules
+  PUBLIC
+  ${PROJECT_NAME}.libsiesta
+  ${SPGLIB_LIBRARIES}
+  )
+
+target_compile_options(
+  siesta2ph_modules
+  PUBLIC
+  @SIESTA2PH_FFLAGS@
+  )
+
+if(@SIESTA2PH_FPPLAGS@)
+  target_compile_definitions(
+    siesta2ph_modules
+    PUBLIC
+    @SIESTA2PH_FPPLAGS@
+    )
+endif()
+
+# siesta2ph
+siesta_add_executable(siesta2ph_exe
+  siesta2ph.F90
+  NAMESPACE_TARGET siesta2ph_exe
+  )
+
+set_target_properties(siesta2ph_exe
+  PROPERTIES
+  EXPORT_NAME siesta2ph.x
+  OUTPUT_NAME siesta2ph.x
+)
+
+target_link_libraries(
+  siesta2ph_exe
+  PRIVATE
+  siesta2ph_modules
+  )
+
+# siesta2fc
+siesta_add_executable(siesta2fc_exe
+  siesta2fc.F90
+  NAMESPACE_TARGET siesta2fc_exe
+  )
+
+set_target_properties(siesta2fc_exe
+  PROPERTIES
+  EXPORT_NAME siesta2fc.x
+  OUTPUT_NAME siesta2fc.x
+)
+
+target_link_libraries(
+  siesta2fc_exe
+  PRIVATE
+  siesta2ph_modules
+  )
+
+# siesta2dv
+siesta_add_executable(siesta2dv_exe
+  siesta2dv.F90
+  NAMESPACE_TARGET siesta2dv_exe
+  )
+
+set_target_properties(siesta2dv_exe
+  PROPERTIES
+  EXPORT_NAME siesta2dv.x
+  OUTPUT_NAME siesta2dv.x
+)
+
+target_link_libraries(
+  siesta2dv_exe
+  PRIVATE
+  siesta2ph_modules
+  )
+
+
+add_custom_target(siesta2ph DEPENDS siesta2ph_exe siesta2fc_exe siesta2dv_exe)
+
+
+if( SIESTA_INSTALL )
+  install(
+    TARGETS siesta2ph_exe siesta2fc_exe siesta2dv_exe
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
