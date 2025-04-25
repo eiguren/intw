@@ -8,7 +8,7 @@ include $(QE_BUILD_DIR)/make.inc
 
 FFLAGS += @QE2INTW_FFLAGS@
 
-DFLAGS += @QE2INTW_DFLAGS@
+DFLAGS += @QE2INTW_FPPFLAGS@
 
 # location of needed modules and included files (if any)
 MODFLAGS= $(BASEMOD_FLAGS) \

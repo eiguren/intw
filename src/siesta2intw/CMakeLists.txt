@@ -1,8 +1,7 @@
 
-
+# Define siesta2intw source directories and files
 set(SIESTA2INTW_MODULES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules CACHE PATH "Path to the siesta2intw modules src directory." FORCE)
 set(SIESTA2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw src directory." FORCE)
-
 set(SIESTA2INTW_SRC_FILES ${SIESTA2INTW_MODULES_SRC_DIR}/cfftnd.f90
                           ${SIESTA2INTW_SRC_DIR}/siesta2intw.F
                           ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_io.f90
@@ -15,22 +14,9 @@ set(SIESTA2INTW_SRC_FILES ${SIESTA2INTW_MODULES_SRC_DIR}/cfftnd.f90
                           ${SIESTA2INTW_MODULES_SRC_DIR}/siesta2intw_utils.F90
                           )
 
-
-# Add some flags
-set(SIESTA2INTW_FFLAGS "${CMAKE_Fortran_FLAGS}")
-#
-string(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
-if(BT STREQUAL "DEBUG")
-  set(SIESTA2INTW_FFLAGS "${SIESTA2INTW_FFLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
-  set(SIESTA2INTW_FPPFLAGS -DDEBUG)
-endif()
-
-
+# Define siesta2intw build directory and object and module files
 if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
-
   set(SIESTA2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2intw build directory." FORCE)
-  set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
-
   set(SIESTA2INTW_OBJ_FILES ${SIESTA2INTW_BUILD_DIR}/cfftnd.o
                             ${SIESTA2INTW_BUILD_DIR}/siesta2intw.o
                             ${SIESTA2INTW_BUILD_DIR}/siesta2intw_fft.o
@@ -42,39 +28,8 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
                             ${SIESTA2INTW_BUILD_DIR}/siesta2intw_write.o
                             ${SIESTA2INTW_BUILD_DIR}/spglib_f08.o
                             )
-  set(SIESTA2INTW_MOD_FILES ${SIESTA2INTW_BUILD_DIR}/fftpack5.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_fft.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_io.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_ph.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_pp.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_symmetry.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_utils.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_write.mod
-                            ${SIESTA2INTW_BUILD_DIR}/spglib_f08.mod
-                            )
-
-
-
-  list(JOIN SPGLIB_LIBRARIES " " SPGLIB_LIBRARIES_STR)
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/Makefile.in"
-                 "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/Makefile" @ONLY)
-
-  add_custom_command(OUTPUT ${SIESTA2INTW_EXE}
-    COMMAND make -C ${SIESTA2INTW_BUILD_DIR} siesta2intw.x
-    COMMENT "Building siesta2intw"
-    DEPENDS ${SIESTA2INTW_SRC_FILES}
-    BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
-    )
-
-  add_custom_target(siesta2intw.x ALL
-    DEPENDS ${SIESTA2INTW_EXE}
-    )
-
 else()
-
   set(SIESTA2INTW_BUILD_DIR ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2intw CACHE PATH "Path to the siesta2intw build directory." FORCE)
-  set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
-
   set(SIESTA2INTW_OBJ_FILES ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/cfftnd.f90.o
                             ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/siesta2intw.F.o
                             ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/siesta2intw_fft.f90.o
@@ -86,30 +41,63 @@ else()
                             ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/siesta2intw_write.F90.o
                             ${SIESTA2INTW_BUILD_DIR}/CMakeFiles/siesta2intw_exe.dir/spglib_f08.f90.o
                             )
-  set(SIESTA2INTW_MOD_FILES ${SIESTA2INTW_BUILD_DIR}/fftpack5.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_fft.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_io.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_ph.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_pp.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_symmetry.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_utils.mod
-                            ${SIESTA2INTW_BUILD_DIR}/siesta2intw_write.mod
-                            ${SIESTA2INTW_BUILD_DIR}/spglib_f08.mod
-                            )
+endif()
+set(SIESTA2INTW_MOD_FILES ${SIESTA2INTW_BUILD_DIR}/fftpack5.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_fft.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_io.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_ph.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_pp.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_symmetry.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_utils.mod
+                          ${SIESTA2INTW_BUILD_DIR}/siesta2intw_write.mod
+                          ${SIESTA2INTW_BUILD_DIR}/spglib_f08.mod
+                          )
+# Define siesta2intw executable (only needed for testing)
+set(SIESTA2INTW_EXE ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x CACHE PATH "Path to the siesta2intw.x executable." FORCE)
 
 
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt" @ONLY)
+# Add some flags
+set(SIESTA2INTW_FFLAGS "${CMAKE_Fortran_FLAGS}")
+#
+string(TOUPPER "${CMAKE_BUILD_TYPE}" BT)
+if(BT STREQUAL "DEBUG")
+  set(SIESTA2INTW_FFLAGS "${SIESTA2INTW_FFLAGS} ${CMAKE_Fortran_FLAGS_DEBUG}")
+  set(SIESTA2INTW_FPPFLAGS -DDEBUG)
+endif()
 
 
+set(OUTPUT_PREFIX "...... ")
+
+if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
+
+  # Create Makefile for siesta2intw
+  list(JOIN SPGLIB_LIBRARIES " " SPGLIB_LIBRARIES_STR)
+  configure_file("${SIESTA2INTW_SRC_DIR}/Makefile.in"
+                 "${SIESTA2INTW_BUILD_DIR}/Makefile" @ONLY)
+
+  # Create the targets for the siesta2intw executable
+  add_custom_command(OUTPUT ${SIESTA2INTW_EXE}
+    COMMAND make -C ${SIESTA2INTW_BUILD_DIR} siesta2intw.x | sed 's/^/${OUTPUT_PREFIX}/'
+    COMMENT "Building siesta2intw.x"
+    DEPENDS ${SIESTA2INTW_SRC_FILES}
+    BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
+    )
+
+else()
+
+  # Create the cmake configuration file for siesta2intw
+  configure_file("${SIESTA2INTW_SRC_DIR}/CMakeLists.txt.in"
+                 "${SIESTA2INTW_SRC_DIR}/CMakeLists.txt" @ONLY)
+
+  # Create the targets to copy and configure all the siesta2intw files to ${SIESTA_HOME}/Util/Contrib/siesta2intw
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
     COMMAND mkdir -p "${SIESTA_HOME}/Util/Contrib/siesta2intw"
     COMMAND cp ${SIESTA2INTW_SRC_FILES} "${SIESTA_HOME}/Util/Contrib/siesta2intw/"
-    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt "${SIESTA_HOME}/Util/Contrib/siesta2intw/"
+    COMMAND cp ${SIESTA2INTW_SRC_DIR}/CMakeLists.txt "${SIESTA_HOME}/Util/Contrib/siesta2intw/"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp"
     COMMENT "Copying siesta2intw to Util/Contrib"
     DEPENDS ${SIESTA2INTW_SRC_FILES}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt
+    DEPENDS ${SIESTA2INTW_SRC_DIR}/CMakeLists.txt
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
@@ -120,7 +108,7 @@ else()
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}"
+    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}" | sed 's/^/${OUTPUT_PREFIX}/'
     COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
     COMMENT "Configuring SIESTA"
@@ -130,18 +118,15 @@ else()
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
     )
 
-
-  add_custom_command(OUTPUT ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
-    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2intw_exe
+  # Create the targets for the siesta2intw executables
+  add_custom_command(OUTPUT ${SIESTA2INTW_EXE}
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2intw_exe | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2intw.x"
     DEPENDS patch-siesta-siesta2intw
     BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
     )
 
-  add_custom_target(siesta2intw.x ALL
-    DEPENDS ${SIESTA2INTW_BUILD_DIR}/siesta2intw.x
-    )
-
+  # Create a target to remove all siesta2intw files and restore siesta
   add_custom_target(remove-siesta2intw
     COMMENT "Removing siesta2intw from SIESTA"
     COMMAND rm -rf "${SIESTA_BUILD_DIR}/Util/Contrib/siesta2intw"
@@ -161,3 +146,8 @@ else()
   add_dependencies(restore-siesta remove-siesta2intw)
 
 endif()
+
+# Create the targets to build siesta2intw
+add_custom_target(siesta2intw.x DEPENDS ${SIESTA2INTW_EXE})
+
+add_custom_target(siesta2intw ALL DEPENDS siesta2intw.x)

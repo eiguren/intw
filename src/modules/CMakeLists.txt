@@ -44,8 +44,6 @@ install(TARGETS intw_modules
   ARCHIVE DESTINATION lib
 )
 
-install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)
-
 
 if(TRIFS)
 
@@ -63,4 +61,10 @@ if(TRIFS)
     target_link_libraries(triFS_modules PUBLIC OpenMP::OpenMP_Fortran)
   endif()
 
+  install(TARGETS intw_modules
+    ARCHIVE DESTINATION lib
+  )
+
 endif()
+
+install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION include)

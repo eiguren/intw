@@ -25,11 +25,11 @@ target_compile_options(
   @SIESTA2PH_FFLAGS@
   )
 
-if(@SIESTA2PH_FPPLAGS@)
+if(@SIESTA2PH_FPPFLAGS@)
   target_compile_definitions(
     siesta2ph_modules
     PUBLIC
-    @SIESTA2PH_FPPLAGS@
+    @SIESTA2PH_FPPFLAGS@
     )
 endif()
 

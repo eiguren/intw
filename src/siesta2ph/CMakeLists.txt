@@ -15,7 +15,7 @@ set(SIESTA2PH_SRC_FILES ${SIESTA2PH_MODULES_SRC_FILES}
                         ${SIESTA2PH_SRC_DIR}/siesta2dv.F90
                         )
 
-# Define siesta2intw build directory and object and module files
+# Define siesta2ph build directory and object and module files
 if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
   set(SIESTA2PH_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION} CACHE PATH "Path to the siesta2ph build directory." FORCE)
   set(SIESTA2PH_MODULES_OBJ_FILES ${SIESTA2PH_BUILD_DIR}/siesta2ph_io.o
@@ -54,6 +54,8 @@ if(BT STREQUAL "DEBUG")
 endif()
 
 
+set(OUTPUT_PREFIX "...... ")
+
 if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 
   # Create Makefile for siesta2ph
@@ -63,7 +65,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 
   # Create the target siesta2ph_modules to build the siesta2ph modules
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
-    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2ph_modules
+    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2ph_modules | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2ph_modules"
     DEPENDS ${SIESTA2PH_MODULES_SRC_FILES}
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
@@ -76,7 +78,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 
   # Create the targets for the siesta2ph executables
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
-    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2ph.x
+    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2ph.x | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2ph.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
@@ -85,7 +87,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     )
 
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
-    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2fc.x
+    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2fc.x | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2fc.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
@@ -94,7 +96,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     )
 
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
-    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2dv.x
+    COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2dv.x | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2dv.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
@@ -102,35 +104,21 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     BYPRODUCTS ${SIESTA2PH_BUILD_DIR}/siesta2dv.o
     )
 
-  add_custom_target(siesta2ph.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
-    )
-
-  add_custom_target(siesta2fc.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
-    )
-
-  add_custom_target(siesta2dv.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
-    )
-
-  add_custom_target(siesta2ph DEPENDS siesta2ph.x siesta2fc.x siesta2dv.x)
-
 else()
 
   # Create the cmake configuration file for siesta2ph
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt.in"
-    "${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt" @ONLY)
+  configure_file("${SIESTA2PH_SRC_DIR}/CMakeLists.txt.in"
+                 "${SIESTA2PH_SRC_DIR}/CMakeLists.txt" @ONLY)
 
   # Create the targets to copy and configure all the siesta2ph files to ${SIESTA_HOME}/Util/Contrib/siesta2ph
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
     COMMAND mkdir -p "${SIESTA_HOME}/Util/Contrib/siesta2ph"
     COMMAND cp ${SIESTA2PH_SRC_FILES} "${SIESTA_HOME}/Util/Contrib/siesta2ph/"
-    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt "${SIESTA_HOME}/Util/Contrib/siesta2ph/"
+    COMMAND cp ${SIESTA2PH_SRC_DIR}/CMakeLists.txt "${SIESTA_HOME}/Util/Contrib/siesta2ph/"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp"
     COMMENT "Copying siesta2ph to Util/Contrib"
     DEPENDS ${SIESTA2PH_SRC_FILES}
-            ${CMAKE_CURRENT_SOURCE_DIR}/${SIESTA_VERSION}/CMakeLists.txt
+            ${SIESTA2PH_SRC_DIR}/CMakeLists.txt
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
@@ -141,7 +129,7 @@ else()
     )
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}"
+    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}" | sed 's/^/${OUTPUT_PREFIX}/'
     COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
@@ -156,7 +144,7 @@ else()
 
   # Create the target siesta2ph_modules to build the siesta2ph modules
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
-    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_modules
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_modules | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2ph_modules"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
@@ -170,42 +158,28 @@ else()
 
   # Create the targets for the siesta2ph executables
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
-    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_exe
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2ph_exe | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2ph.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
-    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}//CMakeFiles/siesta2ph_exe.dir/siesta2ph.F90.o
+    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2ph_exe.dir/siesta2ph.F90.o
     )
 
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
-    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2fc_exe
+    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2fc_exe | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2fc.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
-    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}//CMakeFiles/siesta2fc_exe.dir/siesta2fc.F90.o
+    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2fc_exe.dir/siesta2fc.F90.o
     )
 
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
-    COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2dv_exe
+	  COMMAND cmake --build "${SIESTA_BUILD_DIR}" -t siesta2dv_exe | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2dv.x"
     DEPENDS ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
             siesta2ph_modules
-    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}//CMakeFiles/siesta2dv_exe.dir/siesta2dv.F90.o
+    BYPRODUCTS ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2dv_exe.dir/siesta2dv.F90.o
     )
-
-  add_custom_target(siesta2ph.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2ph.x
-    )
-
-  add_custom_target(siesta2fc.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2fc.x
-    )
-
-  add_custom_target(siesta2dv.x ALL
-    DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2dv.x
-    )
-
-  add_custom_target(siesta2ph DEPENDS siesta2ph.x siesta2fc.x siesta2dv.x)
 
   # Create a target to remove all siesta2ph files and restore siesta
   add_custom_target(remove-siesta2ph
@@ -223,5 +197,13 @@ else()
 
 endif()
 
+# Create the targets to build siesta2ph
+add_custom_target(siesta2ph.x DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2ph.x)
+add_custom_target(siesta2fc.x DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2fc.x)
+add_custom_target(siesta2dv.x DEPENDS ${SIESTA2PH_BUILD_DIR}/siesta2dv.x)
+
+add_custom_target(siesta2ph ALL DEPENDS siesta2ph.x siesta2fc.x siesta2dv.x)
+
+# Create the run-disp script
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/utils/run-disps.bash.in"
                "${CMAKE_CURRENT_BINARY_DIR}/${SIESTA_VERSION}/run-disps.x" @ONLY)
