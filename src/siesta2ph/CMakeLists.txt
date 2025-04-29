@@ -110,7 +110,7 @@ else()
   configure_file("${SIESTA2PH_SRC_DIR}/CMakeLists.txt.in"
                  "${SIESTA2PH_SRC_DIR}/CMakeLists.txt" @ONLY)
 
-  # Create the targets to copy and configure all the siesta2ph files to ${SIESTA_HOME}/Util/Contrib/siesta2ph
+  # Create the targets to patch siesta2ph into ${SIESTA_HOME}/Util/Contrib/siesta2ph
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
     COMMAND mkdir -p "${SIESTA_HOME}/Util/Contrib/siesta2ph"
     COMMAND cp ${SIESTA2PH_SRC_FILES} "${SIESTA_HOME}/Util/Contrib/siesta2ph/"
@@ -124,23 +124,40 @@ else()
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
     COMMAND bash -c "if ! grep -q siesta2ph ${SIESTA_HOME}/Util/CMakeLists.txt; then echo \"add_subdirectory(\\\"Contrib/siesta2ph\\\")\" >> ${SIESTA_HOME}/Util/CMakeLists.txt; fi"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp"
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
     COMMENT "Modifying CMakeLists.txt from SIESTA/Util"
     VERBATIM
     )
 
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-    COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}" | sed 's/^/${OUTPUT_PREFIX}/'
-    COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/patch.stamp
+    COMMAND touch ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/patch.stamp
+    COMMAND touch ${PROJECT_BINARY_DIR}/CMakeFiles/patch-siesta.stamp # This is needed to reconfigure SIESTA
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
-    COMMENT "Configuring SIESTA"
+    COMMENT ""
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/CMakeFiles/patch-siesta.stamp
     )
 
   add_custom_target(patch-siesta-siesta2ph
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
-            ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
-            ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/patch.stamp
     )
+
+  add_dependencies(patch-siesta patch-siesta-siesta2ph)
+
+  # Create targets to configure SIESTA
+  # NOTE: This targets are already defined in the CMakeLists.txt of siesta2intw.
+  #       We don't have to define anything here.
+  # add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/CMakeFiles/configure-siesta.stamp
+  #   COMMAND cmake -S "${SIESTA_HOME}" -B "${SIESTA_BUILD_DIR}" | sed 's/^/${OUTPUT_PREFIX}/'
+  #   COMMAND touch ${PROJECT_BINARY_DIR}/CMakeFiles/configure-siesta.stamp
+  #   DEPENDS ${PROJECT_BINARY_DIR}/CMakeFiles/patch-siesta.stamp
+  #           patch-siesta
+  #   COMMENT "Configuring SIESTA"
+  #   )
+
+  # add_custom_target(configure-siesta
+  #   DEPENDS ${PROJECT_BINARY_DIR}/CMakeFiles/configure-siesta.stamp
+  #   )
 
   # Create the target siesta2ph_modules to build the siesta2ph modules
   add_custom_command(OUTPUT ${SIESTA2PH_BUILD_DIR}/libsiesta2ph_modules.a
@@ -148,8 +165,8 @@ else()
     COMMENT "Building siesta2ph_modules"
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
-            ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp
-            patch-siesta-siesta2ph
+            patch-siesta
+            configure-siesta
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
                ${SIESTA2PH_MODULES_MOD_FILES}
     )
@@ -189,7 +206,7 @@ else()
     COMMAND mv "${SIESTA_HOME}/Util/CMakeLists.txt" "${SIESTA_HOME}/Util/CMakeLists.txt_backup"
     COMMAND grep -v siesta2ph "${SIESTA_HOME}/Util/CMakeLists.txt_backup" > "${SIESTA_HOME}/Util/CMakeLists.txt"
     COMMAND rm -rf "${SIESTA_HOME}/Util/CMakeLists.txt_backup"
-    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/configure.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp"
+    COMMAND rm -rf "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/patch.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp" "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp"
     VERBATIM
   )
 
