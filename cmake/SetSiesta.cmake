@@ -10,6 +10,7 @@ set(SUPPORTED_SIESTA
   "5.0.2"
   "5.2.0"
   "5.2.1"
+  "5.2.2"
   )
 
 if (NOT SIESTA_VERSION)

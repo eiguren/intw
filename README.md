@@ -14,7 +14,7 @@ Additionally, a supported version of [Quantum Espresso](https://www.quantum-espr
 | DFT code         | Supported versions                               |
 |------------------|--------------------------------------------------|
 | Quantum Espresso | &bull; 6.6 <br> &bull; 6.7MaX <br>&bull; 6.8     |
-| SIESTA           | &bull; 4.1.5 <br> &bull; 5.0.0 <br> &bull; 5.0.1 |
+| SIESTA           | &bull; 4.1.5 <br> &bull; 5.0.0 <br> &bull; 5.0.1 <br> &bull; 5.0.2 <br> &bull; 5.2.0 <br> &bull; 5.2.1 <br> &bull; 5.2.2 |
 
 
 To build intw to work with both DFT codes:
