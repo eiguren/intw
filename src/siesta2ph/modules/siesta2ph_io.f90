@@ -24,7 +24,7 @@ module siesta2ph_io
 
   public :: stdin, stdout
   public :: outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
-            nr1, nr2, nr3, dx, lpm, dv_precision, &
+            nr1, nr2, nr3, dx, lpm, disp_along_cart, dv_precision, &
             irreducible_q, xsf, full_xsf, verbose, use_sym
 
   public :: read_input, write_fdf, find_free_unit
@@ -40,6 +40,7 @@ module siesta2ph_io
   integer :: nr1, nr2, nr3
   real(kind=dp) :: dx
   logical :: lpm
+  logical :: disp_along_cart
   logical :: use_sym
   logical :: irreducible_q
   logical :: xsf, full_xsf
@@ -47,7 +48,7 @@ module siesta2ph_io
   logical :: verbose
   !
   namelist / input / outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
-                     nr1, nr2, nr3, dx, lpm, dv_precision, &
+                     nr1, nr2, nr3, dx, lpm, disp_along_cart, dv_precision, &
                      use_sym, irreducible_q, xsf, full_xsf, verbose
 
 
@@ -74,6 +75,7 @@ contains
     nr3 = 1
     dx = 0.01_dp
     lpm = .true.
+    disp_along_cart = .false.
     use_sym = .true.
     irreducible_q = .true.
     xsf = .false.

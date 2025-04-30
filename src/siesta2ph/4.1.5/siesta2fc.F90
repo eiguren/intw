@@ -298,9 +298,9 @@ contains
     !
     ! Compute the force constants for the irreducible atoms using symmetries and the pseudo-inverse
     !
-    use siesta2ph_io, only: outdir, v0dir, phdir, lpm, dx
+    use siesta2ph_io, only: outdir, v0dir, phdir, lpm, dx, disp_along_cart
     use siesta2ph_utils, only: eV2Hartree, Ang2Bohr
-    use siesta2ph_system, only: nat, slabel, tau_cryst
+    use siesta2ph_system, only: nat, slabel, tau_cryst, at
     use siesta2ph_symmetry, only: irred_atm, nsite_sym, nsite_rot, irred_disp, site_atm, site_s_cart, site_sinv, nsym, s_cart, rtau_index
     !
     use siesta2ph_io, only: find_free_unit
@@ -318,7 +318,7 @@ contains
     real(kind=dp), dimension(3,3) :: FC_ij
     !
     integer :: nat_fa
-    real(kind=dp), dimension(3,3) :: disp
+    real(kind=dp), dimension(3,3) :: disp_cart, disp_cryst, disp
     character(len=256) :: dispp_filename
     character(len=256) :: dispn_filename
     integer :: dispp_unit, dispn_unit
@@ -334,9 +334,28 @@ contains
 
     write(stdout,*) "- Computing force constants..."
     !
-    disp(:,1) = (/dx, 0.0_dp, 0.0_dp/)
-    disp(:,2) = (/0.0_dp, dx, 0.0_dp/)
-    disp(:,3) = (/0.0_dp, 0.0_dp, dx/)
+    if (disp_along_cart) then
+      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
+      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
+      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
+      !
+      disp = disp_cart
+    else
+      disp_cryst(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! a1 direction
+      disp_cryst(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! a2 direction
+      disp_cryst(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! a3 direction
+      !
+      ! Transform to Cartesian
+      disp = matmul(at, disp_cryst)
+      !
+      ! Normalize
+      disp(:,1) = disp(:,1)/norm2(disp(:,1))
+      disp(:,2) = disp(:,2)/norm2(disp(:,2))
+      disp(:,3) = disp(:,3)/norm2(disp(:,3))
+    endif
+    !
+    disp = disp*dx
+    !
     !
     allocate(fp(3,nat))
     allocate(fn(3,nat))

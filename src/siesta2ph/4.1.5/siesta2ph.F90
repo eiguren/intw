@@ -30,7 +30,7 @@ program siesta2ph
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, dx, verbose, stdout
+  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, dx, disp_along_cart, verbose, stdout
   use siesta2ph_system, only: nat, at, alat, tau, ityp
   use siesta2ph_symmetry, only: irred_atm, irred_disp
   !
@@ -210,9 +210,33 @@ contains
     character(len=256) :: dispp_folder
     character(len=256) :: dispn_folder
     integer :: ia, id, iirred
+    real(kind=dp), dimension(3,3) :: disp_cart, disp_cryst, disp
 
 
     write(stdout,*) "- Creating the ireducible displacement files..."
+    !
+    if (disp_along_cart) then
+      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
+      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
+      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
+      !
+      disp = disp_cart
+    else
+      disp_cryst(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! a1 direction
+      disp_cryst(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! a2 direction
+      disp_cryst(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! a3 direction
+      !
+      ! Transform to Cartesian
+      disp = matmul(at, disp_cryst)
+      !
+      ! Normalize
+      disp(:,1) = disp(:,1)/norm2(disp(:,1))
+      disp(:,2) = disp(:,2)/norm2(disp(:,2))
+      disp(:,3) = disp(:,3)/norm2(disp(:,3))
+    endif
+    !
+    disp = disp*dx
+    !
     !
     iirred = 0
     do ia=1,nat
@@ -233,7 +257,7 @@ contains
           write(dispp_folder,"(a5,i4.4,a1)") "disp-", iirred, "/"
         endif
         !
-        tau_sc(id,ia) = tau(id,ia) + dx/alat ! add the positive displacement to the atom
+        tau_sc(:,ia) = tau(:,ia) + disp(:,id)/alat ! add the positive displacement to the atom
         !
         call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispp_folder))
         call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
@@ -251,7 +275,7 @@ contains
           ! Negative displacement
           write(dispn_folder,"(a5,i4.4,a1)") "disp-", 2*iirred, "/"
           !
-          tau_sc(id,ia) = tau(id,ia) - dx/alat ! add the negative displacement to the atom
+          tau_sc(:,ia) = tau(:,ia) - disp(:,id)/alat ! add the negative displacement to the atom
           !
           call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispn_folder))
           call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))

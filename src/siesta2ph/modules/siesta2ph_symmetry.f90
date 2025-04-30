@@ -397,20 +397,42 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: stdout
-    use siesta2ph_system, only: nat
+    use siesta2ph_io, only: stdout, dx, disp_along_cart
+    use siesta2ph_system, only: nat, at
     !
     use siesta2ph_linalg, only: rank, ainv
     !
     implicit none
     !
     integer :: ia, id, isym, isite_sym
-    real(kind=dp), dimension(3,3) :: disp
+    real(kind=dp), dimension(3,3) :: disp_cart, disp_cryst, disp
     real(kind=dp), dimension(3,3) :: basis
     integer :: nbasis, basis_rank
 
 
     write(stdout,*) "- Finding irreducible displacements..."
+    !
+    if (disp_along_cart) then
+      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
+      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
+      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
+      !
+      disp = disp_cart
+    else
+      disp_cryst(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! a1 direction
+      disp_cryst(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! a2 direction
+      disp_cryst(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! a3 direction
+      !
+      ! Transform to Cartesian
+      disp = matmul(at, disp_cryst)
+      !
+      ! Normalize
+      disp(:,1) = disp(:,1)/norm2(disp(:,1))
+      disp(:,2) = disp(:,2)/norm2(disp(:,2))
+      disp(:,3) = disp(:,3)/norm2(disp(:,3))
+    endif
+    !
+    disp = disp*dx
     !
     !
     allocate(irred_disp(3,nat))
@@ -427,10 +449,6 @@ contains
       ! Check if site symmetry has been found correctly
       if ((isite_sym == nsite_sym) .and. ( atom_mapping(ia) /= site_atm(isite_sym))) stop "find_irreducible_displacements: ERROR: site symmetry not found"
       !
-      !
-      disp(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp  /) ! x direction
-      disp(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp  /) ! y direction
-      disp(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp  /) ! z direction
       !
       basis = 0.0_dp
       nbasis = 0
