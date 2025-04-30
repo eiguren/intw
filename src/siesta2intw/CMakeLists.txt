@@ -80,6 +80,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     COMMAND make -C ${SIESTA2INTW_BUILD_DIR} siesta2intw.x | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2intw.x"
     DEPENDS ${SIESTA2INTW_SRC_FILES}
+            Spglib::symspg
     BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
     )
 
@@ -146,6 +147,7 @@ else()
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
             patch-siesta
             configure-siesta
+            Spglib::symspg
     BYPRODUCTS ${SIESTA2INTW_OBJ_FILES} ${SIESTA2INTW_MOD_FILES}
     )
 

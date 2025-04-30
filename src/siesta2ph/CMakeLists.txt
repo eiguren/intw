@@ -68,6 +68,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     COMMAND make -C ${SIESTA2PH_BUILD_DIR} siesta2ph_modules | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building siesta2ph_modules"
     DEPENDS ${SIESTA2PH_MODULES_SRC_FILES}
+            Spglib::symspg
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
               ${SIESTA2PH_MODULES_MOD_FILES}
     )
@@ -167,6 +168,7 @@ else()
             ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake.stamp
             patch-siesta
             configure-siesta
+            Spglib::symspg
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
                ${SIESTA2PH_MODULES_MOD_FILES}
     )
