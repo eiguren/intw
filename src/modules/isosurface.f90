@@ -1051,9 +1051,9 @@ contains
 
 
       ! Write file with Fermi velocity
-      io_unit = find_free_unit()
       do ibnd = 1, num_wann
         if(nvert(ibnd).eq.0) cycle
+        io_unit = find_free_unit()
         open(unit=io_unit, action="write", file=trim(int2str(ibnd))//"_IBZ_v_k.dat", status="unknown")
         write(unit=io_unit, fmt="(3I10)") nvert(ibnd)
         do iv = 1, nvert(ibnd)
@@ -1193,6 +1193,7 @@ contains
     write(io_unit, *) "DOS at FS using full rotated mesh =", ne, "a.u."
     write(io_unit, *) "                                   ", ne/27.21138602_dp, "1/e.V."
 
+    close(io_unit)
 
     write(*, *) "DOS at FS =", ne, "a.u."
     write(*, *) "            ", ne/27.21138602_dp, "1/e.V."

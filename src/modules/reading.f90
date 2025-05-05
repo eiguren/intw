@@ -726,6 +726,8 @@ contains
          band_excluded_intw(nn) = .true.
       enddo
       !
+      close(nnkp_unit)
+      !
       ! Number of bands (before disentanglement)
       num_bands_intw = nbands - num_exclude_bands_intw
       !

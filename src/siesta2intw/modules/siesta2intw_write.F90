@@ -450,12 +450,10 @@ contains
     allocate(q_irr_cart(3, nqirr))
     q_irr_cryst = 0.0_dp
     q_irr_cart = 0.0_dp
-    io_unit_read = find_free_unit()
-    io_unit_write = find_free_unit()
-    io_unit_write_sym = find_free_unit()
     do iq = 1, nqirr
       !
       write(filename_read,"(a3,i4.4,a4)") "dyn", iq, ".dat"
+      io_unit_read = find_free_unit()
       open( unit=io_unit_read, file=trim(outdir)//trim(phdir)//trim(filename_read), iostat=ios, &
             action="read", status="old" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening dynamical matrix file."
@@ -464,11 +462,13 @@ contains
       if ( 10 <= iq .and. iq <  100) write(iq_str,"(a2,i2)") "_q", iq
       if (100 <= iq .and. iq < 1000) write(iq_str,"(a2,i3)") "_q", iq
       filename_write = trim(prefix)//".dyn"//trim(iq_str)
+      io_unit_write = find_free_unit()
       open( unit=io_unit_write, file=trim(intwdir)//trim(filename_write), iostat=ios, &
             action="write", status="replace" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening intw's dynamical matrix file."
       !
       filename_write = trim(prefix)//".dyn"//trim(iq_str)//"_sym"
+      io_unit_write_sym = find_free_unit()
       open( unit=io_unit_write_sym, file=trim(intwdir)//trim(filename_write), iostat=ios, &
             action="write", status="replace" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening intw's dynamical matrix sym file."
@@ -664,6 +664,9 @@ contains
         endif
         !
       enddo ! imode
+      !
+      close(io_unit_read)
+      close(io_unit_write)
       !
     enddo ! iq
     !

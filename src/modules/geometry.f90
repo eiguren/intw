@@ -428,6 +428,7 @@ contains
         enddo
       enddo
     enddo
+    close(unit=io_unit1)
     close(unit=io_unit2)
 
   end subroutine plot_poly
@@ -685,7 +686,6 @@ contains
     !---------------------------------------------------------------
 
     io_unit = find_free_unit()
-
     !open(io_unit, file="polyhedra.dat", status="unknown")
     open(io_unit, file="polyhedra.off", status="unknown")
     read(unit=io_unit, fmt=*)
@@ -1257,23 +1257,34 @@ contains
     ! Print vertices, edges and faces files if wanted
     if (verb) then
       io_unit = find_free_unit()
-      io_unit2 = find_free_unit()
-      io_unit3 = find_free_unit()
       open(unit=io_unit, file='vertices_IBZ.dat', status='unknown')
-      open(unit=io_unit2, file='edges_IBZ.dat', status='unknown')
-      open(unit=io_unit3, file='faces_IBZ.dat', status='unknown')
+
       write(unit=io_unit, fmt=*) nv
-      write(unit=io_unit2, fmt=*) ne
-      write(unit=io_unit3, fmt=*) nf
       do i = 1, nv
         write(unit=io_unit, fmt="(3f12.6)") ( vlist(j,i), j = 1, 3 )
       end do
+
+      close(io_unit)
+
+      io_unit2 = find_free_unit()
+      open(unit=io_unit2, file='edges_IBZ.dat', status='unknown')
+
+      write(unit=io_unit2, fmt=*) ne
       do e = 1, ne
         write(unit=io_unit2, fmt=*) edge(1:2,e)
       end do
+
+      close(io_unit2)
+
+      io_unit3 = find_free_unit()
+      open(unit=io_unit3, file='faces_IBZ.dat', status='unknown')
+
+      write(unit=io_unit3, fmt=*) nf
       do f = 1, nf
         write(unit=io_unit3, fmt=*) face_as_vert(1:3,f)-1
       end do
+
+      close(io_unit3)
     end if
 
   end subroutine tetraIBZ_2_vert_faces_edges
@@ -1825,6 +1836,8 @@ contains
         write(unit=io_unit, fmt="(I6, 3f12.6)") i, ( vlist(j,i), j = 1, 3 )
       end do
     end if
+
+    close(io_unit)
 
     deallocate(vlist, indx, tri_face_indx)
     deallocate(nvert_face, ntri_face, triangulated_face, vertices_face, triangles_face)

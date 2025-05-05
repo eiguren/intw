@@ -204,6 +204,8 @@ contains
       upf(is)%r(ir), upf(is)%rab(ir), upf(is)%vloc(ir),(upf(is)%beta(ir,nb), nb=1,upf(is)%nbeta)
       end do
 
+      close(io_unit)
+
     end do
 
   end SUBROUTINE write_pp_intw

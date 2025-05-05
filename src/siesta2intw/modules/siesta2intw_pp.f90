@@ -217,6 +217,7 @@ contains
     ! A safety check
     if (siestaPP%psf_nicore == 'fcec') stop 'read_pp_from_ion_xml: nicore=fcec case not tested! We must check it.'
     !
+    close(iounit)
     !
     contains
     !
@@ -661,6 +662,7 @@ contains
         intwPP%r(ir), intwPP%rab(ir), intwPP%vpsloc(ir), (intwPP%betas(ir,ikb), ikb=1,intwPP%nbeta)
     end do
 
+    close(iounit)
 
   end subroutine write_pp_intw
 

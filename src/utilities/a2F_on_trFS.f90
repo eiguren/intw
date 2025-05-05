@@ -157,30 +157,30 @@ allocate (nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
 allocate (nkpt_tr_ibz(nfs_sheets_tot), nface_tr_ibz(nfs_sheets_tot))
 
 !open all sheet files just to see dimensions of kpoint lists
-unit_off=find_free_unit()
 
 do is=1,nfs_sheets_tot
 
-   if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
-   if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
+  if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
+  if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
-   write(*,*) is, file_off
+  file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+  write(*,*) is, file_off
 
-   open(unit_off, file=file_off, status='old')
-   read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
-   close(unit_off)
+  unit_off = find_free_unit()
+  open(unit_off, file=file_off, status='old')
+  read(unit_off,*) comenta
+  read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
+  close(unit_off)
 
-   !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
-   !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
+  !open the IBZ off file and search for dimension nkpt_tr_ibz(is).
+  !Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-   file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
-
-   open(unit_off, file=file_off, status='old')
-   read(unit_off,*) comenta
-   read(unit_off,*) nkpt_tr_ibz(is),  nface_tr_ibz(is)  !number of vertices and faces (ignore rest)
-   close(unit_off)
+  file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+  unit_off = find_free_unit()
+  open(unit_off, file=file_off, status='old')
+  read(unit_off,*) comenta
+  read(unit_off,*) nkpt_tr_ibz(is),  nface_tr_ibz(is)  !number of vertices and faces (ignore rest)
+  close(unit_off)
 
 end do
 
@@ -213,6 +213,7 @@ do is=1,nfs_sheets_tot
    ! .off file for this sheet
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) comenta
@@ -258,6 +259,7 @@ do is=1,nfs_sheets_tot
    ! velocity for this sheet (use same unit)
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) i
@@ -289,6 +291,7 @@ do is=1,nfs_sheets_tot
    ! .off file for this sheet
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) comenta
@@ -333,6 +336,7 @@ do is=1,nfs_sheets_tot
   ! velocity for this sheet (use same unit)
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_v_k.dat')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) i
@@ -395,7 +399,6 @@ end do
 ! Read ep elements file
 !================================================================================
 
-  unit_ep=find_free_unit()
   file_ep=trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
   inquire(file=file_ep,exist=have_ep)
 
@@ -412,6 +415,7 @@ end do
     ! Note, indices ikp,ik include all the calculated sheets
     allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
 
+    unit_ep = find_free_unit()
     open(unit_ep, file=file_ep, status='old')
     read(unit_ep,*) comenta
 
@@ -551,11 +555,6 @@ end do
   ! integrals
   allocate (alpha2F(nspin,nspin,3*nat,nomega), lambda(3*nat))
 
-  ! output file for a2F
-  unit_a2f=find_free_unit()
-  file_a2f=trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
-  open(unit_a2f, file=file_a2f, status='unknown')
-  write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
 
   alpha2F = 0.0_dp
   lambda = 0.0_dp
@@ -659,21 +658,19 @@ end do !k  (sheet)
   alpha2F=alpha2F/dosef/vol1bz**2
 
   ! print out by spin blocks (one file per block if nspin=2).
-  ! output unit for a2F:
-  unit_a2f=find_free_unit()
-
-  !  print out by spin blocks
   do is=1,nspin
   do js=1,nspin
 
      if ( nspin .eq. 1) then
        file_a2f=trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+       unit_a2f = find_free_unit()
        open(unit_a2f, file=file_a2f, status='unknown')
        write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
      else
        write(is_loc,"(i1)") is
        write(js_loc,"(i1)") js
        file_a2f=trim(mesh_dir)//trim(prefix)//trim('_s')//trim(adjustl(is_loc))//trim(adjustl(js_loc))//trim('_a2F_interp.dat')
+       unit_a2f = find_free_unit()
        open(unit_a2f, file=file_a2f, status='unknown')
        write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
        write(unit_a2f,*) '#spins = ', is,js

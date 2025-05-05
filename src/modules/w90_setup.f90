@@ -213,6 +213,8 @@ contains
     enddo
   enddo
 
+  close(io_unit)
+
   if (present(eigenval)) eigenval = eigenval_intw
 
   end subroutine

@@ -101,8 +101,6 @@ contains
     ierr = 0
     do nt = 1, ntyp
 
-      io_unit = find_free_unit()
-
       if ( nt>=1 .and. nt<=9 ) then
         write(tag1,"(i1)") nt
         write(*,"(a)") "|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
@@ -114,6 +112,7 @@ contains
         stop "ERROR: read_all_pseudo: ntyp > nt_max"
       end if
 
+      io_unit = find_free_unit()
       open(unit=io_unit ,file=file_pseudo, status='old', form='formatted', iostat=ios)
 
       read(unit=io_unit,fmt="(a)",iostat=ierr) dum

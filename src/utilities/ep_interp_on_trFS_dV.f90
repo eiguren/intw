@@ -224,8 +224,6 @@ allocate (nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
 allocate (nkpt_tr_ibz(nfs_sheets_tot))
 
 !open all sheet files just to see dimensions of kpoint lists
-unit_off=find_free_unit()
-
 do is=1,nfs_sheets_tot
 
    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
@@ -234,6 +232,7 @@ do is=1,nfs_sheets_tot
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
    write(*,*) is, file_off
 
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
    read(unit_off,*) nkpt_tr(is), nface_tr(is)  !number of vertices and faces (ignore edges)
@@ -244,6 +243,7 @@ do is=1,nfs_sheets_tot
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
 
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
    read(unit_off,*) comenta
    read(unit_off,*) nkpt_tr_ibz(is)  !number of vertices (ignore rest)
@@ -277,6 +277,7 @@ do is=1,nfs_sheets_tot
    ! .off file for this sheet
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) comenta
@@ -321,6 +322,7 @@ do is=1,nfs_sheets_tot
    ! velocity for this sheet (use same unit)
 
    file_off=trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
+   unit_off = find_free_unit()
    open(unit_off, file=file_off, status='old')
 
    read(unit_off,*) i
@@ -522,13 +524,13 @@ write(*,*)' !  ---------------- Part I completed ----------------------'
 
 
   altprefix=trim(prefix)//'-nscf'
-  unit_ep=find_free_unit()
   file_ep=trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
 
   inquire(file=file_ep,exist=have_ep)
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
+  unit_ep = find_free_unit()
   open(unit_ep, file=file_ep, status='unknown')
   write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)'
 
