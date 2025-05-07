@@ -1,16 +1,28 @@
 include(FetchContent)
 
+# Default spglib git repository and tag
+set(REPOSITORY https://github.com/spglib/spglib)
+set(TAG v2.6.0)
+
+# Allow users to pass spglib git repository and tag via flags
+if(DEFINED "SPGLIB_GIT_REPOSITORY")
+  set(REPOSITORY ${SPGLIB_GIT_REPOSITORY})
+endif()
+
+if(DEFINED "SPGLIB_GIT_TAG")
+  set(TAG ${SPGLIB_GIT_TAG})
+endif()
 
 FetchContent_Declare(
   Spglib
 
-  GIT_REPOSITORY https://github.com/spglib/spglib
-  GIT_TAG v2.6.0
+  GIT_REPOSITORY ${REPOSITORY}
+  GIT_TAG ${TAG}
 
 
-  SOURCE_DIR "${PROJECT_BINARY_DIR}/External/spglib-src"
-  BINARY_DIR "${PROJECT_BINARY_DIR}/External/spglib-build"
-  SUBBUILD_DIR "${PROJECT_BINARY_DIR}/External/spglib-subbuild"
+  SOURCE_DIR "${PROJECT_BINARY_DIR}/_deps/spglib_${TAG}-src"
+  BINARY_DIR "${PROJECT_BINARY_DIR}/_deps/spglib_${TAG}-build"
+  SUBBUILD_DIR "${PROJECT_BINARY_DIR}/_deps/spglib_${TAG}-subbuild"
 
   OVERRIDE_FIND_PACKAGE
   )
