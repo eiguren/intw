@@ -10,13 +10,13 @@ if(DEFINED "SPGLIB_GIT_REPOSITORY")
 endif()
 
 if(DEFINED "SPGLIB_GIT_TAG")
+  # Validate the tag format (simple regex for vX.Y.Z)
+  if(NOT SPGLIB_GIT_TAG MATCHES "^v[0-9]+\\.[0-9]+\\.[0-9]+$")
+    message(FATAL_ERROR "Invalid SPGLIB_GIT_TAG format. Please specify a valid release Git tag (e.g., v2.6.0).")
+  endif()
   set(TAG ${SPGLIB_GIT_TAG})
 endif()
 
-# Validate the tag format (simple regex for vX.Y.Z)
-if(NOT SPGLIB_GIT_TAG MATCHES "^v[0-9]+\\.[0-9]+\\.[0-9]+$")
-  message(FATAL_ERROR "Invalid SPGLIB_GIT_TAG format. Please specify a valid release Git tag (e.g., v2.6.0).")
-endif()
 
 # Function to compare version strings
 function(version_is_newer_or_equal version1 version2)
@@ -50,7 +50,7 @@ function(version_is_newer_or_equal version1 version2)
 endfunction()
 
 # Check if the specified version is 2.1.0 or newer
-version_is_newer_or_equal(${SPGLIB_GIT_TAG} "v2.1.0")
+version_is_newer_or_equal(${TAG} "v2.1.0")
 
 
 FetchContent_Declare(
