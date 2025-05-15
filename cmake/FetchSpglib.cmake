@@ -76,4 +76,4 @@ FetchContent_Declare(
   FetchContent_MakeAvailable(Spglib)
 
 set(SPGLIB_LIBRARIES "${Spglib_BINARY_DIR}/libsymspg.a" "${Spglib_BINARY_DIR}/fortran/libspglib_f08.a")
-get_target_property(SPGLIB_INCLUDE_DIRS Spglib_fortran INCLUDE_DIRECTORIES)
+get_target_property(SPGLIB_INCLUDE_DIRS Spglib_fortran Fortran_MODULE_DIRECTORY)
