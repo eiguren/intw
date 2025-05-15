@@ -77,7 +77,6 @@ endif()
 
 # SIESTA
 option(USE_SIESTA "Use SIESTA" OFF)
-option(USE_FETCH_SPGLIB "Use FetchContent to download and compile Spglib automatically during build" OFF)
 
 # Try to define the SIESTA home directory from the environmental variable
 if(DEFINED ENV{SIESTA_HOME})
@@ -96,11 +95,8 @@ if (USE_SIESTA)
     message(FATAL_ERROR "SIESTA_HOME variable not set.")
   endif()
   #
-  # Find required Spglib library
-  if (USE_FETCH_SPGLIB)
-    include(FetchSpglib)
-  endif()
-  find_package(Spglib REQUIRED)
+  # Add Spglib library
+  include(FetchSpglib)
   #
   # Setup SIESTA variables
   include(SetSiesta)

@@ -1,5 +1,19 @@
 
 set(SPGLIB_LIBRARIES @SPGLIB_LIBRARIES@)
+set(SPGLIB_INCLUDE_DIRS @SPGLIB_INCLUDE_DIRS@)
+
+add_library(Spglib IMPORTED INTERFACE)
+target_link_libraries(
+  Spglib
+  INTERFACE
+  "$<LINK_GROUP:RESCAN,${SPGLIB_LIBRARIES}>"
+  )
+target_include_directories(
+  Spglib
+  INTERFACE
+  ${SPGLIB_INCLUDE_DIRS}
+)
+
 
 set(sources
   cfftnd.f90
@@ -11,7 +25,6 @@ set(sources
   siesta2intw_symmetry.f90
   siesta2intw_utils.F90
   siesta2intw_write.F90
-  spglib_f08.f90
   )
 
 siesta_add_executable(siesta2intw_exe
@@ -29,7 +42,7 @@ target_link_libraries(
   siesta2intw_exe
   PRIVATE
   ${PROJECT_NAME}.libsiesta
-  ${SPGLIB_LIBRARIES}
+  Spglib
   )
 
 target_compile_options(

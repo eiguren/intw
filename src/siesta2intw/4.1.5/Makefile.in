@@ -6,7 +6,8 @@ VPATH=@SIESTA2INTW_MODULES_SRC_DIR@ @SIESTA2INTW_SRC_DIR@
 
 OBJDIR=@SIESTA_BUILD_DIR@
 
-SPGLIB=@SPGLIB_LIBRARIES_STR@
+SPGLIB_LIBRARIES=@SPGLIB_LIBRARIES_STR@
+SPGLIB_INCLUDE_FLAGS=@SPGLIB_INCLUDE_FLAGS_STR@
 
 # ---------------------------------
 
@@ -22,6 +23,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL) # Make it non-recursive
 
 INCFLAGS += -I$(OBJDIR)
+INCFLAGS += $(SPGLIB_INCLUDE_FLAGS)
 
 FFLAGS += @SIESTA2INTW_FFLAGS@
 
@@ -31,8 +33,7 @@ FPPFLAGS += @SIESTA2INTW_FPPFLAGS@
 
 EXECS = siesta2intw.x
 OBJS = siesta2intw_write.o siesta2intw_io.o siesta2intw_utils.o siesta2intw_pp.o \
-       siesta2intw_fft.o siesta2intw_ph.o cfftnd.o siesta2intw_symmetry.o \
-       spglib_f08.o
+       siesta2intw_fft.o siesta2intw_ph.o cfftnd.o siesta2intw_symmetry.o
 
 SIESTA_LIB=$(OBJDIR)/libSiestaForces.a
 
@@ -41,7 +42,7 @@ OBJ_LIBS=$(shell find $(OBJDIR) -maxdepth 1 -name '*.a' ! -name 'libSiestaForces
 # Group the libraries to be searched repeatedly until all possible references are resolved.
 # This helps to fix problems when the libraries are not in the correct order.
 OBJ_LIBS:=-Wl,--start-group $(OBJ_LIBS) -Wl,--end-group
-ALL_LIBS = $(OBJ_LIBS) $(LIBS) $(SPGLIB)
+ALL_LIBS = $(OBJ_LIBS) $(LIBS) $(SPGLIB_LIBRARIES)
 
 all: $(EXECS)
 
@@ -62,8 +63,7 @@ clean:
 cfftnd.o :
 siesta2intw_io.o :
 siesta2intw_utils.o : siesta2intw_io.o
-spglib_f08.o :
-siesta2intw_symmetry.o : spglib_f08.o
+siesta2intw_symmetry.o :
 siesta2intw_pp.o : siesta2intw_io.o
 siesta2intw_fft.o : siesta2intw_io.o siesta2intw_utils.o
 siesta2intw_ph.o : siesta2intw_io.o siesta2intw_utils.o siesta2intw_fft.o cfftnd.o

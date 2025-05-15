@@ -7,7 +7,6 @@ set(SIESTA2PH_MODULES_SRC_FILES ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_io.f90
                                 ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_utils.f90
                                 ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_linalg.F90
                                 ${SIESTA2PH_MODULES_SRC_DIR}/siesta2ph_system.f90
-                                ${SIESTA2PH_MODULES_SRC_DIR}/spglib_f08.f90
                                 )
 set(SIESTA2PH_SRC_FILES ${SIESTA2PH_MODULES_SRC_FILES}
                         ${SIESTA2PH_SRC_DIR}/siesta2ph.F90
@@ -23,7 +22,6 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
                                   ${SIESTA2PH_BUILD_DIR}/siesta2ph_utils.o
                                   ${SIESTA2PH_BUILD_DIR}/siesta2ph_linalg.o
                                   ${SIESTA2PH_BUILD_DIR}/siesta2ph_system.o
-                                  ${SIESTA2PH_BUILD_DIR}/spglib_f08.o
                                   )
 else()
   set(SIESTA2PH_BUILD_DIR ${SIESTA_BUILD_DIR}/Util/Contrib/siesta2ph CACHE PATH "Path to the siesta2ph build directory." FORCE)
@@ -32,12 +30,10 @@ else()
                                   ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2ph_modules.dir/siesta2ph_utils.f90.o
                                   ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2ph_modules.dir/siesta2ph_linalg.F90.o
                                   ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2ph_modules.dir/siesta2ph_system.f90.o
-                                  ${SIESTA2PH_BUILD_DIR}/CMakeFiles/siesta2ph_modules.dir/spglib_f08.f90.o
                                   )
 endif()
 set(SIESTA2PH_MODULES_MOD_FILES ${SIESTA2PH_BUILD_DIR}/siesta2ph_io.mod
                                 ${SIESTA2PH_BUILD_DIR}/siesta2ph_linalg.mod
-                                ${SIESTA2PH_BUILD_DIR}/spglib_f08.mod
                                 ${SIESTA2PH_BUILD_DIR}/siesta2ph_symmetry.mod
                                 ${SIESTA2PH_BUILD_DIR}/siesta2ph_system.mod
                                 ${SIESTA2PH_BUILD_DIR}/siesta2ph_utils.mod
@@ -59,6 +55,12 @@ set(OUTPUT_PREFIX "...... ")
 if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
 
   # Create Makefile for siesta2ph
+  set(SPGLIB_LIBRARIES_LIST "-Wl,--start-group" ${SPGLIB_LIBRARIES} "-Wl,--end-group")
+  list(JOIN SPGLIB_LIBRARIES_LIST " " SPGLIB_LIBRARIES_STR)
+
+  set(SPGLIB_INCLUDE_DIRS_LIST "" ${SPGLIB_INCLUDE_DIRS})
+  list(JOIN SPGLIB_INCLUDE_DIRS_LIST " -I" SPGLIB_INCLUDE_FLAGS_STR)
+
   list(JOIN SPGLIB_LIBRARIES " " SPGLIB_LIBRARIES_STR)
   configure_file("${SIESTA2PH_SRC_DIR}/Makefile.in"
                  "${SIESTA2PH_BUILD_DIR}/Makefile" @ONLY)
@@ -69,6 +71,7 @@ if("${SIESTA_CMAKE}" STREQUAL "SIESTA_CMAKE-NOTFOUND")
     COMMENT "Building siesta2ph_modules"
     DEPENDS ${SIESTA2PH_MODULES_SRC_FILES}
             Spglib::symspg
+            Spglib::fortran
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
               ${SIESTA2PH_MODULES_MOD_FILES}
     )
@@ -169,6 +172,7 @@ else()
             patch-siesta
             configure-siesta
             Spglib::symspg
+            Spglib::fortran
     BYPRODUCTS ${SIESTA2PH_MODULES_OBJ_FILES}
                ${SIESTA2PH_MODULES_MOD_FILES}
     )
