@@ -148,7 +148,7 @@ contains
     !
     use siesta2ph_io, only: find_free_unit
     use siesta2ph_linalg, only: ainv, rank
-    use siesta2ph_symmetry, only: get_q_mesh
+    use siesta2ph_symmetry, only: get_q_mesh, set_displacements_direction
     use siesta2ph_utils, only: xsf_datagrid_2d
     !
     implicit none
@@ -220,9 +220,7 @@ contains
     !
     write(stdout,*) "- Computing induced potential..."
     !
-    disp(:,1) = (/dx, 0.0_dp, 0.0_dp/)!/alat
-    disp(:,2) = (/0.0_dp, dx, 0.0_dp/)!/alat
-    disp(:,3) = (/0.0_dp, 0.0_dp, dx/)!/alat
+    call set_displacements_direction(disp)
     !
     allocate(dv(maxp,nspin))
     allocate(dv_rot(maxp,nspin,3))
@@ -302,10 +300,10 @@ contains
         !
       enddo ! id
       !
-      ! Find the linear combination of the basis vectors to obtain the cartesian displacements
-      coefx = matmul((ainv(basis)), disp(:,1))
-      coefy = matmul((ainv(basis)), disp(:,2))
-      coefz = matmul((ainv(basis)), disp(:,3))
+      ! Find the linear combination of the basis vectors to obtain the Cartesian displacements
+      coefx = matmul((ainv(basis)), (/    dx, 0.0_dp, 0.0_dp/))
+      coefy = matmul((ainv(basis)), (/0.0_dp,     dx, 0.0_dp/))
+      coefz = matmul((ainv(basis)), (/0.0_dp, 0.0_dp,     dx/))
       !
       ! Calculate dV for atom ia
       nbasis_count = 0

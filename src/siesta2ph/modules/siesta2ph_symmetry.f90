@@ -28,7 +28,8 @@ module siesta2ph_symmetry
             rtau_index, rtau_cryst
 
   public :: get_q_mesh, compute_symmetry, print_symmetry_data, &
-            find_irreducible_atoms, find_site_symmetry, find_irreducible_displacements
+            find_irreducible_atoms, find_site_symmetry, &
+            set_displacements_direction, find_irreducible_displacements
 
   private
 
@@ -393,11 +394,55 @@ contains
   end subroutine find_site_symmetry
 
 
+  subroutine set_displacements_direction(disp_cart)
+    !
+    ! disp_cart returns in the output the displacement vectors in Cartesian coordinates.
+    ! If disp_along_cart == .true., the displacement vectors will be along the Cartesian directions,
+    ! if disp_along_cart == .false., the displacement vectors will be along the Crystal directions.
+    !
+    use siesta2ph_io, only: stdout, verbose, disp_along_cart, dx
+    use siesta2ph_system, only: at
+  !
+    implicit none
+    !
+    real(kind=dp), dimension(3,3), intent(out) :: disp_cart
+
+
+    if (disp_along_cart) then
+      !
+      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
+      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
+      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
+      !
+    else
+      !
+      disp_cart(:,1) = at(:,1)/norm2(at(:,1)) ! a1 direction
+      disp_cart(:,2) = at(:,2)/norm2(at(:,2)) ! a2 direction
+      disp_cart(:,3) = at(:,3)/norm2(at(:,3)) ! a3 direction
+      !
+    endif
+    !
+    disp_cart = disp_cart*dx
+    !
+    if (verbose) then
+      if (disp_along_cart) then
+        write(stdout,"(a)") "Displacements along Cartesian directions will be used:"
+      else
+        write(stdout,"(a)") "Displacements along Crystal directions will be used:"
+      endif
+      write(stdout,"(3f)") disp_cart(:,1)
+      write(stdout,"(3f)") disp_cart(:,2)
+      write(stdout,"(3f)") disp_cart(:,3)
+    endif
+
+  end subroutine set_displacements_direction
+
+
   subroutine find_irreducible_displacements()
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: stdout, dx, disp_along_cart
+    use siesta2ph_io, only: stdout
     use siesta2ph_system, only: nat, at
     !
     use siesta2ph_linalg, only: rank, ainv
@@ -405,35 +450,14 @@ contains
     implicit none
     !
     integer :: ia, id, isym, isite_sym
-    real(kind=dp), dimension(3,3) :: disp_cart, disp_cryst, disp
+    real(kind=dp), dimension(3,3) :: disp
     real(kind=dp), dimension(3,3) :: basis
     integer :: nbasis, basis_rank
 
 
     write(stdout,*) "- Finding irreducible displacements..."
     !
-    if (disp_along_cart) then
-      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
-      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
-      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
-      !
-      disp = disp_cart
-    else
-      disp_cryst(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! a1 direction
-      disp_cryst(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! a2 direction
-      disp_cryst(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! a3 direction
-      !
-      ! Transform to Cartesian
-      disp = matmul(at, disp_cryst)
-      !
-      ! Normalize
-      disp(:,1) = disp(:,1)/norm2(disp(:,1))
-      disp(:,2) = disp(:,2)/norm2(disp(:,2))
-      disp(:,3) = disp(:,3)/norm2(disp(:,3))
-    endif
-    !
-    disp = disp*dx
-    !
+    call set_displacements_direction(disp)
     !
     allocate(irred_disp(3,nat))
     irred_disp = .false.

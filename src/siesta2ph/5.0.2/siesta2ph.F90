@@ -29,7 +29,7 @@ program siesta2ph
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, dx, verbose, stdout
+  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, verbose, stdout
   use siesta2ph_system, only: nat, at, alat, tau, ityp
   use siesta2ph_symmetry, only: irred_atm, irred_disp
   !
@@ -55,7 +55,7 @@ program siesta2ph
   !
   ! Monkhorst-Pack kgrid for the unit cell and supercell
   integer :: kgrid_uc(3,3), kgrid_sc(3,3)
-  real(kind=dp) :: disp(3)
+  real(kind=dp) :: kgrid_disp(3)
   !
   ! Real space mesh for the unit cell and supercell
   integer, dimension(3) :: rmesh_uc, rmesh_sc
@@ -175,13 +175,13 @@ contains
     call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(v0dir)//"supercell-"//trim(prefix))
     !
     ! Check kgrid
-    call check_kgrid(kgrid_uc, disp)
+    call check_kgrid(kgrid_uc, kgrid_disp)
     kgrid_sc(:,1) = kgrid_uc(:,1)/nr1
     kgrid_sc(:,2) = kgrid_uc(:,2)/nr2
     kgrid_sc(:,3) = kgrid_uc(:,3)/nr3
     !
     if (any(kgrid_sc /= 0)) then
-      call modify_kgrid(kgrid_sc, disp, trim(v0dir)//"supercell-"//trim(prefix))
+      call modify_kgrid(kgrid_sc, kgrid_disp, trim(v0dir)//"supercell-"//trim(prefix))
     endif
     !
     ! Check mesh sizes
@@ -200,14 +200,19 @@ contains
     ! Displaces the irreducible atoms of the supercell along the irreducible
     ! directions and writes the fdf file for each displacement
     !
+    use siesta2ph_symmetry, only: set_displacements_direction
+    !
     implicit none
     !
     character(len=256) :: dispp_folder
     character(len=256) :: dispn_folder
     integer :: ia, id, iirred
+    real(kind=dp), dimension(3,3) :: disp
 
 
     write(stdout,*) "- Creating the ireducible displacement files..."
+    !
+    call set_displacements_direction(disp)
     !
     iirred = 0
     do ia=1,nat
@@ -228,13 +233,13 @@ contains
           write(dispp_folder,"(a5,i4.4,a1)") "disp-", iirred, "/"
         endif
         !
-        tau_sc(id,ia) = tau(id,ia) + dx/alat ! add the positive displacement to the atom
+        tau_sc(:,ia) = tau(:,ia) + disp(:,id)/alat ! add the positive displacement to the atom
         !
         call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispp_folder))
         call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         !
         if (any(kgrid_sc /= 0)) then
-          call modify_kgrid(kgrid_sc, disp, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
+          call modify_kgrid(kgrid_sc, kgrid_disp, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         endif
         !
         if (any(rmesh_sc > 0)) then
@@ -246,13 +251,13 @@ contains
           ! Negative displacement
           write(dispn_folder,"(a5,i4.4,a1)") "disp-", 2*iirred, "/"
           !
-          tau_sc(id,ia) = tau(id,ia) - dx/alat ! add the negative displacement to the atom
+          tau_sc(:,ia) = tau(:,ia) - disp(:,id)/alat ! add the negative displacement to the atom
           !
           call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispn_folder))
           call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           !
           if (any(kgrid_sc /= 0)) then
-            call modify_kgrid(kgrid_sc, disp, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
+            call modify_kgrid(kgrid_sc, kgrid_disp, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           endif
           !
           if (any(rmesh_sc > 0)) then

@@ -293,7 +293,7 @@ contains
     !
     ! Compute the force constants for the irreducible atoms using symmetries and the pseudo-inverse
     !
-    use siesta2ph_io, only: outdir, v0dir, phdir, lpm, dx
+    use siesta2ph_io, only: outdir, v0dir, phdir, lpm
     use siesta2ph_utils, only: eV2Hartree, Ang2Bohr
     use siesta2ph_system, only: nat, slabel, tau_cryst
     use siesta2ph_symmetry, only: irred_atm, nsite_sym, nsite_rot, irred_disp, site_atm, site_s_cart, site_sinv, &
@@ -301,6 +301,7 @@ contains
     !
     use siesta2ph_io, only: find_free_unit
     use siesta2ph_linalg, only: pseudoinverse, ainv
+    use siesta2ph_symmetry, only: set_displacements_direction
     !
     implicit none
     !
@@ -330,9 +331,7 @@ contains
 
     write(stdout,*) "- Computing force constants..."
     !
-    disp(:,1) = (/dx, 0.0_dp, 0.0_dp/)
-    disp(:,2) = (/0.0_dp, dx, 0.0_dp/)
-    disp(:,3) = (/0.0_dp, 0.0_dp, dx/)
+    call set_displacements_direction(disp)
     !
     allocate(fp(3,nat))
     allocate(fn(3,nat))

@@ -30,7 +30,7 @@ program siesta2ph
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, dx, disp_along_cart, verbose, stdout
+  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, verbose, stdout
   use siesta2ph_system, only: nat, at, alat, tau, ityp
   use siesta2ph_symmetry, only: irred_atm, irred_disp
   !
@@ -56,7 +56,7 @@ program siesta2ph
   !
   ! Monkhorst-Pack kgrid for the unit cell and supercell
   integer :: kgrid_uc(3,3), kgrid_sc(3,3)
-  real(kind=dp) :: disp(3)
+  real(kind=dp) :: kgrid_disp(3)
   !
   ! Real space mesh for the unit cell and supercell
   integer, dimension(3) :: rmesh_uc, rmesh_sc
@@ -180,13 +180,13 @@ contains
     call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(v0dir)//"supercell-"//trim(prefix))
     !
     ! Check kgrid
-    call check_kgrid(kgrid_uc, disp)
+    call check_kgrid(kgrid_uc, kgrid_disp)
     kgrid_sc(:,1) = kgrid_uc(:,1)/nr1
     kgrid_sc(:,2) = kgrid_uc(:,2)/nr2
     kgrid_sc(:,3) = kgrid_uc(:,3)/nr3
     !
     if (any(kgrid_sc /= 0)) then
-      call modify_kgrid(kgrid_sc, disp, trim(v0dir)//"supercell-"//trim(prefix))
+      call modify_kgrid(kgrid_sc, kgrid_disp, trim(v0dir)//"supercell-"//trim(prefix))
     endif
     !
     ! Check mesh sizes
@@ -205,38 +205,19 @@ contains
     ! Displaces the irreducible atoms of the supercell along the irreducible
     ! directions and writes the fdf file for each displacement
     !
+    use siesta2ph_symmetry, only: set_displacements_direction
+    !
     implicit none
     !
     character(len=256) :: dispp_folder
     character(len=256) :: dispn_folder
     integer :: ia, id, iirred
-    real(kind=dp), dimension(3,3) :: disp_cart, disp_cryst, disp
+    real(kind=dp), dimension(3,3) :: disp
 
 
     write(stdout,*) "- Creating the ireducible displacement files..."
     !
-    if (disp_along_cart) then
-      disp_cart(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! x direction
-      disp_cart(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! y direction
-      disp_cart(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! z direction
-      !
-      disp = disp_cart
-    else
-      disp_cryst(:,1) = (/ 1.0_dp, 0.0_dp, 0.0_dp /) ! a1 direction
-      disp_cryst(:,2) = (/ 0.0_dp, 1.0_dp, 0.0_dp /) ! a2 direction
-      disp_cryst(:,3) = (/ 0.0_dp, 0.0_dp, 1.0_dp /) ! a3 direction
-      !
-      ! Transform to Cartesian
-      disp = matmul(at, disp_cryst)
-      !
-      ! Normalize
-      disp(:,1) = disp(:,1)/norm2(disp(:,1))
-      disp(:,2) = disp(:,2)/norm2(disp(:,2))
-      disp(:,3) = disp(:,3)/norm2(disp(:,3))
-    endif
-    !
-    disp = disp*dx
-    !
+    call set_displacements_direction(disp)
     !
     iirred = 0
     do ia=1,nat
@@ -263,7 +244,7 @@ contains
         call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         !
         if (any(kgrid_sc /= 0)) then
-          call modify_kgrid(kgrid_sc, disp, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
+          call modify_kgrid(kgrid_sc, kgrid_disp, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         endif
         !
         if (any(rmesh_sc > 0)) then
@@ -281,7 +262,7 @@ contains
           call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           !
           if (any(kgrid_sc /= 0)) then
-            call modify_kgrid(kgrid_sc, disp, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
+            call modify_kgrid(kgrid_sc, kgrid_disp, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           endif
           !
           if (any(rmesh_sc > 0)) then
