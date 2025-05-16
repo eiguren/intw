@@ -1,5 +1,18 @@
 
 set(SPGLIB_LIBRARIES @SPGLIB_LIBRARIES@)
+set(SPGLIB_INCLUDE_DIRS @SPGLIB_INCLUDE_DIRS@)
+
+add_library(Spglib IMPORTED INTERFACE)
+target_link_libraries(
+  Spglib
+  INTERFACE
+  "$<LINK_GROUP:RESCAN,${SPGLIB_LIBRARIES}>"
+  )
+target_include_directories(
+  Spglib
+  INTERFACE
+  ${SPGLIB_INCLUDE_DIRS}
+)
 
 set(sources_modules
   siesta2ph_io.f90
@@ -7,7 +20,6 @@ set(sources_modules
   siesta2ph_utils.f90
   siesta2ph_linalg.F90
   siesta2ph_system.f90
-  spglib_f08.f90
 )
 
 add_library(siesta2ph_modules STATIC ${sources_modules})
@@ -16,7 +28,7 @@ target_link_libraries(
   siesta2ph_modules
   PUBLIC
   SIESTA_libsiesta
-  ${SPGLIB_LIBRARIES}
+  Spglib
   )
 
 target_compile_options(

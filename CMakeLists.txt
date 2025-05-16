@@ -17,12 +17,12 @@ if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
   message(FATAL_ERROR "Fortran compiler does not support F90")
 endif(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-  if(DEFINED ENV{CPATH})
-    string(REPLACE ":" ";" CPATH $ENV{CPATH})
-  endif()
-  include_directories(${CPATH})
-endif()
+# if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+#   if(DEFINED ENV{CPATH})
+#     string(REPLACE ":" ";" CPATH $ENV{CPATH})
+#   endif()
+#   include_directories(${CPATH})
+# endif()
 
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
@@ -95,8 +95,8 @@ if (USE_SIESTA)
     message(FATAL_ERROR "SIESTA_HOME variable not set.")
   endif()
   #
-  # Find required Spglib library
-  find_package(Spglib REQUIRED)
+  # Add Spglib library
+  include(FetchSpglib)
   #
   # Setup SIESTA variables
   include(SetSiesta)

@@ -57,10 +57,10 @@ endif()
 
 
 function(_add_spglib_target)
-  if(Spglib_FOUND AND NOT TARGET Spglib::Spglib)
-    add_library(Spglib::Spglib INTERFACE IMPORTED)
+  if(Spglib_FOUND AND NOT TARGET Spglib::symspg)
+    add_library(Spglib::symspg INTERFACE IMPORTED)
     if(SPGLIB_LIBRARIES)
-      set_target_properties(Spglib::Spglib PROPERTIES
+      set_target_properties(Spglib::symspg PROPERTIES
         INTERFACE_LINK_LIBRARIES "${SPGLIB_LIBRARIES}"
       )
     endif()
