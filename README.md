@@ -91,19 +91,17 @@ When intw is used in conjunction with SIESTA, Spglib is used to find crystal sym
 - `siesta2ph`: Symmetries are used to reduce the required number of atomic displacements to completely determine the interatomic force constants and the induced potentials.
 - `siesta2intw`: Symmetries are used to reduce the Brillouin zone sampling to the irreducible q-points.
 
-CMake will attempt to find Spglib by searching for `libsymspg(.so|.a)` in the paths specified in the `LD_LIBRARY_PATH` environmental variable second. If the automatic search fails, `SPGLIB_LIBRARY` variable can be used to set the library:
+CMake will attempt to download and build Spglib automatically inside the build directory of INTW. A working installation of Git is required for this process to work, since the library will be downloaded using Git. By default the original Spglib repository will be used, however, the user can override this by specifying an alternative repository via the `SPGLIB_GIT_REPOSITORY` variable (this is useful in case the library repository changes location):
 
 ```bash
-cmake -DSPGLIB_LIBRARY=/path/to/libspglib(.so|a) ..
+cmake -DSPGLIB_GIT_REPOSITORY="https://some.repository.url" ..
 ```
 
-Alternatively, if it is supported by the installed Spglib version, `pkg-config` can be used to find the library:
+Similarly, while a tested version of the library is downloaded by default, the user can specify a different version by setting the `SPGLIB_GIT_TAG` variable:
 
 ```bash
-cmake -DSPGLIB_PREFER_PKGCONFIG=ON ..
+cmake -DSPGLIB_GIT_TAG="v2.6.0" ..
 ```
-
-Remember adjusting the `PKG_CONFIG_PATH` environmental variable if you installed Spglib in a non-standard location.
 
 
 ### triangle and tetgen (optional)
