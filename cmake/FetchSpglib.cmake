@@ -68,12 +68,22 @@ FetchContent_Declare(
   OVERRIDE_FIND_PACKAGE
   )
 
-  set(SPGLIB_USE_OMP OFF)
-  set(SPGLIB_WITH_TESTS OFF)
-  set(SPGLIB_WITH_Fortran ON)
-  set(SPGLIB_SHARED_LIBS OFF)
+set(SPGLIB_USE_OMP OFF)
+set(SPGLIB_WITH_TESTS OFF)
+set(SPGLIB_WITH_Fortran ON)
+set(SPGLIB_SHARED_LIBS OFF)
 
-  FetchContent_MakeAvailable(Spglib)
+FetchContent_MakeAvailable(Spglib)
 
-set(SPGLIB_LIBRARIES "${Spglib_BINARY_DIR}/libsymspg.a" "${Spglib_BINARY_DIR}/fortran/libspglib_f08.a")
+# Set SPGLIB_LIBRARIES and SPGLIB_INCLUDE_DIRS
+get_target_property(SPGLIB_SYMSPG_BINARY_DIR Spglib_symspg BINARY_DIR)
+get_target_property(SPGLIB_SYMSPG_OUTPUT_NAME Spglib_symspg OUTPUT_NAME)
+
+get_target_property(SPGLIB_FORTRAN_BINARY_DIR Spglib_fortran BINARY_DIR)
+get_target_property(SPGLIB_FORTRAN_OUTPUT_NAME Spglib_fortran OUTPUT_NAME)
+
+set(SPGLIB_LIBRARIES "${SPGLIB_SYMSPG_BINARY_DIR}/lib${SPGLIB_SYMSPG_OUTPUT_NAME}.a"
+                     "${SPGLIB_FORTRAN_BINARY_DIR}/lib${SPGLIB_FORTRAN_OUTPUT_NAME}.a"
+                     )
+
 get_target_property(SPGLIB_INCLUDE_DIRS Spglib_fortran Fortran_MODULE_DIRECTORY)
