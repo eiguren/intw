@@ -406,6 +406,7 @@ contains
     implicit none
     !
     real(kind=dp), dimension(3,3), intent(out) :: disp_cart
+    logical, save :: first_call = .true.
 
 
     if (disp_along_cart) then
@@ -424,15 +425,20 @@ contains
     !
     disp_cart = disp_cart*dx
     !
-    if (verbose) then
+    if (verbose .and. first_call) then
+      !
       if (disp_along_cart) then
         write(stdout,"(a)") "Displacements along Cartesian directions will be used:"
       else
         write(stdout,"(a)") "Displacements along Crystal directions will be used:"
       endif
-      write(stdout,"(3f)") disp_cart(:,1)
-      write(stdout,"(3f)") disp_cart(:,2)
-      write(stdout,"(3f)") disp_cart(:,3)
+      !
+      write(stdout,"(a,3f12.8)") " - id= 1:", disp_cart(:,1)
+      write(stdout,"(a,3f12.8)") " - id= 2:", disp_cart(:,2)
+      write(stdout,"(a,3f12.8)") " - id= 3:", disp_cart(:,3)
+      !
+      first_call = .false.
+      !
     endif
 
   end subroutine set_displacements_direction
