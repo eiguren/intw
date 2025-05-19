@@ -625,7 +625,7 @@ end function intgr_spline_gaussq
       !
     end do
     !
-    write(*,*) 'NO free units available!?!'
+    stop 'NO free units available!?!'
     !
     return
     !
