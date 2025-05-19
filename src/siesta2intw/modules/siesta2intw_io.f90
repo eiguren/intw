@@ -25,7 +25,7 @@ module siesta2intw_io
   public :: stdout, siesta_output_file, intwdir
   public :: outdir, prefix, phdir, dvscfdir, &
             nk1, nk2, nk3, cutoff, nbnd_initial, nbnd_final, &
-            phonons, nqirr, dynxml, use_sym, &
+            phonons, nqirr, use_sym, &
             kmesh, nkpoints, kpoints
 
   public :: read_input, find_free_unit
@@ -44,7 +44,6 @@ module siesta2intw_io
   integer :: nbnd_initial, nbnd_final
   logical:: phonons
   integer :: nqirr
-  logical :: dynxml ! TODO: Remove it (it is not needed)
   logical :: use_sym
   !
   logical :: kmesh ! .true. if nk1, nk2, nk3 are specified
@@ -53,7 +52,7 @@ module siesta2intw_io
 
   namelist / inputpp / outdir, prefix, phdir, dvscfdir, &
                        nk1, nk2, nk3, cutoff, nbnd_initial, nbnd_final, &
-                       phonons, nqirr, dynxml, use_sym
+                       phonons, nqirr, use_sym
 
   ! Input variables not in pw2intw: nk1, nk2, nk3, symfile, nsym, cutoff, nbnd_initial, nbnd_final
 
@@ -88,7 +87,6 @@ contains
     nbnd_final = -1
     phonons = .false.
     nqirr = 1
-    dynxml = .false.
     use_sym = .true.
     !
     nkpoints = 0
