@@ -274,7 +274,7 @@ contains
     use atm_types, only: nspecies, species
     use writewave, only: nwk
     use m_ntm, only: ntm
-    use siesta2intw_io, only: stdout, intwdir, outdir, prefix, cutoff
+    use siesta2intw_io, only: stdout, intwdir, cutoff
     use siesta2intw_fft, only: npwx, gamma_only
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
@@ -288,7 +288,7 @@ contains
 
     ! open file
     io_unit = find_free_unit()
-    datafile = trim(outdir)//trim(prefix)//".save.intw/"//"crystal.dat"
+    datafile = trim(intwdir)//"crystal.dat"
     open(unit=io_unit, file=trim(datafile), status="unknown", action="write", form="formatted")
 
     ! Lattice constant
@@ -862,7 +862,7 @@ contains
     use atmparams, only: lmaxd
     use m_spin, only: spin
     use atm_types, only: nspecies, species
-    use siesta2intw_io, only: stdout, outdir, prefix
+    use siesta2intw_io, only: stdout, intwdir
     use siesta2intw_utils, only: cmplx_0, cmplx_i
     use siesta2intw_fft, only: npwx, list_iG, ngk, gvec_cart
 #ifdef DEBUG
@@ -905,7 +905,7 @@ contains
 
     !
     ! Write k points
-    datafile=trim(trim(outdir)//trim(prefix)//".save.intw/"//"kpoints.dat")
+    datafile=trim(intwdir)//"kpoints.dat"
     io_unit=find_free_unit()
     open(unit=io_unit,file=datafile,status="unknown", action="write",form="formatted")
     do ik=1,nwk
@@ -1062,7 +1062,7 @@ contains
     !       if (ispin==1) write(wfc_file,"(a5,i5.5,a4)") "wfc1_",ik,".dat"
     !       if (ispin==2) write(wfc_file,"(a5,i5.5,a4)") "wfc2_",ik,".dat"
     !     endif
-    !     datafile=trim(trim(outdir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+    !     datafile=trim(trim(intwdir)//trim(wfc_file))
     !     io_unit=find_free_unit()
     !     open(unit=io_unit,file=datafile,status="unknown", action="write",form="unformatted")
     !     write(unit=io_unit) ngk(ik)
@@ -1126,7 +1126,7 @@ contains
       write(stdout, "(a5,i0,a8,i0)") "ik = ", ik, ", ngk = ", ngk(ik)
       !
       write(wfc_file, "(a3,i5.5,a4)") "wfc", ik, ".dat"
-      datafile = trim(outdir)//trim(prefix)//".save.intw/"//trim(wfc_file)
+      datafile = trim(intwdir)//trim(wfc_file)
       io_unit = find_free_unit()
       open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted")
 

@@ -122,7 +122,7 @@ contains
 
     ! variables
     use atm_types, only: nspecies, species
-    use siesta2intw_io, only: stdout, outdir, prefix
+    use siesta2intw_io, only: stdout, intwdir
 
     implicit none
 
@@ -155,7 +155,7 @@ contains
       else
         write(stdout,*) "ERROR: write_PP_files: The num. of species is bigger than 19"
       end if
-      pp_filename = trim(outdir)//trim(prefix)//".save.intw/"//trim(tag)//"-KBPP.txt"
+      pp_filename = trim(intwdir)//trim(tag)//"-KBPP.txt"
       !
       call write_pp_intw(intwPPs(nt), pp_filename)
 

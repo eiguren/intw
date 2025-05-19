@@ -257,7 +257,7 @@ contains
 
     ! variables
     use writewave, only: nwk
-    use siesta2intw_io, only: stdout, outdir, prefix
+    use siesta2intw_io, only: stdout, intwdir
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
 
@@ -272,7 +272,7 @@ contains
 
     ! write G vectors
     io_unit = find_free_unit()
-    datafile = trim(outdir)//trim(prefix)//".save.intw/gvectors.dat"
+    datafile = trim(intwdir)//"gvectors.dat"
     open(unit=io_unit,file=datafile, status="unknown", action="write", form="unformatted")
     !
     write(unit=io_unit) ngm
@@ -283,7 +283,7 @@ contains
 
     ! write list_iG
     io_unit = find_free_unit()
-    datafile = trim(outdir)//trim(prefix)//".save.intw/iGlist.dat"
+    datafile = trim(intwdir)//"iGlist.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted")
     !
     write(unit=io_unit) npwx
