@@ -68,7 +68,7 @@ contains
     use alloc, only: re_alloc
     use fdf, only: fdf_get, fdf_block, block_fdf
     use writewave, only: setup_wfs_list
-    use siesta2intw_io, only: read_input, find_free_unit
+    use siesta2intw_io, only: find_free_unit
     use siesta2intw_symmetry, only: compute_symmetry, print_symmetry_data
     use siesta2intw_fft, only: compute_fft_info
     !
@@ -80,15 +80,10 @@ contains
     integer :: ik
 
     if (ionode) then
-      stdout = find_free_unit()
-      open(stdout, file="/dev/stdout", status="old")
       write(stdout, *) ""
       write(stdout, *) "***************************** BEGIN : siesta2intw *****************************"
       write(stdout, *) ""
     endif
-
-    ! Read s2intw.in input file
-    call read_input()
 
     ! Get unit cell data
     alat = fdf_get( 'LatticeConstant', 0.0_dp, 'Bohr' )

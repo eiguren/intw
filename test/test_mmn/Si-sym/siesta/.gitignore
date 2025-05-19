@@ -6,7 +6,7 @@
 !compare_wannier.py
 !intw.in
 !Makefile.in
-!s2intw.in
+!siesta2intw.in
 !si.fdf
 !Si.psf
 !si.win

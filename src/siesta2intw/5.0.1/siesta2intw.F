@@ -28,7 +28,8 @@
 
       ! INTW
       USE siesta2intw_write, only: setup_write_intw, write_intw_file
-      use siesta2intw_io, only: siesta_output_file
+      use siesta2intw_io, only: read_siesta2intw_input, find_free_unit
+      use siesta2intw_io, only: siesta_output_file, stdout
 
       use m_siesta_init
       use m_siesta_analysis
@@ -70,6 +71,17 @@
       ! NOTE: for the intel compiler the -assume noold_unit_star should be
       !       added to FFLAGS in order to print the print*, output to the
       !       desired file
+      !
+      ! Open /dev/stdout file in stdout unit to print all siesta2intw output
+      if (ionode) then
+        stdout = find_free_unit()
+        open(stdout, file="/dev/stdout", status="old")
+      endif
+      !
+      ! Read input file and open fdf_file as stdin
+      call read_siesta2intw_input()
+      !
+      write(stdout, *) "- Running SIESTA calculation..."
 
 
 ! Notes for PEXSI operation

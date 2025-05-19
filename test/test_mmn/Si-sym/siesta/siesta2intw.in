@@ -1,6 +1,7 @@
 &inputpp
   outdir="./"
   prefix="si"
+  fdf_file="si.fdf"
   nk1=8, nk2=8, nk3=8
   cutoff=80.0
   nbnd_final=4

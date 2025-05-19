@@ -1,6 +1,7 @@
 &inputpp
   outdir="./"
   prefix="cu"
+  fdf_file="copper.fdf"
   nk1=4, nk2=4, nk3=4
   nbnd_final=10
   cutoff=80.0

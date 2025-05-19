@@ -1,8 +1,10 @@
 &inputpp
   outdir="./"
   prefix="si"
+  fdf_file="silicon.fdf"
   nk1=8, nk2=8, nk3=8
-  cutoff=80.0
+  cutoff=40.0
+  nbnd_final=1
   nbnd_final=4
-  use_sym = .false.
+  use_sym=.true.
 /

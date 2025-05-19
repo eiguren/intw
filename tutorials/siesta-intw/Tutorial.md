@@ -27,7 +27,7 @@ All files to run this example can be found in the `1-silicon` directory.
 
 ```
 $ ls 1-silicon/
-intw.in                 s2intw.in    si.win
+intw.in                 siesta2intw.in    si.win
 bands_siesta2nxy.bash   silicon.fdf
 bands_wannier2nxy.bash  Si.psf
 ```
@@ -155,13 +155,14 @@ gnuplot -p -e "p for [c=2:*] 'bands_siesta.dat' u 1:c w l lc 'black'"
 
 ### intw's Wannier90 interface
 
-In this second part, we will learn how to interpolate the band structure using intw and `wannier90.x`. In order to constructing the Wannier functions with `wannier90.x` the `si.amn`, `si.mmn` and `si.eig` files are needed. intw's `intw2W90.x` utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for intw by running the interface `siesta2intw.x`. So, let's check the `s2intw.in` input file:
+In this second part, we will learn how to interpolate the band structure using intw and `wannier90.x`. In order to constructing the Wannier functions with `wannier90.x` the `si.amn`, `si.mmn` and `si.eig` files are needed. intw's `intw2W90.x` utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for intw by running the interface `siesta2intw.x`. So, let's check the `siesta2intw.in` input file:
 
 ```
-$ cat s2intw.in
+$ cat siesta2intw.in
 &inputpp
   outdir="./"
   prefix="si"
+  fdf_file="silicon.fdf"
   nk1=8, nk2=8, nk3=8
   cutoff=40.0
   nbnd_initial=1
@@ -170,16 +171,14 @@ $ cat s2intw.in
 /
 ```
 
-:heavy_exclamation_mark:WARNING: `s2intw.in` can't have any other name.
-
-The `outdir` and `prefix` variables specify where will be placed the `si.save.intw` directory and the label used in the siesta calculation, respectively. `nk1`, `nk2` and `nk3` indicate the k-mesh where the Fourier transform of the wave functions will be computed, being `cutoff` the plane-wave cut-off for the wave functions. `nbnd_initial` and `nbnd_final` can be specified to reduce the amount of wave functions to be transformed. And finally, the `use_sym` variable is used to reduce the number of k-points by using the symmetry of the system.
+The `outdir` and `prefix` variables specify where will be placed the `si.save.intw` directory and the label used in the siesta calculation, respectively. The `fdf_file` variable specifies the fdf file used for the siesta calculation. `nk1`, `nk2` and `nk3` indicate the k-mesh where the Fourier transform of the wave functions will be computed, being `cutoff` the plane-wave cut-off for the wave functions. `nbnd_initial` and `nbnd_final` can be specified to reduce the amount of wave functions to be transformed. And finally, the `use_sym` variable is used to reduce the number of k-points by using the symmetry of the system.
 
 :heavy_exclamation_mark:NOTE: `nk1`, `nk2` and `nk3` don't need to match the k-points of the SIESTA calculation. `siesa2intw.x` will execute a normal self-consistent SIESTA calculation, and then, it will run a non self-consistent calculation to compute the wave functions for the k-points specified by `nk1`, `nk2` and `nk3`.
 
 Now we can run `siesta2intw.x` by typing:
 
 ```
-siesta2intw.x < silicon.fdf | tee siesta2intw.out
+siesta2intw.x < siesta2intw.in | tee siesta2intw.out
 ```
 
 This creates the `si.save.intw` directory with all the information about the system in a format readable by intw:
@@ -429,7 +428,7 @@ Folder `3-copper` has all the files needed to run the example:
 
 ```
 $ ls
-copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
+copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
 ```
 
 1. The first step for a calculation of this type would be computing the electronic structure of the system to be studied:
@@ -467,13 +466,14 @@ copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
 
    After this steps, we already have computed all the information about the electronic and phonon structures that we will need to calculate the electron-phonon matrix elements.
 
-2. Then, the second step is to run `siesta2intw.x` to store all the data in a format that intw can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `s2intw.in`:
+2. Then, the second step is to run `siesta2intw.x` to store all the data in a format that intw can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `siesta2intw.in`:
 
    ```
-   $ cat s2intw.in
+   $ cat siesta2intw.in
    &inputpp
      outdir="./"
      prefix="cu"
+     fdf_file="copper.fdf"
      nk1=4, nk2=4, nk3=4
      nbnd_final=10
      cutoff=80.0
@@ -488,7 +488,7 @@ copper.fdf  Cu.psf  intw.in  s2intw.in  siesta2ph.in
    So, let's run `siesta2intw.x` by typing:
 
    ```
-   siesta2intw.x < copper.fdf | tee siesta2intw.out
+   siesta2intw.x < siesta2intw.in | tee siesta2intw.out
    ```
 
    This will create the same files that we have seen in the first examples inside `cu.save.intw`, plus `cu.dyn_q*` files for the dynamical matrices, and `cu.dvscf_q*` and `irrq_patterns.dat` files for the induced potentials and the displacement patterns related to them, respectively. Additionally, `qlist.txt` file will also be created, which is needed by intw and contains a list of the irreducible q-points in Cartesian coordinates.
