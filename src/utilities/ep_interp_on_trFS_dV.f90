@@ -716,17 +716,20 @@ contains
 
   subroutine QE_nscf()
 
-    use intw_input_parameters, only: file_scf, command_pw2intw, command_pwx
+    use intw_input_parameters, only: command_pw, command_pw2intw, &
+                                     file_pw
 
     implicit none
 
     logical :: have_nscf , have_wfcN, have_wfc1
     logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
     character(5) :: ik_loc
-    character(70) :: linea, lleft
-    character(100) :: file_nscf, file_nscf_out, file_pw2intw, dir_scf, dir_nscf
+    character(70) :: line, lleft
+    character(100) :: file_nscf, file_nscf_out
+    character(100) :: file_pw2intw_in, file_pw2intw_out
+    character(100) :: dir_scf, dir_nscf
     character(200) :: comando, datafile
-    integer :: unit_pw2intw, unit_scf, unit_nscf
+    integer :: unit_pw2intw, unit_pw, unit_nscf
     integer :: ikpt
 
     !================================================================================
@@ -747,28 +750,28 @@ contains
     if ( .not. have_nscf ) then
       write(*,'(A)') '|   Calculating nscf wfcs with QE...                |'
 
-      unit_scf = find_free_unit()
-      open(unit_scf, file=trim(file_scf), status='old')
+      unit_pw = find_free_unit()
+      open(unit_pw, file=trim(file_pw), status='old')
 
       unit_nscf = find_free_unit()
       open(unit_nscf, file=trim(file_nscf), status='unknown')
 
       do
-        read(unit_scf,'(a)',end=100) linea
-        lleft = trim(adjustl(linea))
+        read(unit_pw,'(a)',end=100) line
+        lleft = trim(adjustl(line))
         if ( lleft(1:11) == 'calculation' ) then
           write(unit_nscf,*) " calculation = 'nscf'"
         else if ( lleft(1:6) == 'prefix' ) then
           !write(unit_nscf,*) " prefix = 'cu-nscf' "
-          write(unit_nscf,*) " prefix = '", trim(prefix), "-nscf'"
+          write(unit_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
         else if ( lleft(1:8) == 'K_POINTS' ) then
           exit
         else
-          write(unit_nscf,*) linea
+          write(unit_nscf,*) line
         end if
       end do
 
-      close(unit_scf)
+      close(unit_pw)
 
       write(unit_nscf,*) " K_POINTS {tpiba} "
       write(unit_nscf,*) nkpt_tr_tot
@@ -784,14 +787,15 @@ contains
       !================================================================================
 
       unit_pw2intw = find_free_unit()
-      file_pw2intw = trim(mesh_dir)//'nscf-pw2intw.in'
-      open(unit_pw2intw, file=trim(file_pw2intw), status='unknown')
+      file_pw2intw_in = trim(mesh_dir)//'nscf-pw2intw.in'
+      file_pw2intw_out = trim(mesh_dir)//'nscf-pw2intw.out'
+      open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown')
 
       write(unit_pw2intw, *) trim(prefix)
       write(unit_pw2intw, *) "&inputpp"
       write(unit_pw2intw, *) "  mesh_dir = './'"
       write(unit_pw2intw, *) "  ph_dir = './'"
-      write(unit_pw2intw, *) "  prefix = '",trim(prefix),"-nscf'"
+      write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
       write(unit_pw2intw, *) "/"
 
       close(unit_pw2intw)
@@ -859,11 +863,11 @@ contains
         call execute_command_line(comando)
 
         ! invoke QE pw.x to do nscf.
-        ! command_pwx may contain running options (e.g. mpirun)
-        if ( command_pwx == "unassigned" ) then
-          stop "ERROR: Unassigned command_pwx variable."
+        ! command_pw may contain running options (e.g. mpirun)
+        if ( command_pw == "unassigned" ) then
+          stop "ERROR: Unassigned command_pw variable."
         else
-          comando = trim(command_pwx)//" < "//trim(file_nscf)//" > "//trim(file_nscf_out)
+          comando = trim(command_pw)//" < "//trim(file_nscf)//" > "//trim(file_nscf_out)
         end if
         write(*,*) " Running QE with command:", comando
         call execute_command_line(comando)
@@ -873,7 +877,7 @@ contains
         if ( command_pw2intw == "unassigned" ) then
           stop "ERROR: Unassigned command_pw2intw variable."
         else
-          comando = trim(command_pw2intw)//" < "//trim(file_pw2intw)
+          comando = trim(command_pw2intw)//" < "//trim(file_pw2intw_in)//" > "//trim(file_pw2intw_out)
         end if
         write(*,*) " Running pw2intw with command:", comando
         call execute_command_line(comando)
@@ -895,14 +899,14 @@ contains
 
   subroutine SIESTA_nscf()
 
-    use intw_input_parameters, only: file_scf, command_siesta2intw
+    use intw_input_parameters, only: command_siesta2intw, file_siesta2intw
 
     implicit none
 
     logical :: have_nscf, write_nk
     logical :: exists_density_matrix
-    character(70) :: linea, lleft
-    character(100) :: file_s2intw, file_s2intw_nscf, file_nscf_out
+    character(70) :: line, lleft
+    character(100) :: file_s2intw_nscf, file_s2intw_nscf_out
     character(200) :: comando, datafile
     integer :: unit_s2intw, unit_s2intw_nscf
     integer :: ikpt
@@ -917,30 +921,27 @@ contains
     ! it is assumed that the wfcs have already been calculated and transformed to intw format)
     !================================================================================
 
-    ! file_s2intw = trim(mesh_dir)//'s2intw.in'
-    ! file_s2intw_nscf = trim(mesh_dir)//'s2intw.in_nscf'
-    file_s2intw = 's2intw.in'
-    file_s2intw_nscf = 's2intw.in_nscf'
+    file_s2intw_nscf = 'siesta2intw.nscf.in'
 
-    file_nscf_out = 'siesta2intw-nscf.out'
+    file_s2intw_nscf_out = 'siesta2intw.nscf.out'
 
-    inquire(file=file_nscf_out, exist=have_nscf)
+    inquire(file=file_s2intw_nscf_out, exist=have_nscf)
 
     if ( .not. have_nscf ) then
       write(*,'(A)') '|   Calculating nscf wfcs with SIESTA...            |'
 
       unit_s2intw = find_free_unit()
-      open(unit_s2intw, file=trim(file_s2intw), status='old')
+      open(unit_s2intw, file=trim(file_siesta2intw), status='old')
 
       unit_s2intw_nscf = find_free_unit()
       open(unit_s2intw_nscf, file=trim(file_s2intw_nscf), status='unknown')
 
       write_nk = .true.
       do
-        read(unit_s2intw,'(a)',end=100) linea
-        lleft = trim(adjustl(linea))
+        read(unit_s2intw,'(a)',end=100) line
+        lleft = trim(adjustl(line))
         if ( lleft(1:6) == 'prefix' ) then
-          write(unit_s2intw_nscf,*) " prefix = '", trim(prefix), "-nscf'"
+          write(unit_s2intw_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
         else if ( lleft(1:7) == 'phonons' ) then
           write(unit_s2intw_nscf,*) " phonons = .false."
         else if ( lleft(1:3) == 'nk1' .or. lleft(1:3) == 'nk2' .or. lleft(1:3) == 'nk3' ) then
@@ -949,7 +950,7 @@ contains
         else if ( lleft(1:1) == '/' ) then
           exit
         else
-          write(unit_s2intw_nscf,*) linea
+          write(unit_s2intw_nscf,*) trim(line)
         end if
       end do
 
@@ -966,16 +967,11 @@ contains
 
       close(unit_s2intw_nscf)
 
-      ! Create a backup of the original s2intw.in file
-      call execute_command_line("cp "//trim(file_s2intw)//" s2intw.in_backup")
-
       !================================================================================
       !   Run the nscf calculation and convert into intw format with siesta2intw.x
       !================================================================================
 
       write(*,*) ' performing  nscf calculation'
-
-      call execute_command_line("cp "//trim(file_s2intw_nscf)//" "//trim(file_s2intw))
 
       ! Check if density matrix file is present
       datafile = trim(mesh_dir)//trim(prefix)//".DM"
@@ -994,17 +990,14 @@ contains
       if ( command_siesta2intw == "unassigned" ) then
         stop "ERROR: Unassigned command_siesta2intw variable."
       else
-        comando = trim(command_siesta2intw)//" < "//trim(file_scf)//" > "//trim(file_nscf_out)
+        comando = trim(command_siesta2intw)//" < "//trim(file_s2intw_nscf)//" > "//trim(file_s2intw_nscf_out)
       end if
       write(*,*) " Running siesta2intw with command:", comando
       call execute_command_line(comando)
 
     else ! have_nscf = yes
-      write(*,*) ' File ', trim(file_nscf_out), ' already exists, so nscf calculation is skipped'
+      write(*,*) ' File ', trim(file_s2intw_nscf_out), ' already exists, so nscf calculation is skipped'
     end if ! have_nscf
-
-    ! Restore the original s2intw.in file
-    call execute_command_line("cp s2intw.in_backup "//trim(file_s2intw))
 
     return
 

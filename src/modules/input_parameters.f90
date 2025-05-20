@@ -44,8 +44,9 @@ module intw_input_parameters
   public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
   ! &elphon
   public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
-            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
-            command_pwx, command_pw2intw, command_siesta2intw
+            ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, nscf_code, &
+            command_pw, command_pw2intw, file_pw, &
+            command_siesta2intw, file_siesta2intw
   ! K_PATH
   public :: exist_kpath, nkpath, nkspecial, kspecial
   ! Q_PATH
@@ -203,17 +204,20 @@ module intw_input_parameters
   !   nscf_code = 'QE'
   !   nscf_code = 'SIESTA'
 
-  character(len=256) :: file_scf = 'unassigned'
-  ! The input file for executing the SCF calculation with the DFT code.
-
-  character(len=256) :: command_pwx = 'unassigned'
+  character(len=256) :: command_pw = 'unassigned'
   character(len=256) :: command_pw2intw = 'unassigned'
   ! pw.x and pw2intw.x executables, with optional running options
   ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
 
+  character(len=256) :: file_pw = 'unassigned'
+  ! The input file for pw.x.
+
   character(len=256) :: command_siesta2intw = 'unassigned'
   ! siesta2intw.x executable, with optional running options
   ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
+
+  character(len=256) :: file_siesta2intw = 'unassigned'
+  ! The input file for siesta2intw.x.
 
   !----------------------------------------------------------------------------!
   ! K_PATH card variables
@@ -263,8 +267,9 @@ module intw_input_parameters
 
   NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
                       ep_interp_method, ep_interp_bands, &
-                      nfs_sheets_initial, nfs_sheets_final, nscf_code, file_scf, &
-                      command_pwx, command_pw2intw, command_siesta2intw
+                      nfs_sheets_initial, nfs_sheets_final, nscf_code, &
+                      command_pw, command_pw2intw, file_pw, &
+                      command_siesta2intw, file_siesta2intw
 
   ! ----------------------------------------------------------------------
   !  END namelist
@@ -399,43 +404,32 @@ contains
         read_status = .true.
         write(*,*) 'Error: dV_interpolate method chosen, but nscf_code not specified!'
       else if ( trim(nscf_code) == 'QE' ) then
-        if ( trim(command_pwx) == 'unassigned' ) then
+        if ( trim(command_pw) == 'unassigned' ) then
           read_status = .true.
-          write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pwx not specified!'
+          write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw not specified!'
         endif
         if ( trim(command_pw2intw) == 'unassigned' ) then
           read_status = .true.
           write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw2intw not specified!'
+        endif
+        if ( trim(file_pw) == 'unassigned' ) then
+          read_status = .true.
+          write(*,*) 'Error: dV_interpolate method chosen with QE, but file_pw not specified!'
         endif
       else if ( trim(nscf_code) == 'SIESTA' ) then
         if ( trim(command_siesta2intw) == 'unassigned' ) then
           read_status = .true.
           write(*,*) 'Error: dV_interpolate method chosen with SIESTA, but command_siesta2intw not specified!'
         endif
+        if ( trim(file_siesta2intw) == 'unassigned' ) then
+          read_status = .true.
+          write(*,*) 'Error: dV_interpolate method chosen with SIESTA, but file_siesta2intw not specified!'
+        endif
       else
         read_status = .true.
         write(*,*) 'Error: dV_interpolate method chosen with unknown nscf_code!'
       endif
       !
-      if ( trim(file_scf) == 'unassigned' ) then
-        read_status = .true.
-        write(*,*) 'Error: dV_interpolate method chosen, but file_scf not specified!'
-      endif
-      !
-    end if
-
-    if (      trim(ep_interp_method) == 'dV_interpolate' &
-        .and. trim(nscf_code) == 'QE' &
-        .and. trim(command_pwx) == 'unassigned' ) then
-      read_status = .true.
-      write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pwx not specified!'
-    end if
-
-    if (      trim(ep_interp_method) == 'dV_interpolate' &
-        .and. trim(nscf_code) == 'QE' &
-        .and. trim(command_pw2intw) == 'unassigned' ) then
-      read_status = .true.
-      write(*,*) 'Error: dV_interpolate method chosen with QE, but command_pw2intw not specified!'
     end if
 
 
@@ -508,10 +502,11 @@ contains
       write(*,*) "             nfs_sheets_initial  = integer"
       write(*,*) "             nfs_sheets_final    = integer"
       write(*,*) "             nscf_code           = 'QE' or 'SIESTA'"
-      write(*,*) "             file_scf            = 'file'"
       write(*,*) "             command_pw          = 'string'"
       write(*,*) "             command_pw2intw     = 'string'"
+      write(*,*) "             file_pw             = 'file'"
       write(*,*) "             command_siesta2intw = 'string'"
+      write(*,*) "             file_siesta2intw    = 'file'"
       write(*,*) "/"
     end if
 
