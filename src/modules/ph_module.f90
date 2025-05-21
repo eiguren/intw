@@ -30,7 +30,7 @@ module intw_ph
   ! variables
   public :: nmodes, q_irr, u_irr, dvscf_cart, dvscf_irr, nqmesh, &
             q_irr_cryst, qmesh, QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, &
-            symlink_q, dvq_local, dvpsi
+            symlink_q
   !
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -55,14 +55,11 @@ module intw_ph
 
   integer, allocatable ::  QE_folder_nosym_q(:)
   integer, allocatable ::  QE_folder_sym_q(:)
-  integer, allocatable ::  nosym_G_q      (:,:)
-  integer, allocatable ::  sym_G_q      (:,:)
-  integer, allocatable ::  symlink_q      (:,:)
+  integer, allocatable ::  nosym_G_q(:,:)
+  integer, allocatable ::  sym_G_q(:,:)
+  integer, allocatable ::  symlink_q(:,:)
 
-  complex(dp), allocatable    :: dvq_local    (:,:,:,:)
-  complex(dp), allocatable    :: dvpsi (:,:,:,:,:)
 
-  !
 contains
 
   subroutine rot_gep(  s_index, imq, qpoint_irr, nbnd, nspin, nat, g_matin, g_matout  )

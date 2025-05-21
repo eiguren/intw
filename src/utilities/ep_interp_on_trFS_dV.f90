@@ -107,8 +107,7 @@ program ep_on_trFS_dV
 
         use intw_ph, only: nqmesh, qmesh, read_ph_information_xml, &
                            q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
-                           QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q, &
-                           dvq_local, dvpsi
+                           QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q
 
         use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
 
@@ -147,6 +146,8 @@ program ep_on_trFS_dV
         real(dp) , allocatable :: QE_eig(:), QE_eig_p(:)
         complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
         complex(dp), allocatable :: wfc(:,:,:), wfc_p(:,:,:), vfc(:,:,:)
+        complex(dp), allocatable :: dvq_local(:,:,:,:)
+        complex(dp), allocatable :: dvpsi(:,:,:,:,:)
 
         complex(dp), external :: zdotc
 

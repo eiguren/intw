@@ -55,7 +55,7 @@ program ep_melements
                              set_symmetry_relations, multable
   use intw_fft, only: generate_nl, &
                       allocate_fft
-  use intw_ph, only: nqmesh, qmesh, dvq_local, dvpsi, QE_folder_nosym_q, QE_folder_sym_q, &
+  use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
                      read_ph_information_xml, &
                      read_allq_dvr, &
@@ -80,32 +80,27 @@ program ep_melements
   real(dp)                 :: qpoint(3)
   integer                  :: iq, nq_irr
   logical                  :: full_mesh_q, IBZ_q
-
-  !phonon related variables
-  integer                  :: imode
-
-  !time related variables
-  real(dp)                 :: time1, time2
-
-  !ep interaction related variables
-  integer                  :: ep_unit
-  complex(dp), allocatable :: ep_mat_el(:,:,:,:,:,:)
+  character(len=4)         :: iq_loc
 
   !wave function realted variables
+  integer                  :: npw, npwq
   integer, allocatable     :: list_igk(:)
   integer, allocatable     :: list_igkq(:)
   complex(dp), allocatable :: wfc_k (:,:,:)
   complex(dp), allocatable :: wfc_kq (:,:,:)
 
-  !ep fitxa
-  integer                  :: record_lengh, ierr
+  !phonon related variables
+  complex(dp), allocatable :: dvq_local(:,:,:,:)
+
+  !ep related variables
+  complex(dp), allocatable :: dvpsi(:,:,:,:,:)
+  complex(dp), allocatable :: ep_mat_el(:,:,:,:,:,:)
+  integer                  :: ep_unit, record_lengh, ierr
 
   !local/aux variables
-  integer                  :: npw, npwq
-
-  integer                  :: ibnd, jbnd, ispin, jspin
+  real(dp)                 :: time1, time2
+  integer                  :: ibnd, jbnd, ispin, jspin, imode
   logical                  :: read_status
-  character(len=4)         :: iq_loc
 
   complex(dp), external :: zdotc
 
