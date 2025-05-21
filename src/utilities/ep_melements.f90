@@ -33,9 +33,7 @@ program ep_melements
                           set_num_bands
   use intw_pseudo, only: read_all_pseudo
   use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
-  use intw_pseudo_non_local, only: vkb, vkqb, &
-                                   init_KB_PP, &
-                                   init_KB_projectors, &
+  use intw_pseudo_non_local, only: init_KB_PP, &
                                    multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
                           find_free_unit, &
@@ -481,28 +479,26 @@ program ep_melements
       call get_psi_general_k_all_wfc(       kpoint,  npw,  list_iGk,  wfc_k)
       call get_psi_general_k_all_wfc(kpoint+qpoint, npwq, list_iGkq, wfc_kq)
       !
-      ! Hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k eta k+q puntuetarako hurrenez hurren)
-      vkb =cmplx_0
-      vkqb=cmplx_0
-      !
-      call init_KB_projectors( npw, list_iGk,         kpoint,  vkb)
-      call init_KB_projectors(npwq, list_iGkq, kpoint+qpoint, vkqb)
       !
       ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
       ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
+      !
+      if ( trim(ep_bands) .eq. 'intw') then
+        call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
+      else if ( trim(ep_bands) .eq. 'custom') then
+        call dvqpsi_local(num_bands_ep, list_iGk, list_iGkq, &
+                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
+      end if
       !
       ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
       !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
       !                                  (lokala) + (ez lokala)
       !
       if ( trim(ep_bands) .eq. 'intw') then
-        call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
-        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iGk, list_iGkq, wfc_k, dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, list_iGk, list_iGkq, num_bands_intw, wfc_k, dvpsi)
       else if ( trim(ep_bands) .eq. 'custom') then
-        call dvqpsi_local(num_bands_ep, list_iGk, list_iGkq, &
-                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
-        call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_ep, list_iGk, list_iGkq, &
-                          wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, list_iGk, list_iGkq, &
+                                  num_bands_ep,  wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
       end if
       !
       do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz

@@ -28,7 +28,7 @@ module intw_pseudo_non_local
   implicit none
 
   ! variables
-  public :: nkb, DKB, vkb, vkqb
+  public :: nkb, DKB
 
   ! subroutines
   public :: init_KB_PP, init_KB_projectors, &
@@ -58,8 +58,6 @@ module intw_pseudo_non_local
   integer,          allocatable :: nkbtona(:)   ! Link between index of beta(lm) function in the solid -> index of the atom
   complex(kind=dp), allocatable :: DKB(:,:,:,:) ! D_{mu,nu} matrix for beta(lm) functions in the solid
 
-  complex(kind=dp), allocatable, target :: vkb(:,:), vkqb(:,:) ! All beta functions in reciprocal space
-
 
 contains
 
@@ -77,7 +75,7 @@ contains
     !   - Remove parts related to ultrasoft pseudo potentials.
     !   - Calculate Dij matrix for the KB projectors of the solid.
     !
-    use intw_reading, only: nat, ntyp, ityp, nG_max
+    use intw_reading, only: nat, ntyp, ityp
     use intw_pseudo, only: upf
     use intw_useful_constants, only: cmplx_0
 
@@ -131,15 +129,6 @@ contains
     ! Calculate interpolation table
     !
     call init_interpolation_table()
-    !
-    !
-    !
-    if (allocated(vkb)) deallocate(vkb)
-    allocate(vkb(nG_max,nkb))
-    vkb = cmplx_0
-    if (allocated(vkqb)) deallocate(vkqb)
-    allocate(vkqb(nG_max,nkb))
-    vkqb = cmplx_0
 
   end subroutine init_KB_PP
 
@@ -492,7 +481,7 @@ contains
   end subroutine init_interpolation_table
 
 
-  subroutine init_KB_projectors(npw, igk, qpoint_cryst, kb_projectors)
+  subroutine init_KB_projectors(npw, igk, kpoint_cryst, kb_projectors)
     !----------------------------------------------------------------------
     !
     ! Calculates beta functions (Kleinman-Bylander projectors), with
@@ -515,73 +504,63 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: npw !number of PW's
-    integer, intent(in) :: igk(nG_max) !G list of q vector
-    real(kind=dp), intent(in) :: qpoint_cryst(3) !q vector
+    integer, intent(in) :: npw !number of PW's in k-point
+    integer, intent(in) :: igk(nG_max) !G list of k-point
+    real(kind=dp), intent(in) :: kpoint_cryst(3) !k-point vector
     complex(kind=dp), intent(out) :: kb_projectors(nG_max,nkb) !beta functions
 
     !local variables
 
     integer :: ig, l, lm, na, nt, nb, ih, jkb, iq
-    real(kind=dp) :: arg, qpoint_cart(3), gk(3,npw), vkb1(npw,nhm), xdata(nqx), ylm(npw, (lmaxkb+1)**2)
-    real(kind=dp), dimension(npw) :: qg(npw), vq(npw)
-    complex(kind=dp) :: phase, pref, sk(npw)
+    real(kind=dp) :: kpoint_cart(3), kg_cart(3,npw), vkb1(npw,nhm), xdata(nqx), ylm(npw, (lmaxkb+1)**2)
+    real(kind=dp), dimension(npw) :: kg(npw), vk(npw)
+    complex(kind=dp) :: pref, sk(npw)
 
 
     kb_projectors = cmplx_0
     !
-    qpoint_cart = matmul(bg, qpoint_cryst)
+    kpoint_cart = matmul(bg, kpoint_cryst)
     !
     if (lmaxkb.lt.0) return
     !
     do ig = 1, npw
       !
-      if (igk(ig)==0) exit
+      kg_cart(1,ig) = kpoint_cart(1) + gvec_cart(1, igk(ig))
+      kg_cart(2,ig) = kpoint_cart(2) + gvec_cart(2, igk(ig))
+      kg_cart(3,ig) = kpoint_cart(3) + gvec_cart(3, igk(ig))
       !
-      gk(1,ig) = qpoint_cart(1) + gvec_cart(1, igk(ig))
-      gk(2,ig) = qpoint_cart(2) + gvec_cart(2, igk(ig))
-      gk(3,ig) = qpoint_cart(3) + gvec_cart(3, igk(ig))
-      !
-      qg(ig) = gk(1,ig)**2 + gk(2,ig)**2 + gk(3,ig)**2
+      kg(ig) = kg_cart(1,ig)**2 + kg_cart(2,ig)**2 + kg_cart(3,ig)**2
       !
     end do !ig
     !
-    call real_ylmr2(lmaxkb, npw, gk, qg, ylm)
+    call real_ylmr2(lmaxkb, npw, kg_cart, kg, ylm)
     !
-    ! set now qg=|q+G| in atomic units
+    ! set now kg=|k+G| in atomic units
     !
-    do ig = 1, npw
-      !
-      if (igk(ig)==0) exit
-      !
-      qg(ig) = tpiba * sqrt(qg(ig))
-      !
-    end do !ig
+    kg(:) = tpiba * sqrt(kg(:))
     !
     do iq = 1, nqx
       xdata(iq) = (iq - 1) * dq
     end do !iq
     !
-    ! |beta_lm(q)> = (4pi/omega).Y_lm(q).f_l(q).(i^l).S(q)
+    ! |beta_lm(kg)> = (4pi/omega) * (-i^l) * Y_lm(kg/|kg|) * f_l(|kg|) * S(kg)
     !
     jkb = 0
-    vq = 0.d0
+    vk = 0.d0
     !
     do nt = 1, ntyp
       !
-      ! calculate beta in G-space using an interpolation table f_l(q)=\int _0 ^\infty dr r^2 f_l(r) j_l(q.r)
+      ! calculate beta in G-space using an interpolation table f_l(|kg|)=\int _0 ^\infty dr r^2 f_l(r) j_l(|kg|.r)
       !
       do nb = 1, upf(nt)%nbeta
         !
         do ig = 1, npw
           !
-          if (igk(ig)==0) exit
-          !
-          vq(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), qg(ig))
+          vk(ig) = splint(xdata, tab(:,nb,nt), tab_d2y(:,nb,nt), kg(ig))
           !
         end do !ig
         !
-        ! add spherical harmonic part  (Y_lm(q)*f_l(q))
+        ! add spherical harmonic part: Y_lm(kg/|kg|) * f_l(|kg|)
         !
         do ih = 1, nh(nt)
           !
@@ -590,13 +569,7 @@ contains
           l  = nhtol(ih,nt)
           lm = nhtolm(ih,nt)
           !
-          do ig = 1, npw
-            !
-            if (igk(ig)==0) exit
-            !
-            vkb1(ig,ih) = ylm(ig,lm) * vq(ig)
-            !
-          end do !ig
+          vkb1(:,ih) = ylm(:,lm) * vk(:)
           !
         end do !ih
         !
@@ -612,34 +585,22 @@ contains
         !
         if (ityp(na) /= nt) cycle
         !
-        ! qpoint_cart is cart. coordinates
-        !
-        arg = (  qpoint_cart(1) * tau(1,na) &
-                + qpoint_cart(2) * tau(2,na) &
-                + qpoint_cart(3) * tau(3,na) ) * tpi
-        !
-        phase = cmplx(cos(arg), - sin(arg) ,kind=dp)
-        !
         do ig = 1, npw
           !
-          if (igk(ig)==0) exit
-          !
-          sk (ig) = exp(-tpi*cmplx_i*(  gvec_cart(1,igk(ig))*tau(1,na) &
-                                      + gvec_cart(2,igk(ig))*tau(2,na) &
-                                      + gvec_cart(3,igk(ig))*tau(3,na) ) )
+          sk(ig) = exp(-tpi*cmplx_i*(  kg_cart(1,ig)*tau(1,na) &
+                                     + kg_cart(2,ig)*tau(2,na) &
+                                     + kg_cart(3,ig)*tau(3,na) ) )
           !
         end do !ig
         !
         do ih = 1, nh(nt)
           !
           jkb = jkb + 1
-          pref = phase * (-cmplx_i)**nhtol(ih,nt)
+          pref = (-cmplx_i)**nhtol(ih,nt)
           !
           do ig = 1, npw
             !
-            if (igk(ig)==0) exit
-            !
-            kb_projectors(ig, jkb) = vkb1(ig,ih) * sk(ig) * pref
+            kb_projectors(ig, jkb) = pref * vkb1(ig,ih) * sk(ig)
             !
           end do !ig
           !
@@ -652,7 +613,7 @@ contains
   end subroutine init_KB_projectors
 
 
-  subroutine multiply_psi_by_vKB(num_bands, psi, vnl_psi)
+  subroutine multiply_psi_by_vKB(k_cryst, list_iGk, num_bands, psi_k, vnl_psi)
     !INTW project: KB projection by wave functions.
     !
 
@@ -661,12 +622,25 @@ contains
 
     implicit none
 
+    real(kind=dp), intent(in)       :: k_cryst(3)
+    integer, intent(in)             :: list_iGk(nG_max)
     integer, intent(in)             :: num_bands
-    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands,nspin), vnl_psi(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(in)    :: psi_k(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(inout) :: vnl_psi(nG_max,num_bands,nspin)
 
+    complex(kind=dp)                :: vkb_k(nG_max,nkb)
     complex(kind=dp)                :: projec_d(nkb,nspin), DKB_projec_d(nkb,nspin)
-    integer                         :: iband, ikb, ispin, jspin, ig
+    integer                         :: iband, ikb, ispin, jspin
+    integer                         :: iG, nGk
 
+
+    ! Compute non local |beta> projectors of KB PP for k
+    nGk = 0
+    do iG=1,nG_max
+      if (list_iGk(iG)==0) exit
+      nGk = nGk + 1
+    enddo
+    call init_KB_projectors(nGk, list_iGk, k_cryst, vkb_k)
 
     do iband = 1, num_bands
       !
@@ -677,9 +651,9 @@ contains
         !
         do ispin = 1, nspin
           !
-          do ig = 1, nG_max
-            projec_d(ikb,ispin) = projec_d(ikb,ispin) + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
-          end do !ig
+          do iG = 1, nGk
+            projec_d(ikb,ispin) = projec_d(ikb,ispin) + conjg(vkb_k(iG,ikb)) * psi_k(iG,iband,ispin)
+          end do !iG
           !
         end do !ispin
         !
@@ -700,7 +674,7 @@ contains
         !
         do ispin = 1, nspin
           !
-          vnl_psi(:,iband,ispin) = DKB_projec_d(ikb,ispin) * vkb(:,ikb)
+          vnl_psi(:,iband,ispin) = DKB_projec_d(ikb,ispin) * vkb_k(:,ikb)
           !
         end do !ispin
         !
@@ -711,7 +685,7 @@ contains
   end subroutine multiply_psi_by_vKB
 
 
-  subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, num_bands, list_iGk, list_iGkq, psi, dvnl_psi)
+  subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, list_iGk, list_iGkq, num_bands, psi_k, dvnl_psi)
 
     use intw_useful_constants, only: cmplx_0, cmplx_i
     use intw_reading, only: nat, nspin, nG_max, tpiba, bg
@@ -720,18 +694,37 @@ contains
     implicit none
 
     real(kind=dp), intent(in)       :: k_cryst(3), q_cryst(3)
-    integer, intent(in)             :: num_bands, list_iGk(nG_max), list_iGkq(nG_max)
-    complex(kind=dp), intent(inout) :: psi(nG_max,num_bands,nspin), dvnl_psi(nG_max,num_bands,nspin,nspin,3*nat)
+    integer, intent(in)             :: list_iGk(nG_max), list_iGkq(nG_max)
+    integer, intent(in)             :: num_bands
+    complex(kind=dp), intent(in)    :: psi_k(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(inout) :: dvnl_psi(nG_max,num_bands,nspin,nspin,3*nat)
 
+    complex(kind=dp)                :: vkb_k(nG_max,nkb), vkb_kq(nG_max,nkb)
     complex(kind=dp)                :: projec_1(nkb,3,nspin), projec_2(nkb,3,nspin)
     complex(kind=dp)                :: DKB_projec_1(nkb,3,nspin,nspin), DKB_projec_2(nkb,3,nspin,nspin)
 
     real(kind=dp)                   :: k_cart(3), q_cart(3)
-    integer                         :: iband, ipol, ikb, ig, iGk, iGkq, ispin, jspin, na, imode
+    integer                         :: iG, iGk, iGkq, nGk, nGkq
+    integer                         :: iband, ipol, ikb, ispin, jspin, na, imode
 
 
     k_cart = matmul(bg, k_cryst)
     q_cart = matmul(bg, q_cryst)
+
+    ! Compute non local |beta> projectors of KB PP for k and k+q
+    nGk = 0
+    do iG=1,nG_max
+      if (list_iGk(iG)==0) exit
+      nGk = nGk + 1
+    enddo
+    call init_KB_projectors(nGk, list_iGk, k_cryst, vkb_k)
+    !
+    nGkq = 0
+    do iG=1,nG_max
+      if (list_iGkq(iG)==0) exit
+      nGkq = nGkq + 1
+    enddo
+    call init_KB_projectors(nGkq, list_iGkq, k_cryst+q_cryst, vkb_kq)
 
     do iband = 1, num_bands
 
@@ -750,19 +743,18 @@ contains
           !
           do ispin = 1, nspin
             !
-            do ig = 1, nG_max
+            do iG = 1, nGk
               !
               iGk = list_iGk(iG)
-              if (iGk==0) exit
               !
               projec_1(ikb,ipol,ispin) = projec_1(ikb,ipol,ispin) &
-                  + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin)
+                  + conjg(vkb_k(iG,ikb)) * psi_k(iG,iband,ispin)
               !
               projec_2(ikb,ipol,ispin) = projec_2(ikb,ipol,ispin) &
-                  + conjg(vkb(iG,ikb)) * psi(iG,iband,ispin) * &
+                  + conjg(vkb_k(iG,ikb)) * psi_k(iG,iband,ispin) * &
                     tpiba * cmplx_i * ( k_cart(ipol) + gvec_cart(ipol,iGk) )
               !
-            end do !ig
+            end do !iG
             !
           end do !ispin
           !
@@ -796,25 +788,24 @@ contains
           !
           imode = (na-1)*3 + ipol
           !
-          do ig = 1, nG_max
+          do iG = 1, nGkq
             !
             iGkq = list_iGkq(iG)
-            if (iGkq==0) exit
             !
             do ispin = 1, nspin
               do jspin = 1, nspin
                 !
                 dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
-                    + DKB_projec_2(ikb,ipol,ispin,jspin) * vkqb(iG,ikb)
+                    + DKB_projec_2(ikb,ipol,ispin,jspin) * vkb_kq(iG,ikb)
                 !
                 dvnl_psi(iG,iband,ispin,jspin,imode) = dvnl_psi(iG,iband,ispin,jspin,imode) &
-                    - DKB_projec_1(ikb,ipol,ispin,jspin) * vkqb(iG,ikb) * &
+                    - DKB_projec_1(ikb,ipol,ispin,jspin) * vkb_kq(iG,ikb) * &
                       tpiba * cmplx_i * ( k_cart(ipol) + q_cart(ipol) + gvec_cart(ipol,iGkq) )
                 !
               end do !jspin
             end do !ispin
             !
-          end do !ig
+          end do !iG
           !
         end do !ikb
         !

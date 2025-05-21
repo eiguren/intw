@@ -87,7 +87,7 @@ program ep_on_trFS_dV
         use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
                                 nG_max, ngm, get_gvec, &
                                 nspin, &
-                                alat, at, nr1, nr2, nr3, &
+                                at, nr1, nr2, nr3, &
                                 nat, tau, nsym, s, &
                                 get_K_folder_data
 
@@ -95,9 +95,7 @@ program ep_on_trFS_dV
 
         use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
 
-        use intw_pseudo_non_local, only: vkb, vkqb, &
-                                         init_KB_PP, &
-                                         init_KB_projectors, &
+        use intw_pseudo_non_local, only: init_KB_PP, &
                                          multiply_psi_by_dvKB
 
         use intw_symmetries, only: set_symmetry_relations, multable, rot_atoms, &
@@ -139,7 +137,7 @@ program ep_on_trFS_dV
         ! for part III
         logical                  :: have_ep
         character(256) :: altprefix, file_ep
-        integer :: ib, iat, ikp, iG, unit_ep
+        integer :: ib, iat, ikp, unit_ep
         integer :: nG, nG_p
         integer , allocatable :: list_iG(:), list_iG_p(:)
         real(dp) :: kpoint(3), kpoint_p(3)
@@ -151,14 +149,9 @@ program ep_on_trFS_dV
 
         complex(dp), external :: zdotc
 
-        ! time analysis
-        real(dp) :: time1, time2
-
 
         20 format(A)
         30 format(A,F8.2,6X,A)
-
-
 
 !--------------------------------------------------------------------------------
 !================================================================================
@@ -543,8 +536,11 @@ write(*,*)' !  ---------------- Part I completed ----------------------'
   ik = 0
   ik1 = 0
   do ish = 1, nfs_sheets_tot
-      ib = nfs_sheet(ish) !band index for k
-  do iks = 1, nkpt_tr_ibz(ish)
+
+    ib = nfs_sheet(ish) !band index for k
+
+    do iks = 1, nkpt_tr_ibz(ish)
+
       ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
       ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
       ik = ik + 1
@@ -555,141 +551,79 @@ write(*,*)' !  ---------------- Part I completed ----------------------'
 
       ! Read wavefunction k
       call get_K_folder_data(ik1, list_iG, wfc, QE_eig, nG, altprefix)
-      ! re-do nG (the one from the routine is read from the file)
-      nG=0
-      do iG=1,nG_max
-          if (list_iG(iG)==0) exit
-          nG=nG+1
-      enddo
 
-      ! non-local contribution:
-      !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k puntuetarako,
-      ! k+q behean egingo da).
-      vkb = cmplx_0
-      call init_KB_projectors(nG, list_iG, kpoint, vkb )
+      do ishp = 1, nfs_sheets_tot
 
-  ikp = 0
-  do ishp = 1, nfs_sheets_tot
-      ibp = nfs_sheet(ishp) !band index for k'
-  do iksp = 1, nkpt_tr(ishp)
-      ikp = ikp + 1   !k'-index over nkpt_tr_tot
+        ibp = nfs_sheet(ishp) !band index for k'
+        do iksp = 1, nkpt_tr(ishp)
 
-      kpoint_p = kpts_tr(:,ikp)  ! this is cartesians x 2pi/alat. Transform to cryst.
-      call cryst_to_cart (1, kpoint_p, at, -1)
+          ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
 
-        !call get_timing(time1)
+          kpoint_p = kpts_tr(:,ikp)  ! this is cartesians x 2pi/alat. Transform to cryst.
+          call cryst_to_cart (1, kpoint_p, at, -1)
 
-      ! Read wavefunction k'
-      call get_K_folder_data (ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
-      ! re-do nG (the one from the routine is read from the file)
-      nG_p=0
-      do iG=1,nG_max
-          if (list_iG_p(iG)==0) exit
-          nG_p=nG_p+1
-      enddo
+          ! Read wavefunction k'
+          call get_K_folder_data (ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
 
-        !call get_timing(time2)
-        !print *,' get wfc time = ', time2-time1
+          qpoint = kpoint_p-kpoint
 
-      qpoint = kpoint_p-kpoint
+          ! Fourier backtransformi a la Wannier: interpolation of dV local at qpoint
+          ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
+          ! we would do in Wannier.
 
-        !call get_timing(time1)
+          dvq_local = cmplx_0  !watch out: I am reusing this array in this step of k,k' double loop
+          do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+            !ir to (ir1,ir2,ir3), 3rd index fastest
+            call joint_to_triple_index_r(nr1,nr2,nr3,ir,ir1,ir2,ir3)
+            rvec(1) = real(ir1-1,dp)/real(nr1,dp)  ! r-vector in fractional coord.
+            rvec(2) = real(ir2-1,dp)/real(nr2,dp)
+            rvec(3) = real(ir3-1,dp)/real(nr3,dp)
+            do jr = 1,nrpts_q
+              facq = exp(-cmplx_i*tpi*dot_product(qpoint,rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
+              dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
+            end do ! R in WS
+          end do ! r in unit cell
 
-      ! Fourier backtransformi a la Wannier: interpolation of dV local at qpoint
-      ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
-      ! we would do in Wannier.
+          ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
+          ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
+          call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
 
-      dvq_local = cmplx_0  !watch out: I am reusing this array in this step of k,k' double loop
-      do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
-          !ir to (ir1,ir2,ir3), 3rd index fastest
-          ir_p = ir
-          call joint_to_triple_index_r(nr1,nr2,nr3,ir_p,ir1,ir2,ir3)
-          rvec(1) = real(ir1-1,dp)/real(nr1,dp)  ! r-vector in fractional coord.
-          rvec(2) = real(ir2-1,dp)/real(nr2,dp)
-          rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-          do jr = 1,nrpts_q
-             facq = exp(-cmplx_i*tpi*dot_product(qpoint,rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
-             dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
-          end do ! R in WS
-      end do ! r in unit cell
+          ! Add non-local contribution:
+          !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
+          !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
+          !                                  (lokala) + (ez lokala)
+          call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
 
-        !call get_timing(time2)
-        !print *,' total interpolation time = ', time2-time1
+          !-QE-ren subroutina goikoaren berdina egiteko.
+          ! Osagai kanonikoak, ez dira moduak, kontuz.
+          ! matrize elementuak kalkulatu: ep_element(k',k) = k+q,k
 
-      ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
-      ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
-      ! MBR 270624
-      !if (ep_interp_bands == 'intw_bands') then
-      !    call dvqpsi_local(num_bands_intw, list_iG, list_iG_p, wfc, dvq_local, dvpsi)
-      !else if (ep_interp_bands == 'ef_crossing') then
-      !    call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib,:), dvq_local, dvpsi(:,ib,:,:,:)  )
-      !end if
-       call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib,:), dvq_local, dvpsi(:,1,:,:,:)  )
+          do iat=1,3*nat
+            do js=1,nspin
+              do is=1,nspin
+                aep_mat_el(ikp,ik, js,is,iat) = &
+                          zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
+              enddo !is
+            enddo !js
+          enddo !iat
 
-      ! Add non-local contribution:
-      !-hemen KB potentzial ez lokaleko |beta> funtzioak kalkulatzen dira (k+q puntuetarako,
-      ! k puntua goian egin da).
-
-        !call get_timing(time1)
-
-      vkqb = cmplx_0
-      call init_KB_projectors(nG_p, list_iG_p, kpoint_p, vkqb)
-
-        !call get_timing(time2)
-        !print *,' vkqb time = ', time2-time1
-
-      !-psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
-      !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
-      !                                  (lokala) + (ez lokala)
-        !call get_timing(time1)
-
-        ! MBR 270624
-      !if (ep_interp_bands == 'intw_bands') then
-      !    call multiply_psi_by_dvKB(kpoint, qpoint, num_bands_intw, list_iG, list_iG_p, wfc, dvpsi)
-      !else if (ep_interp_bands == 'ef_crossing') then
-      !    call multiply_psi_by_dvKB(kpoint, qpoint, 1, list_iG, list_iG_p, wfc(:,ib,:), dvpsi(:,ib,:,:,:)  )
-      !end if
-      call multiply_psi_by_dvKB(kpoint, qpoint, 1, list_iG, list_iG_p, wfc(:,ib,:), dvpsi(:,1,:,:,:)  )
-
-        !call get_timing(time2)
-        !print *,' multiply_psi_by_dvKB time = ', time2-time1
-
-      !-QE-ren subroutina goikoaren berdina egiteko.
-      ! Osagai kanonikoak, ez dira moduak, kontuz.
-      ! matrize elementuak kalkulatu: ep_element(k',k) = k+q,k
-
-         !call get_timing(time1)
-
-      do iat=1,3*nat
           do js=1,nspin
             do is=1,nspin
-                aep_mat_el(ikp,ik, js,is,iat) = &
-                          !!zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,ib,js,is,iat), 1 )   !MBR 270624
-                          zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
-            enddo !is
-          enddo !js
-      enddo !iat
+              write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
+                  (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
+            end do
+          end do
 
-         !call get_timing(time2)
-         !print *,' aep_mat_el time = ', time2-time1
+        end do  ! k'
 
+      end do  ! sheet'
 
-      !print *, ikp, kpts_tr(:,ikp) - kpts_tr(:,ik)
+      print *, ik, ik1
 
-      do js=1,nspin
-        do is=1,nspin
-            !write(unit_ep,fmt="(2i6,3f10.4,100e16.6)") ikp,ik, kpts_tr(:,ikp),  &
-            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
-                 (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
-        end do
-      end do
+    end do  ! k
 
-  end do  ! k'
-  end do  ! sheet'
-
-  print *, ik, ik1
-  end do  ! k
   ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
+
   end do  ! sheet
 
   close(unit_ep)
