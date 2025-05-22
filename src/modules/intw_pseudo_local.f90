@@ -28,17 +28,17 @@ module intw_pseudo_local
   implicit none
 
   ! variables
-  public :: vlocq
+  public :: vloc
 
   ! subroutines
-  public :: init_local_PP, init_vlocq, deallocate_vlocq, &
+  public :: init_local_PP, deallocate_local_PP, init_vlocq, &
             calculate_local_part_v, calculate_local_part_dv, &
             dvqpsi_local
 
   private
 
 
-  real(kind=dp), allocatable :: vlocq(:,:) ! Local potential in reciprocal space for each atomic type
+  real(kind=dp), allocatable :: vloc(:,:) ! Local potential in reciprocal space for each atomic type
 
 
 contains
@@ -47,17 +47,30 @@ contains
     !
 
     use intw_reading, only: ntyp, ngm
-    use intw_useful_constants, only: ZERO
 
     implicit none
 
-    if (.not. allocated(vlocq)) allocate(vlocq(ngm, ntyp))
-    vlocq = ZERO
+    real(kind=dp) :: q_cryst(3)
+
+    if (.not. allocated(vloc)) allocate(vloc(ngm, ntyp))
+    !
+    q_cryst = (/0.0_dp, 0.0_dp, 0.0_dp/)
+    !
+    call init_vlocq(q_cryst, vloc)
 
   end subroutine init_local_PP
 
 
-  subroutine init_vlocq(q_cryst)
+  subroutine deallocate_local_PP()
+
+    implicit none
+
+    deallocate(vloc)
+
+  end subroutine deallocate_local_PP
+
+
+  subroutine init_vlocq(q_cryst, vlocq)
     !
     ! This subroutine is based on the phq_init subroutine distributed as part of
     ! the Quantum Espresso project:
@@ -73,6 +86,7 @@ contains
     implicit none
     !
     real(kind=dp), intent(in) :: q_cryst(3)
+    real(kind=dp), intent(out) :: vlocq(ngm, ntyp)
     !
     ! local variables
     real(kind=dp) :: q_cart(3)
@@ -88,15 +102,6 @@ contains
     end do
 
   end subroutine init_vlocq
-
-
-  subroutine deallocate_vlocq()
-
-    implicit none
-
-    deallocate(vlocq)
-
-  end subroutine deallocate_vlocq
 
 
   subroutine calculate_local_part_v(v_local)
@@ -127,7 +132,7 @@ contains
       !
       do ig = 1, ngm
         !
-        aux(nl(ig)) = aux(nl(ig)) + strf(ig,nt) * vlocq(ig,nt)
+        aux(nl(ig)) = aux(nl(ig)) + strf(ig,nt) * vloc(ig,nt)
         !
       enddo ! ig
       !
@@ -145,7 +150,7 @@ contains
     ! We have dV_scf as input and we add to it the derivative of the PP   !
     !======================================================================
 
-    use intw_reading, only: nat, nspin, nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau
+    use intw_reading, only: nat, nspin, nr1, nr2, nr3, ngm, tpiba, ityp, bg, tau, ntyp
     use intw_fft, only: nl, gvec_cart, phase
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
 
@@ -162,9 +167,13 @@ contains
     complex(kind=dp) :: eigqts(nat)
     integer :: imode, na, nt, ipol, ig, ispin, ir
     complex(kind=dp) :: aux(nr1*nr2*nr3)
-    real(kind=dp) :: q_cart(3)
+    real(kind=dp) :: q_cart(3), vlocq(ngm,ntyp)
+
 
     q_cart = matmul(bg, q_cryst)
+
+    ! Compute local potential of the KB PP for q
+    call init_vlocq(q_cryst, vlocq)
 
     do na = 1, nat
       !
@@ -216,7 +225,7 @@ contains
 
     integer, intent(in) :: nbands, list_iGk(nG_max), list_iGkq(nG_max)
     complex(kind=dp), intent(in) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin), wfc_k(nG_max,nbands,nspin)
-    complex(kind=dp), intent(inout) :: dvpsi_local(nG_max,nbands,nspin,nspin,3*nat)
+    complex(kind=dp), intent(out) :: dvpsi_local(nG_max,nbands,nspin,nspin,3*nat)
 
     !local variables
 
@@ -283,7 +292,7 @@ contains
   end subroutine dvqpsi_local
 
 
-  subroutine setlocq(q_cart, mesh, msh, rab, r, vloc_at, zp, tpiba2, ngm, g_cart, omega, vloc)
+  subroutine setlocq(q_cart, mesh, msh, rab, r, vloc_at, zp, tpiba2, ngm, g_cart, omega, vlocq)
     !----------------------------------------------------------------------
     !
     ! This routine computes the Fourier transform of the local
@@ -318,7 +327,7 @@ contains
     ! input: 2 pi / alat
     ! input: the volume of the unit cell
     ! input: the g_cart vectors
-    real(kind=dp), intent(out) :: vloc(ngm)
+    real(kind=dp), intent(out) :: vlocq(ngm)
     ! output: the fourier transform of the potential
     !
     ! local variables
@@ -355,7 +364,7 @@ contains
     do ig = 1, ngm
       g2a = (q_cart(1) + g_cart(1,ig))**2 + (q_cart(2) + g_cart(2,ig))**2 + (q_cart(3) + g_cart(3,ig))**2
       if (g2a < eps) then
-        vloc(ig) = vloc0
+        vlocq(ig) = vloc0
       else
         gx = sqrt(g2a * tpiba2)
         do ir = 1, msh
@@ -365,16 +374,16 @@ contains
         !
         !     here we add the analytic fourier transform of the erf function
         !
-        vloc(ig) = vlcp - fac * exp( - g2a * tpiba2 * 0.25d0) / g2a
+        vlocq(ig) = vlcp - fac * exp( - g2a * tpiba2 * 0.25d0) / g2a
       endif
     enddo
 
-    vloc(:) = vloc(:) * fpi / omega
+    vlocq(:) = vlocq(:) * fpi / omega
 
   end subroutine setlocq
 
 
-  subroutine setlocq_coul(q_cart, zp, tpiba2, ngm, g_cart, omega, vloc)
+  subroutine setlocq_coul(q_cart, zp, tpiba2, ngm, g_cart, omega, vlocq)
     !----------------------------------------------------------------------
     !
     ! Fourier transform of the Coulomb potential - For all-electron
@@ -393,7 +402,7 @@ contains
     !
     integer, intent(in) :: ngm
     real(kind=dp), intent(in) :: q_cart(3), zp, tpiba2, omega, g_cart(3,ngm)
-    real(kind=dp), intent(out) :: vloc(ngm)
+    real(kind=dp), intent(out) :: vlocq(ngm)
     !
     real(kind=dp) :: g2a
     integer :: ig
@@ -401,9 +410,9 @@ contains
     do ig = 1, ngm
       g2a = (q_cart(1) + g_cart(1,ig))**2 + (q_cart(2) + g_cart(2,ig))**2 + (q_cart(3) + g_cart(3,ig))**2
       if (g2a < eps_8) then
-          vloc(ig) = 0.d0
+          vlocq(ig) = 0.d0
       else
-          vloc(ig) = - fpi * TWO * zp / omega / tpiba2 / g2a
+          vlocq(ig) = - fpi * TWO * zp / omega / tpiba2 / g2a
       endif
     enddo
 

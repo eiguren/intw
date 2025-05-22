@@ -32,7 +32,7 @@ program ep_melements
                           read_kpoints_data_file_xml, &
                           set_num_bands
   use intw_pseudo, only: read_all_pseudo
-  use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
+  use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
   use intw_pseudo_non_local, only: init_KB_PP, &
                                    multiply_psi_by_dvKB
   use intw_utility, only: get_timing, &
@@ -255,7 +255,6 @@ program ep_melements
   write(*,20) '|                    PPs are OK                     |'
   !
   ! Allocate and set PP variables
-  call init_local_PP()
   call init_KB_PP()
   !
   write(*,20) '|           ---------------------------------       |'
@@ -463,7 +462,6 @@ program ep_melements
     call get_dv(qpoint,3*nat,nspin,dvq_local)
     !
     ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
-    call init_vlocq(qpoint)
     call calculate_local_part_dv(qpoint, dvq_local)
     !
     ! Bi subroutina hauek (goikoak), biak batera joan behar dira beti).

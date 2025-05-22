@@ -93,7 +93,7 @@ program ep_on_trFS_dV
 
   use intw_pseudo, only: read_all_pseudo
 
-  use intw_pseudo_local, only: init_local_PP, init_vlocq, calculate_local_part_dv, dvqpsi_local
+  use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
 
   use intw_pseudo_non_local, only: init_KB_PP, &
                                    multiply_psi_by_dvKB
@@ -438,7 +438,6 @@ program ep_on_trFS_dV
   write(*,20) '|                    PPs are OK                     |'
   write(*,20) '|           ---------------------------------       |'
   ! Allocate and set PP variables
-  call init_local_PP()
   call init_KB_PP()
 
 
@@ -460,7 +459,6 @@ program ep_on_trFS_dV
     call get_dv(qpoint, 3*nat, nspin, dvq_local)
 
     ! Compute local part of the derivative of the KB PP
-    call init_vlocq(qpoint)
     call calculate_local_part_dv(qpoint, dvq_local)
 
     ! transform with phase: iq*(r-R)
