@@ -176,6 +176,10 @@ contains
     at_sc(:,2) = at(:,2)*nr2
     at_sc(:,3) = at(:,3)*nr3
     !
+    ! Check mesh sizes
+    call check_mesh_sizes(rmesh_uc)
+    rmesh_sc = rmesh_uc*(/nr1, nr2, nr3/)
+    !
     call execute_command_line("mkdir -p "//trim(outdir)//trim(v0dir))
     call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(v0dir)//"supercell-"//trim(prefix))
     !
@@ -188,10 +192,6 @@ contains
     if (any(kgrid_sc /= 0)) then
       call modify_kgrid(kgrid_sc, kgrid_disp, trim(v0dir)//"supercell-"//trim(prefix))
     endif
-    !
-    ! Check mesh sizes
-    call check_mesh_sizes(rmesh_uc)
-    rmesh_sc = rmesh_uc*(/nr1, nr2, nr3/)
     !
     if (any(rmesh_sc > 0)) then
       call modify_MeshSizes(rmesh_sc, trim(v0dir)//"supercell-"//trim(prefix))
