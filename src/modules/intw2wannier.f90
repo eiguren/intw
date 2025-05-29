@@ -920,7 +920,7 @@ contains
     !
     !
     !$omp parallel default(none) &
-    !$omp shared(num_bands_intw,nspin,wfc,amn,guiding_function) &
+    !$omp shared(num_bands_intw,nspin,wfc,amn,guiding_function,ngk) &
     !$omp private(iG,ibnd,is,amn_local)
     !
     amn_local = cmplx_0
