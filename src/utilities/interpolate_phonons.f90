@@ -23,7 +23,7 @@ program interpolatephonons
   ! Interpolate dynamical matrices using atom-pair-adapted WS vectors
 
   use kinds, only: dp
-  use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry
+  use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry, tpi
   use intw_utility, only: find_free_unit, &
                           generate_kmesh, cryst_to_cart, smeared_delta, &
                           generate_and_allocate_kpath
@@ -271,6 +271,7 @@ program interpolatephonons
     w_qint = sign(sqrt(abs(w2_qint)),w2_qint) * Ha_to_eV*1000.0_dp
     write(ph_unit,'(20e14.6)') dqpath(iq), w_qint ! meV
     ! write(ph_unit,'(20e14.6)') dqpath(iq)/tpiba, w_qint*8.065610_dp ! Matdyn (cm^-1)
+    ! write(ph_unit,'(20e14.6)') dqpath(iq)/tpi, w_qint/4.135665538536_dp ! Phonopy (tHz)
   end do
   !
   ! Print special q-points information in the phonon bands file
