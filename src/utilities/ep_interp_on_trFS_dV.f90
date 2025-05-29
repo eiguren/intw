@@ -70,6 +70,8 @@ program ep_on_trFS_dV
 
   use kinds, only: dp
 
+  use intw_version, only: print_intw_version
+
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
 
   use intw_utility, only: get_timing, print_date_time, find_free_unit, &
@@ -172,6 +174,7 @@ program ep_on_trFS_dV
   write(*,20) '|         e-p calculation on triangulated FS        |'
   write(*,20) '|  using interpolation of dV on the triangulated q  | '
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

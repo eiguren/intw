@@ -19,6 +19,7 @@
 program nscf
 
   use kinds, only: dp
+  use intw_version, only: print_intw_version
   use intw_input_parameters, only: intw2W_method, read_input
   use intw_reading, only: nspin, &
                           nbands, nG_max, &
@@ -66,6 +67,7 @@ program nscf
   write(*,20) '====================================================='
   write(*,20) '|                  program nscf                     |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   write(*,20) '|    waiting for input file...                      |'

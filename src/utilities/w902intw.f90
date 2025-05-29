@@ -20,6 +20,8 @@ program w902intw
 
   use kinds, only: dp
 
+  use intw_version, only: print_intw_version
+
   use intw_utility, only: get_timing, print_date_time
 
   use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
@@ -56,6 +58,7 @@ program w902intw
   write(*,20) '====================================================='
   write(*,20) '|                  program w902intw                 |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

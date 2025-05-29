@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(PreventInSourceBuilds)
 
 project(intw
-  VERSION 0.1
+  VERSION 0.0.0
   LANGUAGES Fortran C
 )
 
@@ -130,6 +130,13 @@ endif()
 
 
 include(SetTriFS)
+
+# Find version of the code
+execute_process(COMMAND git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --dirty OUTPUT_VARIABLE GIT_SHA1 RESULTS_VARIABLE GIT_RESULT OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(GIT_RESULT EQUAL 0)
+  # Command succeeded, use the retrieved SHA
+  add_definitions("-DGIT_INFO_PRESENT")
+endif()
 
 
 add_subdirectory(src/modules)

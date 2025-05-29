@@ -31,6 +31,8 @@ program a2F_on_trFS
 
   use kinds, only: dp
 
+  use intw_version, only: print_intw_version
+
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
 
   use intw_utility, only: get_timing, print_date_time, find_free_unit, &
@@ -117,6 +119,7 @@ program a2F_on_trFS
   write(*,20) '|         Eliashberg function calculation           |'
   write(*,20) '|    from interpolated ep elements on the FS        |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

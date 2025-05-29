@@ -28,6 +28,8 @@ program ep_on_trFS_wannier
 
   use kinds, only: dp
 
+  use intw_version, only: print_intw_version
+
   use intw_useful_constants, only: cmplx_0, cmplx_i, Ha_to_eV, tpi
 
   use intw_utility, only: get_timing, print_date_time, find_free_unit, &
@@ -119,6 +121,7 @@ program ep_on_trFS_wannier
   write(*,20) '|       Wannier interpolation of e-p elements       |'
   write(*,20) '|               on the triangulated FS              |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

@@ -19,7 +19,7 @@
 program triFS
 
   use kinds, only: dp
-
+  use intw_version, only: print_intw_version
   use triFS_geometry, only: wigner_seitz_cell, plot_poly, polyhedra_off, tetrasym, plot_tetra_off, compact_tetra, &
                       tetraIBZ_2_vert_faces_edges, irr_faces, triangulate_faces, add_nodes_IBZ_volume
   use triFS_isosurface, only: vert_veloc_rot, vert_veloc, vert_index_rot, vert_coord_rot, ntri_rot, nvert_rot, &
@@ -90,6 +90,7 @@ program triFS
   write(*,20) '====================================================='
   write(*,20) '|                   program triFS                   |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

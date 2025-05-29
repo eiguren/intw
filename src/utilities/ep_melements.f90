@@ -19,6 +19,7 @@
 program ep_melements
 
   use kinds, only: dp
+  use intw_version, only: print_intw_version
   use intw_input_parameters, only: nk1, nk2, nk3, &
                                    nq1, nq2, nq3, nqirr, mesh_dir, &
                                    ep_mat_file, TR_symmetry, &
@@ -116,6 +117,7 @@ program ep_melements
   write(*,20) '====================================================='
   write(*,20) '|                program ep_melements               |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

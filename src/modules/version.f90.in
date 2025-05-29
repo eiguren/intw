@@ -1,0 +1,28 @@
+#define GIT_SHA1 "@GIT_SHA1@"
+#define PROJECT_VERSION "v@PROJECT_VERSION@"
+
+module intw_version
+
+  ! variables
+  public :: version
+
+  ! subroutines
+  public :: print_intw_version
+
+#ifdef GIT_INFO_PRESENT
+  character(25), parameter :: version = GIT_SHA1 ! Example: v0.0.0-502-gff5fbda (commit ff5fbda, 502 commits ahead from parent tag v0.0.0)
+#else
+  character(25), parameter :: version = PROJECT_VERSION ! Obtained from the version number specified in cmake project()
+#endif
+
+contains
+
+subroutine print_intw_version()
+
+  implicit none
+
+  write(*,'("|     INTW version: ",A25,"       |")') version
+
+end subroutine print_intw_version
+
+end module intw_version

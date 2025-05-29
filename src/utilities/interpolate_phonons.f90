@@ -24,6 +24,8 @@ program interpolatephonons
 
   use kinds, only: dp
 
+  use intw_version, only: print_intw_version
+
   use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry, tpi
 
   use intw_utility, only: get_timing, print_date_time, find_free_unit, &
@@ -88,6 +90,7 @@ program interpolatephonons
   write(*,20) '====================================================='
   write(*,20) '|             program interpolatephonons            |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

@@ -24,6 +24,9 @@ set(SOURCES
   ph_interpolate.f90
 )
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.f90.in" "${CMAKE_CURRENT_BINARY_DIR}/version.f90" @ONLY)
+list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/version.f90")
+
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)
 
 add_library(intw_modules STATIC ${SOURCES})

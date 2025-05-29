@@ -24,6 +24,7 @@ program intw2W90
   ! symmetry.
 
   use kinds, only: dp
+  use intw_version, only: print_intw_version
   use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, nnkp_n_proj, &
                                intw2w90_check_mesh, generate_mmn_using_allwfc, &
                                generate_amn_using_allwfc, deallocate_nnkp
@@ -77,6 +78,7 @@ program intw2W90
   write(*,20) '====================================================='
   write(*,20) '|                  program intw2W90                 |'
   write(*,20) '|         ---------------------------------         |'
+  call print_intw_version()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
