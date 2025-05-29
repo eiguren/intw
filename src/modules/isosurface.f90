@@ -287,6 +287,8 @@ contains
 
     implicit none
 
+    external :: ZHPEVX
+
     integer, intent(in) :: num_wann, nrpts, ndegen(:), irvec(:,:)
     complex(dp), intent(in) :: ham_r(:,:,:)
     real(dp), intent(in) :: kvec_int(1:3)
@@ -382,6 +384,8 @@ contains
     use intw_matrix_vector, only: ainv
 
     implicit none
+
+    external :: ZHPEVX
 
     integer, intent(in) :: num_wann, ibnd, nrpts
     integer, intent(in), dimension(3,nrpts) :: irvec

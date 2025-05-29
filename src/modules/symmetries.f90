@@ -410,7 +410,10 @@ contains
     !determines the null space of (R-I)
     !which is the rotation axis
     use kinds, only : dp
+
     implicit none
+
+    external :: dgesvd
 
     real(kind=dp), intent(in)  :: a(:,:)
     real(kind=dp), intent(out) :: axis(size(a,1))
@@ -432,6 +435,7 @@ contains
     integer :: n = 3
     integer :: ind, k, i
     real(kind=dp) :: u1(3), u2(3), u3(3), kosinu, sinu
+
 
     i3(1,:) = (/1.0_DP,0.0_DP,0.0_DP/)
     i3(2,:) = (/0.0_DP,1.0_DP,0.0_DP/)

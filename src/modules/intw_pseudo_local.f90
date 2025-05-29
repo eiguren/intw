@@ -210,6 +210,8 @@ contains
 
     implicit none
 
+    external :: cfftnd
+
     !I/O variables
 
     integer, intent(in) :: nbands, list_iGk(nG_max), list_iGkq(nG_max)

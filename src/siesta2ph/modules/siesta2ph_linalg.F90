@@ -82,6 +82,8 @@ contains
     !
     implicit none
     !
+    external :: zheev
+    !
     ! input variables
     complex(kind=dp), intent(inout) :: A(:,:) ! matrix to diagonalize on input, eigenvector on output
     real(kind=dp), intent(out) :: w(:) ! eigenvalues
@@ -119,6 +121,8 @@ contains
     !
     implicit none
     !
+    external :: dgeqp3
+    !
     real(kind=dp), dimension(:,:), intent(in) :: A
     integer, intent(out) :: r
     !
@@ -136,8 +140,10 @@ contains
     integer :: i
     !
 #ifdef DEBUG
+    external :: DORG2R
+    integer :: LDT
     integer, allocatable, dimension(:,:) :: Pmat
-    real(kind=dp), allocatable, dimension(:,:) :: Qmat, Rmat
+    real(kind=dp), allocatable, dimension(:,:) :: Qmat, Rmat, II
     integer :: r_check
 #endif
 
@@ -256,6 +262,8 @@ contains
     !
     implicit none
     !
+    external :: dgesvd
+    !
     real(kind=dp), dimension(:,:), intent(in) :: A
     integer, intent(out) :: r
     !
@@ -310,6 +318,8 @@ contains
     use precision, only: dp
     !
     implicit none
+    !
+    external :: dgesvd, dscal, dgemm
     !
     real(kind=dp), dimension(:,:), intent(inout) :: A
     !
