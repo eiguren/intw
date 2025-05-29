@@ -57,8 +57,6 @@ module intw_intw2wannier
   ! variables read from the $prefix.nnkp file, which must be checked with
   ! the data read from the input file for consistency.
 
-  external :: s, pz_func, px, py, dz2, dxz, dyz, dx2my2, dxy, fz3, fxz2, fyz2, fzx2my2, fxyz, fxx2m3y2, fy3x2my2
-
   integer     :: nnkp_exclude_bands     !how many bands are excluded?
 
   real(dp)    :: nnkp_real_lattice(3,3) ! the lattice vectors
