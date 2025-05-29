@@ -320,11 +320,11 @@ contains
 
     ! Colinear spin polarized calculation
     write(unit=io_unit,fmt=*) "SPIN_COLIN"
-    write(unit=io_unit,fmt=*)  spin%Col
+    write(unit=io_unit,fmt=*)  .false. ! We transform the colinear calculations into non-colinear format
 
     ! Non-colinear spin polarized calculation
     write(unit=io_unit,fmt=*) "SPIN_NONCOLIN"
-    write(unit=io_unit,fmt=*)  spin%NCol .or. spin%Col ! We transform the colinear calculations into non-colinear format
+    write(unit=io_unit,fmt=*)  spin%Col .or. spin%NCol .or. spin%SO ! We transform the colinear calculations into non-colinear format
 
     ! Non-colinear spin polarized calculation with spin-orbit coupling
     write(unit=io_unit,fmt=*) "SPIN_SO"
