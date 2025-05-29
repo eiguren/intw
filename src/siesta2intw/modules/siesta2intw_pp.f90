@@ -443,7 +443,6 @@ contains
 
     ! variables
     use units, only: pi
-    use siesta2intw_io, only: stdout
     use siesta2intw_utils, only: dosplineint
 
     implicit none

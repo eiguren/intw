@@ -69,7 +69,7 @@ contains
                                              stdin=>input_unit
     implicit none
 
-    integer :: ios, iunit
+    integer :: ios
     integer :: strlen
     character(80) :: cardname
     integer :: i
