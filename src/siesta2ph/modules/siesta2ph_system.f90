@@ -72,7 +72,7 @@ contains
     character(len=32) :: opt, opt_old
     logical :: spin_none, spin_Col, spin_NCol, spin_SO
     logical :: noncol, peratm, badsyntax
-    integer :: nh, ni, nn, nr
+    integer :: ni, nn, nr
     character(len=1) :: updo
     real(kind=dp), allocatable, dimension(:) :: spin, theta, phi
     integer, dimension(:), allocatable :: atom

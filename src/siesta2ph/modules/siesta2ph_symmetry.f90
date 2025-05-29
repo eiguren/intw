@@ -449,7 +449,7 @@ contains
     ! TODO: Add description
     !
     use siesta2ph_io, only: stdout
-    use siesta2ph_system, only: nat, at
+    use siesta2ph_system, only: nat
     !
     use siesta2ph_linalg, only: rank, ainv
     !
