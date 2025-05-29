@@ -1403,7 +1403,11 @@ end function intgr_spline_gaussq
     implicit none
     real(dp) :: x,s, smeared_delta
     !gaussian
-    smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
+    if (-4*s < x .and. x < 4*s) then
+      smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
+    else
+      smeared_delta = 0.0_dp
+    endif
   return
   end function smeared_delta
 
