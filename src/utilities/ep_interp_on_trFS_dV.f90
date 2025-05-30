@@ -150,9 +150,6 @@ program ep_on_trFS_dV
   complex(dp), external :: zdotc
 
 
-  20 format(A)
-  30 format(A,F8.2,6X,A)
-
   !================================================================================
   ! Talk to the user
   !================================================================================
@@ -169,13 +166,13 @@ program ep_on_trFS_dV
 
   call read_input(read_status)
 
-  if (read_status ) then
+  if (read_status) then
     stop
   end if
 
   ! check right method is chosen in intw.in
-  if ( ep_interp_method .ne. 'dV_interpolate') then
-    write(*,*) ' ep_interp_method /= dV_interpolate in input. Stopping.'
+  if ( ep_interp_method /= 'dV_interpolate' ) then
+    write(*,'(A)') ' ep_interp_method /= dV_interpolate in input. Stopping.'
     stop
   end if
 
@@ -190,13 +187,13 @@ program ep_on_trFS_dV
   ! choose Fermi surface sheets according to ep_interp_bands
   if ( ep_interp_bands == 'intw_bands' ) then
     nfs_sheets_tot = num_bands_intw
-    allocate ( nfs_sheet(nfs_sheets_tot) )
+    allocate(nfs_sheet(nfs_sheets_tot))
     do ib = 1, num_bands_intw
       nfs_sheet(ib) = ib
     end do
   else if ( ep_interp_bands == 'ef_crossing' ) then
     nfs_sheets_tot = nfs_sheets_final - nfs_sheets_initial + 1
-    allocate ( nfs_sheet(nfs_sheets_tot) )
+    allocate(nfs_sheet(nfs_sheets_tot))
     do ib = 1, nfs_sheets_tot
       nfs_sheet(ib) = nfs_sheets_initial + ib-1
     end do
@@ -204,11 +201,9 @@ program ep_on_trFS_dV
 
   !******************************** Part I ************************************
 
-
   !================================================================================
   ! Read prefix.off and velocity file(s)
   !================================================================================
-
 
   write(*,'(A)') '====================================================='
   write(*,'(A)') '|    reading .off and v_k files...                  |'
@@ -276,7 +271,7 @@ program ep_on_trFS_dV
     read(unit_off,*) comenta
     read(unit_off,*) i,j,k ! number vertices, faces and edges (I will ignore edges)
     ! read(unit_off,'(/)') ! DUDA... esto dependdera de como está escrito el salto de línea en el fichero, creo...
-    if ( i .ne. nkpt_tr(is) .or. j .ne. nface_tr(is) ) then
+    if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop
     end if
@@ -294,7 +289,7 @@ program ep_on_trFS_dV
       ir1 = ir1 + 1
       ir2 = ir2 + 1
       ir3 = ir3 + 1 ! now, ik of the vertices of the face, indexed from 1
-      if ( i .ne. 3 ) then
+      if ( i /= 3 ) then
         write(*,*) 'Error reading ', file_off, 'Only triangles allowed. Stopping.'
         stop
       end if
@@ -319,7 +314,7 @@ program ep_on_trFS_dV
     open(unit_off, file=file_off, status='old')
 
     read(unit_off,*) i
-    if ( i .ne. nkpt_tr(is) ) then
+    if ( i /= nkpt_tr(is) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop
     end if
@@ -352,7 +347,7 @@ program ep_on_trFS_dV
   endif
 
 
-  write(*,*) ' !  ---------------- Part I completed ----------------------'
+  write(*,'(A)') ' !  ---------------- Part I completed ----------------------'
 
 
   !******************************** Part II ************************************
@@ -375,7 +370,7 @@ program ep_on_trFS_dV
   ! Wigner-Seitz R points
   call allocate_and_build_ws_irvec_q()
 
-  write(*,*) ' qmesh and irvec_q meshes calculated'
+  write(*,'(A)') ' qmesh and irvec_q meshes calculated'
 
   ! Irreducible q-points
   allocate(q_irr_cryst(3,nqirr))
@@ -386,7 +381,7 @@ program ep_on_trFS_dV
   allocate(symlink_q(nqmesh,2))
 
   ! cartesian to crystalline
-  write(*,*) ' q_irr_cart               q_irr_cryst'
+  write(*,'(A)') ' q_irr_cart               q_irr_cryst'
   do iq=1,nqirr
     qpoint = q_irr(:,iq)
     call cryst_to_cart(1, qpoint, at, -1)
@@ -416,38 +411,40 @@ program ep_on_trFS_dV
   ! Then Fourier transform.
   !================================================================================
 
+  ! read G vectors
+  write(*,'(A)') '|       - Reading G vectors...                      |'
+  call get_gvec()
+
+  ! for fft, allocate useful variables and generate index mapping of G-vectors
+  write(*,'(A)') '|       - Initializing  FFT mapping... -            |'
+  call allocate_fft()
+  call generate_nl()
+  write(*,'(A)') '|           ---------------------------------       |'
+
+
+  ! Read PPs
+  write(*,'(A)') '|       - Reading pseudopotentials...               |'
+  call read_all_pseudo()
+  write(*,'(A)') '|                    PPs are OK                     |'
+  write(*,'(A)') '|           ---------------------------------       |'
+
+  ! Allocate and set PP variables
+  call init_KB_PP()
+
+  ! Read the induced potentials
+  write(*,'(A)') '|       - Reading induced potentials...             |'
+  call read_allq_dvr()
+  write(*,'(A)') '====================================================='
+
+  ! Fourier transform a la Wannier of q->R of dvq_local using the Wigner-Seitz supercell grid.
+  ! Loop over whole mesh: obtain dvq_local for each q-point and add it to the Fourier transform
+
   ! Allocate induced potential related variables
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
 
   ! Potential in the supercell using Wigner-Seitz R points
   allocate(dvq_local_R(nrpts_q,nr1*nr2*nr3,3*nat,nspin,nspin))
 
-  ! read G vectors
-  write(*,20) '|       - Reading G vectors...                      |'
-  call get_gvec()
-  ! for fft, allocate useful variables and generate index mapping of G-vectors
-  write(*,20) '|       - Initializing  FFT mapping... -            |'
-  call allocate_fft()
-  call generate_nl()
-  write(*,20) '|           ---------------------------------       |'
-
-
-  ! Read PPs
-  write(*,20) '|       - Reading pseudopotentials...               |'
-  call read_all_pseudo()
-  write(*,20) '|                    PPs are OK                     |'
-  write(*,20) '|           ---------------------------------       |'
-  ! Allocate and set PP variables
-  call init_KB_PP()
-
-
-  ! Read the induced potentials
-  write(*,20) '|       - Reading induced potentials...             |'
-  call read_allq_dvr()
-  write(*,20) '====================================================='
-
-  ! Fourier transform a la Wannier of q->R of dvq_local using the Wigner-Seitz supercell grid.
-  ! Loop over whole mesh: obtain dvq_local for each q-point and add it to the Fourier transform
   dvq_local_R = cmplx_0
   do iq = 1, nqmesh
 
@@ -479,7 +476,7 @@ program ep_on_trFS_dV
   dvq_local_R = dvq_local_R / real(nqmesh,dp) ! normalize Fourier transform
 
 
- write(*,*) ' !  ---------------- Part II completed ----------------------'
+ write(*,'(A)') ' !  ---------------- Part II completed ----------------------'
 
   ! DUDA dvq_local_R en la supercelda (valores en r+R) deberia salir real?
 
@@ -611,13 +608,13 @@ program ep_on_trFS_dV
     end do ! sheet
 
     close(unit_ep)
-    write(*,*) '!      e-p elements interpolated and written to file:         !'
-    write(*,*) file_ep
+    write(*,'(A)') '!      e-p elements interpolated and written to file:         !'
+    write(*,'(A)') trim(file_ep)
 
   else ! have_ep--> read interpolated matrix elements
 
-    write(*,*) '!     interpolated e-p file already exists. Check!            !'
-    write(*,*) file_ep
+    write(*,'(A)') '!     interpolated e-p file already exists. Check!            !'
+    write(*,'(A)') trim(file_ep)
 
   end if
 
