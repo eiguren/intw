@@ -460,17 +460,6 @@ contains
       !
       call write_tag("qq", iq, q_dir)
       !
-      !!!!!!!!!!!!!!! JUST COPY DYN FILES !!!!!!!!!!!!!!!
-      datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
-      inquire(file=datafile, exist=existitu)
-      if (.not. existitu) call errore( "pw2intw", "write_phonon_info: fildyn not found: check fildyn input variable", 1 )
-      !
-      call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
-      call execute_command_line("cp " // &
-                                trim(datafile)//" " // &
-                                trim(intwdir)//trim(dyn_file) )
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
       !!!! READ AND WRITE ONLY IRREDUCIBLE Q DYN MAT !!!!
       !
       ! Open file for reading
@@ -482,7 +471,7 @@ contains
       ! Open file for writing
       io_unit_write = find_free_unit()
       call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
-      datafile = trim(intwdir)//trim(dyn_file)//"_sym"
+      datafile = trim(intwdir)//trim(dyn_file)
       open( unit=io_unit_write, file=trim(datafile), iostat=ios, status="replace", action="write" )
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to write", ios )
       !
@@ -546,8 +535,6 @@ contains
       !
       close(unit=io_unit_read)
       close(unit=io_unit_write)
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
     enddo ! iq
 

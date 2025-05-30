@@ -287,7 +287,7 @@ module intw_ph_interpolate
     !----------------------------------------------------------------------------
     use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
     use intw_reading, only: nat
-    use intw_ph, only: nqmesh, qmesh, read_dynq, read_dynq_sym
+    use intw_ph, only: nqmesh, qmesh, read_dynq
     !
     implicit none
     !
@@ -299,7 +299,7 @@ module intw_ph_interpolate
     allocate( dyn_q(3*nat,3*nat,nqmesh), w2_q(3*nat,nqmesh), u_q(3*nat,3*nat,nqmesh) )
     !
     ! read dynmat
-    call read_dynq_sym(dyn_q)
+    call read_dynq(dyn_q)
     !
     ! diagonalize
     do iq=1,nqmesh

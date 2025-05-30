@@ -35,7 +35,7 @@ module intw_ph
   ! subroutines
   public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
-            read_dynq, set_asr_frc, set_asr_dynq, read_dynq_sym, rotate_dyn
+            read_dynq, set_asr_frc, set_asr_dynq, rotate_dyn
   !
   ! functions
   public :: wsweight, rot_k_index
@@ -428,165 +428,7 @@ contains
    end subroutine set_asr_dynq
 
 
-  !====================================================================
-      ! MBR 14/02/24
-      ! read dynamical matrices info from prefix.dyn_q(iq) files in
-      ! prefix.save.intw and store into dynq for all q-points
-      ! (each files contains the info of an irreducible q-point)
-  !====================================================================
-
-      subroutine read_dynq (dynq)
-
-      use intw_reading, only: ntyp, nat, at
-      use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi, Ry_to_Ha
-      use intw_utility, only: cryst_to_cart, find_free_unit, &
-              triple_to_joint_index_g, find_k_1BZ_and_G
-      use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
-              apply_asr
-
-      implicit none
-
-      ! I/O
-      complex(dp) , intent(out) :: dynq(3*nat,3*nat,nqmesh) ! in a.u. (without the mass factor)
-
-      ! Internal
-      character(len=4) :: iq_loc
-      character(len=100) :: comentario
-      character(256) :: dynq_file, intwdir
-      logical :: all_done
-      integer :: ntyp_, nat_, ibrav_
-      integer :: dynq_unit, ierr
-      integer :: iat, iat1, iat2, iq, iq1, iqirr, Gq(3), i,j,k, iq_done(nqmesh)
-      real(dp) :: celldm_(6), at_(3,3), dist
-      real(dp) ::  fracpos(3), qpoint(3), qpoint1(3), qpoint_cart(3,nqmesh)
-      real(dp) ::  dynq_re(3,3), dynq_im(3,3)
-
-
-      iq_done=0
-
-      ! INTW directory
-      intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
-
-      do iqirr = 1,nqirr
-
-      ! open file
-      if (                   iqirr <   10) write(iq_loc,"(i1)") iqirr
-      if ( 10 <= iqirr .and. iqirr <  100) write(iq_loc,"(i2)") iqirr
-      if (100 <= iqirr .and. iqirr < 1000) write(iq_loc,"(i3)") iqirr
-      dynq_unit = find_free_unit()
-      dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//adjustl(iq_loc)
-      open(unit=dynq_unit, iostat=ierr, file=dynq_file, form='formatted', status='old')
-      if (ierr /= 0 ) then
-         write(*,*) 'Error opening .dyn_q file in ',  intwdir,' . Stopping.'
-         stop
-      end if
-
-      read(dynq_unit,'(a)') comentario
-      read(dynq_unit,'(a)') comentario
-
-      ! Information about lattice and atoms (not used but checked for
-      ! consistency in the parameters)
-      read(dynq_unit,*) ntyp_, nat_, ibrav_, celldm_
-      if (ntyp_ /= ntyp .or.  nat_ /= nat ) then
-         write(*,*)' Error reading parameters in .dyn_q file ', dynq_file, '. Stopping.'
-         stop
-      end if
-      if ( ibrav_ == 0 ) then
-        read(dynq_unit,'(a)') comentario  ! symm_type  not used
-        read(dynq_unit,*) ((at_(i,j),i=1,3),j=1,3)  ! not used
-      end if
-      ! atoms
-      do i=1,ntyp
-         read(dynq_unit,'(a)') comentario !i, atom, amass, not used, not stored
-      end do
-      ! positions
-      do iat = 1,nat
-        read(dynq_unit,*) i,j, fracpos(:)  !not used, not stored
-      end do
-
-      ! loop over symmetry equivalent qpoints:
-      ! a priori, we do not know how many there are.
-      ! The signal to stop is that the last qpoint line is the
-      ! one for diagonalization information, where the initial
-      ! q-point is stated again.
-
-      do iq1 = 1,nqmesh
-
-         read(dynq_unit,'(/,a,/)') comentario
-         read(dynq_unit,'(11x, 3(f14.9), / )') qpoint_cart(:,iq1)
-
-         ! compare to first read qpoint to see if we are at the
-         ! end of the part of the file that contains the dynq matrices
-         dist = ( qpoint_cart(1,iq1) - qpoint_cart(1,1) )**2 + &
-                ( qpoint_cart(2,iq1) - qpoint_cart(2,1) )**2 + &
-                ( qpoint_cart(3,iq1) - qpoint_cart(3,1) )**2
-         if (iq1 > 1 .and. dist < eps_6) exit
-
-         !cartesian to crystalline
-         qpoint=qpoint_cart(:,iq1)
-         call cryst_to_cart (1, qpoint, at, -1)
-         ! find index in full list: iq
-         call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
-         call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
-
-         ! block: dynq matrix
-         ! loop over atoms
-         do iat1 = 1,nat
-           do iat2 = 1,nat
-
-              read(dynq_unit,*) i,j ! not used
-
-              ! cartesian 3x3 block of this atom pair in dynq matrix (without the mass factor)
-              do i = 1,3
-                read(dynq_unit,*) (dynq_re(i,j), dynq_im(i,j), j=1,3) ! in Ry/Bohr^2
-              enddo
-
-              ! save in dynq
-              dynq( (iat1-1)*3+1:iat1*3, (iat2-1)*3+1:iat2*3, iq ) = &
-                     ( dynq_re*cmplx_1 + dynq_im*cmplx_i ) * Ry_to_Ha ! in a.u.
-
-           end do
-         end do !atoms
-
-         iq_done(iq)=1
-
-      end do !iq1
-
-      ! read next block in .dyn file: diagonalization of dynq
-      ! (skipped, as we usually do this step elsewhere in INTW)
-
-      close(dynq_unit)
-
-      end do ! iqirr
-
-            ! Check that all the qpoints in the full mesh have been read
-      all_done=.true.
-      do iq=1,nqmesh
-         if (iq_done(iq) == 0) then
-            all_done=.false.
-            write(*,*)' Failed to read dynq for iq= ',iq
-         end if
-      end do
-      if ( .not. all_done ) stop
-
-      ! Apply ASR to q=0 matrix:
-      ! \sum_{jat} dynq( iat, i, jat, j, q=0) = 0
-      if (apply_asr) then
-           write(*,*)' Applying ASR to all q vector indices'
-           !iq = 1 !q=0 index in mesh
-           ! just in case, find q=0 index in mesh
-           qpoint = (/ 0._dp, 0._dp, 0._dp /)
-           call find_k_1BZ_and_G(qpoint,nq1,nq2,nq3,i,j,k,qpoint1,Gq)
-           call triple_to_joint_index_g(nq1,nq2,nq3,iq,i,j,k)
-           call set_asr_dynq(nqmesh, iq, nat, dynq)
-      end if
-
-      return
-      end subroutine read_dynq
-  !====================================================================
-
-
-  subroutine read_dynq_sym(dynq)
+  subroutine read_dynq(dynq)
     ! Read dynamical matrices of irreducible q-points from
     ! prefix.dyn_q(iq)_sym files in prefix.save.intw and store
     ! into dynq for all q-points by using symmetries to get
@@ -635,7 +477,7 @@ contains
       if ( 10 <= iqirr .and. iqirr <  100) write(iq_str,"(i2)") iqirr
       if (100 <= iqirr .and. iqirr < 1000) write(iq_str,"(i3)") iqirr
       dynq_unit = find_free_unit()
-      dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//trim(adjustl(iq_str))//"_sym"
+      dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//trim(adjustl(iq_str))
       open(unit=dynq_unit, iostat=ierr, file=dynq_file, form='formatted', status='old')
       if (ierr /= 0 ) then
         write(*,*) 'Error opening .dyn_q file in ',  intwdir,' . Stopping.'
@@ -670,7 +512,7 @@ contains
         if (QE_folder_sym_q(iq) /= QE_folder_sym_q(iqirr2iq)) cycle
         !
         ! Check for consistency
-        if (QE_folder_sym_q(iq) /= iqirr) stop "ERROR: read_dynq_sym"
+        if (QE_folder_sym_q(iq) /= iqirr) stop "ERROR: read_dynq"
         !
         ! Find symmetry operation
         isym = symlink_q(iq,1)
@@ -701,7 +543,7 @@ contains
     ! Check that all the qpoints in the full mesh have been read
     do iq=1,nqmesh
       if ( .not. iq_done(iq) ) then
-        write(*,*) "ERROR: read_dynq_sym: Failed to read dynq for iq=", iq
+        write(*,*) "ERROR: read_dynq: Failed to read dynq for iq=", iq
         stop
       end if
     end do
@@ -715,7 +557,7 @@ contains
       call set_asr_dynq(nqmesh, iq, nat, dynq)
     end if
 
-  end subroutine read_dynq_sym
+  end subroutine read_dynq
 
 
   subroutine rotate_dyn(isym, q_cryst, dynq, dynRq)
