@@ -32,41 +32,41 @@ program ep_on_trFS_dV
   !
   ! 1st part:
   !
-  !     This utility uses < intw.in as others.
-  !     It uses mesh_dir, prefix, and info on which FS sheets are needed.
-  !     Unlike with Wannier g-element interpolation, here
-  !     the location of pw.x and pw2intw.x executables is needed,
-  !     which is also given in the intw.in file.
+  !    This utility uses < intw.in as others.
+  !    It uses mesh_dir, prefix, and info on which FS sheets are needed.
+  !    Unlike with Wannier g-element interpolation, here
+  !    the location of pw.x and pw2intw.x executables is needed,
+  !    which is also given in the intw.in file.
   !
-  !     1.- From files prefix.N_FS_tri.off, where  N is the Fermi surface (FS) sheet,
-  !     it reads the lists of k-points at the vertices, and the faces, in order to calculate
-  !     areas.
+  !    1.- From files prefix.N_FS_tri.off, where  N is the Fermi surface (FS) sheet,
+  !        it reads the lists of k-points at the vertices, and the faces, in order to calculate
+  !        areas.
   !
-  !     2.- It writes a prefix.nscf.in input for pw.x by reading prefix.scf.in
-  !     and replacing the k-points by the FS triangularization information.
+  !    2.- It writes a prefix.nscf.in input for pw.x by reading prefix.scf.in
+  !        and replacing the k-points by the FS triangularization information.
   !
-  !     3.- It writes a nscf-pw2intw.in file, which will convert wfc data from
-  !     prefix-nscf.save directory.
+  !    3.- It writes a nscf-pw2intw.in file, which will convert wfc data from
+  !        prefix-nscf.save directory.
   !
-  !     4.- It sets a directory prefix-nscf.save and initializes it with the scf charge density.
-  !     It runs pw.x and applies pw2intw.x to the obtained wfcs. In case the prefix-nscf.save/wfc
-  !     files exist, it skips this and warns the user.
+  !    4.- It sets a directory prefix-nscf.save and initializes it with the scf charge density.
+  !        It runs pw.x and applies pw2intw.x to the obtained wfcs. In case the prefix-nscf.save/wfc
+  !        files exist, it skips this and warns the user.
   !
-  !     (2-4 done only in case prefix.nscf.out does not exist)
+  !    (2-4 done only in case prefix.nscf.out does not exist)
   !
   ! 2nd part:
   !
-  !     Read derivative of local potential (dvq_local) on the real space unit cell for
-  !     q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
-  !     as the first step of the interpolation.
-  !     The non-local part will be added on the fly when interpolating over the triangulated k-points.
+  !    Read derivative of local potential (dvq_local) on the real space unit cell for
+  !    q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
+  !    as the first step of the interpolation.
+  !    The non-local part will be added on the fly when interpolating over the triangulated k-points.
   !
-  !     3rd part:
+  ! 3rd part:
   !
-  !     Loop over FS (one over irreducible, one over full).
-  !     Interpolate the potential.
-  !     Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
-  !     Write to file
+  !    Loop over FS (one over irreducible, one over full).
+  !    Interpolate the potential.
+  !    Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
+  !    Write to file
 
   use kinds, only: dp
 
@@ -75,7 +75,7 @@ program ep_on_trFS_dV
   use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, &
                           joint_to_triple_index_r
 
-  use intw_matrix_vector, only: area_vec
+  use intw_matrix_vector, only: area_vec, ainv
 
   use intw_input_parameters, only: mesh_dir, prefix, read_input, &
                                    intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
@@ -86,8 +86,8 @@ program ep_on_trFS_dV
 
   use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
                           nG_max, get_gvec, &
-                          nspin, &
-                          at, nr1, nr2, nr3, &
+                          nspin, noncolin, &
+                          at, bg, nr1, nr2, nr3, &
                           nat, tau, nsym, s, &
                           get_K_folder_data
 
@@ -99,7 +99,10 @@ program ep_on_trFS_dV
                                    multiply_psi_by_dvKB
 
   use intw_symmetries, only: set_symmetry_relations, multable, rot_atoms, &
-                             symtable, rtau_index, rtau, rtau_cryst
+                             symtable, rtau_index, rtau, rtau_cryst, &
+                             allocate_and_build_spin_symmetry_matrices, &
+                             find_inverse_symmetry_matrices_indices, &
+                             find_size_of_irreducible_k_set
 
   use intw_fft, only: generate_nl, allocate_fft
 
@@ -129,6 +132,7 @@ program ep_on_trFS_dV
   ! for part II
   logical :: q_points_consistent
   logical :: full_mesh_q, IBZ_q
+  integer :: nq_irr
   integer :: iq, ir, jr, ir1, ir2, ir3
   real(dp) :: qpoint(3), rvec(3)
   complex(dp) :: facq
@@ -147,44 +151,141 @@ program ep_on_trFS_dV
   complex(dp), allocatable :: dvq_local(:,:,:,:)
   complex(dp), allocatable :: dvpsi(:,:,:,:,:)
 
+  ! timing
+  real(dp) :: time1, time2
+
   complex(dp), external :: zdotc
 
 
-  !================================================================================
-  ! Talk to the user
-  !================================================================================
-  write(*,'(A)') '====================================================='
-  write(*,'(A)') '|         e-p calculation on triangulated FS        |'
-  write(*,'(A)') '|  using interpolation of dV on the triangulated q  | '
-  write(*,'(A)') '|        ---------------------------------          |'
-  write(*,'(A)') '====================================================='
-  write(*,'(A)') '|  waiting for input file...                        |'
+  20 format(A)
+  30 format(A,F8.2,6X,A)
 
   !================================================================================
-  ! Read the input files
+  ! Beginning
+  !================================================================================
+
+  call get_timing(time1)
+
+  write(*,20) '====================================================='
+  write(*,20) '|               program ep_on_triFS_dV              |'
+  write(*,20) '|         e-p calculation on triangulated FS        |'
+  write(*,20) '|  using interpolation of dV on the triangulated q  | '
+  write(*,20) '|         ---------------------------------         |'
+  write(*,20) '====================================================='
+
+
+  !================================================================================
+  ! Read the input file
   !================================================================================
 
   call read_input(read_status)
 
-  if (read_status) then
-    stop
-  end if
+  if (read_status) stop
 
   ! check right method is chosen in intw.in
   if ( ep_interp_method /= 'dV_interpolate' ) then
-    write(*,'(A)') ' ep_interp_method /= dV_interpolate in input. Stopping.'
+    write(*,*) 'ep_interp_method /= dV_interpolate in input. Stopping.'
     stop
   end if
 
-  ! Establish number of bands
-  write(*,*) ' use_exclude_bands =', use_exclude_bands
-  ! this needs to be invoked before set_num_bands
+
+  !================================================================================
+  ! Read the parameters from the SCF calculation
+  !================================================================================
+
+  write(*,20) '| - Reading calculation parameters...               |'
+
   call read_parameters_data_file_xml()
+
+
+  !================================================================================
+  ! Set the number of bands
+  !================================================================================
+
   ! this will read num_wann_intw and num_bands_intw dimensions
   call set_num_bands()
-  write(*,*) ' num_bands_intw = ', num_bands_intw
 
-  ! choose Fermi surface sheets according to ep_interp_bands
+
+  !================================================================================
+  ! Print spin information
+  !================================================================================
+
+  if (nspin==1) then
+    write(*,20) '| - Paramagnetic calculation nspin=1                |'
+  elseif (nspin==2) then
+    write(*,20) '| - Spin-polarized calculation nspin = 2            |'
+    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
+  else
+    write(*,20) '*****************************************************'
+    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
+    write(*,20) '*            program stops.                         *'
+    write(*,20) '*****************************************************'
+    stop
+  endif
+
+  write(*,20) '|         ---------------------------------         |'
+
+
+  !================================================================================
+  ! Set symmetry arrays
+  !================================================================================
+
+  write(*,20) '| - Setting symmetry arrays...                      |'
+
+  ! Set the rotation table for each atom and symmetry
+  allocate(rtau_index(nat,nsym))
+  allocate(rtau(3,nsym,nat))
+  allocate(rtau_cryst(3,nsym,nat))
+
+  call rot_atoms(nat, nsym, tau)
+
+  ! Compute the indices of the inverse rotation matrices
+  call find_inverse_symmetry_matrices_indices()
+
+  ! Calculate the multiplication talble for symmetry operations
+  call multable(nsym, s, symtable)
+
+  ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
+  call allocate_and_build_spin_symmetry_matrices(nsym)
+
+  write(*,20) '|         ---------------------------------         |'
+
+
+  !================================================================================
+  ! Set up the gvec array and all FFT variables
+  !================================================================================
+
+  write(*,20) '| - Reading G vectors...                            |'
+
+  call get_gvec()
+
+  ! Allocate useful variables
+  call allocate_fft()
+
+  ! Generate some important indices for FFT
+  call generate_nl()
+
+  write(*,20) '|         ---------------------------------         |'
+
+
+  !================================================================================
+  ! Read PPs
+  !================================================================================
+
+  write(*,20) '| - Reading pseudopotentials...                     |'
+
+  call read_all_pseudo()
+
+  write(*,20) '|                    PPs are OK                     |'
+
+  ! Allocate and set PP variables
+  call init_KB_PP()
+
+
+  !================================================================================
+  ! Choose Fermi surface sheets according to ep_interp_bands
+  !================================================================================
+
   if ( ep_interp_bands == 'intw_bands' ) then
     nfs_sheets_tot = num_bands_intw
     allocate(nfs_sheet(nfs_sheets_tot))
@@ -199,14 +300,15 @@ program ep_on_trFS_dV
     end do
   end if
 
+
   !******************************** Part I ************************************
 
   !================================================================================
   ! Read prefix.off and velocity file(s)
   !================================================================================
 
-  write(*,'(A)') '====================================================='
-  write(*,'(A)') '|    reading .off and v_k files...                  |'
+  write(*,20) '====================================================='
+  write(*,20) '| - Reading .off and v_k files...                   |'
 
   allocate(nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
   allocate(nkpt_tr_ibz(nfs_sheets_tot))
@@ -218,7 +320,7 @@ program ep_on_trFS_dV
     if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
 
     file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
-    write(*,*) is, file_off
+    write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
@@ -243,12 +345,12 @@ program ep_on_trFS_dV
   nkpt_tr_tot = sum(nkpt_tr)
   nkpt_tr_ibz_tot = sum(nkpt_tr_ibz)
 
-  write(*,'(A)') '|   Number of k-points (total vertices):            |'
-  write(*,*) nkpt_tr_tot
-  write(*,'(A)') '|   Number of k-points in IBZ (total vertices):     |'
-  write(*,*) nkpt_tr_ibz_tot
-  write(*,'(A)') '|   Number of total faces:                          |'
-  write(*,*) sum(nface_tr)
+  write(*,20) '|   Number of k-points (total vertices):            |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_tot, '|'
+  write(*,20) '|   Number of k-points in IBZ (total vertices):     |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_ibz_tot, '|'
+  write(*,20) '|   Number of total faces:                          |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr), '|'
 
 
   allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
@@ -329,14 +431,19 @@ program ep_on_trFS_dV
 
   end do
 
-  write(*,'(A)') '|    .... done reading                              |'
-  write(*,'(A)') '|================================================== |'
+  write(*,20) '|   .... reading done                               |'
+
+  ! print*, kpts_tr_area(1), vabsk_tr(1)
+  ! print*, kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
+  write(*,20) '|   Total FS area:                                  |'
+  write(*,'(A1,3X,F12.6,A19,17X,A1)') '|', sum(kpts_tr_area), ' (2 x pi / alat)^2 ', '|'
+
+  write(*,20) '|         ---------------------------------         |'
 
 
-  print*, kpts_tr_area(1), vabsk_tr(1)
-  print*, kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
-  print*, 'total area FS = ', sum(kpts_tr_area), ' (2 x pi / alat)^2 ' ! OK
-
+  !================================================================================
+  ! Run nscf calculation for the FS k-points
+  !================================================================================
 
   if ( nscf_code == "QE" ) then
     call QE_nscf()
@@ -346,110 +453,122 @@ program ep_on_trFS_dV
     stop "ERROR: Invalid value for nscf_code variable."
   endif
 
-
-  write(*,'(A)') ' !  ---------------- Part I completed ----------------------'
+  write(*,20) '|                                                   |'
+  write(*,20) '| ---------------- Part I completed --------------- |'
+  write(*,20) '|                                                   |'
+  write(*,20) '====================================================='
 
 
   !******************************** Part II ************************************
 
   !================================================================================
-  ! Read phonon input and and generate coarse meshes of q-points
+  ! Read phonon information
   !================================================================================
 
-  ! q_irr vectors info is obtained through this (it is contained in qlist.txt file)
+  write(*,20) '| - Reading phonon info...                          |'
+
+  ! Read irreducible q-points and irreducible patterns
   call read_ph_information_xml()
 
-  write(*,*) ' nqirr = ', nqirr
-  write(*,*) ' nq1, nq2, nq3 = ', nq1, nq2, nq3
+  allocate(q_irr_cryst(3,nqirr))
 
-  ! Full zone qmesh
+  write(*,20) ' q_irr_cart               q_irr_cryst'
+
+  do iq=1,nqirr
+    q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
+    write(*,'(6f10.4)') q_irr(:,iq), q_irr_cryst(:,iq)
+  enddo
+
+  write(*,20) '|         ---------------------------------         |'
+
+
+  !================================================================================
+  ! Build the phonon q-mesh
+  !================================================================================
+
+  write(*,20) '| - Building q-mesh...                              |'
+
   nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
+
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
-  ! Wigner-Seitz R points
-  call allocate_and_build_ws_irvec_q()
+  ! Find the size of the irreducible set of q-points (IBZ)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh, nq_irr)
 
-  write(*,'(A)') ' qmesh and irvec_q meshes calculated'
 
-  ! Irreducible q-points
-  allocate(q_irr_cryst(3,nqirr))
+  !================================================================================
+  ! Set symmetry relations between irreducible q-points and full q-mesh
+  !================================================================================
+
   allocate(QE_folder_nosym_q(nqmesh))
   allocate(QE_folder_sym_q(nqmesh))
   allocate(nosym_G_q(3,nqmesh))
   allocate(sym_G_q(3,nqmesh))
   allocate(symlink_q(nqmesh,2))
 
-  ! cartesian to crystalline
-  write(*,'(A)') ' q_irr_cart               q_irr_cryst'
-  do iq=1,nqirr
-    qpoint = q_irr(:,iq)
-    call cryst_to_cart(1, qpoint, at, -1)
-    q_irr_cryst(:,iq) = qpoint
-    write(*,'(6f10.4)') q_irr(:,iq), q_irr_cryst(:,iq)
-  enddo
-
-  ! Relate by symmetry
-  ! (in principle, this is needed by get_dv)
-  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, qmesh, &
-                              q_points_consistent, &
+  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
                               QE_folder_nosym_q, QE_folder_sym_q, &
                               nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
-  ! write(*,*) ' symlink_q calculated'
-  ! print*, symlink_q(:,1)
-  ! print*, symlink_q(:,2)
 
-  ! Also need to relate atoms by symmetry (needed by get_dv --> dvq)
-  call multable(nsym, s, symtable)
-  allocate(rtau_index(nat,nsym))
-  allocate(rtau(3,nsym,nat))
-  allocate(rtau_cryst(3,nsym,nat))
-  call rot_atoms(nat, nsym, tau)
+
+  !================================================================================
+  ! Check that the number of q-points corresponds to either a full mesh or the IBZ
+  !================================================================================
+
+  if (full_mesh_q .and. IBZ_q) then
+    write(*,20) '| - The qpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with a full 1BZ and a            |'
+    write(*,20) '|   IBZ has also been found.                        |'
+  else if(IBZ_q) then
+    write(*,20) '| - The qpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with an IBZ.                     |'
+  else
+    write(*,20) '**********************************************************'
+    write(*,20) '* The qpoints present in the QE folders are not consistent'
+    write(*,20) '* with the parameters of the input file!                 '
+    write(*,20) '**********************************************************'
+    write(*,20) '* debug information:                                *'
+    write(*,*) '*        nqpoints_QE = ',nqirr
+    write(*,*) '*        nqmesh      = ',nqmesh
+    write(*,*) '*        nq_irr      = ',nq_irr
+    stop
+  end if
+
 
   !================================================================================
   ! Obtain dV(q) (as in the ep_elements utility written by Haritz).
-  ! Then Fourier transform.
   !================================================================================
 
-  ! read G vectors
-  write(*,'(A)') '|       - Reading G vectors...                      |'
-  call get_gvec()
+  write(*,20) '| - Reading induced potentials...                   |'
 
-  ! for fft, allocate useful variables and generate index mapping of G-vectors
-  write(*,'(A)') '|       - Initializing  FFT mapping... -            |'
-  call allocate_fft()
-  call generate_nl()
-  write(*,'(A)') '|           ---------------------------------       |'
-
-
-  ! Read PPs
-  write(*,'(A)') '|       - Reading pseudopotentials...               |'
-  call read_all_pseudo()
-  write(*,'(A)') '|                    PPs are OK                     |'
-  write(*,'(A)') '|           ---------------------------------       |'
-
-  ! Allocate and set PP variables
-  call init_KB_PP()
-
-  ! Read the induced potentials
-  write(*,'(A)') '|       - Reading induced potentials...             |'
   call read_allq_dvr()
-  write(*,'(A)') '====================================================='
 
+  write(*,20) '====================================================='
+
+
+  !================================================================================
   ! Fourier transform a la Wannier of q->R of dvq_local using the Wigner-Seitz supercell grid.
   ! Loop over whole mesh: obtain dvq_local for each q-point and add it to the Fourier transform
+  !================================================================================
 
-  ! Allocate induced potential related variables
-  allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
+  ! Wigner-Seitz R points
+  write(*,20) '| - Building WS mesh...                             |'
+
+  call allocate_and_build_ws_irvec_q()
+
+  write(*,20) '| - Fourier transform induced potential...          |'
 
   ! Potential in the supercell using Wigner-Seitz R points
   allocate(dvq_local_R(nrpts_q,nr1*nr2*nr3,3*nat,nspin,nspin))
 
+  allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
   dvq_local_R = cmplx_0
+
   do iq = 1, nqmesh
 
     qpoint = qmesh(:,iq)
-    write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
+    write(*,'(A12,I5,3f11.5,A3)') '|     qpoint', iq, qpoint, "  |"
 
     ! Compute induced potential using symmetries
     dvq_local = cmplx_0
@@ -475,13 +594,18 @@ program ep_on_trFS_dV
   end do
   dvq_local_R = dvq_local_R / real(nqmesh,dp) ! normalize Fourier transform
 
-
- write(*,'(A)') ' !  ---------------- Part II completed ----------------------'
+  write(*,20) '|                                                   |'
+  write(*,20) '|  --------------- Part II completed -------------- |'
+  write(*,20) '|                                                   |'
+  write(*,20) '====================================================='
 
   ! DUDA dvq_local_R en la supercelda (valores en r+R) deberia salir real?
 
 
   !******************************* Part III *************************************
+
+  write(*,20) '| - Interpolating e-p elements...                   |'
+
   ! For the a2F integral we will need a double loop on kpoints of the FS triangulation.
   ! In this part the final ep element is calculated on the go for q=k'-k after
   ! backtransform of dV local:
@@ -526,6 +650,8 @@ program ep_on_trFS_dV
         ik = ik + 1
         ik1 = ik1 + 1
 
+        write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ik, "/", nkpt_tr_ibz_tot, ' (ik: ', ik1, ")                 |"
+
         kpoint = kpts_tr(:,ik1) ! this is cartesians x 2pi/alat. Transform to cryst.
         call cryst_to_cart(1, kpoint, at, -1)
 
@@ -548,7 +674,7 @@ program ep_on_trFS_dV
 
             qpoint = kpoint_p-kpoint
 
-            ! Fourier backtransformi a la Wannier: interpolation of dV local at qpoint
+            ! Fourier backtransform a la Wannier: interpolation of dV local at qpoint
             ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
             ! we would do in Wannier.
 
@@ -565,20 +691,16 @@ program ep_on_trFS_dV
               end do ! R in WS
             end do ! r in unit cell
 
-            ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
-            ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
+            ! Multiply psi_k with induced potential + local part of the KB PP:
+            !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
             call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
 
-            ! Add non-local contribution:
-            ! -psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
-            !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
-            !                                  (lokala) + (ez lokala)
+            ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
+            !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
+            !                   (local)     + (non-local)
             call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
 
-            ! -QE-ren subroutina goikoaren berdina egiteko.
-            !  Osagai kanonikoak, ez dira moduak, kontuz.
-            !  matrize elementuak kalkulatu: ep_element(k',k) = k+q,k
-
+            ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
             do iat=1,3*nat
               do js=1,nspin
                 do is=1,nspin
@@ -599,8 +721,6 @@ program ep_on_trFS_dV
 
         end do ! sheet'
 
-        print*, ik, ik1
-
       end do ! k
 
       ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
@@ -608,17 +728,32 @@ program ep_on_trFS_dV
     end do ! sheet
 
     close(unit_ep)
-    write(*,'(A)') '!      e-p elements interpolated and written to file:         !'
-    write(*,'(A)') trim(file_ep)
+
+    write(*,20) '| - e-p elements interpolated and written to file:  |'
+    write(*,20) "|   "//file_ep(1:max(47,len(trim(file_ep))))//" |"
 
   else ! have_ep--> read interpolated matrix elements
 
-    write(*,'(A)') '!     interpolated e-p file already exists. Check!            !'
-    write(*,'(A)') trim(file_ep)
+    write(*,20) '| - interpolated e-p file already exists. Check!    |'
+    write(*,20) "|   "//file_ep(1:max(47,len(trim(file_ep))))//" |"
 
   end if
 
-  write(*,*) ' !  ---------------- Part III completed ----------------------  !'
+  write(*,20) '|                                                   |'
+  write(*,20) '|  -------------- Part III completed -------------- |'
+  write(*,20) '|                                                   |'
+  write(*,20) '====================================================='
+
+
+  !================================================================================
+  ! Finish
+  !================================================================================
+
+  call get_timing(time2)
+
+  write(*,20) '|                      ALL DONE                     |'
+  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,20) '====================================================='
 
 
 contains
@@ -653,71 +788,11 @@ contains
 
     file_nscf = trim(mesh_dir)//trim(prefix)//'.nscf.in'
     file_nscf_out = trim(mesh_dir)//trim(prefix)//'.nscf.out'
+    dir_nscf = trim(mesh_dir)//trim(prefix)//"-nscf.save/"
 
     inquire(file=file_nscf_out, exist=have_nscf)
 
     if ( .not. have_nscf ) then
-      write(*,'(A)') '|   Calculating nscf wfcs with QE...                |'
-
-      unit_pw = find_free_unit()
-      open(unit_pw, file=trim(file_pw), status='old')
-
-      unit_nscf = find_free_unit()
-      open(unit_nscf, file=trim(file_nscf), status='unknown')
-
-      do
-        read(unit_pw,'(a)',end=100) line
-        lleft = trim(adjustl(line))
-        if ( lleft(1:11) == 'calculation' ) then
-          write(unit_nscf,*) " calculation = 'nscf'"
-        else if ( lleft(1:6) == 'prefix' ) then
-          write(unit_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
-        else if ( lleft(1:8) == 'K_POINTS' ) then
-          exit
-        else
-          write(unit_nscf,*) line
-        end if
-      end do
-
-      close(unit_pw)
-
-      write(unit_nscf,*) " K_POINTS {tpiba} "
-      write(unit_nscf,*) nkpt_tr_tot
-      do ikpt = 1, nkpt_tr_tot
-        write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ikpt), 1.0_dp
-      end do
-
-      close(unit_nscf)
-
-      !================================================================================
-      ! Write nscf-pw2intw.in file.
-      ! nscf data will be written in prefix-nscf.save directory
-      !================================================================================
-
-      unit_pw2intw = find_free_unit()
-      file_pw2intw_in = trim(mesh_dir)//'nscf-pw2intw.in'
-      file_pw2intw_out = trim(mesh_dir)//'nscf-pw2intw.out'
-      open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown')
-
-      write(unit_pw2intw, *) trim(prefix)
-      write(unit_pw2intw, *) "&inputpp"
-      write(unit_pw2intw, *) "  mesh_dir = './'"
-      write(unit_pw2intw, *) "  ph_dir = './'"
-      write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
-      write(unit_pw2intw, *) "/"
-
-      close(unit_pw2intw)
-
-
-      !================================================================================
-      ! Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
-      !================================================================================
-
-
-      ! Create directory for nscf calculation prefix-nscf.save
-      dir_nscf = trim(mesh_dir)//trim(prefix)//"-nscf.save/"
-      comando = 'mkdir -p '//trim(dir_nscf) ! it will not create it if it already exists
-      call execute_command_line(comando)
 
       ! Check if first and last wfc are present. If so, it probably means that the nscf
       ! calculation was already made, so skip this step
@@ -727,10 +802,69 @@ contains
       inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_wfcN)
 
       if ( have_wfc1 .and. have_wfcN ) then
-        write(*,*) ' nscf calculation seems to have already been performed (please check!).'
-        write(*,*) ' Skipping pw.x and pw2intw.x'
+        write(*,'(A)') '|   nscf seems to have already been performed.      |'
+        write(*,'(A)') '|   nscf calculation is skipped                     |'
       else
-        write(*,*) ' performing  nscf calculation'
+
+        write(*,'(A)') '| - Calculating nscf wfcs with QE...                |'
+
+        unit_pw = find_free_unit()
+        open(unit_pw, file=trim(file_pw), status='old')
+
+        unit_nscf = find_free_unit()
+        open(unit_nscf, file=trim(file_nscf), status='unknown')
+
+        do
+          read(unit_pw,'(a)',end=100) line
+          lleft = trim(adjustl(line))
+          if ( lleft(1:11) == 'calculation' ) then
+            write(unit_nscf,*) " calculation = 'nscf'"
+          else if ( lleft(1:6) == 'prefix' ) then
+            write(unit_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
+          else if ( lleft(1:8) == 'K_POINTS' ) then
+            exit
+          else
+            write(unit_nscf,*) line
+          end if
+        end do
+
+        close(unit_pw)
+
+        write(unit_nscf,*) " K_POINTS {tpiba} "
+        write(unit_nscf,*) nkpt_tr_tot
+        do ikpt = 1, nkpt_tr_tot
+          write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ikpt), 1.0_dp
+        end do
+
+        close(unit_nscf)
+
+        !================================================================================
+        ! Write nscf-pw2intw.in file.
+        ! nscf data will be written in prefix-nscf.save directory
+        !================================================================================
+
+        unit_pw2intw = find_free_unit()
+        file_pw2intw_in = trim(mesh_dir)//'nscf-pw2intw.in'
+        file_pw2intw_out = trim(mesh_dir)//'nscf-pw2intw.out'
+        open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown')
+
+        write(unit_pw2intw, *) trim(prefix)
+        write(unit_pw2intw, *) "&inputpp"
+        write(unit_pw2intw, *) "  mesh_dir = './'"
+        write(unit_pw2intw, *) "  ph_dir = './'"
+        write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
+        write(unit_pw2intw, *) "/"
+
+        close(unit_pw2intw)
+
+
+        !================================================================================
+        ! Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
+        !================================================================================
+
+        ! Create directory for nscf calculation prefix-nscf.save
+        comando = 'mkdir -p '//trim(dir_nscf) ! it will not create it if it already exists
+        call execute_command_line(comando)
 
         ! copy scf input files (force copy) to prefix-nscf.save
 
@@ -748,9 +882,13 @@ contains
 
         if ( (.not. exists_schema) .or. (.not. exists_charge_density) ) then
           ! Try searching them in QE scf directory (.save)
-          write(*,*) 'Continuation files for nscf not present in: ', trim(dir_scf)
+          write(*,'(A)') '| - Continuation files for nscf not present in:     |'
+          write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
+
           dir_scf = trim(mesh_dir)//trim(prefix)//".save/"
-          write(*,*) 'Searching: ', trim(dir_scf)
+          write(*,'(A)') '| - Searching in:                                   |'
+          write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
+
           datafile = trim(dir_scf)//'charge-density.dat'
           inquire(file=datafile, exist=exists_charge_density_qe)
           datafile = trim(dir_scf)//'data-file-schema.xml'
@@ -762,7 +900,8 @@ contains
           end if
         end if
 
-        write(*,*) 'Using continuation files for nscf from directory: ', dir_scf
+        write(*,'(A)') '| - Using continuation files for nscf from:         |'
+        write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
 
         ! copy scf input files (force copy)
         comando = 'cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
@@ -777,7 +916,8 @@ contains
         else
           comando = trim(command_pw)//" < "//trim(file_nscf)//" > "//trim(file_nscf_out)
         end if
-        write(*,*) " Running QE with command:", comando
+        write(*,'(A)') "| - Running QE with command:                        |"
+        write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
         call execute_command_line(comando)
 
         ! Convert to INTW format invoking pw2intw.x
@@ -787,14 +927,16 @@ contains
         else
           comando = trim(command_pw2intw)//" < "//trim(file_pw2intw_in)//" > "//trim(file_pw2intw_out)
         end if
-        write(*,*) " Running pw2intw with command:", comando
+        write(*,'(A)') "| - Running pw2intw with command:                   |"
+        write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
+
         call execute_command_line(comando)
 
       end if
 
-
     else ! have_nscf = yes
-      write(*,*) ' File ', trim(file_nscf_out), ' already exists, so nscf calculation is skipped'
+      write(*,'(A)') '| - File '//file_nscf_out(1:max(25,len(trim(file_nscf_out))))//' already exists:  |'
+      write(*,'(A)') '|   nscf calculation is skipped!                    |'
     end if ! have_nscf
 
     return
@@ -836,7 +978,7 @@ contains
     inquire(file=file_s2intw_nscf_out, exist=have_nscf)
 
     if ( .not. have_nscf ) then
-      write(*,'(A)') '|   Calculating nscf wfcs with SIESTA...            |'
+      write(*,'(A)') '| - Calculating nscf wfcs with SIESTA...            |'
 
       unit_s2intw = find_free_unit()
       open(unit_s2intw, file=trim(file_siesta2intw), status='old')
@@ -879,8 +1021,6 @@ contains
       ! Run the nscf calculation and convert into intw format with siesta2intw.x
       !================================================================================
 
-      write(*,*) ' performing  nscf calculation'
-
       ! Check if density matrix file is present
       datafile = trim(mesh_dir)//trim(prefix)//".DM"
       inquire(file=datafile, exist=exists_density_matrix)
@@ -891,7 +1031,8 @@ contains
         stop
       end if
 
-      write(*,*) 'Using density matrix file: ', trim(datafile)
+      write(*,'(A)') '| - Using density matrix file:                      |'
+      write(*,'(A)') '|   '//datafile(1:max(47,len(trim(datafile))))//" |"
 
       ! invoke siesta2intw to save wfc's in INTW format.
       ! command_siesta2intw may contain running options (e.g. mpirun)
@@ -900,11 +1041,13 @@ contains
       else
         comando = trim(command_siesta2intw)//" < "//trim(file_s2intw_nscf)//" > "//trim(file_s2intw_nscf_out)
       end if
-      write(*,*) " Running siesta2intw with command:", comando
+      write(*,'(A)') "| - Running siesta2intw with command:               |"
+      write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
       call execute_command_line(comando)
 
     else ! have_nscf = yes
-      write(*,*) ' File ', trim(file_s2intw_nscf_out), ' already exists, so nscf calculation is skipped'
+      write(*,"(A)") "| - File "//file_s2intw_nscf_out(1:max(20,len(trim(file_s2intw_nscf_out))))//" already exists:       |"
+      write(*,"(A)") "|   nscf calculation is skipped!                    |"
     end if ! have_nscf
 
     return

@@ -291,7 +291,7 @@ contains
     read_status = .false.
 
 
-    write(*,20) '|       - Reading standard input file...            |'
+    write(*,20) '| - Reading standard input file...                  |'
     write(*,20) '|         namelist             ios                  |'
     write(*,20) '|         --------             ----                 |'
 

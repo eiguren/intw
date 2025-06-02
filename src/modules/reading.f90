@@ -678,18 +678,18 @@ contains
 
     ! control consistency with use_exclude_bands flag
     if ( have_nnkp .and. trim(use_exclude_bands) .eq. 'all' ) then
-            write(*, '(A)') '|  -  use_exclude_bands = all in input but          |'
-            write(*, '(A)') '|       - .nnkp file found. Inconsistency!!         |'
+            write(*, '(A)') '| - use_exclude_bands = all in input but            |'
+            write(*, '(A)') '| - .nnkp file found. Inconsistency!!               |'
             write(*, '(A)') ' Stopping '
             stop
     else if ( have_nnkp .and. trim(use_exclude_bands) .eq. 'custom' ) then
-            write(*, '(A)') '|  -  use_exclude_bands = custom in input but       |'
-            write(*, '(A)') '|       - .nnkp file found. Inconsistency!!         |'
+            write(*, '(A)') '| - use_exclude_bands = custom in input but         |'
+            write(*, '(A)') '| - .nnkp file found. Inconsistency!!               |'
             write(*, '(A)') ' Stopping '
             stop
     else if ( .not. have_nnkp .and. trim(use_exclude_bands) .eq. 'wannier' ) then
-            write(*, '(A)') '|  -  use_exclude_bands = wannier in input but      |'
-            write(*, '(A)') '|       - .nnkp file not found. Inconsistency!!     |'
+            write(*, '(A)') '| - use_exclude_bands = wannier in input but        |'
+            write(*, '(A)') '| - .nnkp file not found. Inconsistency!!           |'
             write(*, '(A)') ' Stopping '
             stop
     end if
@@ -699,8 +699,8 @@ contains
     ! from .nnkp
     if ( trim(use_exclude_bands) .eq. 'wannier' ) then
       !
-      write(*, '(A)') '|       - .nnkp file found                          |'
-      write(*, '(A)') '|       - Setting number of bands from .nnkp        |'
+      write(*, '(A)') '| - .nnkp file found                                |'
+      write(*, '(A)') '| - Setting number of bands from .nnkp              |'
       write(*, '(A)') '|           ---------------------------------       |'
       !
       nnkp_unit = find_free_unit()
@@ -733,7 +733,7 @@ contains
       !
     ! all bands from DFT
     else if ( trim(use_exclude_bands) .eq. 'all' ) then
-      write(*, '(A)') '|       - Setting number of bands from calculation  |'
+      write(*, '(A)') '| - Setting number of bands from calculation        |'
       write(*, '(A)') '|           ---------------------------------       |'
       !
       allocate(band_excluded_intw(nbands))
@@ -743,8 +743,8 @@ contains
       !
     ! custom bands from input
     else if ( trim(use_exclude_bands) .eq. 'custom' ) then
-      write(*, '(A)') '|       - Setting custom number of bands from:      |'
-      write(*, '(A)') '|', include_bands_initial, ' to ', include_bands_final
+      write(*, '(A)') '| - Setting custom number of bands:                 |'
+      write(*, '(A9,I4,A4,I4,31X,A1)') '|   From ', include_bands_initial, ' to ', include_bands_final, '|'
       write(*, '(A)') '|           ---------------------------------       |'
       allocate(band_excluded_intw(nbands))
       num_bands_intw = include_bands_final - include_bands_initial + 1

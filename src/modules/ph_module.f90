@@ -187,9 +187,13 @@ contains
 
     nmodes = 3 * nat
 
-    write(*,"(4(a,i4))     ")"PH BZ division is             : ", nq1," x",nq2," x",nq3
-    write(*,"(a,i4)"     ) "Input n. of irreducible points: ", nqirr
+    write(*,"(A)") "|   PH BZ division is:                              |"
+    write(*,"(3(A,I2),38X,A1)") "|   ", nq1, " x", nq2, " x", nq3, "|"
+    write(*,"(A)") "|   Input n. of irreducible points:                 |"
+    write(*,"(A1,3X,I3,45X,A1)") "|", nqirr, "|"
 
+
+    write(*,"(A)") "| - Reading irreducible q-point list...             |"
 
     ! Read irreducible q list
     allocate(q_irr(3,nqirr))
@@ -205,16 +209,16 @@ contains
     close(unit=io_unit)
 
 
+    write(*,"(A)") "| - Reading displacement patterns...                |"
+
     io_unit = find_free_unit()
     datafile = trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat"
     open(unit=io_unit, file=datafile, status="old", iostat=ios)
     if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening irrq_patterns."
 
     !Read displacement patters for each q.
-    allocate (u_irr(nmodes,nmodes,nqirr))
+    allocate(u_irr(nmodes,nmodes,nqirr))
 
-    write(*,"(a)") "Reading displacement patterns: "
-    write(*,"(a)") datafile
     do iq=1, nqirr
        read(unit=io_unit,fmt=*)dummy
        do imode=1,3*nat
@@ -765,8 +769,8 @@ contains
             form='unformatted', status='old', access='direct', recl=record_length)
        if (ios /= 0) stop "ERROR: read_allq_dvr: error opening dv_name."
 !
-       write(unit=*,fmt="(2a,x,a,i4)")"Reading irreducible displacement dvscr file ", &
-            trim(dv_name),",ios: ",ios
+       write(unit=*,fmt="(a,i2,a3)") "|   Reading file "// &
+            dv_name(1:max(25,len(trim(dv_name))))//" (ios ", ios, ") |"
        do mode=1, 3*nat
           if (spinorb_mag) then
              read (io_unit, rec = mode, iostat = ios) (dvscf_irr(1:nr1*nr2*nr3, iq, mode,ispin),ispin=1,nspin**2)

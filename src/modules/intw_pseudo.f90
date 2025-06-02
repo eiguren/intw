@@ -103,10 +103,11 @@ contains
 
       if ( nt>=1 .and. nt<=9 ) then
         write(tag1,"(i1)") nt
-        write(*,"(a)") "|       - Reading:   "//tag1//"-KBPP.txt"//" ..                  |"
+        write(*,"(a)") "|     "//tag1//"-KBPP.txt"//" ..                                 |"
         file_pseudo=trim(mesh_dir)//trim(prefix)//".save.intw/"//tag1//"-KBPP.txt"
       else if ( nt>=10 .and. nt<=nt_max ) then
         write(tag2,"(i2)") nt
+        write(*,"(a)") "|     "//tag2//"-KBPP.txt"//" ..                               |"
         file_pseudo=trim(mesh_dir)//trim(prefix)//".save.intw/"//tag2//"-KBPP.txt"
       else
         stop "ERROR: read_all_pseudo: ntyp > nt_max"
