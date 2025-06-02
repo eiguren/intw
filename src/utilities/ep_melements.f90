@@ -108,22 +108,20 @@ program ep_melements
   !
   !
   !================================================================================
-  ! Begining
+  ! Beginning
   !================================================================================
   !
   call get_timing(time1)
   !
   write(*,20) '====================================================='
-  write(*,20) '|                  program me                       |'
-  write(*,20) '|        ---------------------------------          |'
+  write(*,20) '|                program ep_melements               |'
+  write(*,20) '|         ---------------------------------         |'
   write(*,20) '====================================================='
   !
   !
   !================================================================================
   ! Read the necessary information from standard input file
   !================================================================================
-  !
-  write(*,20) '|       - Waiting for input file...                 |'
   !
   call read_input(read_status)
   !
@@ -146,10 +144,10 @@ program ep_melements
   !
   !
   !================================================================================
-  ! Read the parameters from the SCF QE calculation
+  ! Read the parameters from the SCF calculation
   !================================================================================
   !
-  write(*,20) '|       - Reading calculation parameters...         |'
+  write(*,20) '| - Reading calculation parameters...               |'
   !
   call read_parameters_data_file_xml()
   !
@@ -187,10 +185,10 @@ program ep_melements
   !================================================================================
   !
   if (nspin==1) then
-    write(*,20) '|       - Paramagnetic calculation nspin=1          |'
+    write(*,20) '| - Paramagnetic calculation nspin=1                |'
   elseif (nspin==2) then
-    write(*,20) '|       - Spin-polarized calculation nspin = 2      |'
-    if (noncolin) write(*,20) '|       - Non-collinear spin calculation            |'
+    write(*,20) '| - Spin-polarized calculation nspin = 2            |'
+    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
     write(*,20) '*****************************************************'
     write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
@@ -199,14 +197,14 @@ program ep_melements
     stop
   endif
   !
-  write(*,20) '|           ---------------------------------       |'
+  write(*,20) '|         ---------------------------------         |'
   !
   !
   !================================================================================
   ! Set symmetry arrays
   !================================================================================
   !
-  write(*,20) '|       - Setting symmetry arrays...                |'
+  write(*,20) '| - Setting symmetry arrays...                      |'
   !
   ! Set the rotation table for each atom and symmetry
   allocate(rtau_index(nat,nsym))
@@ -224,14 +222,14 @@ program ep_melements
   ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
   call allocate_and_build_spin_symmetry_matrices(nsym)
   !
-  write(*,20) '|           ---------------------------------       |'
+  write(*,20) '|         ---------------------------------         |'
   !
   !
   !================================================================================
   ! Set up the gvec array and all FFT variables
   !================================================================================
   !
-  write(*,20) '|       - Reading G vectors...                      |'
+  write(*,20) '| - Reading G vectors...                            |'
   !
   call get_gvec()
   !
@@ -241,14 +239,14 @@ program ep_melements
   ! Generate some important indices for FFT
   call generate_nl()
   !
-  write(*,20) '|           ---------------------------------       |'
+  write(*,20) '|         ---------------------------------         |'
   !
   !
   !================================================================================
   ! Read PPs
   !================================================================================
   !
-  write(*,20) '|       - Reading pseudopotentials...               |'
+  write(*,20) '| - Reading pseudopotentials...                     |'
   !
   call read_all_pseudo()
   !
@@ -257,14 +255,14 @@ program ep_melements
   ! Allocate and set PP variables
   call init_KB_PP()
   !
-  write(*,20) '|           ---------------------------------       |'
+  write(*,20) '|         ---------------------------------         |'
   !
   !
   !================================================================================
   ! Read the kpoints from the calculation
   !================================================================================
   !
-  write(*,20) '|       - Reading k-points...                       |'
+  write(*,20) '| - Reading k-points...                             |'
   !
   allocate(kpoints_QE(3,nkpoints_QE))
   !
@@ -275,7 +273,7 @@ program ep_melements
   ! Build the wave function's k-mesh
   !================================================================================
   !
-  write(*,20) '|       - Building k-mesh...                        |'
+  write(*,20) '| - Building k-mesh...                              |'
   !
   nkmesh = nk1*nk2*nk3
   allocate(kmesh(3,nkmesh))
@@ -303,14 +301,14 @@ program ep_melements
   !================================================================================
   !
   if (full_mesh .and. IBZ) then
-    write(*,20) '|       - the kpoints present in the QE folders     |'
-    write(*,20) '|         are consistent with a full 1BZ and a      |'
-    write(*,20) '|         IBZ has also been found.                  |'
-    write(*,20) '|           ---------------------------------       |'
+    write(*,20) '| - The kpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with a full 1BZ and a            |'
+    write(*,20) '|   IBZ has also been found.                        |'
+    write(*,20) '|         ---------------------------------         |'
   else if(IBZ) then
-    write(*,20) '|       - the kpoints present in the QE folders     |'
-    write(*,20) '|         are consistent with an IBZ.               |'
-    write(*,20) '|           ---------------------------------       |'
+    write(*,20) '| - The kpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with an IBZ.                     |'
+    write(*,20) '|         ---------------------------------         |'
   else
     write(*,20) '**********************************************************'
     write(*,20) '* The kpoints present in the QE folders are not consistent'
@@ -328,7 +326,7 @@ program ep_melements
   ! Read phonon information
   !================================================================================
   !
-  write(*,20) '|       - Reading q-points...                      |'
+  write(*,20) '| - Reading q-points...                             |'
   !
   ! Read q-points and irreducible patterns
   call read_ph_information_xml()
@@ -343,7 +341,7 @@ program ep_melements
   ! Build the phonon q-mesh
   !================================================================================
   !
-  write(*,20) '|       - Building q-mesh...                        |'
+  write(*,20) '| - Building q-mesh...                              |'
   !
   nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
@@ -374,14 +372,14 @@ program ep_melements
   !================================================================================
   !
   if (full_mesh_q .and. IBZ_q) then
-    write(*,20) '|       - the qpoints present in the QE folders     |'
-    write(*,20) '|         are consistent with a full 1BZ and a      |'
-    write(*,20) '|         IBZ has also been found.                  |'
-    write(*,20) '|           ---------------------------------       |'
+    write(*,20) '| - The qpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with a full 1BZ and a            |'
+    write(*,20) '|   IBZ has also been found.                        |'
+    write(*,20) '|         ---------------------------------         |'
   else if(IBZ_q) then
-    write(*,20) '|       - the qpoints present in the QE folders     |'
-    write(*,20) '|         are consistent with an IBZ.               |'
-    write(*,20) '|           ---------------------------------       |'
+    write(*,20) '| - The qpoints present in the QE folders           |'
+    write(*,20) '|   are consistent with an IBZ.                     |'
+    write(*,20) '|         ---------------------------------         |'
   else
     write(*,20) '**********************************************************'
     write(*,20) '* The qpoints present in the QE folders are not consistent'
@@ -399,18 +397,18 @@ program ep_melements
   ! Read all wave functions
   !================================================================================
   !
-  write(*,20) '|       - Reading wave functions...                 |'
+  write(*,20) '| - Reading wave functions...                       |'
   !
   call allocate_and_get_all_irreducible_wfc()
   !
-  write(*,20) '|           ---------------------------------       |'
+  write(*,20) '|         ---------------------------------         |'
   !
   !
   !================================================================================
   ! Read the induced potentials
   !================================================================================
   !
-  write(*,20) '|       - Reading induced potentials...             |'
+  write(*,20) '| - Reading induced potentials...                   |'
   !
   call read_allq_dvr()
   !
@@ -421,7 +419,7 @@ program ep_melements
   ! Compute matrix elements
   !================================================================================
   !
-  write(*,20) '|       - Computing matrix elements...              |'
+  write(*,20) '| - Computing matrix elements...                    |'
   !
   ! Allocate wfc related variables
   allocate(list_igk(nG_max))
@@ -548,7 +546,7 @@ program ep_melements
   !
   call get_timing(time2)
   !
-  write(*,20) '|                     ALL DONE                       |'
+  write(*,20) '|                      ALL DONE                     |'
   write(*,30) '|     total time: ',time2-time1,' seconds            |'
   write(*,20) '====================================================='
 
