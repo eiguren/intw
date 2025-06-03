@@ -559,8 +559,8 @@ contains
     exist_kpath = .false.
     exist_qpath = .false.
 
-    write(*,20) '|       - Reading standard input file...            |'
-    write(*,20) '|         card:                                     |'
+    write(*,20) '| - Reading standard input file...                  |'
+    write(*,20) '|   card:                                           |'
 
     ! parse until K_PATH, Q_PATH
     do
@@ -603,10 +603,12 @@ contains
       !
     end do
 
-100 write(*,20) '|        EOF reached                                |'
+100 write(*,20) '|   EOF reached                                     |'
     if ( .not. exist_kpath .and. .not. exist_qpath) then
-      write(*,20) '|        no cards found                             |'
+      write(*,20) '|   no cards found                                  |'
     end if
+
+    write(*,20) '====================================================='
 
     20 format(A)
 

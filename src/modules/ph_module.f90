@@ -484,7 +484,7 @@ contains
       dynq_file = trim(intwdir)//trim(prefix)//".dyn_q"//trim(adjustl(iq_str))
       open(unit=dynq_unit, iostat=ierr, file=dynq_file, form='formatted', status='old')
       if (ierr /= 0 ) then
-        write(*,*) 'Error opening .dyn_q file in ',  intwdir,' . Stopping.'
+        write(*,*) 'Error opening .dyn_q file in ', trim(intwdir), ' . Stopping.'
         stop
       end if
       !
@@ -556,7 +556,7 @@ contains
     ! Apply ASR to q=0 matrix:
     ! \sum_{ja} dynq( ia, i, ja, j, q=0) = 0
     if (apply_asr) then
-      write(*,*) ' Applying ASR to all q vector indices'
+      write(*,'(A)') '|   Applying ASR to all q vector indices            |'
       iq = 1 !q=0 index in mesh
       call set_asr_dynq(nqmesh, iq, nat, dynq)
     end if

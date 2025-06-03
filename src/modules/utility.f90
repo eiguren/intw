@@ -367,8 +367,8 @@ end function intgr_spline_gaussq
     end do
 
     ! check how many point will we actually generate
-    if ( sum(nkstage)+1 - nkpath .ne. 0) &
-        write(*,*)' Actual path will have', sum(nkstage)+1, ' points instead of ', nkpath
+    if ( sum(nkstage)+1 /= nkpath ) &
+        write(*,'(A19,I4,A19,I4,A7)') '|   Path will have ', sum(nkstage)+1, ' points instead of ', nkpath, ' !    |'
 
     nkpath = sum(nkstage)+1
     allocate(kpath(3,nkpath))
