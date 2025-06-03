@@ -18,103 +18,157 @@
 !
 program w902intw
 
-    use kinds, only: dp
-    use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
-                              allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
-                              allocate_and_build_ham_r, write_ham_r
-    use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input
-    use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                            num_bands_intw
-    use intw_intw2wannier, only: read_nnkp_file, &
-                                 nnkp_num_kpoints
+  use kinds, only: dp
 
-!================================================================================
-!       Declare the variables
-!================================================================================
-    implicit none
+  use intw_utility, only: get_timing
 
-    character(256) :: nnkp_file
+  use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
+                            allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
+                            allocate_and_build_ham_r, write_ham_r
 
-    logical        :: read_status
-    real(kind=dp), allocatable :: eigenval(:,:)
+  use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input
 
+  use intw_reading, only: read_parameters_data_file_xml, set_num_bands
 
-!--------------------------------------------------------------------------------
-!================================================================================
-!       Talk to the user
-!================================================================================
-write(*,'(A)') '====================================================='
-write(*,'(A)') '|                  program w902intw                 |'
-write(*,'(A)') '|        ---------------------------------          |'
-write(*,'(A)') '====================================================='
-write(*,'(A)') '|    waiting for input file...                      |'
+  use intw_intw2wannier, only: read_nnkp_file
 
-!================================================================================
-!       read the input file
-!       Read in the necessary information from standard input
-!================================================================================
-    call read_input(read_status)
+  implicit none
 
-    if (read_status ) then
-           stop
-    end if
+  character(256) :: nnkp_file
+  logical :: have_nnkp
+
+  logical :: read_status
+
+  ! timing
+  real(dp) :: time1, time2
 
 
-!================================================================================
-!       read the parameters from the SCF QE calculation
-!================================================================================
-    call read_parameters_data_file_xml()
-
-    ! Set the number of bands for the calculation
-    call set_num_bands()
+  20 format(A)
+  30 format(A,F8.2,6X,A)
 
 
-!================================================================================
-!       read .nnkp file from w90
-!================================================================================
-    nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
-    call read_nnkp_file(nnkp_file)
+  !================================================================================
+  ! Beginning
+  !================================================================================
+
+  call get_timing(time1)
+
+  write(*,20) '====================================================='
+  write(*,20) '|                  program w902intw                 |'
+  write(*,20) '|         ---------------------------------         |'
+  write(*,20) '====================================================='
 
 
-!================================================================================
-!       read .chk file, build u matrix and write to file
-!================================================================================
-    allocate(eigenval(num_bands_intw,nnkp_num_kpoints))
-    call read_eig(eigenval)
+  !================================================================================
+  ! Read the input file
+  !================================================================================
 
-    ! MBR Note: when read_eig is called, eigenvalues are stored in eigenval_intw
-    ! of w90_setup. This eigenval array is a "copy" to be used OPTIONALLY
-    ! inside the utility if needed.
-    ! The next u_mesh, ham_k, ham_r builds use the internal eigenval_intw.
+  call read_input(read_status)
 
-    call allocate_and_build_u_mesh()
-    call write_formatted_u_mesh()
+  if (read_status) stop
 
 
-!================================================================================
-!       build Wigner-Seitz cell
-!================================================================================
-    call allocate_and_build_ws_irvec(nk1,nk2,nk3)
+  !================================================================================
+  ! Check that $prefix.nnkp is present
+  !================================================================================
+
+  nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
+
+  inquire(file=nnkp_file, exist=have_nnkp)
+
+  if(.not. have_nnkp) then
+    write(*,20) '**********************************************************'
+    write(*,20) '* Could not find the file '//trim(nnkp_file)
+    write(*,20) '* Did you run W90 -pp $seed to get the parameter file?   '
+    write(*,20) '**********************************************************'
+    stop
+  end if
+  write(*,20) '| - .nnkp file found                                |'
+  write(*,20) '|         ---------------------------------         |'
 
 
-!================================================================================
-!       build H(k) and H(R), write H(R) to file
-!================================================================================
-    call allocate_and_build_ham_k()
-    call allocate_and_build_ham_r()
+  !================================================================================
+  ! Read the parameters from the SCF calculation
+  !================================================================================
 
-    call write_ham_r()
+  write(*,20) '| - Reading calculation parameters...               |'
+
+  call read_parameters_data_file_xml()
 
 
-!================================================================================
-!       clean up and finish
-!================================================================================
-    deallocate(eigenval)
+  !================================================================================
+  ! Set the number of wave functions
+  !================================================================================
 
-    write(*,'(A)') '====================================================='
-    write(*,'(A)') '|               end program w902intw                |'
-    write(*,'(A)') '|        ---------------------------------          |'
-    write(*,'(A)') '====================================================='
+  call set_num_bands()
 
+
+  !================================================================================
+  ! Read the .nnkp file
+  !================================================================================
+
+  write(*,20) '| - Reading nnkp file...                            |'
+
+  call read_nnkp_file(nnkp_file)
+
+  write(*,20) '|         ---------------------------------         |'
+
+
+  !================================================================================
+  ! Read the .eig file
+  !================================================================================
+
+  write(*,20) '| - Reading eig file...                             |'
+
+  call read_eig()
+
+
+  !================================================================================
+  ! Read the .chk file, build u matrix and write to file
+  !================================================================================
+
+  write(*,20) '| - Reading and building Wannier U matrix...        |'
+
+  call allocate_and_build_u_mesh()
+
+  write(*,20) '| - Saving Wannier U matrix...                      |'
+
+  call write_formatted_u_mesh()
+
+
+  !================================================================================
+  ! Build Wigner-Seitz cell
+  !================================================================================
+
+  write(*,20) '| - Building WS mesh...                             |'
+
+  call allocate_and_build_ws_irvec(nk1, nk2, nk3)
+
+
+  !================================================================================
+  ! Build H(k) and H(R), write H(R) to file
+  !================================================================================
+
+  write(*,20) '| - Building Wannier H(k) and H(R)...               |'
+
+  call allocate_and_build_ham_k()
+  call allocate_and_build_ham_r()
+
+  write(*,20) '| - Saving Wannier H(R)...                          |'
+
+  call write_ham_r()
+
+  write(*,20) '====================================================='
+
+
+  !================================================================================
+  ! Finish
+  !================================================================================
+
+  call get_timing(time2)
+
+  write(*,20) '|                      ALL DONE                     |'
+  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,20) '====================================================='
 
 end program w902intw
