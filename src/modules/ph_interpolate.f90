@@ -277,7 +277,8 @@ module intw_ph_interpolate
       end do
     end do
     !
-    print*, '#max nrpts_q = ',  nrpts_qtau12
+    ! print*, '#max nrpts_q = ',  nrpts_qtau12
+    ! write(*,'(A19,I6,27X,A1)') '|   #max nrpts_q = ', nrpts_qtau, '|'
 
   end subroutine allocate_and_build_ws_irvec_qtau
 
