@@ -67,7 +67,7 @@ program a2F_on_trFS
 
   logical :: read_status
   logical :: q_points_consistent, full_mesh_q, IBZ_q
-  character(5) :: is_loc, js_loc, comenta
+  character(5) :: is_loc, comenta
   character(100) :: file_off, file_a2f
   integer :: unit_off, unit_a2f
   integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
@@ -91,7 +91,7 @@ program a2F_on_trFS
   integer :: iomega, iks, ish, iksp, ishp, ibp
   real(dp) :: omega, omega_step, rfacq, dosef, dsk_vk_2
   real(dp) :: qpoint(3), kpoint(3), kpoint_p(3)
-  real(dp), allocatable :: alpha2F(:,:,:,:), w2_qint(:), w_qint(:), lambda(:)
+  real(dp), allocatable :: alpha2F(:,:), w2_qint(:), w_qint(:), lambda(:)
   complex(dp), allocatable :: gep_int(:)
   complex(dp), allocatable :: dyn_qint(:,:), u_qint(:,:)
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
@@ -644,7 +644,7 @@ program a2F_on_trFS
   ! ep elements
   allocate(gep_int(3*nat))
   ! integrals
-  allocate(alpha2F(nspin,nspin,3*nat,nomega), lambda(3*nat))
+  allocate(alpha2F(3*nat,nomega), lambda(3*nat))
 
 
   alpha2F = 0.0_dp
@@ -705,54 +705,47 @@ program a2F_on_trFS
           ! band indices to be used are the FS sheet indices given at the beginning of the loop.
           ! I select only those ones for the interpolated elements
 
-          do is=1,nspin
-            do js=1,nspin
-              !
-              gep_int = cmplx_0
-              !
-              do imode = 1, 3*nat
-                !
-                if (w_qint(imode)>eps_8) then ! stable mode frequency
-                  do iat=1,3*nat
-                    k = (iat-1)/3 + 1 ! atom index
-                    rfacq = 2.0_dp * w_qint(imode) * amass(ityp(k)) * (pmass / Ha_to_Ry) ! pmass is in Ha a.u., so pass to Ry
-                    gep_int(imode) = gep_int(imode) + &
-                        aep_mat_el(ikp,ik,is,js,iat) * u_qint(iat,imode) / sqrt(rfacq)
-                  end do
-                end if
-                !
-                ! for testing:
-                write(999, fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
-                !
+          gep_int = cmplx_0
+          do imode = 1, 3*nat
+            !
+            if (w_qint(imode)>eps_8) then ! stable mode frequency
+              do iat=1,3*nat
+                k = (iat-1)/3 + 1 ! atom index
+                rfacq = 2.0_dp * w_qint(imode) * amass(ityp(k)) * (pmass / Ha_to_Ry) ! pmass is in Ha a.u., so pass to Ry
+                gep_int(imode) = gep_int(imode) + &
+                    sum(aep_mat_el(ikp,ik,:,:,iat)) * u_qint(iat,imode) / sqrt(rfacq)
               end do
+            end if
+            !
+            ! for testing:
+            write(999, fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
+            !
+          end do
 
-              ! Sum over modes and weight with areas and velocities v_k * v_k' for contribution of k',k pair to a2F.
-              ! Mind, the areas were in (tpi/alat)**2 units.
-              ! Add weight of this irreducible wedge (IBZ) to the integral using factor_area_ibz.
+          ! Sum over modes and weight with areas and velocities v_k * v_k' for contribution of k',k pair to a2F.
+          ! Mind, the areas were in (tpi/alat)**2 units.
+          ! Add weight of this irreducible wedge (IBZ) to the integral using factor_area_ibz.
 
-              dsk_vk_2 = kpts_tr_ibz_area(ik) * factor_area_ibz(ish) * kpts_tr_area(ikp) * &
-                        (tpi/alat)**4 / ( vabsk_tr_ibz(ik) * vabsk_tr(ikp) * Ha_to_Ry * Ha_to_Ry ) ! velocities in Hartree a.u., pass to Ry
+          dsk_vk_2 = kpts_tr_ibz_area(ik) * factor_area_ibz(ish) * kpts_tr_area(ikp) * &
+                    (tpi/alat)**4 / ( vabsk_tr_ibz(ik) * vabsk_tr(ikp) * Ha_to_Ry * Ha_to_Ry ) ! velocities in Hartree a.u., pass to Ry
 
-              do iomega = 1, nomega ! frequencies
-                omega = omega_ini + omega_step*real(iomega-1,dp)
-                do imode = 1, 3*nat
+          do iomega = 1, nomega ! frequencies
+            omega = omega_ini + omega_step*real(iomega-1,dp)
+            do imode = 1, 3*nat
 
-                  ! smear with a gaussian
-                  rfacq = smeared_delta(omega-w_qint(imode), osmear_q) ! smear omega(q)
-                  rfacq = rfacq - smeared_delta(omega+w_qint(imode), osmear_q) ! add antisymmetric term at -wq to remove divergence at w=0
+              ! smear with a gaussian
+              rfacq = smeared_delta(omega-w_qint(imode), osmear_q) ! smear omega(q)
+              rfacq = rfacq - smeared_delta(omega+w_qint(imode), osmear_q) ! add antisymmetric term at -wq to remove divergence at w=0
 
-                  ! or with a lorentzian
-                  ! rfacq = smeared_lorentz(omega-w_qint(imode), osmear_q) ! smear omega(q)
-                  ! rfacq = rfacq - smeared_lorentz(omega+w_qint(imode), osmear_q) ! add antisymmetric term at -wq to remove divergence at w=0
+              ! or with a lorentzian
+              ! rfacq = smeared_lorentz(omega-w_qint(imode), osmear_q) ! smear omega(q)
+              ! rfacq = rfacq - smeared_lorentz(omega+w_qint(imode), osmear_q) ! add antisymmetric term at -wq to remove divergence at w=0
 
-                  alpha2F(is,js,imode,iomega) = alpha2F(is,js,imode,iomega) + &
-                          (abs(gep_int(imode)))**2 * rfacq * dsk_vk_2
+              alpha2F(imode,iomega) = alpha2F(imode,iomega) + &
+                      (abs(gep_int(imode)))**2 * rfacq * dsk_vk_2
 
-                end do ! imode
-              end do ! iomega
-
-            end do ! spin js
-          end do ! spin is
+            end do ! imode
+          end do ! iomega
 
         end do ! k' (kpoint)
       end do ! k' (sheet)
@@ -763,57 +756,34 @@ program a2F_on_trFS
   ! divide by the N(E_F) factor and by 1BZ-volume^2 (because of k and k' integrals)
   alpha2F = alpha2F/dosef/vol1bz**2
 
-  ! print out by spin blocks (one file per block if nspin=2).
-  do is=1,nspin
-    do js=1,nspin
+  ! Save a2F
+  file_a2f = trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+  unit_a2f = find_free_unit()
+  open(unit_a2f, file=file_a2f, status='unknown')
+  write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
+  !
+  do iomega=1,nomega ! frequencies
+    omega = omega_ini + (iomega-1)*omega_step
+    write(unit_a2f,'(e16.4,2x,100e16.4)') omega, sum(alpha2F(:,iomega)), alpha2F(:,iomega)
+  end do
 
-      if (nspin == 1) then
-        file_a2f = trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
-        unit_a2f = find_free_unit()
-        open(unit_a2f, file=file_a2f, status='unknown')
-        write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
-      else
-        write(is_loc,"(i1)") is
-        write(js_loc,"(i1)") js
-        file_a2f = trim(mesh_dir)//trim(prefix)//trim('_s')//trim(adjustl(is_loc))//trim(adjustl(js_loc))//trim('_a2F_interp.dat')
-        unit_a2f = find_free_unit()
-        open(unit_a2f, file=file_a2f, status='unknown')
-        write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'
-        write(unit_a2f,*) '#spins = ', is,js
-      end if
+  ! Calculate lambda (mode resolved)
+  lambda = 0.0_dp
+  do iomega=2,nomega ! skip omega=0 value
+    omega = omega_ini + (iomega-1)*omega_step
+    lambda(:) = lambda(:) + alpha2F(:,iomega) / omega
+  end do
+  lambda = 2.0_dp * lambda * omega_step
 
-      ! print a2F(omega)
-      omega = omega_ini
-      do iomega=1,nomega ! frequencies
-        write(unit_a2f,'(e16.4,2x,15e16.4)') omega, sum(alpha2F(is,js,:,iomega)), &
-                                                    alpha2F(is,js,:,iomega)
-        omega = omega + omega_step
-      end do
+  ! Save lambda
+  write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
+  write(unit_a2f,'(a,i3,a,20e14.4)') '# imode = ', imode, ', lambda = ', lambda(:)
+  write(unit_a2f,*) '# total lambda = ', sum(lambda)
 
-      ! calculate lambda for spin diagonal
+  close(unit_a2f)
 
-      if (is == js) then
-        lambda = 0.0_dp
-        do imode = 1, 3*nat
-          omega = omega_ini + omega_step
-          do iomega=2,nomega ! skip omega=0 value
-            lambda(imode) = lambda(imode) + alpha2F(is,js,imode,iomega) / omega
-            omega = omega + omega_step
-          end do
-          lambda(imode) = lambda(imode) * 2.0_dp * omega_step
-        end do
-        write(unit_a2f,*) '# lambda = 2 \int dw a2F(w)/w for each mode'
-        write(unit_a2f,'(a,i3,a,20e14.4)') '#imode = ', imode, ', lambda = ', lambda(:)
-        write(unit_a2f,*) '#total lambda = ', sum(lambda)
-      end if
-
-      close(unit_a2f)
-
-      write(*,20) '| - a2F calculated and written to file:             |'
-      write(*,20) "|   "//file_a2f(1:max(47,len(trim(file_a2f))))//" |"
-
-    end do ! js
-  end do ! is
+  write(*,20) '| - a2F calculated and written to file:             |'
+  write(*,20) "|   "//file_a2f(1:max(47,len(trim(file_a2f))))//" |"
 
   write(*,20) '====================================================='
 
