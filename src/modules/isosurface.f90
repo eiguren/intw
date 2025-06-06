@@ -65,6 +65,8 @@ contains
     integer :: io_unit, i, j
 
 
+    write(*,'("| - Reading tetrahedra...                           |")')
+
     io_unit = find_free_unit()
     open(unit=io_unit, action="read", file="Tetrahedralized_IBZ.node", status="unknown")
     read(unit=io_unit, fmt=*) nnode, dmns, dummy1, dummy2
@@ -617,7 +619,7 @@ contains
     !real(dp), parameter :: epsvert = 1.0E-6_dp ! Parameter to detect duplicated vertices
 
 
-    write(*, '("Creating isosurface at (eV):",F18.10)') eiso
+    write(*,'("| - Creating isosurface at ",F14.8," eV...     |")') eiso
 
     ! Allocate variables
     allocate(tetracoord(1:3,1:4), vcoord(3,30000,num_wann), etetra(1:ntetra,1:4,1:num_wann), eig_int(1:num_wann))
@@ -687,10 +689,15 @@ contains
           end do
         end do
       end do
-      if(verbose) write(*, '("Triangules and nodes before cleaning, band",I6,":", I6, I6)') ibnd, ntri(ibnd), nvert(ibnd)
       mid_nvert = mid_nvert+nvert(ibnd)
     end do
-    if(verbose) write(*, '("Triangulated isosurface created")')
+
+    if(verbose) then
+      write(*,'("|   Number of triangules and vertices:              |")')
+      do ibnd = 1, num_wann
+        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
+      end do
+    endif
 
     ! Total number of triangles and vertices
     tot_ntri = 0
@@ -699,9 +706,12 @@ contains
       tot_ntri = tot_ntri + ntri(ibnd)
       tot_nvert = tot_nvert + nvert(ibnd)
     end do
-    if(verbose) write(*, '("Total number of triangles and nodes before cleaning:",2I6)') tot_ntri, tot_nvert
+
+    if(verbose) write(*,'("|         ---------------------------------         |")')
+
     ! Clean list
-    if(verbose) write(*, *) "Cleaning list..."
+    write(*,'("| - Cleaning list of triangles and vertices...      |")')
+    !
     allocate(vert_index(3,tot_ntri,num_wann))
     allocate(vert_coord(3,tot_nvert,num_wann))
     vert_coord(:,:,:) = 0.0_dp
@@ -731,8 +741,15 @@ contains
         end do v_loop
       end do ! itri
       nvert(ibnd) = rdcd_vert
-      if(verbose) write(*, '("Triangles and nodes after cleaning, for band",I6,":",2I6)') ibnd, ntri(ibnd), nvert(ibnd)
     end do ! ibnd
+
+    if(verbose) then
+      write(*,'("|   Number of triangles and vertices:               |")')
+      do ibnd = 1, num_wann
+        if(ntri(ibnd).eq.0) cycle
+        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
+      end do
+    endif
 
     ! Compute velocity on IBZ
     allocate(vert_veloc(3, tot_nvert, num_wann))
@@ -746,12 +763,6 @@ contains
       tot_ntri = tot_ntri + ntri(ibnd)
       tot_nvert = tot_nvert + nvert(ibnd)
     end do
-
-    ! Write triangulated mesh in OFF format if needed
-    if (verbose) then
-      tag_in = "IBZ_FS_tri.off"
-      call write_IBZ_isosurface(tag_in, num_wann)
-    end if
 
   end subroutine create_isosurface_IBZ
 
@@ -906,7 +917,7 @@ contains
   end subroutine rotate_IBZ_mesh
 
 
-  subroutine write_full_isosurface(bg, nsym, s, TR_sym, num_wann, verbose, epsvert)
+  subroutine write_full_isosurface(bg, nsym, s, TR_sym, num_wann, verbose, epsvert, tag, prefix)
 
     use intw_utility, only: find_free_unit, int2str
     use intw_matrix_vector, only: norma
@@ -921,20 +932,26 @@ contains
     integer, intent(in) :: num_wann
     logical, intent(in) :: verbose
     real(dp), intent(in) :: epsvert
+    character(len=*), intent(in) :: tag
+    character(len=*), optional, intent(in) :: prefix
 
     ! Local
+    character(len=256) :: filename
     integer :: nstar, symop(96,2)
     real(dp) :: vstar(3,96)
     integer :: tot_ntri, mid_nvert, tot_nvert
     integer :: ibnd, iv, i, j, io_unit
 
 
+    write(*,'("| - Rotating IBZ...                                 |")')
+
     ! Calculate star
     do iv = 1, nnode
       call calculate_star_TR(nsym, s, TR_sym, ncoord(:,iv), vstar, nstar, symop)
       if(nstar.eq.nsym) exit
     end do
-    if(verbose) write(*, '("nstar=",I6)') nstar
+
+    if(verbose) write(*, '("|   nstar = ",I6,"                   |")') nstar
 
     ! Rotate mesh
     tot_ntri = sum(ntri(:))
@@ -962,9 +979,19 @@ contains
     end do
 
     ! Write rotated mesh in OFF format
-    write(*, '("Writing triangulated FS in OFF format...")')
+    write(*,'("| - Writing full FS in OFF format...                |")')
+
+    if (present(prefix)) then
+      filename = trim(prefix)//"."//trim(tag)//".off"
+    else
+      filename = trim(tag)//".off"
+    endif
+    write(*,'("|   Filename: ",A," |")') filename(1:max(37,len(trim(filename))))
+
+    !
+    ! Write full isosurface in OFF format
     io_unit = find_free_unit()
-    open(unit=io_unit, action="write", file="full_FS_tri.off", status="unknown")
+    open(unit=io_unit, action="write", file=filename, status="unknown")
     write(unit=io_unit, fmt="(a)") "OFF"
     write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
     write(unit=io_unit, fmt=*)
@@ -982,11 +1009,21 @@ contains
     end do
     close(unit=io_unit)
 
-    ! Write band-separated improved meshes in OFF format
+    write(*,'("|   Total number of triangles and vertices:         |")')
+    write(*,'("|     Triangles: ",I6,"                             |")') tot_ntri
+    write(*,'("|     Vertices:  ",I6,"                             |")') tot_nvert
+
+    !
+    ! Write band-separated isosurface in OFF format
     do ibnd = 1, num_wann
       if(nvert(ibnd).eq.0) cycle
       io_unit = find_free_unit()
-      open(unit=io_unit, action="write", file=trim(int2str(ibnd))//"_FS_tri.off", status="unknown")
+      if (present(prefix)) then
+        filename=trim(prefix)//"."//trim(int2str(ibnd))//"_"//trim(tag)//".off"
+      else
+        filename=trim(int2str(ibnd))//"_"//trim(tag)//".off"
+      endif
+      open(unit=io_unit, action="write", file=filename, status="unknown")
       write(unit=io_unit, fmt="(a)") "OFF"
       write(unit=io_unit, fmt="(3I10)") nvert_rot(ibnd), ntri_rot(ibnd), 0
       write(unit=io_unit, fmt=*)
@@ -997,24 +1034,31 @@ contains
         write(unit=io_unit, fmt="(4I6)") 3, ( vert_index_rot(j,i,ibnd)-1, j = 1, 3)
       end do
       close(unit=io_unit)
+    enddo
 
-      ! Write file with Fermi velocity
-      if(verbose) write(*, '("Writing Fermi velocity file...")')
+    !
+    ! Write files with Fermi velocity
+    write(*, '("| - Writing Fermi velocity files...                 |")')
+    do ibnd = 1, num_wann
+      if(nvert(ibnd).eq.0) cycle
       io_unit = find_free_unit()
-      open(unit=io_unit, action="write", file=trim(int2str(ibnd))//"_FS_v_k.dat", status="unknown")
+      if (present(prefix)) then
+        filename=trim(prefix)//"."//trim(int2str(ibnd))//"_"//trim(tag)//"_v_k.dat"
+      else
+        filename=trim(int2str(ibnd))//"_"//trim(tag)//"_v_k.dat"
+      endif
+      open(unit=io_unit, action="write", file=filename, status="unknown")
       write(unit=io_unit, fmt="(3I10)") nvert_rot(ibnd)
       do iv = 1, nvert_rot(ibnd)
         write(unit=io_unit, fmt="(I6,4F18.10)") iv, ( vert_veloc_rot(j,iv,ibnd), j = 1, 3 ), norma(vert_veloc_rot(:,iv,ibnd))
       end do
       close(unit=io_unit)
-
-
     end do
 
   end subroutine write_full_isosurface
 
 
-  subroutine write_IBZ_isosurface(filename, num_wann)
+  subroutine write_IBZ_isosurface(tag, num_wann, velocities, prefix)
 
     use intw_utility, only: find_free_unit, int2str
     use intw_matrix_vector, only: norma
@@ -1022,72 +1066,103 @@ contains
     implicit none
 
     ! I/O
-    character(len=25), intent(in) :: filename
+    character(len=*), intent(in) :: tag
     integer, intent(in) :: num_wann
+    logical, intent(in) :: velocities
+    character(len=*), optional, intent(in) :: prefix
 
     ! Local
+    character(len=256) :: filename
     integer :: ibnd, io_unit, iv, itri, i, j
     integer :: tot_nvert, tot_ntri, mid_nvert
 
 
-      write(*, *) "Writing IBZ isosurface in OFF format..."
+    write(*,'("| - Writing IBZ FS in OFF format...                 |")')
 
-      ! Write band-separated IBZ isosurface in OFF format
-      tot_nvert = 0
-      tot_ntri = 0
-      do ibnd = 1, num_wann
-        if(nvert(ibnd).eq.0) cycle
-        io_unit = find_free_unit()
-        open(unit=io_unit, action="write", file=trim(int2str(ibnd))//"_"//trim(filename), status="unknown")
-        write(unit=io_unit, fmt="(a)") "OFF"
-        write(unit=io_unit, fmt="(3I10)") nvert(ibnd), ntri(ibnd), 0
-        write(unit=io_unit, fmt=*)
-        do iv = 1, nvert(ibnd)
-          write(unit=io_unit, fmt="(4f18.10)") ( vert_coord(j,iv,ibnd), j = 1, 3)
-          tot_nvert = tot_nvert + 1
-        end do
-        do i = 1, ntri(ibnd)
-          write(unit=io_unit, fmt="(4I6)") 3, ( vert_index(j,i,ibnd)-1, j = 1, 3)
-          tot_ntri = tot_ntri + 1
-        end do
-        close(unit=io_unit)
+    if (present(prefix)) then
+      filename = trim(prefix)//"."//trim(tag)//".off"
+    else
+      filename = trim(tag)//".off"
+    endif
+
+    write(*,'("|   Filename: ",A," |")') filename(1:max(37,len(trim(filename))))
+
+    !
+    ! Write IBZ isosurface in OFF format
+    io_unit = find_free_unit()
+    open(unit=io_unit, action="write", file=filename, status="unknown")
+    write(unit=io_unit, fmt="(a)") "OFF"
+    write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
+    write(unit=io_unit, fmt=*)
+    mid_nvert = 0
+    do ibnd = 1, num_wann
+      if(nvert(ibnd).eq.0) cycle
+      do iv = 1, nvert(ibnd)
+        write(unit=io_unit, fmt="(3F18.10)") ( vert_coord(j,iv,ibnd), j = 1, 3 )
       end do
+    end do
+    do ibnd = 1, num_wann
+      do itri = 1, ntri(ibnd)
+        write(unit=io_unit, fmt="(4I6)") 3, ( mid_nvert+vert_index(j,itri,ibnd)-1, j = 1, 3 )
+      end do
+      mid_nvert = mid_nvert + nvert(ibnd)
+    end do
+    close(unit=io_unit)
 
+    !
+    ! Write band-separated IBZ isosurface in OFF format
+    tot_nvert = 0
+    tot_ntri = 0
+    do ibnd = 1, num_wann
+      if(nvert(ibnd).eq.0) cycle
+      io_unit = find_free_unit()
+      if (present(prefix)) then
+        filename=trim(prefix)//"."//trim(int2str(ibnd))//"_"//trim(tag)//".off"
+      else
+        filename=trim(int2str(ibnd))//"_"//trim(tag)//".off"
+      endif
+      open(unit=io_unit, action="write", file=filename, status="unknown")
+      write(unit=io_unit, fmt="(a)") "OFF"
+      write(unit=io_unit, fmt="(3I10)") nvert(ibnd), ntri(ibnd), 0
+      write(unit=io_unit, fmt=*)
+      do iv = 1, nvert(ibnd)
+        write(unit=io_unit, fmt="(4f18.10)") ( vert_coord(j,iv,ibnd), j = 1, 3)
+        tot_nvert = tot_nvert + 1
+      end do
+      do i = 1, ntri(ibnd)
+        write(unit=io_unit, fmt="(4I6)") 3, ( vert_index(j,i,ibnd)-1, j = 1, 3)
+        tot_ntri = tot_ntri + 1
+      end do
+      close(unit=io_unit)
+    end do
 
-      ! Write file with Fermi velocity
+    write(*,'("|   Total number of triangles and vertices:         |")')
+    write(*,'("|     Triangles: ",I6,"                             |")') tot_ntri
+    write(*,'("|     Vertices:  ",I6,"                             |")') tot_nvert
+
+    !
+    ! Write file with Fermi velocity
+    if (velocities) then
+      !
+      write(*,'("| - Writing Fermi velocity files...                 |")')
+      !
       do ibnd = 1, num_wann
         if(nvert(ibnd).eq.0) cycle
         io_unit = find_free_unit()
-        open(unit=io_unit, action="write", file=trim(int2str(ibnd))//"_IBZ_v_k.dat", status="unknown")
+        if (present(prefix)) then
+          filename=trim(prefix)//"."//trim(int2str(ibnd))//"_"//trim(tag)//"_v_k.dat"
+        else
+          filename=trim(int2str(ibnd))//"_"//trim(tag)//"_v_k.dat"
+        endif
+        open(unit=io_unit, action="write", file=filename, status="unknown")
         write(unit=io_unit, fmt="(3I10)") nvert(ibnd)
         do iv = 1, nvert(ibnd)
           write(unit=io_unit, fmt="(I6,4F18.10)") iv, ( vert_veloc(j,iv,ibnd), j = 1, 3 ), norma(vert_veloc(:,iv,ibnd))
         end do
         close(unit=io_unit)
       end do
-
-      ! Write full IBZ isosurface in OFF format
-      io_unit = find_free_unit()
-      open(unit=io_unit, action="write", file=trim(filename), status="unknown")
-      write(unit=io_unit, fmt="(a)") "OFF"
-      write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
-      write(unit=io_unit, fmt=*)
-      mid_nvert = 0
-      do ibnd = 1, num_wann
-        if(nvert(ibnd).eq.0) cycle
-        do iv = 1, nvert(ibnd)
-          write(unit=io_unit, fmt="(3F18.10)") ( vert_coord(j,iv,ibnd), j = 1, 3 )
-        end do
-      end do
-      do ibnd = 1, num_wann
-        do itri = 1, ntri(ibnd)
-          write(unit=io_unit, fmt="(4I6)") 3, ( mid_nvert+vert_index(j,itri,ibnd)-1, j = 1, 3 )
-        end do
-        mid_nvert = mid_nvert + nvert(ibnd)
-      end do
-      close(unit=io_unit)
-      write(*, *) "IBZ isosurface in OFF format written."
-
+      !
+    endif
 
   end subroutine write_IBZ_isosurface
 
@@ -1152,8 +1227,6 @@ contains
 
     !--------------- Compute Density of States at FS, N(e_F)
     !
-    write(*, *)
-    write(*, *) "Computing DOS at FS..."
     write(io_unit, *)
     write(io_unit, *) "Volume of BZ (bohr**-3) =", (vbz*(2.0_dp*pi/alat)**3)
     write(io_unit, *) ""
@@ -1199,9 +1272,8 @@ contains
 
     close(io_unit)
 
-    write(*, *) "DOS at FS =", ne, "a.u."
-    write(*, *) "            ", ne/27.21138602_dp, "1/e.V."
-
+    write(*,'("|   DOS at FS: ",f16.8, " a.u.                |")') ne
+    write(*,'("|              ",f16.8, " 1/eV                |")') ne/27.21138602_dp
 
     !--------------- Deallocate variables
     !

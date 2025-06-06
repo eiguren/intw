@@ -199,8 +199,9 @@ contains
       end do !j
     end do !i
     if (verb) then
-      write(*, '(a,i6,a,i3,a)') 'Found', num_vert, ' possible vertices, between ', &
-                                nnplanes, ' different planes'
+      write(*,'("|     Found ",i6," possible vertices,               |")') num_vert
+      write(*,'("|     between ",i6," different planes               |")') nnplanes
+
       write(info_unit, *)
       write(info_unit, '(a,i6,a,i3,a)') 'Found', num_vert, ' possible vertices, between ', &
                                         nnplanes, ' different planes'
@@ -343,17 +344,16 @@ contains
 
     end do ! i (list of diferent planes)
 
+    close(io_unit1)
+
     if (verb) then
+      write(*,'("|     The BZ has ",i4," outer faces                   |")') num_plane
+
       write(info_unit, *)
       write(info_unit, '(a, i4,a)') 'The BZ has ', num_plane, " outer faces"
-      write(*, '(a, i4,a)') 'The BZ has ', num_plane, " outer faces"
-
       write(info_unit, *) 'WS done'
       close(info_unit)
     end if
-    write(*, *) 'WS done'
-    write(*, *)
-    close(io_unit1)
 
   end subroutine wigner_seitz_cell
 
@@ -835,7 +835,9 @@ contains
       t3(:) = b_tetra_irr(:,4,it) - b_tetra_irr(:,1,it)
       tirr_vol = tirr_vol + abs(dot_product(t1, cross(t2, t3)))/6.0_dp
     end do
-    write(*, *) "Volume of the irreducible BZ (2pi/alat)**3 =", tirr_vol
+
+    write(*,'(A34,F16.10,2X,A1)') '|   Volume of IBZ (2pi/alat)**3 = ', tirr_vol, '|'
+
     ! Compute volume of IBZ
     t_vol = 0.0_dp
     do it = 1, n_b_tetra_all
@@ -844,9 +846,10 @@ contains
       t3(:) = b_tetra_all(:,4,it) - b_tetra_all(:,1,it)
       t_vol = t_vol + abs(dot_product(t1, cross(t2, t3)))/6.0_dp
     end do
-    write(*, *) "Volume of the full BZ (2pi/alat)**3 =", t_vol
-    write(*, *) "BZ volume / IBZ volume =", t_vol / tirr_vol
-    write(*, *)
+
+    write(*,'(A34,F16.10,2X,A1)') '|   Volume of BZ (2pi/alat)**3 =  ', t_vol, '|'
+
+    write(*,'(A34,F16.10,2X,A1)') '|   BZ volume / IBZ volume =      ', t_vol / tirr_vol, '|'
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1340,7 +1343,10 @@ contains
                 ! check with face_aux
                 if ( overlap_face(face_aux, rot_face) == 3 ) then
                   ! Face is related to stored face f by symm.operation isym, no TR, adding (ig,jg,kg) G vector
-                  if (verb) write(*, '("Face",I6," is related to face",I6," by G:",3I6)') fx, face_inv_indx(f), ig, jg, kg
+                  if (verb) then
+                    write(*,'("|     Face ",I4," is related to face ",I4," by:         |")') fx, face_inv_indx(f)
+                    write(*,'("|       G = ",3I4,"                            |")') ig, jg, kg
+                  endif
                   face_indx(fx) = f
                   face_Gsymlink(fx,1,ig,jg,kg) = isym
                   face_Gsymlink(fx,2,ig,jg,kg) = 0 ! no TR
@@ -1355,7 +1361,10 @@ contains
                   end do
                   if (overlap_face(face_aux, rot_face)==3) then
                     ! Face is related to stored f face by isym symm.operation + TR, plus (ig,jg,kg) G vector
-                    if (verb) write(*, '("Face",I6," is related to face",I6," with TR and by G:",3I6)') fx, face_inv_indx(f), ig, jg, kg
+                    if (verb) then
+                      write(*,'("|     Face ",I4," is related to face ",I4," by:         |")') fx, face_inv_indx(f)
+                      write(*,'("|       G = ",3I4,"  +  TR                     |")') ig, jg, kg
+                    endif
                     face_indx(fx) = f
                     face_Gsymlink(fx,1,ig,jg,kg) = isym
                     face_Gsymlink(fx,2,ig,jg,kg) = 1 !
@@ -1374,10 +1383,8 @@ contains
       face_inv_indx(nfaces_irr) = fx  ! Relates new stored face with index in old list
     end do aux_face_loop
 
-    if (verb) write(*, *)
-    if (verb) write(*, '("Number of faces on IBZ:",I6)') nf
-    if (verb) write(*, '("Number of irreducible faces by S+G:",I6)') nfaces_irr
-    if (verb) write(*, *)
+    if (verb) write(*,'("|     Number of faces on IBZ:      ",I4,"             |")') nf
+    if (verb) write(*,'("|     Number of irreducible faces: ",I4,"             |")') nfaces_irr
 
   end subroutine irr_faces
 
@@ -1564,11 +1571,13 @@ contains
     ! Normal vector of face
     normal = normal_of_tri(vf)
     if ( norma(cross(normal, xy_plane)) < 1.0E-6_dp ) then ! plane of face is already xy plane
-      write(*, *) "Face is on xy plane"
-      write(*, *) "Vectors:", vf(1:3,1)
-      write(*, *) "        ", vf(1:3,2)
-      write(*, *) "        ", vf(1:3,3)
-      write(*, *) "Normal:", normal
+      if (verb) then
+        write(*,'("|   Face is on xy plane                             |")')
+        write(*,'("|   Vectors: ",3F12.6,"   |")') vf(1:3,1)
+        write(*,'("|            ",3F12.6,"   |")') vf(1:3,2)
+        write(*,'("|            ",3F12.6,"   |")') vf(1:3,3)
+        write(*,'("|   Normal:  ",3F12.6,"   |")') normal
+      endif
       k = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
       theta = 0.0_dp
     else ! define rotation vector and angle
@@ -1590,7 +1599,6 @@ contains
         write(*, *) "After rotating       :", rotated_nodes(1:3,i)
         write(*, *) "Origin node          :", split_edges_nodes(1:3,1,1)
         write(*, *) "EXIT"
-        deallocate(rotated_nodes)
         stop
       end if
       nodes_in_plane(1:2,i) = rotated_nodes(1:2,i)
@@ -1647,6 +1655,7 @@ contains
     logical, allocatable :: triangulated_face(:)
     integer, allocatable :: nvert_face(:), ntri_face(:), triangles_face(:,:,:), indx(:), tri_face_indx(:,:)
     real(dp), allocatable :: split_edges_nodes(:,:,:), nodes_fplane(:,:), vertices_face(:,:,:), vlist(:,:)
+    character(len=10) :: text
 
 
     allocate(nvert_face(nfaces), ntri_face(nfaces), triangulated_face(nfaces))
@@ -1654,19 +1663,36 @@ contains
     allocate(split_edges_nodes(1:3,nk1+nk2+nk3,1:3))
     allocate(nodes_fplane(1:2,3*(nk1+nk2+nk3)))
     triangulated_face(:) = .false.
+
+    if (verbose) write(*,'("|         ---------------------------------         |")')
+
+    ! Clear triangle output file
+    CALL EXECUTE_COMMAND_LINE("echo '---------------------------------' > triangle.out")
+
     do f = 1, nfaces
       !
       if (ANY(faces_Gsymlink(f,:,:,:,:)/=0)) then
         !
-        if (verbose) write(*, '("Face", I6," will be obtained by symmetry from", I6)') f, faces_indx(f)
-        if (verbose) write(*, '("First triangulate ", I6)') faces_indx(f)
+        if (verbose) then
+          write(*,'("| Face ",I2," will be obtained by symmetry from face ",I2," |")') f, faces_indx(f)
+          write(*,'("|         ---------------------------------         |")')
+          write(*,'("| Face ",I2," will be triangulated                      |")') faces_indx(f)
+        endif
         !
         iface_irr = faces_indx(f)
         iface_full = faces_inv_indx(iface_irr)
         call nodes_on_face_and_rotate_to_plane(iface_full, nk1, nk2, nk3, bcell, ntetra, faces_as_vert(1:3,iface_full), &
                                                vert_coord, verbose, split_edges_nodes, kvec, theta)
         !
-        CALL EXECUTE_COMMAND_LINE("triangle -g face_split_edges.poly")
+        if (verbose) then
+          write(*,'("| Running triangle with command:                    |")')
+          write(*,'("| triangle -g face_split_edges.poly > triangle.out  |")')
+        endif
+        !
+        write(text,'("Face ",I4,":")') faces_indx(f)
+        CALL EXECUTE_COMMAND_LINE("echo '"//trim(text)//"' >> triangle.out")
+        CALL EXECUTE_COMMAND_LINE("triangle -g face_split_edges.poly >> triangle.out")
+        CALL EXECUTE_COMMAND_LINE("echo '---------------------------------' >> triangle.out")
         !
         ! Read output face triangulation file, rotate vertices and write to file
         !
@@ -1727,17 +1753,30 @@ contains
         !
       end if ! ANY(faces_Gsymlink)
     end do
+
+    if (verbose) write(*,'("|         ---------------------------------         |")')
+
     do f = 1, nfaces
       !
       if (triangulated_face(f)) cycle
       !
-      if (verbose) write(*, *)
-      if (verbose) write(*, '("Face", I6," will be directly triangulated")') f
+      if (verbose) then
+        write(*,'("| Face ", I2," will be triangulated                      |")') f
+      endif
       !
       call nodes_on_face_and_rotate_to_plane(f, nk1, nk2, nk3, bcell, ntetra, faces_as_vert(1:3,f), vert_coord, verbose, &
                                              split_edges_nodes, kvec, theta)
       !
-      CALL EXECUTE_COMMAND_LINE("triangle -pg face_split_edges.poly")
+      if (verbose) then
+        write(*,'("| Running triangle with command:                    |")')
+        write(*,'("| triangle -pg face_split_edges.poly > triangle.out |")')
+        write(*,'("|         ---------------------------------         |")')
+      endif
+      !
+      write(text,'("Face ",I4,":")') f
+      CALL EXECUTE_COMMAND_LINE("echo '"//trim(text)//"' >> triangle.out")
+      CALL EXECUTE_COMMAND_LINE("triangle -pg face_split_edges.poly >> triangle.out")
+      CALL EXECUTE_COMMAND_LINE("echo '---------------------------------' >> triangle.out")
       !
       ! Read output face triangulation file, rotate vertices and write to file
       !
@@ -1845,7 +1884,7 @@ contains
   end subroutine triangulate_faces
 
 
-  subroutine add_nodes_IBZ_volume(nk1, nk2, nk3, m, epsface, bg, n_BZ_tetra_irr, BZ_tetra_irr)
+  subroutine add_nodes_IBZ_volume(nk1, nk2, nk3, m, epsface, bg, n_BZ_tetra_irr, BZ_tetra_irr, verb)
     ! Create regular mesh and check which points lie inside IBZ
 
     use intw_utility, only: find_free_unit
@@ -1858,6 +1897,7 @@ contains
     real(dp), intent(in) :: m, epsface
     real(dp), intent(in) :: BZ_tetra_irr(1:3,1:4,n_BZ_tetra_irr)
     real(dp), intent(in) :: bg(1:3,1:3)
+    logical, intent(in) :: verb
 
     ! Local
     integer :: io_unit, i, j, k, l, it, i_min, i_max, j_min, j_max, k_min, k_max, nk_in
@@ -1875,8 +1915,10 @@ contains
     k_min = -int(m*nk3)
     k_max =  int(m*nk3)
 
-    write(*, "(100i4)") nk1, nk2, nk3
-    write(*, "(100i4)") i_min, i_max, j_min, j_max, k_min, k_max
+    if (verb) write(*,'("|     nk1, nk2, nk3 = ",3I4,"                  |")') nk1, nk2, nk3
+    if (verb) write(*,'("|     i_min, i_max  = ",2I4,"                      |")') i_min, i_max
+    if (verb) write(*,'("|     j_min, j_max  = ",2I4,"                      |")') j_min, j_max
+    if (verb) write(*,'("|     k_min, k_max  = ",2I4,"                      |")') k_min, k_max
 
     allocate(node_coords(3,n_BZ_tetra_irr*(i_max-i_min)*(j_max-j_min)*(k_max-k_min)))
 
@@ -1942,7 +1984,7 @@ contains
       end do ! j
     end do ! i
 
-    print*, "Number of points on IBZ:", nk_in
+    if (verb) write(*,'("|     Number of points on IBZ: ",I4,"                 |")') nk_in
 
     ! Write nodes to .node file
     io_unit = find_free_unit()

@@ -127,7 +127,7 @@ program ep_on_trFS_dV
                           nkpt_tr_ibz(:), & ! number of kpoints in each FS sheet irreducible BZ wedge
                           nface_tr(:) ! number of faces in each FS sheet
   real(dp) :: k1(3), k2(3), k3(3), kwei
-  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:), vk_tr(:,:), vabsk_tr(:)
+  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
 
   ! for part II
   logical :: q_points_consistent
@@ -304,11 +304,11 @@ program ep_on_trFS_dV
   !******************************** Part I ************************************
 
   !================================================================================
-  ! Read prefix.off and velocity file(s)
+  ! Read .off files
   !================================================================================
 
   write(*,20) '====================================================='
-  write(*,20) '| - Reading .off and v_k files...                   |'
+  write(*,20) '| - Reading .off files...                           |'
 
   allocate(nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
   allocate(nkpt_tr_ibz(nfs_sheets_tot))
@@ -325,18 +325,18 @@ program ep_on_trFS_dV
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
     read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr(is), nface_tr(is) ! number of vertices and faces (ignore edges)
+    read(unit_off,*) nkpt_tr(is), nface_tr(is), k ! number of vertices and faces (ignore edges)
     close(unit_off)
 
     ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
     ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
     read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr_ibz(is) ! number of vertices (ignore rest)
+    read(unit_off,*) nkpt_tr_ibz(is), j, k ! number of vertices (ignore faces and edges)
     close(unit_off)
 
   end do
@@ -349,15 +349,14 @@ program ep_on_trFS_dV
   write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_tot, '|'
   write(*,20) '|   Number of k-points in IBZ (total vertices):     |'
   write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_ibz_tot, '|'
-  write(*,20) '|   Number of total faces:                          |'
+  write(*,20) '|   Number of faces (total triangles):              |'
   write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr), '|'
 
 
   allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
-  allocate(vk_tr(3,nkpt_tr_tot), vabsk_tr(nkpt_tr_tot))
 
 
-  ! open .off's again, read k-points and read velocity files
+  ! open .off files again to read k-points
   ik1 = 0
   do is=1,nfs_sheets_tot
 
@@ -371,7 +370,7 @@ program ep_on_trFS_dV
     open(unit_off, file=file_off, status='old')
 
     read(unit_off,*) comenta
-    read(unit_off,*) i,j,k ! number vertices, faces and edges (I will ignore edges)
+    read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
     ! read(unit_off,'(/)') ! DUDA... esto dependdera de como está escrito el salto de línea en el fichero, creo...
     if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
@@ -409,23 +408,6 @@ program ep_on_trFS_dV
 
     close(unit_off)
 
-    ! velocity for this sheet (use same unit)
-
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
-    unit_off = find_free_unit()
-    open(unit_off, file=file_off, status='old')
-
-    read(unit_off,*) i
-    if ( i /= nkpt_tr(is) ) then
-      write(*,*) 'Error reading ', file_off, '. Stopping.'
-      stop
-    end if
-    do ik=1,nkpt_tr(is)
-      read(unit_off,*) i, vk_tr(:,ik1+ik), vabsk_tr(ik1+ik) ! velocity xyz and its modulus. DUDA 2pi/alat???
-    end do
-
-    close(unit_off)
-
     ! accumulate ik global index for the reading of next sheet
     ik1 = ik1 + nkpt_tr(is)
 
@@ -433,8 +415,6 @@ program ep_on_trFS_dV
 
   write(*,20) '|   .... reading done                               |'
 
-  ! print*, kpts_tr_area(1), vabsk_tr(1)
-  ! print*, kpts_tr_area(nkpt_tr_tot), vabsk_tr(nkpt_tr_tot)
   write(*,20) '|   Total FS area:                                  |'
   write(*,'(A1,3X,F12.6,A19,17X,A1)') '|', sum(kpts_tr_area), ' (2 x pi / alat)^2 ', '|'
 

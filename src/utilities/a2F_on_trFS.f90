@@ -219,17 +219,17 @@ program a2F_on_trFS
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
     read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr(is), nface_tr(is) ! number of vertices and faces (ignore edges)
+    read(unit_off,*) nkpt_tr(is), nface_tr(is), k ! number of vertices and faces (ignore edges)
     close(unit_off)
 
     ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
     ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
     read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr_ibz(is), nface_tr_ibz(is) ! number of vertices and faces (ignore rest)
+    read(unit_off,*) nkpt_tr_ibz(is), nface_tr_ibz(is), k ! number of vertices and faces (ignore rest)
     close(unit_off)
 
   end do
@@ -242,8 +242,10 @@ program a2F_on_trFS
   write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_tot, '|'
   write(*,20) '|   Number of k-points in IBZ (total vertices):     |'
   write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_ibz_tot, '|'
-  write(*,20) '|   Number of total faces:                          |'
+  write(*,20) '|   Number of faces (total triangles):              |'
   write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr), '|'
+  write(*,20) '|   Number of faces in IBZ (total triangles):       |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr_ibz), '|'
 
 
   allocate(kpts_tr_ibz(3,nkpt_tr_ibz_tot), kpts_tr_ibz_area(nkpt_tr_ibz_tot))
@@ -255,7 +257,7 @@ program a2F_on_trFS
   kpts_tr_ibz_area = 0.0_dp
   kpts_tr_area = 0.0_dp
 
-  ! open .off's again, read k-points and read velocity files
+  ! open .off files again to read k-points and read also velocity files
   ik1 = 0
   do is=1,nfs_sheets_tot
 
@@ -310,7 +312,7 @@ program a2F_on_trFS
 
     ! velocity for this sheet (use same unit)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_v_k.dat')
+    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri_v_k.dat')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -333,7 +335,7 @@ program a2F_on_trFS
 
 
   ! MBR correction 100724
-  ! now do the same with irreducible BZ off's to obtain the triangle areas there
+  ! now do the same with IBZ .off files to obtain the triangle areas there
   ik1 = 0
   do is=1,nfs_sheets_tot
 
@@ -342,7 +344,7 @@ program a2F_on_trFS
 
     ! .off file for this sheet
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_newton_IBZ_FS_tri.off')
+    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -387,7 +389,7 @@ program a2F_on_trFS
 
     ! velocity for this sheet (use same unit)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_v_k.dat')
+    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri_v_k.dat')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -411,53 +413,54 @@ program a2F_on_trFS
   write(*,20) '|   ...reading done                                 |'
 
   ! Calculate triangle areas for calculating the a2F integral later
-  ! N(EF) from sum over vertices, all sheets, using full triangulated mesh
-
-  dosef = 0.0_dp
-  do ik = 1, nkpt_tr_tot
-    dosef = dosef + kpts_tr_area(ik) * (tpi/alat)**2 / (vabsk_tr(ik) * Ha_to_Ry) ! velocities in Hartree a.u., pass to Ry a.u.
-  end do
-  vol1bz = tpi**3 / volume0
-  dosef = dosef / vol1bz
-  write(*,'(A29,F12.6,11X,A1)') '|   Volume of BZ (bohr^-3) = ', vol1bz, '|'
-  write(*,'(A29,F12.6,11X,A1)') '|   DOS at FS (Ry^-1) =      ', dosef, '|'
-
-  ! Ratio of areas of the FS in the full and irreducible BZ
   allocate(area_fbz(nfs_sheets_tot), area_ibz(nfs_sheets_tot), factor_area_ibz(nfs_sheets_tot))
   area_ibz = 0.0_dp
+  ik = 0
+  do ish = 1, nfs_sheets_tot
+    do iks = 1, nkpt_tr_ibz(ish)
+      ik = ik + 1
+      area_ibz(ish) = area_ibz(ish) + kpts_tr_ibz_area(ik)
+    end do
+  end do
+
   area_fbz = 0.0_dp
   ik = 0
   do ish = 1, nfs_sheets_tot
-  do iks = 1, nkpt_tr_ibz(ish)
-    ik = ik + 1
-    area_ibz(ish) = area_ibz(ish) + kpts_tr_ibz_area(ik)
+    do iks = 1, nkpt_tr(ish)
+      ik = ik + 1
+      area_fbz(ish) = area_fbz(ish) + kpts_tr_area(ik)
+    end do
   end do
-  end do
-  ik = 0
-  do ish = 1, nfs_sheets_tot
-  do iks = 1, nkpt_tr(ish)
-    ik = ik + 1
-    area_fbz(ish) = area_fbz(ish) + kpts_tr_area(ik)
-  end do
-  end do
+
   do ish=1,nfs_sheets_tot
     factor_area_ibz(ish) = area_fbz(ish)/area_ibz(ish)
   end do
 
-  write(*,'(A33,F12.6,7X,A1)') '|   area in full 1BZ (tpiba^2) = ', sum(area_fbz(:)), '|'
+  write(*,'(A36,F12.6,4X,A1)') '|   FS area in full BZ (tpiba^2) =   ', sum(area_fbz(:)), '|'
   do ish=1,nfs_sheets_tot
     write(*,'(A10,I3,F12.6,27X,A1)') '|      is ', ish, area_fbz(ish), '|'
   enddo
 
-  write(*,'(A33,F12.6,7X,A1)') '|   area in irr  1BZ (tpiba^2) = ', sum(area_ibz(:)), '|'
+  write(*,'(A36,F12.6,4X,A1)') '|   FS area in irr  BZ (tpiba^2) =   ', sum(area_ibz(:)), '|'
   do ish=1,nfs_sheets_tot
     write(*,'(A10,I3,F12.6,27X,A1)') '|      is ', ish, area_ibz(ish), '|'
   enddo
 
-  write(*,'(A33,F12.6,7X,A1)') '|   factor_area_ibz =            ', sum(factor_area_ibz(:)), '|'
+  write(*,'(A36,F12.6,4X,A1)') '|   FS area ratio (full / irr BZ) = ', sum(factor_area_ibz(:)), '|'
   do ish=1,nfs_sheets_tot
     write(*,'(A10,I3,F12.6,27X,A1)') '|      is ', ish, factor_area_ibz(ish), '|'
   enddo
+
+  ! N(EF) from sum over vertices, all sheets, using full triangulated mesh
+
+  dosef = 0.0_dp
+  do ik = 1, nkpt_tr_tot
+    dosef = dosef + kpts_tr_area(ik) * (tpi/alat)**2 / ( vabsk_tr(ik) * Ha_to_Ry ) ! velocities in Hartree a.u., pass to Ry
+  end do
+  vol1bz = tpi**3 / volume0
+  dosef = dosef / vol1bz ! in Ry^-1
+  write(*,'(A29,F12.6,11X,A1)') '|   Volume of BZ (bohr^-3) = ', vol1bz, '|'
+  write(*,'(A29,F12.6,11X,A1)') '|   DOS at FS (Ry^-1) =      ', dosef, '|'
 
   write(*,20) '|         ---------------------------------         |'
 

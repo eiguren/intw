@@ -69,29 +69,29 @@ contains
     character(len=25) :: tag_in
     integer :: ibnd
 
-
-    !!--------------- Newton-Raphson relaxation before improvement (optional)
-    !!
-    if(newton_raphson.eq.2) then
-      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, ag, bg, &
-                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, ntri, nvert, v_coord)
-    end if
-
+    !
     !--------------- Edge-collapse
     !
     if(collapse) then
+      !
+      write(*,'("| - Edge collapse of triangulated mesh...           |")')
+      !
       allocate(opt_nvert(num_wann),opt_ntri(num_wann))
       allocate(opt_vert_coord(1:3,maxval(nvert(:)),num_wann),opt_vert_index(1:3,maxval(ntri(:)),num_wann))
       opt_nvert = 0
       opt_ntri = 0
+      !
       do ibnd = 1, num_wann
+        !
         if (nvert(ibnd).eq.0) cycle
+        !
+        write(*,'("|                                                   |")')
+        write(*,'("|   Collapsing band ",I4,"                            |")') ibnd
         !
         call edge_collapse(collapse_criteria, nvert(ibnd), ntri(ibnd), nfaces_IBZ, &
                            faces_IBZ_as_vert, vert_IBZ, v_coord(:,:,ibnd), v_index(:,:,ibnd), &
                            opt_nvert(ibnd), opt_ntri(ibnd), opt_vert_coord(:,:,ibnd), &
-                           opt_vert_index(:,:,ibnd))
+                           opt_vert_index(:,:,ibnd), verbose)
         !
       end do
       !
@@ -102,17 +102,28 @@ contains
       !
       deallocate(opt_ntri, opt_nvert, opt_vert_coord, opt_vert_index)
       !
+      write(*,'("|         ---------------------------------         |")')
+      !
       ! write collapsed isosurface on IBZ
-      tag_in = "collapsed_IBZ_FS_tri.off"
-      call write_IBZ_isosurface(tag_in, num_wann)
+      tag_in = "collapsed_IBZ_FS_tri"
+      call write_IBZ_isosurface(tag_in, num_wann, .false.)
       !
     end if
-
+    !
+    if (collapse .and. relax) write(*,'("|         ---------------------------------         |")')
+    !
     !--------------- Tangential relaxation
     !
     if(relax) then
+      !
+      write(*,'("| - Tangential relaxation of triangulated mesh...   |")')
+      !
       do ibnd = 1, num_wann
+        !
         if(nvert(ibnd).eq.0) cycle
+        !
+        write(*,'("|                                                   |")')
+        write(*,'("|   Relaxing band ",I4,"                              |")') ibnd
         !
         call tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, relax_iter, verbose, &
                                    nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, &
@@ -121,29 +132,21 @@ contains
                                    v_index(:,:,ibnd), v_coord(:,:,ibnd))
         !
       end do
+      !
+      write(*,'("|         ---------------------------------         |")')
+      !
       ! write relaxed isosurface on IBZ
-      tag_in = "relaxed_IBZ_FS_tri.off"
-      call write_IBZ_isosurface(tag_in, num_wann)
+      tag_in = "relaxed_IBZ_FS_tri"
+      call write_IBZ_isosurface(tag_in, num_wann, .false.)
+      !
     end if
-
-    !--------------- Newton-Raphson relaxation after improvement
-    !
-    if(newton_raphson.ge.1) then
-      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, ag, bg, &
-                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, ntri, nvert, v_coord)
-      ! write Newton-relaxed isosurface on IBZ
-      tag_in = "newton_IBZ_FS_tri.off"
-      call write_IBZ_isosurface(tag_in, num_wann)
-    end if
-
 
   end subroutine mesh_optimization
 
 
   subroutine newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, ag, bg, &
                         nsym, s, TR_sym, num_wann, newton_iter, nibz_faces, faces_ibz, &
-                        verts_ibz, in_ntri, in_nvert, v_coord)
+                        verts_ibz, in_ntri, in_nvert, v_coord, verb)
 
     use intw_useful_constants, only: tpi
     use intw_matrix_vector, only: ainv, norma, cross
@@ -165,6 +168,7 @@ contains
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
     integer, intent(in) :: in_ntri(:), in_nvert(:)
     real(dp), intent(inout) :: v_coord(:,:,:)
+    logical, intent(in) :: verb
 
     ! Parameters
     !real(dp), parameter :: eps = 1.0E-6_dp
@@ -179,8 +183,6 @@ contains
     logical, allocatable :: has_SplusG(:), SplusG_pair(:,:,:,:,:,:,:)
     logical, allocatable :: vertex_related(:), relaxed_vertex(:)
 
-
-    write(*,*) "Newton-Raphson relaxation of FS..."
 
     maxvert = maxval(in_nvert(:))
     allocate(vert_on_border(maxvert,nibz_faces), vert_on_corner(maxvert))
@@ -199,12 +201,15 @@ contains
     do ibnd = 1, num_wann
       !
       if (nvert(ibnd).eq.0) cycle
+      !
+      write(*,'("|                                                   |")')
+      write(*,'("|   Relaxing band ",I4,"                              |")') ibnd
 
 
       !--------------- Check which vertices are on border of IBZ
       !
       call check_border(in_nvert(ibnd), v_coord(:,:,ibnd), nibz_faces, vface, nsym, s, TR_sym, &
-                        eps_vinface, vert_on_border, vert_on_corner)
+                        eps_vinface, vert_on_border, vert_on_corner, verb)
 
 
       !--------------- Detect which vertices have SplusG pairs
@@ -226,7 +231,7 @@ contains
           !
           if (ANY(SplusG_pair(iv,jv,:,:,:,:,:))) then
             !
-            print*, "Vertices iv and jv related:", iv, jv
+            if (verb) write(*,'("|     Vertices ",I4," and ",I4," are related            |")') iv, jv
             has_SplusG(iv) = .true.
             vertex_related(jv) = .true.
             !
@@ -239,7 +244,7 @@ contains
       !
       do i_iter = 1, newton_iter
         !
-        print*, "Newton-Raphson relaxing, iter=", i_iter
+        write(*,'("|     Newton-Raphson relaxation, iter ",I4," / ",I4,"   |")') i_iter, newton_iter
         relaxed_vertex = .false.
         v_loop :do iv = 1, in_nvert(ibnd)
           !
@@ -318,7 +323,6 @@ contains
         relaxed_vertex(:) = .false.
         !
       enddo ! i_iter
-      print*, "Newton-Raphson relaxation finished"
       !
     enddo ! ibnd
     !
@@ -329,11 +333,10 @@ contains
     deallocate(has_SplusG, SplusG_pair)
     deallocate(vertex_related, relaxed_vertex)
 
-
   end subroutine newton_rap
 
 
-  subroutine check_border(nvert, vert_coord, nibz_faces, vface, nsym, s, TR_sym, epsvert, vert_on_border, vert_on_corner)
+  subroutine check_border(nvert, vert_coord, nibz_faces, vface, nsym, s, TR_sym, epsvert, vert_on_border, vert_on_corner, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
@@ -346,6 +349,7 @@ contains
     logical, intent(in) :: TR_sym
     real(dp), intent(in) :: epsvert
     logical, intent(inout) :: vert_on_border(:,:), vert_on_corner(:)
+    logical, intent(in) :: verb
 
     ! Local variables
     logical :: inner_face(nibz_faces)
@@ -389,7 +393,7 @@ contains
         if(vert_on_border(iv,j)) k = k+1
       end do
       if(k.ge.2) then
-        print*, iv, "vert on corner!"
+        if (verb) write(*,'("|     Vert ",I4," on corner!                          |")') iv
         vert_on_corner(iv) = .true.
       end if
     end do
@@ -587,7 +591,7 @@ contains
   end subroutine v2edge
 
 
-  subroutine edge_collapse(eps, in_nvert, in_ntri, nibz_faces, faces_ibz, verts_ibz, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index)
+  subroutine edge_collapse(eps, in_nvert, in_ntri, nibz_faces, faces_ibz, verts_ibz, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
@@ -604,6 +608,7 @@ contains
     integer, intent(out) :: new_nvert, new_ntri ! output number of vertices and triangles after simplification
     real(dp), dimension(:,:), intent(out) :: new_dif_vert_coord ! output vertices coordinates
     integer, dimension(:,:), intent(out) :: new_dif_vert_index ! output triangle vertices
+    logical, intent(in) :: verb
 
     ! Local variables
     logical, allocatable :: vert_on_border(:,:), vert_on_corner(:), inner_face(:)
@@ -637,23 +642,27 @@ contains
     new_dif_vert_index = 0
     new_ntri = in_ntri
     new_nvert = in_nvert
+
+    write(*,'("|     Number of triangles: ",I4,"                     |")') in_ntri
+    write(*,'("|     Number of vertices:  ",I4,"                     |")') in_nvert
+
     do iter = 1, tri_elim_iter
 
-      print*, ""
-      print*, "Triangle elimination:", iter
+      write(*,'("|     Edge collapse, iter ",I4," / ",I4,"               |")') iter, tri_elim_iter
       ntri_aux = new_ntri
       nvert_aux = new_nvert
 
-      print*, "Old number of vertices:", nvert_aux
-      print*, "Old number of triangles:", ntri_aux
+      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
+      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
 
 
       !--------------- Remove vertices with three neighbours
       !
       ! Check which vertex should be removed
-      print*, ""
+      if (verb) write(*,'("|       Removing dummy triangles...                 |")')
       do it = 1, dummy_tri_iter
-        print*, "Removing dummy triangles iteration", it
+
+        if (verb) write(*,'("|       iter ",I4," / ",I4,"                            |")') it, dummy_tri_iter
 
         ! Assign neighbours
         neighbour_triangles = 0
@@ -727,11 +736,14 @@ contains
         nvert_aux = new_nvert
         ntri_aux = new_ntri
       end do
-      print*, "Number of vertices:", nvert_aux
-      print*, "Number of triangles:", ntri_aux
+
+      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
+      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
 
 
       !--------------- Collapse vertices
+      !
+      if (verb) write(*,'("|       Collapsing vertices...                      |")')
       !
       ! Assign neighbours
       neighbour_triangles = 0
@@ -740,7 +752,7 @@ contains
       ! Collapse triangles and create new mesh
       call collapse_triangles(eps, ntri_aux, nvert_aux, dif_vert_index, dif_vert_coord, &
                               vert_on_border, nibz_faces, nghmax, neighbour_triangles, &
-                              new_ntri, new_nvert, new_dif_vert_coord, new_dif_vert_index)
+                              new_ntri, new_nvert, new_dif_vert_coord, new_dif_vert_index,verb)
 
 
       !--------------- Re-assign vertex and index coordinates
@@ -750,17 +762,19 @@ contains
       end do
       dif_vert_index(:,:) = new_dif_vert_index(:,:)
 
-      print*, "Old number of triangles", ntri_aux
-      print*, "New number of triangles", new_ntri
-      print*, "Old number of vertices", nvert_aux
-      print*, "New number of vertices", new_nvert
+      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') new_ntri
+      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') new_nvert
 
       if(ntri_aux==new_ntri) then
-        print*, "No triangle obeys collapse criteria. Mesh simplification is finished."
+        write(*,'("|     No triangle obeys collapse criteria           |")')
+        write(*,'("|     Edge collapse loop finished                   |")')
         exit
       end if
 
     end do
+
+    write(*,'("|     New number of triangles: ",I4,"                 |")') new_ntri
+    write(*,'("|     New number of vertices:  ",I4,"                 |")') new_nvert
 
     !--------------- Deallocate variables
     !
@@ -948,19 +962,19 @@ contains
           rmvd_tri1 = neighbours(i,iv,1)
           rmvd_tri2 = neighbours(i,iv,2)
           n = n+1
-          print*, "Vertex", vindex(iv,i), "has three neighbours"
+          ! if (verbose) write(*,'("|       Vertex ",I4," has three neighbours            |")') vindex(iv,i)
           exit i_loop
         end if
       end do iv_loop
     end do i_loop
 
-    print*, "Number of triangles with three vertex", n
+    ! if (verbose) write(*,'("|       Number of triangles with three vertex: ",I4," |")') n
 
   end subroutine rm_3tri_vrtx
 
 
   subroutine collapse_triangles(eps, ntri_old, nvert_old, vindex, vcoord, vert_border, ntetraf, nghmax, neighbour_triangles, &
-                                ntri_new, nvert_new, new_vcoord, new_vindex)
+                                ntri_new, nvert_new, new_vcoord, new_vindex, verb)
     ! Subroutine that performs edge collapse and triangle re-assignation.
     ! Needs clean up...
 
@@ -980,6 +994,7 @@ contains
     integer, intent(out) :: ntri_new, nvert_new
     real(dp), dimension(:,:), intent(inout) :: new_vcoord
     integer, dimension(:,:), intent(inout) :: new_vindex
+    logical, intent(in) :: verb
 
     !Local variables
     integer :: i, iv, ij, m, mj, j, jv, f, k1, k2, collapsed_edge, eliminated_vertex
@@ -1023,7 +1038,7 @@ contains
             if(k1.ge.2 .or. k2.ge.2) cycle tri_loop
           end do
 
-          print*, "Triangle",i,"collapsed from edge",12
+          if (verb) write(*,'("|       Triangle ",I4," collapsed from edge ",I4,"      |")') i, 12
 
           aux_vcoord(:,vindex(2,i)) = ( old_vcoord(:,vindex(1,i)) + old_vcoord(:,vindex(2,i)) ) / 2.d0
           aux_vcoord(:,vindex(1,i)) = ( old_vcoord(:,vindex(1,i)) + old_vcoord(:,vindex(2,i)) ) / 2.d0
@@ -1044,7 +1059,7 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
               cycle tri_loop
             end if
 
@@ -1066,7 +1081,7 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
               cycle tri_loop
             end if
 
@@ -1085,10 +1100,10 @@ contains
                    .or. ANY(vert_border(vindex(2,m),:)) &
                    .or. ANY(vert_border(vindex(3,m),:)) &
                    ) then
-                  print*, "Triangle will not be collapsed as its opposite is on a tetra face"
+                  if (verb) write(*,'("Triangle will not be collapsed as its opposite is on a tetra face")')
                   cycle tri_loop
                 end if
-                print*, "Triangle", j, "is opposite triangle of", i, "and will be collapsed"
+                if (verb) write(*,'("Triangle ",I4," is opposite triangle of ",I4," and will be collapsed")') j, i
                 triangle_elimination(m) = .true.
                 ntri_new = ntri_new - 1
               end if
@@ -1108,7 +1123,7 @@ contains
             if(.not.triangle_elimination(j)) then
                 do jv = 1, 3
                   if( vindex(2,i).eq.vindex(jv,j) ) then
-                    print*, "Re-locating vertex", jv, "of triangle", j, "neighbour of", i, 2
+                    if (verb) write(*,'("Re-locating vertex ",I4," of triangle ",I4," neighbour of ",I4)') jv, j, i
                     vindex(jv,j) = vindex(1,i)
                   end if
                 end do
@@ -1145,7 +1160,7 @@ contains
           end do
 
 
-          print*, "Triangle", i, "collapsed from edge", 13
+          if (verb) write(*,'("|       Triangle ",I4," collapsed from edge ",I4,"      |")') i, 13
 
           aux_vcoord(:,vindex(3,i)) = ( old_vcoord(:,vindex(1,i)) + old_vcoord(:,vindex(3,i)) ) / 2.d0
           aux_vcoord(:,vindex(1,i)) = ( old_vcoord(:,vindex(1,i)) + old_vcoord(:,vindex(3,i)) ) / 2.d0
@@ -1166,7 +1181,7 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
               cycle tri_loop
             end if
 
@@ -1188,8 +1203,8 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
-              print*, dot_product(oldnormal, newnormal)
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
+              if (verb) print*, dot_product(oldnormal, newnormal)
               cycle tri_loop
             end if
 
@@ -1208,10 +1223,10 @@ contains
                    .or. ANY(vert_border(vindex(2,m),:)) &
                    .or. ANY(vert_border(vindex(3,m),:)) &
                    ) then
-                  print*, "Triangle will not be collapsed as its opposite is on a tetra face"
-                  cycle tri_loop
+                    if (verb) write(*,'("Triangle will not be collapsed as its opposite is on a tetra face")')
+                    cycle tri_loop
                 end if
-                print*, "Triangle", j, "is opposite triangle of", i, "and will be collapsed"
+                if (verb) write(*,'("Triangle ",I4," is opposite triangle of ",I4," and will be collapsed")') j, i
                 triangle_elimination(m) = .true.
                 ntri_new = ntri_new - 1
               end if
@@ -1231,7 +1246,7 @@ contains
             if(.not.triangle_elimination(j)) then
               do jv = 1, 3
                 if( vindex(3,i).eq.vindex(jv,j) ) then
-                  print*, "Re-locating vertex", jv, "of triangle", j, "neighbour of", i, 2
+                  if (verb) write(*,'("Re-locating vertex ",I4," of triangle ",I4," neighbour of ",I4)') jv, j, i
                   vindex(jv,j) = vindex(1,i)
                 end if
               end do ! jv
@@ -1269,7 +1284,7 @@ contains
             if(k1.ge.2 .or. k2.ge.2) cycle tri_loop
           end do
 
-        print*, "Triangle",i,"collapsed from edge",23
+          if (verb) write(*,'("|       Triangle ",I4," collapsed from edge ",I4,"      |")') i, 23
 
         aux_vcoord(:,vindex(3,i)) = ( old_vcoord(:,vindex(2,i)) + old_vcoord(:,vindex(3,i)) ) / 2.d0
         aux_vcoord(:,vindex(2,i)) = ( old_vcoord(:,vindex(2,i)) + old_vcoord(:,vindex(3,i)) ) / 2.d0
@@ -1290,7 +1305,7 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
               cycle tri_loop
             end if
 
@@ -1312,7 +1327,7 @@ contains
             newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
-              print*, "Triangle will not collapse in order to avoid flip of a neighbour triangle"
+              if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
               cycle tri_loop
             end if
 
@@ -1331,10 +1346,10 @@ contains
                    .or. ANY(vert_border(vindex(2,m),:)) &
                    .or. ANY(vert_border(vindex(3,m),:)) &
                    ) then
-                  print*, "Triangle will not be collapsed as its opposite is on a tetra face"
-                  cycle tri_loop
+                    if (verb) write(*,'("Triangle will not be collapsed as its opposite is on a tetra face")')
+                    cycle tri_loop
                 end if
-                print*, "Triangle", j, "is opposite triangle of", i, "and will be collapsed"
+                if (verb) write(*,'("Triangle ",I4," is opposite triangle of ",I4," and will be collapsed")') j, i
                 triangle_elimination(m) = .true.
                 ntri_new = ntri_new - 1
               end if
@@ -1354,7 +1369,7 @@ contains
           if(.not.triangle_elimination(j)) then
               do jv = 1, 3
                 if( vindex(3,i).eq.vindex(jv,j) ) then
-                  print*, "Re-locating vertex", jv, "of triangle", j, "neighbour of", i, 2
+                  if (verb) write(*,'("Re-locating vertex ",I4," of triangle ",I4," neighbour of ",I4)') jv, j, i
                   vindex(jv,j) = vindex(2,i)
                 end if
               end do
@@ -1482,8 +1497,6 @@ contains
     real(dp), parameter :: lambda = 0.1_dp ! Parameter controling vertex movement
 
 
-    write(*,*) "Tangential relaxation... "
-
     !--------------- Define vectors of IBZ big tetra faces
     !
     allocate(vface(3,3,nibz_faces))
@@ -1501,7 +1514,7 @@ contains
     !
     allocate(vert_on_border(in_nvert,nibz_faces), vert_on_corner(in_nvert))
     call check_border(in_nvert, v_coord(:,:), nibz_faces, vface, nsym, s, TR_sym, &
-                      eps_vinface, vert_on_border, vert_on_corner)
+                      eps_vinface, vert_on_border, vert_on_corner, verbose)
 
 
     !--------------- Detect which vertices have SplusG pairs
@@ -1524,7 +1537,7 @@ contains
         !
         if (ANY(SplusG_pair(iv,jv,:,:,:,:,:))) then
           !
-          print*, "Vertices iv and jv related:", iv, jv
+          if (verbose) write(*,'("|     Vertices ",I4," and ",I4," are related            |")') iv, jv
           has_SplusG(iv) = .true.
           vertex_related(jv) = .true.
           !
@@ -1537,6 +1550,20 @@ contains
     !
     allocate(vert_normal(3,in_nvert))
     do it = 1, niter
+      !
+      if(it==1) then
+        write(*,'("|     Tangential relaxation, iter ",I5," / ",I5,"     |")') it, niter
+      else if(it==10) then
+        write(*,'("|     Tangential relaxation, iter ",I5," / ",I5,"     |")') it, niter
+      else if(it==100) then
+        write(*,'("|     Tangential relaxation, iter ",I5," / ",I5,"     |")') it, niter
+      else if(it==1000) then
+        write(*,'("|     Tangential relaxation, iter ",I5," / ",I5,"     |")') it, niter
+      else if(it==niter) then
+        write(*,'("|     Tangential relaxation, iter ",I5," / ",I5,"     |")') it, niter
+      else if(it==100000) then
+        stop "ERROR: Max number of iterations achived"
+      end if
       !
       relaxed_vertex(:) = .false.
       v_loop: do iv = 1, in_nvert
@@ -1622,28 +1649,7 @@ contains
         !
       end do v_loop
 
-      ! Print iteration if needed
-      if(verbose) then
-        if(it==1) then
-          write(*, *) "  1 iteration completed"
-        else if(it==10) then
-          write(*, *) "  10 iterations completed"
-        else if(it==100) then
-          write(*, *) "  100 iterations completed"
-        else if(it==200) then
-          write(*, *) "  200 iterations completed"
-        else if(it==1000) then
-          write(*, *) "  1000 iterations completed"
-        else if(it==10000) then
-          write(*, *) "  10000 iterations completed"
-        else if(it==100000) then
-          write(*, *) "  100000 iterations completed"
-        end if
-      end if
-
     end do ! niter
-
-    write(*, *) "Tangential relaxation finished"
 
     !--------------- Deallocate variables
     !

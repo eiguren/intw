@@ -26,10 +26,10 @@ program triFS
                         vert_index, vert_coord, nvert, ntri, &
                         read_tetrahedra, create_isosurface_IBZ, write_full_isosurface, DOS_isosurface, &
                         velocity_on_IBZ, write_IBZ_isosurface
-  use triFS_mesh_opt, only: mesh_optimization
+  use triFS_mesh_opt, only: newton_rap, mesh_optimization
   use intw_matrix_vector, only: ainv
   use intw_utility, only: find_free_unit, get_timing
-  use intw_input_parameters, only: input
+  use intw_input_parameters, only: input, prefix
   use intw_reading, only: read_parameters_data_file_xml, alat, at, bg, volume0, nsym, s
 
 
@@ -70,6 +70,9 @@ program triFS
   logical :: verbose = .true., plot_BZ = .true., dos = .true.
   real(kind=dp) :: eps_dupv = 1.0E-06_dp ! Threshold parameter to detect duplicated vertices
   !
+  ! timing
+  real(dp) :: time1, time2
+  !
   NAMELIST /tri_FS/ TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
   NAMELIST /FS_opt/ collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
 
@@ -82,9 +85,11 @@ program triFS
   ! Begining
   !================================================================================
   !
+  call get_timing(time1)
+  !
   write(*,20) '====================================================='
-  write(*,20) '|                  program me                       |'
-  write(*,20) '|        ---------------------------------          |'
+  write(*,20) '|                   program triFS                   |'
+  write(*,20) '|         ---------------------------------         |'
   write(*,20) '====================================================='
   !
   !
@@ -92,43 +97,52 @@ program triFS
   ! Read the necessary information from standard input file
   !================================================================================
   !
-  write(*,20) '|       - Waiting for input file...                 |'
+  22 format(A,I2,A)
+  !
+  write(*,20) "| - Reading standard input file...                  |"
+  write(*,20) "|         namelist             ios                  |"
+  write(*,20) "|         --------             ----                 |"
   !
   ! Read input file
   READ(5, nml=input, iostat=ios1)
+  write(*,22) "|           &input             ", ios1, "                   |"
+  !
   READ(5, nml=tri_FS, iostat=ios2)
+  write(*,22) "|           &triFS             ", ios2, "                   |"
+  !
   READ(5, nml=FS_opt, iostat=ios3)
-  if (ios1==0 .and. ios2==0 .and. ios3==0) then
-    write(*, *) '| Input (input) reading OK                                          |'
-    write(*, *) '|-----------------------------------------------------------|'
-  else if (ios1.ne.0) then
-    print*, ios1
-    write(*, *) '|   PLEASE CHECK INPUT  input  as it is      not OK              |'
+  write(*,22) "|           &FS_opt            ", ios3, "                   |"
+  !
+  ! Check input
+  if (ios1 /= 0) then
+    write(*,*) "PLEASE CHECK INPUT NAMELIST  &input  as it is not OK!"
     stop
-  else if (ios2.ne.0) then
-    print*, ios1
-    write(*, *) '|   PLEASE CHECK INPUT  triFS  as it is      not OK              |'
+  else if (ios2 /=0) then
+    write(*,*) "PLEASE CHECK INPUT NAMELIST  &triFS  as it is not OK!"
     stop
-  else if (ios3.ne.0) then
-    write(*, *) '|   PLEASE CHECK INPUT  FS_opt  as it is      not OK              |'
+  else if (ios3 /= 0) then
+    write(*,*) "PLEASE CHECK INPUT NAMELIST  &FS_opt  as it is not OK!"
     stop
   end if
   !
+  write(*,20) "====================================================="
+  !
   !
   !================================================================================
-  ! Read the parameters from the SCF QE calculation
+  ! Read the parameters from the SCF calculation
   !================================================================================
   !
-  write(*,20) '|       - Reading calculation parameters...         |'
+  write(*,20) "| - Reading calculation parameters...               |"
   !
   call read_parameters_data_file_xml()
   !
   !
   !================================================================================
-  !
+  ! Read _hr file
   !================================================================================
   !
-  ! Read _hr file
+  write(*,20) "| - Reading Wannier H(R)...                         |"
+  !
   hr_unit = find_free_unit()
   open(unit=hr_unit, file=hr_file, status="unknown", action="read")
   read(unit=hr_unit, fmt=*)
@@ -146,77 +160,117 @@ program triFS
      end do
   end do
   close(unit=hr_unit)
-
-
+  !
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Create BZ, tetrahedralize with symmetric tetra, and find IBZ
   !================================================================================
   !
   ! Create BZ
+  !
+  write(*,20) "| - Creating WS BZ...                               |"
+  !
   call wigner_seitz_cell(transpose(bg), verbose)
+  !
   ! Write BZ border lines in plotting format if needed
   if(plot_BZ) call plot_poly()
+  !
   ! Write BZ in OFF format (reads polyhedra.dat) !! JL this should be improved to write directly in OFF format...
   call polyhedra_off()
-
+  !
   ! Find tetrahedra forming the irreducible BZ volume
+  !
+  write(*,20) "| - Finding IBZ...                                  |"
+  !
   call tetrasym(bg, nsym, s, TR_sym, ntetmax, n_BZ_tetra_all, BZ_tetra_all, n_BZ_tetra_irr, BZ_tetra_irr, tetra_equiv, tetra_symlink)
-
+  !
   if (verbose) then
     ! Write tetrahedized full BZ
     tag_in = "tetra_BZ.off"
     call plot_tetra_off(tag_in, n_BZ_tetra_all, BZ_tetra_all, plot_BZ)
   end if
+  !
   ! Compact tetrahedra on IBZ
   call compact_tetra(bg, nsym, s, TR_sym, ntetmax, n_BZ_tetra_irr, BZ_tetra_irr, n_BZ_tetra_all, BZ_tetra_all, tetra_equiv, tetra_symlink)
+  !
   ! Write compact tetrahedralized irreducible BZ
   tag_in = "IBZ.off"
   call plot_tetra_off(tag_in, n_BZ_tetra_irr, BZ_tetra_irr, .false.)
-
-
+  !
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Detect irreducible faces within IBZ with S+G symmetries
   !================================================================================
   !
+  write(*,20) "| - Detecting equivalent faces of IBZ...            |"
+  !
   allocate(vert_IBZ(1:3,4*n_BZ_tetra_irr), faces_IBZ_as_vert(1:3,4*n_BZ_tetra_irr), edges_IBZ(1:2,6*n_BZ_tetra_irr))
   call tetraIBZ_2_vert_faces_edges(n_BZ_tetra_irr, BZ_tetra_irr, verbose, nvert_IBZ, nfaces_IBZ, nedges_IBZ, vert_IBZ, faces_IBZ_as_vert, edges_IBZ)
+  !
   allocate(faces_Gsymlink(4*n_BZ_tetra_irr,2,-1:1,-1:1,-1:1), faces_indx(4*n_BZ_tetra_irr), faces_inv_indx(4*n_BZ_tetra_irr))
   call irr_faces(n_BZ_tetra_irr, nsym, s, TR_sym, bg, verbose, vert_IBZ, nfaces_IBZ, faces_IBZ_as_vert, nfaces_irr, faces_Gsymlink, faces_indx, faces_inv_indx)
-
-
+  !
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Split edges and perform triangulation of irr faces
   !================================================================================
   !
+  write(*,20) "| - Triangulating faces of IBZ...                   |"
+  !
   ! This uses Triangle executable
   call triangulate_faces(n_BZ_tetra_irr, nfaces_IBZ, faces_Gsymlink, nsym, s, faces_indx, faces_inv_indx, n1, n2, n3, bg, &
                          faces_IBZ_as_vert, vert_IBZ, verbose)
+  !
   ! Remove unnecessary files
   CALL EXECUTE_COMMAND_LINE("rm face_split_edges.*")
-
-
+  !
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Add extra n1, n2, n3 nodes within IBZ volume
   !================================================================================
   !
   if (volume_nodes) then
-    call add_nodes_IBZ_volume(n1, n2, n3, volnodfac, eps_vinface, bg, n_BZ_tetra_irr, BZ_tetra_irr)
+    !
+    write(*,20) "| - Adding n1, n2, n3 nodes to IBZ volume...        |"
+    !
+    call add_nodes_IBZ_volume(n1, n2, n3, volnodfac, eps_vinface, bg, n_BZ_tetra_irr, BZ_tetra_irr, verbose)
+    !
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+    !
   end if
-
-
+  !
+  !
   !================================================================================
   ! Pass triangulated IBZ border and extra nodes to TetGen and tetrahedralize
   !================================================================================
+  !
+  write(*,20) "| - Creating tetrahedra in IBZ volume...            |"
   !
   ! Call TetGen
   ! -Y  doesn't let adding points on surface
   ! -i uses adds extra nodes from .node file
   ! -v verbose output
+  if (verbose) write(*,20) "|   Running tetgen with command:                    |"
   if (volume_nodes) then
-    CALL EXECUTE_COMMAND_LINE("tetgen -Ykv -i Triangulated_IBZ.off")
+    if (verbose) write(*,20) "|  tetgen -Ykv -i Triangulated_IBZ.off > tetgen.out |"
+    CALL EXECUTE_COMMAND_LINE("tetgen -Ykv -i Triangulated_IBZ.off > tetgen.out")
   else
+    if (verbose) write(*,20) "|   tetgen -Ykv Triangulated_IBZ.off > tetgen.out   |"
     CALL EXECUTE_COMMAND_LINE("tetgen -Ykv Triangulated_IBZ.off")
   end if
+  !
   ! Re-name files
   CALL EXECUTE_COMMAND_LINE("rm Triangulated_IBZ.1.smesh")
   CALL EXECUTE_COMMAND_LINE("mv Triangulated_IBZ.1.vtk Tetrahedralized_IBZ.vtk")
@@ -224,69 +278,155 @@ program triFS
   CALL EXECUTE_COMMAND_LINE("mv Triangulated_IBZ.1.face Tetrahedralized_IBZ.face")
   CALL EXECUTE_COMMAND_LINE("mv Triangulated_IBZ.1.ele Tetrahedralized_IBZ.ele")
   CALL EXECUTE_COMMAND_LINE("mv Triangulated_IBZ.1.edge Tetrahedralized_IBZ.edge")
-
-
+  !
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Read tetrahedra output and obtain isosurface
   !================================================================================
   !
+  write(*,20) '| - Creating FS on IBZ...                           |'
+  write(*,20) "|         ---------------------------------         |"
+  !
   ! Read small tetrahedra from output files. Output variables defined on isosurface module
   call read_tetrahedra()
-
+  !
+  write(*,20) "|         ---------------------------------         |"
+  !
   ! Create isosurface on IBZ
   call create_isosurface_IBZ(ef, num_wann, nrpts, ndegen, irvec, ham_r, alat, at, bg, nsym, s, TR_sym, verbose, eps_dupv)
-
+  !
+  ! Write triangulated mesh in OFF format
+  write(*,20) "|         ---------------------------------         |"
+  tag_in = "initial_IBZ_FS_tri"
+  call write_IBZ_isosurface(tag_in, num_wann, .false.)
+  !
+  write(*,20) "|         ---------------------------------         |"
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Mesh optimization
   !================================================================================
   !
+  write(*,20) "| - Optimizing FS...                                |"
+  !
   if(collapse .or. relax .or. (newton_raphson>0)) then
     !
-    call mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, relax_vinface, &
-                           eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, nsym, s, TR_sym, &
-                          num_wann, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, ntri, nvert, vert_coord, vert_index)
+    ! Newton-Raphson relaxation before improvement (optional)
+    if(newton_raphson==2 .and. (collapse .or. relax)) then
+      !
+      write(*,20) "|         ---------------------------------         |"
+      write(*,20) "| - Newton-Raphson relaxation of FS...              |"
+      !
+      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
+                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
+                      vert_IBZ, ntri, nvert, vert_coord, verbose)
+      !
+      write(*,20) "|         ---------------------------------         |"
+      !
+      ! write Newton-relaxed isosurface on IBZ
+      tag_in = "newton_IBZ_FS_tri"
+      call write_IBZ_isosurface(tag_in, num_wann, .false.)
+      !
+    end if
+    !
+    ! Mesh optimization
+    if(collapse .or. relax) then
+      !
+      write(*,20) "|         ---------------------------------         |"
+      !
+      call mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, relax_vinface, &
+                            eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, nsym, s, TR_sym, &
+                            num_wann, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, ntri, nvert, vert_coord, vert_index)
+      !
+    end if
+    !
+    ! Newton-Raphson relaxation after improvement
+    if(newton_raphson>=1) then
+      !
+      write(*,20) "|         ---------------------------------         |"
+      write(*,20) "| - Newton-Raphson relaxation of FS...              |"
+      !
+      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
+                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
+                      vert_IBZ, ntri, nvert, vert_coord, verbose)
+      !
+    end if
     !
     ! Compute velocity on improved isosurface on IBZ
     vert_veloc(:,:,:) = 0.0_dp
     call velocity_on_IBZ(num_wann, nvert, vert_coord, nrpts, irvec, ndegen, alat, at, bg, nsym, s, TR_sym, ham_r, vert_veloc)
     !
-    ! write improved isosurface on IBZ
-    tag_in = "opt_IBZ_FS_tri.off"
-    call write_IBZ_isosurface(tag_in, num_wann)
+    write(*,20) "|         ---------------------------------         |"
     !
-  end if
-
-
+    ! write improved isosurface on IBZ
+    tag_in = "opt_IBZ_FS_tri"
+    call write_IBZ_isosurface(tag_in, num_wann, .false.)
+    !
+    write(*,20) "|         ---------------------------------         |"
+    write(*,20) '|   ...done                                         |'
+    !
+  else
+    !
+    write(*,20) "|   ...nothing to do                                |"
+    !
+  endif
+  !
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Rotate isosurface to full BZ and write to file
   !================================================================================
   !
-  call write_full_isosurface(bg, nsym, s, TR_sym, num_wann, verbose, eps_dupv)
-
-
+  write(*,20) "| - Writing final triangulated FS...                |"
+  !
+  write(*,20) "|         ---------------------------------         |"
+  !
+  ! write isosurface on IBZ
+  tag_in = "IBZ_FS_tri"
+  call write_IBZ_isosurface(tag_in, num_wann, .true., prefix)
+  !
+  write(*,20) "|         ---------------------------------         |"
+  !
+  ! write isosurface on full BZ
+  tag_in = "FS_tri"
+  call write_full_isosurface(bg, nsym, s, TR_sym, num_wann, verbose, eps_dupv, tag_in, prefix)
+  !
+  write(*,20) "|         ---------------------------------         |"
+  write(*,20) "|   ...done                                         |"
+  write(*,20) "====================================================="
+  !
+  !
   !================================================================================
   ! Compute DOS at isosurface
   !================================================================================
   !
   if (dos) then
+    !
+    write(*,20) "| - Computing DOS at FS...                          |"
+    !
     call DOS_isosurface(alat, alat**3/volume0, num_wann, nvert, ntri, vert_coord, vert_index, vert_veloc, nvert_rot, ntri_rot, &
                         vert_coord_rot, vert_index_rot, vert_veloc_rot)
+    !
+    write(*,20) "|   ...done                                         |"
+    write(*,20) "====================================================="
   end if
-
-
+  !
+  !
+  !
   !================================================================================
-  ! Deallocate variables
+  ! Finish
   !================================================================================
   !
-  deallocate(s)
-  deallocate(vert_IBZ, faces_IBZ_as_vert, edges_IBZ)
-  deallocate(faces_Gsymlink, faces_indx, faces_inv_indx)
-  deallocate(ndegen, irvec, ham_r)
-  deallocate(vert_veloc)
-  deallocate(ntri_rot, nvert_rot, vert_coord_rot, vert_index_rot, vert_veloc_rot)
-
-  write(*, *)
-  write(*, '("triFS finished!")')
-
+  call get_timing(time2)
+  !
+  write(*,20) "|                      ALL DONE                     |"
+  write(*,30) "|     total time: ",time2-time1," seconds            |"
+  write(*,20) "====================================================="
 
 end program triFS
