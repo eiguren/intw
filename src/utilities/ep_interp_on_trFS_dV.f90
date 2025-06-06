@@ -642,6 +642,12 @@ program ep_on_trFS_dV
 
           ibp = nfs_sheet(ishp) ! band index for k'
 
+          !$omp parallel do &
+          !$omp firstprivate(iks, ik, kpoint, list_iG, wfc, QE_eig, nG) &
+          !$omp private(iksp, ikp, kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
+          !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq, dvq_local) &
+          !$omp private(qpoint, dvpsi) &
+          !$omp private(iat, is, js)
           do iksp = 1, nkpt_tr(ishp)
 
             ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
@@ -650,7 +656,9 @@ program ep_on_trFS_dV
             call cryst_to_cart(1, kpoint_p, at, -1)
 
             ! Read wavefunction k'
+            !$omp critical
             call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
+            !$omp end critical
 
             qpoint = kpoint_p-kpoint
 
@@ -690,13 +698,21 @@ program ep_on_trFS_dV
               enddo ! js
             enddo ! iat
 
+          end do ! k'
+          !$omp end parallel do
+
+          ! Save interpolated matrix elements for kpoint
+          do iksp = 1, nkpt_tr(ishp)
+            !
+            ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
+            !
             do js=1,nspin
               do is=1,nspin
                 write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
                     (aep_mat_el(ikp,ik, js,is, iat), iat=1,3*nat)
               end do
             end do
-
+            !
           end do ! k'
 
         end do ! sheet'
