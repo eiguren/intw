@@ -30,7 +30,8 @@ program ep_on_trFS_wannier
 
   use intw_useful_constants, only: cmplx_0, cmplx_i, Ha_to_eV, tpi
 
-  use intw_utility, only: get_timing, find_free_unit, find_k_1BZ_and_G, triple_to_joint_index_g, &
+  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+                          find_k_1BZ_and_G, triple_to_joint_index_g, &
                           generate_kmesh, cryst_to_cart
 
   use intw_matrix_vector, only: area_vec
@@ -118,6 +119,7 @@ program ep_on_trFS_wannier
   write(*,20) '|       Wannier interpolation of e-p elements       |'
   write(*,20) '|               on the triangulated FS              |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
   !================================================================================
@@ -690,7 +692,8 @@ program ep_on_trFS_wannier
   call get_timing(time2)
 
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program ep_on_trFS_wannier

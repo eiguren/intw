@@ -28,7 +28,7 @@ program triFS
                         velocity_on_IBZ, write_IBZ_isosurface
   use triFS_mesh_opt, only: newton_rap, mesh_optimization
   use intw_matrix_vector, only: ainv
-  use intw_utility, only: find_free_unit, get_timing
+  use intw_utility, only: find_free_unit, get_timing, print_date_time
   use intw_input_parameters, only: input, prefix
   use intw_reading, only: read_parameters_data_file_xml, alat, at, bg, volume0, nsym, s
 
@@ -90,6 +90,7 @@ program triFS
   write(*,20) '====================================================='
   write(*,20) '|                   program triFS                   |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
   !
@@ -425,8 +426,9 @@ program triFS
   !
   call get_timing(time2)
   !
-  write(*,20) "|                      ALL DONE                     |"
-  write(*,30) "|     total time: ",time2-time1," seconds            |"
-  write(*,20) "====================================================="
+  write(*,20) '|                      ALL DONE                     |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
+  write(*,20) '====================================================='
 
 end program triFS

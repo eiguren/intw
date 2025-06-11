@@ -20,7 +20,7 @@ program w902intw
 
   use kinds, only: dp
 
-  use intw_utility, only: get_timing
+  use intw_utility, only: get_timing, print_date_time
 
   use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
                             allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
@@ -56,6 +56,7 @@ program w902intw
   write(*,20) '====================================================='
   write(*,20) '|                  program w902intw                 |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
 
@@ -168,7 +169,8 @@ program w902intw
   call get_timing(time2)
 
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program w902intw

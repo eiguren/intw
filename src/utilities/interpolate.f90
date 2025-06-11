@@ -25,7 +25,8 @@ program interpolate
 
   use kinds, only: dp
 
-  use intw_utility, only: get_timing, find_free_unit, generate_and_allocate_kpath, fermi_dirac
+  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+                          generate_and_allocate_kpath, fermi_dirac
 
   use intw_w90_setup, only: interpolate_1k, interpolated_DOS, &
                             allocate_and_read_ham_r
@@ -68,6 +69,7 @@ program interpolate
   write(*,20) '====================================================='
   write(*,20) '|                program interpolate                |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
   !
@@ -218,7 +220,8 @@ program interpolate
   call get_timing(time2)
   !
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program interpolate

@@ -44,7 +44,7 @@ program intw2W90
                           num_wann_intw, num_exclude_bands_intw, &
                           set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
-  use intw_utility, only: get_timing, generate_kmesh
+  use intw_utility, only: get_timing, print_date_time, generate_kmesh
 
 !================================================================================
 ! Declare the variables
@@ -77,6 +77,7 @@ program intw2W90
   write(*,20) '====================================================='
   write(*,20) '|                  program intw2W90                 |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
   !
@@ -367,7 +368,8 @@ program intw2W90
   call get_timing(time2)
   !
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program intw2W90

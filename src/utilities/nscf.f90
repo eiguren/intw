@@ -28,7 +28,7 @@ program nscf
                           read_kpoints_data_file_xml, &
                           get_K_folder_data
   use intw_pseudo, only: read_all_pseudo
-  use intw_utility, only: get_timing
+  use intw_utility, only: get_timing, print_date_time
 
   use intw_useful_constants, only: cmplx_0
 
@@ -65,7 +65,8 @@ program nscf
   call get_timing(time1)
   write(*,20) '====================================================='
   write(*,20) '|                  program nscf                     |'
-  write(*,20) '|        ---------------------------------          |'
+  write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
   write(*,20) '|    waiting for input file...                      |'
   !
@@ -162,12 +163,17 @@ program nscf
   !call allocate_and_get_all_irreducible_wfc()
   !
   !call deallocate_upfeak ()
+
+
   !================================================================================
-  !       Finish
+  ! Finish
   !================================================================================
+
   call get_timing(time2)
-  write(*,20) '|                     ALL DONE                       |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+
+  write(*,20) '|                      ALL DONE                     |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 

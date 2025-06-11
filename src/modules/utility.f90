@@ -38,7 +38,8 @@ module intw_utility
             find_k_1BZ_and_G, cryst_to_cart, &
             hpsort_integer, hpsort_real, &
             find_r_in_WS_cell, errore, simpson, sphb, &
-            real_ylmr2, dosplineint, spline, splint
+            real_ylmr2, dosplineint, spline, splint, &
+            print_date_time
   !
   ! functions
   public :: intgr_spline_gaussq, multiple, weight_ph, &
@@ -1646,5 +1647,36 @@ end function intgr_spline_gaussq
     END IF
     !
   END FUNCTION locate
+
+
+  subroutine print_date_time(status)
+    ! Gets current date and time, and prints it to the output
+
+    implicit none
+
+    character(len=18), intent(in) :: status
+
+    integer,dimension(8) :: values
+    integer :: iyear, imonth, iday, ihour, imin, isec
+
+    character(len=3), parameter :: months(12) = (/ 'Jan','Feb','Mar','Apr','May','Jun', &
+                                                   'Jul','Aug','Sep','Oct','Nov','Dec '/)
+
+
+    ! Get the current date and time
+    call date_and_time(VALUES=values)
+
+    iyear = values(1)
+    imonth = values(2)
+    iday = values(3)
+    ihour = values(5)
+    imin = values(6)
+    isec = values(7)
+
+    ! Print the date and time with the status
+    write(*,'("|     ",A18,": ",I2.2,"-",A3,"-",I4.4," ",I2.2,":",I2.2,":",I2.2,"      |")') &
+        adjustl(status), iday, months(imonth), iyear, ihour, imin, isec
+
+  end subroutine print_date_time
 
 end module intw_utility

@@ -72,7 +72,8 @@ program ep_on_trFS_dV
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
 
-  use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, generate_kmesh, &
+  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+                          cryst_to_cart, generate_kmesh, &
                           joint_to_triple_index_r
 
   use intw_matrix_vector, only: area_vec, ainv
@@ -171,6 +172,7 @@ program ep_on_trFS_dV
   write(*,20) '|         e-p calculation on triangulated FS        |'
   write(*,20) '|  using interpolation of dV on the triangulated q  | '
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
 
@@ -748,7 +750,8 @@ program ep_on_trFS_dV
   call get_timing(time2)
 
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 

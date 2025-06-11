@@ -26,7 +26,7 @@ program interpolatephonons
 
   use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry, tpi
 
-  use intw_utility, only: get_timing, find_free_unit, &
+  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
                           generate_kmesh, cryst_to_cart, smeared_delta, &
                           generate_and_allocate_kpath
 
@@ -88,6 +88,7 @@ program interpolatephonons
   write(*,20) '====================================================='
   write(*,20) '|             program interpolatephonons            |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
   !
@@ -382,7 +383,8 @@ program interpolatephonons
   call get_timing(time2)
   !
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program interpolatephonons

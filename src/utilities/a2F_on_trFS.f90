@@ -33,9 +33,9 @@ program a2F_on_trFS
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
 
-  use intw_utility, only: get_timing, find_free_unit, cryst_to_cart, &
-                          smeared_delta, smeared_lorentz, &
-                          generate_kmesh
+  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+                          cryst_to_cart, generate_kmesh, &
+                          smeared_delta, smeared_lorentz
 
   use intw_matrix_vector, only: ainv, area_vec
 
@@ -117,6 +117,7 @@ program a2F_on_trFS
   write(*,20) '|         Eliashberg function calculation           |'
   write(*,20) '|    from interpolated ep elements on the FS        |'
   write(*,20) '|         ---------------------------------         |'
+  call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
 
@@ -821,7 +822,8 @@ program a2F_on_trFS
   call get_timing(time2)
 
   write(*,20) '|                      ALL DONE                     |'
-  write(*,30) '|     total time: ',time2-time1,' seconds            |'
+  write(*,30) '|     Total time: ',time2-time1,' seconds            |'
+  call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
 end program a2F_on_trFS
