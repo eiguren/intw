@@ -253,34 +253,4 @@ contains
 
   end subroutine convolution_of_two_functions
 
-  subroutine diagonalize_cmat (n,a,w)
-
-    integer, intent(in) :: n
-    complex(dp), intent(inout) :: a(n,n)
-    real(dp), intent(out) :: w(n)
-
-    complex(dp) :: a_pack(n*(n+1)/2)
-
-    integer :: i, j, nfound
-
-    complex(dp) :: cwork(2*n)
-    real   (dp) :: rwork(7*n)
-    integer     :: iwork(5*n), ifail(n), info
-
-    external :: ZHPEVX
-
-
-    do j=1,n
-       do i=1,j
-          a_pack(i+((j-1)*j)/2)=a(i,j)
-       enddo
-    enddo
-
-    ! Diagonalizing routine from lapack. Go see QE/.../lapack_atlas.f
-    call ZHPEVX('V', 'A', 'U', n, a_pack, 0.0_dp, 0.0_dp, 0, 0, -1.0_dp,  &
-         nfound, w, a, n,  cwork,  rwork,       iwork,          ifail, info)
-
-  end subroutine diagonalize_cmat
-
-
 end program nscf
