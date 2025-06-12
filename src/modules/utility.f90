@@ -1660,7 +1660,7 @@ end function intgr_spline_gaussq
     integer :: iyear, imonth, iday, ihour, imin, isec
 
     character(len=3), parameter :: months(12) = (/ 'Jan','Feb','Mar','Apr','May','Jun', &
-                                                   'Jul','Aug','Sep','Oct','Nov','Dec '/)
+                                                   'Jul','Aug','Sep','Oct','Nov','Dec' /)
 
 
     ! Get the current date and time
