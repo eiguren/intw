@@ -11,6 +11,16 @@ project(intw
   LANGUAGES Fortran C
 )
 
+# Find version of INTW with git describe
+execute_process(COMMAND git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --dirty OUTPUT_VARIABLE GIT_VERSION RESULTS_VARIABLE GIT_RESULT OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(GIT_RESULT EQUAL 0)
+  # git describe command succeeded, use the retrieved version number
+  set(VERSION_COMPILE_DEFINITIONS "-DGIT_VERSION_PRESENT")
+else()
+  set(VERSION_COMPILE_DEFINITIONS "")
+endif()
+
+
 include(GNUInstallDirs)
 
 if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
@@ -130,13 +140,6 @@ endif()
 
 
 include(SetTriFS)
-
-# Find version of the code
-execute_process(COMMAND git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --dirty OUTPUT_VARIABLE GIT_SHA1 RESULTS_VARIABLE GIT_RESULT OUTPUT_STRIP_TRAILING_WHITESPACE)
-if(GIT_RESULT EQUAL 0)
-  # Command succeeded, use the retrieved SHA
-  add_definitions("-DGIT_INFO_PRESENT")
-endif()
 
 
 add_subdirectory(src/modules)

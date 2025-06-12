@@ -1,5 +1,10 @@
-#define GIT_SHA1 "@GIT_SHA1@"
-#define PROJECT_VERSION "v@PROJECT_VERSION@"
+#ifdef GIT_VERSION_PRESENT
+! Example: v0.0.0-502-gff5fbda (commit ff5fbda, 502 commits ahead from parent tag v0.0.0)
+#define VERSION "@GIT_VERSION@"
+#else
+! Obtained from the version number specified in cmake project()
+#define VERSION "v@PROJECT_VERSION@"
+#endif
 
 module intw_version
 
@@ -9,19 +14,38 @@ module intw_version
   ! subroutines
   public :: print_intw_version
 
-#ifdef GIT_INFO_PRESENT
-  character(25), parameter :: version = GIT_SHA1 ! Example: v0.0.0-502-gff5fbda (commit ff5fbda, 502 commits ahead from parent tag v0.0.0)
-#else
-  character(25), parameter :: version = PROJECT_VERSION ! Obtained from the version number specified in cmake project()
-#endif
+  character(25), parameter :: version = VERSION
 
 contains
 
 subroutine print_intw_version()
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_in_parallel, omp_get_num_threads
+#endif
+
   implicit none
 
   write(*,'("|     INTW version: ",A25,"       |")') version
+
+#ifdef _OPENMP
+
+  ! Check if running in parallel
+  !$omp parallel
+  if (omp_in_parallel()) then
+    !$omp master
+    write(*,'("|     Running in parallel mode with ",I3," threads     |")') omp_get_num_threads()
+    !$omp end master
+  else
+    write(*,'("|     Running parallel version in serial mode       |")')
+  endif
+  !$omp end parallel
+
+#else
+
+  write(*,'("|     Running in serial mode                        |")')
+
+#endif
 
 end subroutine print_intw_version
 
