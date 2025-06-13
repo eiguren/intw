@@ -156,7 +156,7 @@ contains
     !
     !
     allocate( fft_dummy(nr1*nr2*nr3) )
-    fft_dummy = cmplx(fr,0.0)
+    fft_dummy = cmplx(fr, 0.0_dp, kind=dp)
     call cfftnd(3,(/nr1,nr2,nr3/),-1,fft_dummy)
     !
     do ig=1,ngm
