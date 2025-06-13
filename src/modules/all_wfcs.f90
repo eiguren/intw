@@ -151,7 +151,7 @@ contains
       wfc_k(:,:,:) = wfc_k_all_irr(ikpt,:,:,:)
       if (present(eig_k)) eig_k(:) = eig_all_irr(ikpt,:)
       !
-      G_sym = kpoint - k_irr
+      G_sym = nint(kpoint - k_irr)
       !
       call wfc_by_expigr(num_bands_intw, nspin, G_sym, list_iG_k, wfc_k)
       !
