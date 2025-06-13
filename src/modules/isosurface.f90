@@ -454,9 +454,9 @@ contains
     v = 0.0
     do i = 1, num_wann
       do j = 1, num_wann
-        v(1) = v(1) + conjg( u_dagger(i,ibnd) ) * ham_kprm_x (i,j) * ( u_dagger(j,ibnd))
-        v(2) = v(2) + conjg( u_dagger(i,ibnd) ) * ham_kprm_y (i,j) * ( u_dagger(j,ibnd))
-        v(3) = v(3) + conjg( u_dagger(i,ibnd) ) * ham_kprm_z (i,j) * ( u_dagger(j,ibnd))
+        v(1) = v(1) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_x (i,j) * ( u_dagger(j,ibnd)))
+        v(2) = v(2) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_y (i,j) * ( u_dagger(j,ibnd)))
+        v(3) = v(3) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_z (i,j) * ( u_dagger(j,ibnd)))
       enddo
     enddo
 
