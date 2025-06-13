@@ -46,7 +46,6 @@ module intw_ph
   integer                    :: nmodes               ! 3 x nat
   real(dp),allocatable       :: q_irr(:,:)           !coo. of irr. q points
   complex(dp),allocatable    :: u_irr(:,:,:)         !displacement patterns for the irr.  q.
-  complex(dp),allocatable    :: fcmat(:,:,:)         !dymanical matrices for irr. q.
   complex(dp),allocatable    :: dvscf_cart(:,:,:,:,:), dvscf_irr(:,:,:,:)
   integer :: nqmesh
 
