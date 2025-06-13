@@ -562,26 +562,26 @@ contains
 
     do i1 = 1, n1
       if (i1 <= n1/2 ) then
-  	    i1s = i1
+        i1s = i1
       else
-  	    i1s = n1s-n1+i1
+        i1s = n1s-n1+i1
       end if
 
       do i2 = 1, n2
         if (i2 <= n2/2 ) then
-  	      i2s = i2
+          i2s = i2
         else
-  	      i2s = n2s-n2+i2
+          i2s = n2s-n2+i2
         end if
 
         do i3 = 1, n3
-  	      if (i3 <= n3/2 ) then
-  	        i3s = i3
+          if (i3 <= n3/2 ) then
+            i3s = i3
           else
-  	        i3s = n3s-n3+i3
-  	      end if
+            i3s = n3s-n3+i3
+          end if
 
-  	      FR_smooth(i1s,i2s,i3s) = FR_coarse(i1,i2,i3)
+          FR_smooth(i1s,i2s,i3s) = FR_coarse(i1,i2,i3)
 
         end do
       end do
