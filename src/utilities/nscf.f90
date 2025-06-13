@@ -49,7 +49,7 @@ program nscf
   real(dp), allocatable    :: QE_eig_k(:,:)
 
   !local/aux variables
-  integer                  :: i, ik
+  integer                  :: ik
   integer                  :: ipol, jpol
   logical                  :: read_status
   character(256)           :: method
@@ -153,7 +153,7 @@ program nscf
   call read_kpoints_data_file_xml(kpoints_QE)
   write(*,20) '|      k point list (crystal)                       |'
   do ik=1, nkpoints_QE
-     write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,i),'           |'
+     write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,ik),'           |'
      call get_K_folder_data(ik,list_iGk(:,ik),wfc_k(:,:,:,ik),QE_eig_k(:,ik),ngk(ik))
      write(*,20) '|      Energies are:                                |'
      !write(*,"(5f10.2)")QE_eig_k
