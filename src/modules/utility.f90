@@ -1285,8 +1285,6 @@ end function intgr_spline_gaussq
 
     lmax2 = (lmax+1)**2
 
-  10 continue
-
     if (lmax == 0) then
       ylm(:,1) =  sqrt(1.d0 / fpi)
       return
