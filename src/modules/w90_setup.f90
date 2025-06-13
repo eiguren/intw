@@ -818,6 +818,7 @@ contains
   !
   use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
   use intw_reading, only: num_wann_intw
+  use intw_utility, only: smeared_lorentz
   !
   implicit none
   !
@@ -848,8 +849,9 @@ contains
      do ie = 1,ne
         ener = eini + (ie-1)*estep
         do iw = 1,num_wann_intw
-          lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
-          lorentz = lorentz * 0.5_dp*esmear/tpi
+          !lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
+          !lorentz = lorentz * 0.5_dp*esmear/tpi
+          lorentz = smeared_lorentz(ener-eig_int(iw),esmear)
           DOS(ie) = DOS(ie) + lorentz
           if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
         end do

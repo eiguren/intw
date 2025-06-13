@@ -40,7 +40,7 @@ program interpolate
 
   use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                           num_wann_intw, &
-                          at, bg, tpiba
+                          at, bg, tpiba, nspin
 
   implicit none
 
@@ -204,6 +204,8 @@ program interpolate
     write(io_unit_d,'(40e14.6)') ener-chemical_potential, DOS(ie), PDOS(ie,1:num_wann_intw)
     num_elec = num_elec + DOS(ie)*fermi_dirac(ener-chemical_potential, ktsmear)
   end do
+  num_elec = num_elec * estep 
+  if (nspin .eq. 1) num_elec = num_elec * 2.0_dp
   !
   close(io_unit_d)
   !
