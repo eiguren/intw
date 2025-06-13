@@ -453,7 +453,7 @@ contains
     allocate(work(1))
     call dgesvd( 'A', 'A', N, N, AI, N, S, U, N, VT, N, &
                 WORK, LWORK, INFO )
-    lwork = work(1)
+    lwork = nint(work(1))
     deallocate(work)
     allocate(work(lwork))
     call dgesvd( 'A', 'A', N, N, AI, N, S, U, N, VT, N, &
@@ -561,7 +561,7 @@ contains
 
     ! First, find the determinant
     !
-    determinant = det(real(sym, kind=dp))
+    determinant = nint(det(real(sym, kind=dp)))
     !
     ! Put the rotation part of the symmetry matrix in the Rotation array,
     ! multiplied by the appropriate coefficient to account for inversion
@@ -1718,7 +1718,7 @@ contains
     integer, intent(out) :: vstar(3,48), symop(48)
     integer, intent(out) :: nstar
     integer :: isym, i
-    real(kind=dp) :: vrot(3)
+    integer :: vrot(3)
 
 
     nstar = 1
@@ -1726,7 +1726,7 @@ contains
     symop(1) = 1
 
     do isym=1,nsym
-      vrot(:) = nint(matmul(dble(s(:,:,isym)), v(:)))
+      vrot(:) = matmul(s(:,:,isym), v(:))
 
       do i=1,nstar
         if ( sum(abs(vrot(:)-vstar(1:3,i)))<10E-5 ) then
@@ -1739,8 +1739,8 @@ contains
       symop(nstar) = isym
 
 1984  continue
-    enddo
 
+    enddo
 
   end subroutine calculate_star
 
