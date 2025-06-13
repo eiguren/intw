@@ -938,7 +938,7 @@ subroutine wann_fourier_1index (matL, matk, switch, sig)
         matL (num_wann_intw,num_wann_intw, nrpts)
   !
   integer :: ir, ik
-  real :: signo
+  real(kind=dp) :: signo
   complex(kind=dp) :: fac
   !
   if (switch .eq. -1) then  ! IFT
