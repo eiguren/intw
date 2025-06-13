@@ -521,7 +521,7 @@ contains
         ! Find symmetry operation
         isym = symlink_q(iq,1)
         tr = symlink_q(iq,2)
-        if (tr==1) stop "ERROR: read_synq: TR sym. not implemented"
+        if (tr==1) stop "ERROR: read_dynq: TR sym. not implemented"
         !
         ! Rotate dynamical matrix
         call rotate_dyn(isym, qirr_cryst, dynq_irr(:,:,:,:), dynRq_irr)
@@ -585,7 +585,8 @@ contains
 
     ! Local
     real(kind=dp) :: q_cart(3), Rq_cart(3), s_cryst(3,3), s_cart(3,3)
-    integer :: ia, ja, Sia, Sja, tr
+    integer :: ia, ja, Sia, Sja
+    logical :: tr
     complex(kind=dp) :: phase
 
 
