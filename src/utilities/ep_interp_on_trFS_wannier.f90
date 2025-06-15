@@ -47,7 +47,8 @@ program ep_on_trFS_wannier
                                    nq1, nq2, nq3, &
                                    ep_bands, ep_bands_initial, ep_bands_final, &
                                    use_exclude_bands, &
-                                   ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
+                                   ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
+                                   ep_mat_file
 
   use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
                           nat, nspin, noncolin, num_bands_intw, num_wann_intw, at
@@ -78,7 +79,6 @@ program ep_on_trFS_wannier
   real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
 
   ! wannier
-  character(256) :: ep_mat_file
   character(4) :: iq_loc
   integer :: record_lengh, ierr, ep_unit
   integer :: Gkq_1bz(3), is1, is2, iq, ik, ikq, i, j, k, ir, irq
