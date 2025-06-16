@@ -2,7 +2,7 @@ include(FetchContent)
 
 # Default spglib git repository and tag
 set(REPOSITORY https://github.com/spglib/spglib)
-set(TAG v2.6.0)
+set(TAG v2.5.0)
 
 # Allow users to pass spglib git repository and tag via flags
 if(DEFINED "SPGLIB_GIT_REPOSITORY")
