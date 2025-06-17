@@ -36,6 +36,7 @@ module triFS_isosurface
   real(dp), allocatable, public :: vec_face(:,:,:) ! edge vectors of big tetrahedra
 
   ! Variables of isosurface on IBZ
+  integer, public :: nbnd
   integer, allocatable, public :: nvert(:), ntri(:) ! Output triangles and vertices of isosurface on IBZ
   real(dp), allocatable, public :: vert_coord(:,:,:) ! Output triangle vertex coordinates
   real(dp), allocatable, public :: vert_veloc(:,:,:) ! Electron velocity at vertex
@@ -50,7 +51,8 @@ module triFS_isosurface
 
   public :: read_tetrahedra, preserve_orientation, tetra_cut, calculate_energy_sym, calculate_energy, velocity_sym, &
             velocity, calculate_star_TR, tetranodes_by_SplusG, create_isosurface_IBZ, velocity_on_IBZ, &
-            rotate_IBZ_mesh, write_full_isosurface, write_IBZ_isosurface, DOS_isosurface, vertices_area
+            rotate_IBZ_mesh, write_full_isosurface, write_IBZ_isosurface, DOS_isosurface, vertices_area, &
+            set_isosurface
   private
 
 contains
@@ -599,6 +601,10 @@ contains
     real(dp), intent(in) :: epsvert ! Parameter to detect duplicated vertices
 
     ! Local
+    integer, allocatable :: n_vert(:), n_tri(:)
+    real(dp), allocatable :: v_coord(:,:,:), v_veloc(:,:,:)
+    integer, allocatable :: v_index(:,:,:)
+    !
     integer :: itet, inod, ibnd, itri, j, iv, ivert, rdcd_vert, mid_nvert, tot_nvert, tot_ntri, ntr
     real(dp) :: tetracoord(3,4), vcoord(3,30000,n_bnd), etetra(ntetra,4,n_bnd), eig_int(n_bnd)
     real(dp) :: kvec_int(3), et(4), vtr(3,3,2)
@@ -651,9 +657,9 @@ contains
     !deallocate(node_done)
 
     ! Create isosurface
-    allocate(nvert(n_bnd), ntri(n_bnd))
-    nvert = 0
-    ntri = 0
+    allocate(n_vert(n_bnd), n_tri(n_bnd))
+    n_vert = 0
+    n_tri = 0
     mid_nvert = 0
     do ibnd = 1, n_bnd
       do itet = 1, ntetra
@@ -665,21 +671,21 @@ contains
         vtr = 0
         call tetra_cut(eiso, tetracoord, et, ntr, vtr)
         do itri = 1, ntr
-          ntri(ibnd) = ntri(ibnd)+1
+          n_tri(ibnd) = n_tri(ibnd)+1
           do iv = 1, 3
-            nvert(ibnd) = nvert(ibnd)+1
-            vcoord(1:3,nvert(ibnd),ibnd) = vtr(1:3,iv,itri)
-            vindex(iv,ntri(ibnd),ibnd) = nvert(ibnd)+mid_nvert
+            n_vert(ibnd) = n_vert(ibnd)+1
+            vcoord(1:3,n_vert(ibnd),ibnd) = vtr(1:3,iv,itri)
+            vindex(iv,n_tri(ibnd),ibnd) = n_vert(ibnd)+mid_nvert
           end do
         end do
       end do
-      mid_nvert = mid_nvert+nvert(ibnd)
+      mid_nvert = mid_nvert+n_vert(ibnd)
     end do
 
     if(verbose) then
       write(*,'("|   Number of triangules and vertices:              |")')
       do ibnd = 1, n_bnd
-        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
+        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, n_tri(ibnd), n_vert(ibnd)
       end do
     endif
 
@@ -687,8 +693,8 @@ contains
     tot_ntri = 0
     tot_nvert = 0
     do ibnd = 1, n_bnd
-      tot_ntri = tot_ntri + ntri(ibnd)
-      tot_nvert = tot_nvert + nvert(ibnd)
+      tot_ntri = tot_ntri + n_tri(ibnd)
+      tot_nvert = tot_nvert + n_vert(ibnd)
     end do
 
     if(verbose) write(*,'("|         ---------------------------------         |")')
@@ -696,57 +702,51 @@ contains
     ! Clean list
     write(*,'("| - Cleaning list of triangles and vertices...      |")')
     !
-    allocate(vert_index(3,tot_ntri,n_bnd))
-    allocate(vert_coord(3,tot_nvert,n_bnd))
-    vert_coord(:,:,:) = 0.0_dp
-    vert_index(:,:,:) = 0
+    allocate(v_index(3,tot_ntri,n_bnd))
+    allocate(v_coord(3,tot_nvert,n_bnd))
+    v_coord(:,:,:) = 0.0_dp
+    v_index(:,:,:) = 0
     rdcd_vert = 0
     ivert = 0
     mid_nvert = 0
     do ibnd = 1, n_bnd
-      if(ntri(ibnd).eq.0) cycle
-      vert_coord(:,1,ibnd) = vcoord(:,1,ibnd)
+      if(n_tri(ibnd).eq.0) cycle
+      v_coord(:,1,ibnd) = vcoord(:,1,ibnd)
       ivert = 0
       rdcd_vert = 0
-      do itri = 1, ntri(ibnd)
+      do itri = 1, n_tri(ibnd)
         v_loop: do iv = 1, 3
           ivert = ivert+1
           do j = 1, rdcd_vert
-            if(norma(vcoord(:,ivert,ibnd)-vert_coord(:,j,ibnd)).lt.epsvert) then
-              vert_index(iv,itri,ibnd) = j
+            if(norma(vcoord(:,ivert,ibnd)-v_coord(:,j,ibnd)).lt.epsvert) then
+              v_index(iv,itri,ibnd) = j
               cycle v_loop
             end if
           end do
           !
           rdcd_vert = rdcd_vert+1
-          vert_index(iv,itri,ibnd) = rdcd_vert
-          vert_coord(:,rdcd_vert,ibnd) = vcoord(:,ivert,ibnd)
+          v_index(iv,itri,ibnd) = rdcd_vert
+          v_coord(:,rdcd_vert,ibnd) = vcoord(:,ivert,ibnd)
           !
         end do v_loop
       end do ! itri
-      nvert(ibnd) = rdcd_vert
+      n_vert(ibnd) = rdcd_vert
     end do ! ibnd
 
     if(verbose) then
       write(*,'("|   Number of triangles and vertices:               |")')
       do ibnd = 1, n_bnd
-        if(ntri(ibnd).eq.0) cycle
-        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
+        if(n_tri(ibnd).eq.0) cycle
+        write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, n_tri(ibnd), n_vert(ibnd)
       end do
     endif
 
     ! Compute velocity on IBZ
-    allocate(vert_veloc(3, tot_nvert, n_bnd))
-    vert_veloc(:,:,:) = 0.0_dp
-    call velocity_on_IBZ(n_bnd, nvert, vert_coord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, vert_veloc)
+    allocate(v_veloc(3,tot_nvert,n_bnd))
+    call velocity_on_IBZ(n_bnd, n_vert, v_coord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, v_veloc)
 
-    ! Total number of triangles and vertices
-    tot_ntri = 0
-    tot_nvert = 0
-    do ibnd = 1, n_bnd
-      tot_ntri = tot_ntri + ntri(ibnd)
-      tot_nvert = tot_nvert + nvert(ibnd)
-    end do
+    ! Save isosurface on module variables
+    call set_isosurface(n_bnd, n_vert, n_tri, v_coord, v_index, v_veloc)
 
   end subroutine create_isosurface_IBZ
 
@@ -1315,5 +1315,59 @@ contains
     end do
 
   end subroutine vertices_area
+
+  subroutine set_isosurface(n_bnd, n_vert, n_tri, v_coord, v_index, v_veloc)
+
+    implicit none
+
+    integer, intent(in) :: n_bnd, n_vert(:), n_tri(:)
+    real(dp), dimension(:,:,:), intent(in) :: v_coord
+    integer, dimension(:,:,:), intent(in) :: v_index
+    real(dp), dimension(:,:,:), intent(in), optional :: v_veloc
+
+    integer :: ibnd
+
+
+    if (size(n_vert, dim=1) /= size(n_tri, dim=1)) stop "ERROR(set_isosurfce): n_vert and n_tri have different dimensions"
+    if (size(v_coord, dim=3) /= size(n_vert, dim=1)) stop "ERROR(set_isosurfce): v_coord and n_vert have different dimensions"
+    if (size(v_index, dim=3) /= size(n_tri, dim=1)) stop "ERROR(set_isosurfce): v_index and n_tri have different dimensions"
+    if (size(v_coord, dim=1) /= 3) stop "ERROR(set_isosurfce): v_coord has wrong dimensions"
+    if (size(v_index, dim=1) /= 3) stop "ERROR(set_isosurfce): v_index has wrong dimensions"
+    if (present(v_veloc)) then
+      if (size(v_veloc, dim=3) /= size(n_vert, dim=1)) stop "ERROR(set_isosurfce): v_veloc and n_vert have different dimensions"
+      if (size(v_veloc, dim=1) /= 3) stop "ERROR(set_isosurfce): v_veloc has wrong dimensions"
+    endif
+
+    if (allocated(nvert)) deallocate(nvert)
+    if (allocated(ntri)) deallocate(ntri)
+    if (allocated(vert_coord)) deallocate(vert_coord)
+    if (allocated(vert_coord)) deallocate(vert_coord)
+    if (present(v_veloc)) then
+      if (allocated(vert_veloc)) deallocate(vert_veloc)
+    endif
+
+    nbnd = n_bnd
+    allocate(nvert(n_bnd), ntri(n_bnd))
+    nvert = 0
+    ntri = 0
+    allocate(vert_coord(3,maxval(n_vert),n_bnd))
+    allocate(vert_index(3,maxval(n_tri),n_bnd))
+    vert_coord = 0.0_dp
+    vert_index = 0
+    if (present(v_veloc)) then
+      allocate(vert_veloc(3,maxval(n_vert),n_bnd))
+      vert_veloc = 0.0_dp
+    endif
+
+    do ibnd = 1, size(n_vert, dim=1)
+      if (n_vert(ibnd) == 0) cycle
+      nvert(ibnd) = n_vert(ibnd)
+      ntri(ibnd) = n_tri(ibnd)
+      vert_coord(1:3,1:n_vert(ibnd),ibnd) = v_coord(1:3,1:n_vert(ibnd),ibnd)
+      vert_index(1:3,1:n_tri(ibnd),ibnd) = v_index(1:3,1:n_tri(ibnd),ibnd)
+      if (present(v_veloc)) vert_veloc(1:3,1:n_vert(ibnd),ibnd) = v_veloc(1:3,1:n_vert(ibnd),ibnd)
+    enddo
+
+  end subroutine set_isosurface
 
 end module triFS_isosurface
