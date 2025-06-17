@@ -326,7 +326,7 @@ program triFS
       !
       call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
                       nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, ntri, nvert, vert_coord, verbose)
+                      vert_IBZ, nvert, vert_coord, verbose)
       !
       write(*,20) "|         ---------------------------------         |"
       !
@@ -355,7 +355,7 @@ program triFS
       !
       call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
                       nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, ntri, nvert, vert_coord, verbose)
+                      vert_IBZ, nvert, vert_coord, verbose)
       !
     end if
     !

@@ -22,6 +22,8 @@ module triFS_mesh_opt
 
   use kinds, only: dp
 
+  implicit none
+
   ! Variables of isosurface on IBZ
   integer, allocatable, public :: opt_nvert(:), opt_ntri(:) ! Optimized triangles and vertices of isosurface on IBZ
   real(dp), allocatable, public :: opt_vert_coord(:,:,:) ! Optimized triangle vertex coordinates
@@ -36,8 +38,8 @@ contains
 
   subroutine mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, &
                                relax_vinface, eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, &
-                               alat, ag, bg, nsym, s, TR_sym, num_wann, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, ntri, &
-                               nvert, v_coord, v_index)
+                               alat, ag, bg, nsym, s, TR_sym, n_bnd, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
+                               n_tri, n_vert, v_coord, v_index)
 
     use triFS_isosurface, only: write_IBZ_isosurface
 
@@ -53,17 +55,17 @@ contains
     real(dp), intent(in) :: eps_vinface, eps_dupv
     logical, intent(in) :: verbose
     real(dp), intent(in) :: ef ! Energy of isosurface
-    integer, intent(in) :: nrpts, irvec(1:3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts) ! Hamiltonian in Wannier basis
-    real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3) ! real and reciprocal lattice vectors
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym) ! symmetry variables
+    integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! real and reciprocal lattice vectors
+    integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
-    integer, intent(in) :: nfaces_IBZ, num_wann
+    integer, intent(in) :: nfaces_IBZ, n_bnd
     integer, intent(in) :: faces_IBZ_as_vert(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: vert_IBZ(:,:) ! IBZ big tetra vertex coordinates
-    integer, intent(inout) :: ntri(:), nvert(:)
-    real(dp), dimension(:,:,:), intent(inout) :: v_coord
-    integer, dimension(:,:,:), intent(inout) :: v_index
+    integer, intent(inout) :: n_tri(n_bnd), n_vert(n_bnd)
+    real(dp), intent(inout) :: v_coord(:,:,:)
+    integer, intent(inout) :: v_index(:,:,:)
 
     ! Local
     character(len=25) :: tag_in
@@ -76,27 +78,27 @@ contains
       !
       write(*,'("| - Edge collapse of triangulated mesh...           |")')
       !
-      allocate(opt_nvert(num_wann),opt_ntri(num_wann))
-      allocate(opt_vert_coord(1:3,maxval(nvert(:)),num_wann),opt_vert_index(1:3,maxval(ntri(:)),num_wann))
+      allocate(opt_nvert(n_bnd), opt_ntri(n_bnd))
+      allocate(opt_vert_coord(3,maxval(n_vert(:)),n_bnd),opt_vert_index(3,maxval(n_tri(:)),n_bnd))
       opt_nvert = 0
       opt_ntri = 0
       !
-      do ibnd = 1, num_wann
+      do ibnd = 1, n_bnd
         !
-        if (nvert(ibnd).eq.0) cycle
+        if (n_vert(ibnd).eq.0) cycle
         !
         write(*,'("|                                                   |")')
         write(*,'("|   Collapsing band ",I4,"                            |")') ibnd
         !
-        call edge_collapse(collapse_criteria, nvert(ibnd), ntri(ibnd), nfaces_IBZ, &
-                           faces_IBZ_as_vert, vert_IBZ, v_coord(:,:,ibnd), v_index(:,:,ibnd), &
-                           opt_nvert(ibnd), opt_ntri(ibnd), opt_vert_coord(:,:,ibnd), &
-                           opt_vert_index(:,:,ibnd), verbose)
+        call edge_collapse(collapse_criteria, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
+                           n_vert(ibnd), n_tri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), &
+                           opt_nvert(ibnd), opt_ntri(ibnd), opt_vert_coord(:,:,ibnd), opt_vert_index(:,:,ibnd), &
+                           verbose)
         !
       end do
       !
-      nvert = opt_nvert
-      ntri = opt_ntri
+      n_vert = opt_nvert
+      n_tri = opt_ntri
       v_coord = opt_vert_coord
       v_index = opt_vert_index
       !
@@ -106,7 +108,7 @@ contains
       !
       ! write collapsed isosurface on IBZ
       tag_in = "collapsed_IBZ_FS_tri"
-      call write_IBZ_isosurface(tag_in, num_wann, .false.)
+      call write_IBZ_isosurface(tag_in, n_bnd, .false.)
       !
     end if
     !
@@ -118,18 +120,18 @@ contains
       !
       write(*,'("| - Tangential relaxation of triangulated mesh...   |")')
       !
-      do ibnd = 1, num_wann
+      do ibnd = 1, n_bnd
         !
-        if(nvert(ibnd).eq.0) cycle
+        if(n_vert(ibnd).eq.0) cycle
         !
         write(*,'("|                                                   |")')
         write(*,'("|   Relaxing band ",I4,"                              |")') ibnd
         !
-        call tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, relax_iter, verbose, &
+        call tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, relax_iter, &
                                    nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, &
-                                   num_wann, ham_r, ibnd, nvert(ibnd), ntri(ibnd), &
-                                   nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
-                                   v_index(:,:,ibnd), v_coord(:,:,ibnd))
+                                   n_bnd, ham_r, ibnd, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
+                                   n_vert(ibnd), n_tri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), &
+                                   verbose)
         !
       end do
       !
@@ -137,7 +139,7 @@ contains
       !
       ! write relaxed isosurface on IBZ
       tag_in = "relaxed_IBZ_FS_tri"
-      call write_IBZ_isosurface(tag_in, num_wann, .false.)
+      call write_IBZ_isosurface(tag_in, n_bnd, .false.)
       !
     end if
 
@@ -145,12 +147,12 @@ contains
 
 
   subroutine newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, ag, bg, &
-                        nsym, s, TR_sym, num_wann, newton_iter, nibz_faces, faces_ibz, &
-                        verts_ibz, in_ntri, in_nvert, v_coord, verb)
+                        nsym, s, TR_sym, n_bnd, newton_iter, nibz_faces, faces_ibz, &
+                        verts_ibz, n_vert, v_coord, verb)
 
     use intw_useful_constants, only: tpi
     use intw_matrix_vector, only: ainv, norma, cross
-    use triFS_isosurface, only: nvert, calculate_energy_sym, velocity_sym
+    use triFS_isosurface, only: calculate_energy_sym, velocity_sym
 
 
     implicit none
@@ -158,15 +160,15 @@ contains
     ! I/O
     real(dp), intent(in) :: eps_dupv, eps_vinface
     real(dp), intent(in) :: ef
-    integer, intent(in) :: nrpts, irvec(1:3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts) ! Hamiltonian in Wannier basis
-    real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3) ! real and reciprocal lattice vectors
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym) ! symmetry variables
+    integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! real and reciprocal lattice vectors
+    integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
-    integer, intent(in) :: newton_iter, nibz_faces, num_wann
+    integer, intent(in) :: newton_iter, nibz_faces, n_bnd
     integer, intent(in) :: faces_ibz(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
-    integer, intent(in) :: in_ntri(:), in_nvert(:)
+    integer, intent(in) :: n_vert(:)
     real(dp), intent(inout) :: v_coord(:,:,:)
     logical, intent(in) :: verb
 
@@ -174,23 +176,17 @@ contains
     !real(dp), parameter :: eps = 1.0E-6_dp
     real(dp), parameter :: lambda = 0.1_dp
     ! Local
-    real(dp), allocatable :: vface(:,:,:)
-    real(dp) :: eig_int(num_wann), v_w(3), vcoord_crys(3)
+    real(dp) :: vface(3,3,nibz_faces)
+    real(dp) :: eig_int(n_bnd), v_w(3), vcoord_crys(3)
     real(dp) :: unit_u(3), unit_u1(3)
-    integer :: i_iter, ibnd, iv, jv, i, j, maxvert
+    integer :: i_iter, ibnd, iv, jv, i, j
     real(dp) :: norma_vw
-    logical, allocatable :: vert_on_border(:,:), vert_on_corner(:)
-    logical, allocatable :: has_SplusG(:), SplusG_pair(:,:,:,:,:,:,:)
-    logical, allocatable :: vertex_related(:), relaxed_vertex(:)
+    logical :: vert_on_border(maxval(n_vert),nibz_faces), vert_on_corner(maxval(n_vert))
+    logical :: has_SplusG(maxval(n_vert)), SplusG_pair(maxval(n_vert),maxval(n_vert),nsym,-1:1,-1:1,-1:1,2)
+    logical :: vertex_related(maxval(n_vert)), relaxed_vertex(maxval(n_vert))
 
-
-    maxvert = maxval(in_nvert(:))
-    allocate(vert_on_border(maxvert,nibz_faces), vert_on_corner(maxvert))
-    allocate(has_SplusG(maxvert), SplusG_pair(maxvert,maxvert,nsym,-1:1,-1:1,-1:1,1:2))
-    allocate(vertex_related(maxvert), relaxed_vertex(maxvert))
 
     ! Define vectors of IBZ big tetra faces
-    allocate(vface(3,1:3,nibz_faces))
     do i = 1, nibz_faces
       vface(1:3,1,i) = verts_ibz(1:3,faces_ibz(2,i)) - verts_ibz(1:3,faces_ibz(1,i))
       vface(1:3,2,i) = verts_ibz(1:3,faces_ibz(3,i)) - verts_ibz(1:3,faces_ibz(1,i))
@@ -198,9 +194,9 @@ contains
     end do
 
     ! Loop over different FS sheets
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       !
-      if (nvert(ibnd).eq.0) cycle
+      if (n_vert(ibnd).eq.0) cycle
       !
       write(*,'("|                                                   |")')
       write(*,'("|   Relaxing band ",I4,"                              |")') ibnd
@@ -208,7 +204,7 @@ contains
 
       !--------------- Check which vertices are on border of IBZ
       !
-      call check_border(in_nvert(ibnd), v_coord(:,:,ibnd), nibz_faces, vface, nsym, s, TR_sym, &
+      call check_border(n_vert(ibnd), v_coord(:,:,ibnd), nibz_faces, vface, nsym, s, TR_sym, &
                         eps_vinface, vert_on_border, vert_on_corner, verb)
 
 
@@ -217,16 +213,16 @@ contains
       has_SplusG = .false.
       vertex_related = .false.
       SplusG_pair = .false.
-      do iv = 1, in_nvert(ibnd)
+      do iv = 1, n_vert(ibnd)
         !
         if (vertex_related(iv)) cycle ! a pair of this vertex has been already assigned
         !
-        do jv = 1, in_nvert(ibnd)
+        do jv = 1, n_vert(ibnd)
           !
           if(jv.eq.iv) cycle
           !
-          call vertices_related_by_SplusG(eps_dupv, v_coord(1:3,iv,ibnd), &
-                                          v_coord(1:3,jv,ibnd), bg, nsym, s, TR_sym, &
+          call vertices_related_by_SplusG(eps_dupv, v_coord(1:3,iv,ibnd), v_coord(1:3,jv,ibnd), &
+                                          bg, nsym, s, TR_sym, &
                                           SplusG_pair(iv,jv,:,:,:,:,:))
           !
           if (ANY(SplusG_pair(iv,jv,:,:,:,:,:))) then
@@ -246,7 +242,7 @@ contains
         !
         write(*,'("|     Newton-Raphson relaxation, iter ",I4," / ",I4,"   |")') i_iter, newton_iter
         relaxed_vertex = .false.
-        v_loop :do iv = 1, in_nvert(ibnd)
+        v_loop :do iv = 1, n_vert(ibnd)
           !
           if (relaxed_vertex(iv)) cycle
           !
@@ -255,8 +251,8 @@ contains
           vcoord_crys(1:3) = matmul(ainv(bg),v_coord(1:3,iv,ibnd)) ! Vertex in crystal coordinates
           !
           ! Compute energy and velocity of vertex
-          call calculate_energy_sym (nsym, s, TR_sym, num_wann, nrpts, ndegen, irvec, ham_r, vcoord_crys, eig_int)
-          call velocity_sym (nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, num_wann, ibnd, ham_r, v_w, vcoord_crys)
+          call calculate_energy_sym(nsym, s, TR_sym, n_bnd, nrpts, ndegen, irvec, ham_r, vcoord_crys, eig_int)
+          call velocity_sym(nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, n_bnd, ibnd, ham_r, v_w, vcoord_crys)
           !
           ! When vertex lies on face project velocity to face-plane
           j_loop: do j = 1, nibz_faces
@@ -307,7 +303,7 @@ contains
           ! Move any symmetry related vertex accordingly
           if (has_SplusG(iv)) then
             !
-            do jv = 1, in_nvert(ibnd)
+            do jv = 1, n_vert(ibnd)
               if(ANY(SplusG_pair(iv,jv,:,:,:,:,:))) then ! jv is pair of iv
                 !
                 v_coord(1:3,jv,ibnd) = rotate_to_SplusG(v_coord(1:3,iv,ibnd), bg, nsym, s, SplusG_pair(iv,jv,:,:,:,:,:))
@@ -325,36 +321,29 @@ contains
       enddo ! i_iter
       !
     enddo ! ibnd
-    !
-
-    ! Deallocate variables
-    deallocate(vface)
-    deallocate(vert_on_border, vert_on_corner)
-    deallocate(has_SplusG, SplusG_pair)
-    deallocate(vertex_related, relaxed_vertex)
 
   end subroutine newton_rap
 
 
-  subroutine check_border(nvert, vert_coord, nibz_faces, vface, nsym, s, TR_sym, epsvert, vert_on_border, vert_on_corner, verb)
+  subroutine check_border(n_vert, vert_coord, nibz_faces, vface, nsym, s, TR_sym, epsvert, vert_on_border, vert_on_corner, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
     implicit none
 
     ! I/O
-    integer, intent(in) :: nvert, nibz_faces
+    integer, intent(in) :: n_vert, nibz_faces
     real(dp), intent(in) :: vert_coord(:,:), vface(:,:,:)
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     logical, intent(in) :: TR_sym
     real(dp), intent(in) :: epsvert
-    logical, intent(inout) :: vert_on_border(:,:), vert_on_corner(:)
+    logical, intent(out) :: vert_on_border(:,:), vert_on_corner(:)
     logical, intent(in) :: verb
 
     ! Local variables
     logical :: inner_face(nibz_faces)
     integer :: j, iv, k
-    real(dp) :: coord(1:3), face(1:3,1:3), coef(1:3)
+    real(dp) :: coord(3), face(3,3), coef(3)
     !! Parameters
     !real(dp), parameter :: epsvert = 1.0E-5_dp ! Now defined from input
 
@@ -364,7 +353,7 @@ contains
 
     vert_on_border = .false.
     vert_on_corner = .false.
-    do iv = 1, nvert
+    do iv = 1, n_vert
       do j = 1, nibz_faces
         ! Do not consider inner faces
         if(inner_face(j)) cycle
@@ -409,14 +398,14 @@ contains
 
     ! I/O
     real(dp), intent(in) :: epsvert
-    real(dp), intent(in) :: ivertex(1:3), jvertex(1:3), bg(1:3,1:3)
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym)
+    real(dp), intent(in) :: ivertex(3), jvertex(3), bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     logical, intent(in) :: TR_sym
-    logical, intent(out) :: relation(nsym,-1:1,-1:1,-1:1,1:2) ! true if ivertex and jvertex are related
+    logical, intent(out) :: relation(nsym,-1:1,-1:1,-1:1,2) ! true if ivertex and jvertex are related
 
     ! Local
     integer :: isym, ig, jg, kg
-    real(dp) :: ivert_crys(1:3), rot_ivertex(1:3)
+    real(dp) :: ivert_crys(3), rot_ivertex(3)
     !real(dp), parameter :: epsvert = 1.0E-6_dp
 
 
@@ -472,14 +461,14 @@ contains
     implicit none
 
     ! I/O
-    real(dp), intent(in) :: ivertex(1:3), bg(1:3,1:3)
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym)
-    logical, intent(in) :: which_SplusG(nsym,-1:1,-1:1,-1:1,1:2)
+    real(dp), intent(in) :: ivertex(3), bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
+    logical, intent(in) :: which_SplusG(nsym,-1:1,-1:1,-1:1,2)
 
     ! Local
-    real(dp), dimension(1:3) :: rotate_to_SplusG
+    real(dp) :: rotate_to_SplusG(3)
     integer :: isym, ig, jg, kg
-    real(dp) :: ivert_crys(1:3)
+    real(dp) :: ivert_crys(3)
 
 
     ! ivertex in crystal coords
@@ -523,8 +512,8 @@ contains
     ! I/O
     real(dp), intent(in) :: epsvert
     integer, intent(in) :: iv, nfaces, iface, jface
-    real(dp), dimension(1:3,1:3,nfaces), intent(in) :: vface
-    real(dp), dimension(1:3), intent(inout) :: v_w
+    real(dp), intent(in) :: vface(3,3,nfaces)
+    real(dp), intent(inout) :: v_w(3)
 
     !real(dp), parameter :: epsvert = 1.0E-5_dp
 
@@ -591,7 +580,7 @@ contains
   end subroutine v2edge
 
 
-  subroutine edge_collapse(eps, in_nvert, in_ntri, nibz_faces, faces_ibz, verts_ibz, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index, verb)
+  subroutine edge_collapse(eps, nibz_faces, faces_ibz, verts_ibz, in_nvert, in_ntri, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
@@ -599,45 +588,42 @@ contains
 
     ! I/O variables
     real(dp), intent(in) :: eps
-    integer, intent(in) :: in_nvert, in_ntri ! input number of triangles, vertices
     integer, intent(in) :: nibz_faces ! number of faces on IBZ
     integer, intent(in) :: faces_ibz(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
-    real(dp), dimension(:,:), intent(inout) :: dif_vert_coord ! input vertex coords which will be changed
-    integer, dimension(:,:), intent(inout) :: dif_vert_index ! input triangle indices which will be changed
+    integer, intent(in) :: in_nvert, in_ntri ! input number of triangles, vertices
+    real(dp), intent(inout) :: dif_vert_coord(:,:) ! input vertex coords which will be changed
+    integer, intent(inout) :: dif_vert_index(:,:) ! input triangle indices which will be changed
     integer, intent(out) :: new_nvert, new_ntri ! output number of vertices and triangles after simplification
-    real(dp), dimension(:,:), intent(out) :: new_dif_vert_coord ! output vertices coordinates
-    integer, dimension(:,:), intent(out) :: new_dif_vert_index ! output triangle vertices
+    real(dp), intent(out) :: new_dif_vert_coord(:,:) ! output vertices coordinates
+    integer, intent(out) :: new_dif_vert_index(:,:) ! output triangle vertices
     logical, intent(in) :: verb
 
-    ! Local variables
-    logical, allocatable :: vert_on_border(:,:), vert_on_corner(:), inner_face(:)
-    integer, allocatable :: neighbour_triangles(:,:,:)
-    real(dp), dimension(3) :: coef,coord
-    real(dp), dimension(1:3,1:3) :: face
-    real(dp), dimension(:,:,:), allocatable :: vface
-    integer :: i, iv, j, ij, it, ntri_aux, nvert_aux, iter, f, k
-    integer :: rmvd_vrtx, rmvd_tri1, rmvd_tri2
     ! Parameters
     real(dp), parameter :: epsvert = 1.0E-6_dp
     integer, parameter :: nghmax = 500, tri_elim_iter = 1000, dummy_tri_iter = 1000
 
+    ! Local variables
+    logical :: inner_face(nibz_faces)
+    real(dp) :: coef(3), coord(3), face(3,3)
+    real(dp) :: vface(3,3,nibz_faces)
+    logical :: vert_on_border(in_nvert,nibz_faces), vert_on_corner(in_nvert)
+    integer :: neighbour_triangles(in_ntri,3,nghmax)
+    integer :: i, iv, j, ij, it, ntri_aux, nvert_aux, iter, f, k
+    integer :: rmvd_vrtx, rmvd_tri1, rmvd_tri2
+
 
     !--------------- Define vectors of IBZ big tetra faces
     !
-    allocate(vface(3,3,nibz_faces))
     call faces_vectors(nibz_faces, faces_ibz, verts_ibz, vface)
 
     !--------------- Check which tetra faces are inner
     !
-    allocate(inner_face(nibz_faces))
     call inner_faces(nibz_faces, vface, inner_face)
 
     !--------------- Collapse edges
     ! I cannot use check_border subr as vertex list is changing constantly...
     !
-    allocate(vert_on_border(in_nvert,nibz_faces), vert_on_corner(in_nvert))
-    allocate(neighbour_triangles(in_ntri,3,nghmax))
     new_dif_vert_coord = 0.0_dp
     new_dif_vert_index = 0
     new_ntri = in_ntri
@@ -665,7 +651,6 @@ contains
         if (verb) write(*,'("|       iter ",I4," / ",I4,"                            |")') it, dummy_tri_iter
 
         ! Assign neighbours
-        neighbour_triangles = 0
         call find_neighbours(ntri_aux, dif_vert_index, neighbour_triangles, nghmax)
 
         ! Check which vertices are on tetra faces
@@ -746,7 +731,6 @@ contains
       if (verb) write(*,'("|       Collapsing vertices...                      |")')
       !
       ! Assign neighbours
-      neighbour_triangles = 0
       call find_neighbours(ntri_aux, dif_vert_index, neighbour_triangles, nghmax)
 
       ! Collapse triangles and create new mesh
@@ -776,11 +760,6 @@ contains
     write(*,'("|     New number of triangles: ",I4,"                 |")') new_ntri
     write(*,'("|     New number of vertices:  ",I4,"                 |")') new_nvert
 
-    !--------------- Deallocate variables
-    !
-    deallocate(vface, inner_face, neighbour_triangles, vert_on_border, vert_on_corner)
-
-
   end subroutine edge_collapse
 
 
@@ -794,7 +773,7 @@ contains
     integer, intent(in) :: nibz_faces
     integer, intent(in) :: faces_ibz(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
-    real(dp), intent(out) :: vface(1:3,1:3,nibz_faces)
+    real(dp), intent(out) :: vface(3,3,nibz_faces)
 
     ! Local
     integer :: i
@@ -856,13 +835,14 @@ contains
     ! I/O
     integer, intent(in) :: in_ntri
     integer, dimension(:,:), intent(in) :: vindex
-    integer, dimension(:,:,:), intent(inout) :: neighbour_triangles
+    integer, dimension(:,:,:), intent(out) :: neighbour_triangles
     integer, intent(in) :: nghmax
 
     ! Local
     integer :: i, iv, j, jv, ngh
 
 
+    neighbour_triangles = 0
     ! Loop over vertices
     do i = 1, in_ntri
       do iv = 1, 3
@@ -886,13 +866,13 @@ contains
   end subroutine find_neighbours
 
 
-  subroutine find_neighbours_vertex_list(ntri, nvert, vindex, neighbour_triangles, nghmax)
+  subroutine find_neighbours_vertex_list(ntri, n_vert, vindex, neighbour_triangles, nghmax)
 
     implicit none
 
-    integer, intent(in) :: ntri, nvert
+    integer, intent(in) :: ntri, n_vert
     integer, dimension(:,:), intent(in) :: vindex
-    integer, dimension(:,:), intent(inout) :: neighbour_triangles
+    integer, dimension(:,:), intent(out) :: neighbour_triangles
     integer, intent(in) :: nghmax
 
     !Local variables
@@ -900,7 +880,7 @@ contains
 
 
     !Loop over vertices
-    do iv = 1, nvert
+    do iv = 1, n_vert
       ! Find neighbour triangles of each vertex
       ngh = 0
       do j = 1, ntri
@@ -992,8 +972,8 @@ contains
     integer, intent(in) :: nghmax
     integer, dimension(:,:,:), intent(in) :: neighbour_triangles
     integer, intent(out) :: ntri_new, nvert_new
-    real(dp), dimension(:,:), intent(inout) :: new_vcoord
-    integer, dimension(:,:), intent(inout) :: new_vindex
+    real(dp), dimension(:,:), intent(out) :: new_vcoord
+    integer, dimension(:,:), intent(out) :: new_vindex
     logical, intent(in) :: verb
 
     !Local variables
@@ -1454,9 +1434,9 @@ contains
   end subroutine collapse_condition
 
 
-  subroutine tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, niter, verbose, nrpts, irvec, ndegen, alat, ag, bg, &
-                                   nsym, s, TR_sym, num_wann, ham_r, ibnd, in_nvert, in_ntri, nibz_faces, ibz_faces, verts_ibz, &
-                                   v_index, v_coord)
+  subroutine tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, niter, nrpts, irvec, ndegen, alat, ag, bg, &
+                                   nsym, s, TR_sym, n_bnd, ham_r, ibnd, nibz_faces, ibz_faces, verts_ibz, &
+                                   n_vert, n_tri, v_coord, v_index, verbose)
 
     use intw_matrix_vector, only: ainv, norma, cross
     use triFS_isosurface, only: velocity
@@ -1467,68 +1447,60 @@ contains
     logical, intent(in) :: relax_vinface
     real(dp), intent(in) :: eps_vinface, eps_dupv
     integer, intent(in) :: niter
-    logical, intent(in) :: verbose !
-    integer, intent(in) :: nrpts, irvec(1:3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
-    real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3) ! real and reciprocal lattice vectors
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym) ! symmetry variables
+    logical, intent(in) :: verbose
+    integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! real and reciprocal lattice vectors
+    integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
-    integer, intent(in) :: num_wann ! number of Wannier functions on hr
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts) ! Hamiltonian in Wannier basis
-    integer, intent(in) :: ibnd,in_nvert,in_ntri,nibz_faces
-    integer, dimension(:,:), intent(in) :: ibz_faces ! IBZ big tetra faces
-    real(dp), dimension(:,:), intent(in) :: verts_ibz ! IBZ big tetra vertex coordinates
-    integer, dimension(:,:), intent(in) :: v_index
-    real(dp), dimension(:,:), intent(inout) :: v_coord
+    integer, intent(in) :: n_bnd ! number of Wannier functions on hr
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
+    integer, intent(in) :: ibnd, n_vert, n_tri, nibz_faces
+    integer, intent(in) :: ibz_faces(:,:) ! IBZ big tetra faces
+    real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
+    integer, intent(in) :: v_index(:,:)
+    real(dp), intent(inout) :: v_coord(:,:)
 
-    ! local variables
-    integer :: j, iv, jv, it
-    integer, dimension(:,:), allocatable :: neighbours
-    logical, dimension(:), allocatable :: vert_on_corner
-    logical, dimension(:,:), allocatable :: vert_on_border
-    real(dp), dimension(:,:), allocatable :: vert_normal
-    real(dp), dimension(:,:,:), allocatable :: vface
-    real(dp), dimension(1:3) :: meanbary, v_w, vcoord_crys, dvec
-    real(dp), dimension(1:3,1:3) :: face
-    logical, allocatable :: has_SplusG(:), SplusG_pair(:,:,:,:,:,:,:)
-    logical, allocatable :: vertex_related(:), relaxed_vertex(:)
-    ! parameters
+    ! Parameters
     integer, parameter :: nghmax = 500
-    !real(dp), parameter :: epsvert = 1.0E-6_dp
     real(dp), parameter :: lambda = 0.1_dp ! Parameter controling vertex movement
+
+    ! Local variables
+    integer :: j, iv, jv, it
+    integer :: neighbours(n_vert,nghmax)
+    logical :: vert_on_corner(n_vert)
+    logical :: vert_on_border(n_vert,nibz_faces)
+    real(dp) :: vert_normal(3,n_vert), vface(3,3,nibz_faces), face(3,3)
+    real(dp) :: meanbary(3), v_w(3), vcoord_crys(3), dvec(3)
+    logical :: has_SplusG(n_vert), SplusG_pair(n_vert,n_vert,nsym,-1:1,-1:1,-1:1,2)
+    logical :: vertex_related(n_vert), relaxed_vertex(n_vert)
 
 
     !--------------- Define vectors of IBZ big tetra faces
     !
-    allocate(vface(3,3,nibz_faces))
     call faces_vectors(nibz_faces, ibz_faces, verts_ibz, vface)
 
 
     !--------------- Find neighbour triangles of each vertex
     !
-    allocate(neighbours(in_nvert,nghmax))
-    neighbours = 0
-    call find_neighbours_vertex_list(in_ntri, in_nvert, v_index, neighbours, nghmax)
+    call find_neighbours_vertex_list(n_tri, n_vert, v_index, neighbours, nghmax)
 
 
     !--------------- Check which vertices are on border of IBZ
     !
-    allocate(vert_on_border(in_nvert,nibz_faces), vert_on_corner(in_nvert))
-    call check_border(in_nvert, v_coord(:,:), nibz_faces, vface, nsym, s, TR_sym, &
+    call check_border(n_vert, v_coord, nibz_faces, vface, nsym, s, TR_sym, &
                       eps_vinface, vert_on_border, vert_on_corner, verbose)
 
 
     !--------------- Detect which vertices have SplusG pairs
     !
-    allocate(has_SplusG(in_nvert), SplusG_pair(in_nvert,in_nvert,nsym,-1:1,-1:1,-1:1,1:2))
-    allocate(vertex_related(in_nvert), relaxed_vertex(in_nvert))
     has_SplusG = .false.
     vertex_related = .false.
     SplusG_pair = .false.
-    do iv = 1, in_nvert
+    do iv = 1, n_vert
       !
       if (vertex_related(iv)) cycle ! a pair of this vertex has been already assigned
       !
-      do jv = 1, in_nvert
+      do jv = 1, n_vert
         !
         if(jv.eq.iv) cycle
         !
@@ -1548,7 +1520,6 @@ contains
 
     !--------------- Vertex relocation
     !
-    allocate(vert_normal(3,in_nvert))
     do it = 1, niter
       !
       if(it==1) then
@@ -1566,7 +1537,7 @@ contains
       end if
       !
       relaxed_vertex(:) = .false.
-      v_loop: do iv = 1, in_nvert
+      v_loop: do iv = 1, n_vert
         !
         if (relaxed_vertex(iv)) cycle
         !
@@ -1574,10 +1545,10 @@ contains
         !
         ! Compute normal vector of vertex with the velocity vector
         vcoord_crys(1:3) = matmul(ainv(bg), v_coord(1:3,iv))
-        !call velocity_sym(nrpts, irvec, ndegen, ag, bg, nsym, s, TR_sym, num_wann, ibnd, ham_r, v_w, vcoord_crys)
+        !call velocity_sym(nrpts, irvec, ndegen, ag, bg, nsym, s, TR_sym, n_bnd, ibnd, ham_r, v_w, vcoord_crys)
         !! JL - abiadura simetrizatu gabe, bakarrik plano tangentziala lortzeko da.
         v_w = 0.0_dp
-        call velocity(nrpts, irvec, ndegen, alat, ag, bg, num_wann, ibnd, ham_r, v_w, vcoord_crys)
+        call velocity(nrpts, irvec, ndegen, alat, ag, bg, n_bnd, ibnd, ham_r, v_w, vcoord_crys)
         v_w = matmul(transpose(ag), v_w)
         v_w = matmul(bg, v_w)
         !!! JL
@@ -1637,7 +1608,7 @@ contains
         ! Move any symmetry related vertex accordingly
         if (has_SplusG(iv)) then
           !
-          do jv = 1, in_nvert
+          do jv = 1, n_vert
             if(ANY(SplusG_pair(iv,jv,:,:,:,:,:))) then ! jv is pair of iv
               !
               v_coord(1:3,jv) = rotate_to_SplusG(v_coord(1:3,iv), bg, nsym, s, SplusG_pair(iv,jv,:,:,:,:,:))
@@ -1650,13 +1621,6 @@ contains
       end do v_loop
 
     end do ! niter
-
-    !--------------- Deallocate variables
-    !
-    deallocate(vface)
-    deallocate(vert_on_border, vert_on_corner)
-    deallocate(has_SplusG, SplusG_pair, vertex_related, relaxed_vertex)
-    deallocate(vert_normal, neighbours)
 
   end subroutine tangential_relaxation
 
