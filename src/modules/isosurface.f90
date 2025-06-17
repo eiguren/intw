@@ -254,18 +254,18 @@ contains
   end subroutine tetra_cut
 
 
-  subroutine calculate_energy_sym(nsym, s, TR_sym, num_wann, nrpts, ndegen, irvec, ham_r, kvec_int, eig_mean)
+  subroutine calculate_energy_sym(nsym, s, TR_sym, n_bnd, nrpts, ndegen, irvec, ham_r, kvec_int, eig_mean)
 
     implicit none
 
-    integer, intent(in) :: nsym, num_wann, nrpts, ndegen(:), irvec(:,:)
+    integer, intent(in) :: nsym, n_bnd, nrpts, ndegen(:), irvec(:,:)
     integer, intent(in) :: s(1:3,1:3,nsym)
     logical, intent(in) :: TR_sym
     complex(dp), intent(in) :: ham_r(:,:,:)
     real(dp), intent(in ) :: kvec_int(1:3)
-    real(dp), intent(out) :: eig_mean(num_wann)
+    real(dp), intent(out) :: eig_mean(n_bnd)
 
-    real(dp) :: eig_int(num_wann)
+    real(dp) :: eig_int(n_bnd)
     integer :: istar, nstar, symop(96,2)
     real(dp) :: vstar(3,96)
 
@@ -274,7 +274,7 @@ contains
 
     eig_mean = 0.0_dp
     do istar = 1, nstar
-      call calculate_energy (num_wann, nrpts, ndegen, irvec, ham_r, vstar(1:3,istar), eig_int)
+      call calculate_energy (n_bnd, nrpts, ndegen, irvec, ham_r, vstar(1:3,istar), eig_int)
       eig_mean = eig_mean + eig_int
     enddo
 
@@ -283,7 +283,7 @@ contains
   end subroutine calculate_energy_sym
 
 
-  subroutine calculate_energy(num_wann, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
+  subroutine calculate_energy(n_bnd, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
 
     use intw_useful_constants, only: tpi, cmplx_i, cmplx_0
 
@@ -291,17 +291,17 @@ contains
 
     external :: ZHPEVX
 
-    integer, intent(in) :: num_wann, nrpts, ndegen(:), irvec(:,:)
+    integer, intent(in) :: n_bnd, nrpts, ndegen(:), irvec(:,:)
     complex(dp), intent(in) :: ham_r(:,:,:)
     real(dp), intent(in) :: kvec_int(1:3)
-    real(dp), intent(out) :: eig_int(num_wann)
+    real(dp), intent(out) :: eig_int(n_bnd)
 
-    complex(dp) :: ham_kprm(num_wann,num_wann), u_dagger(num_wann,num_wann), ham_pack(num_wann*(num_wann+1)/2), fac
+    complex(dp) :: ham_kprm(n_bnd,n_bnd), u_dagger(n_bnd,n_bnd), ham_pack(n_bnd*(n_bnd+1)/2), fac
     real(dp) :: rdotk
     integer :: loop_rpt, nfound
-    complex(dp) :: cwork(2*num_wann)
-    real(dp) :: rwork(7*num_wann)
-    integer :: iwork(5*num_wann), ifail(num_wann), info
+    complex(dp) :: cwork(2*n_bnd)
+    real(dp) :: rwork(7*n_bnd)
+    integer :: iwork(5*n_bnd), ifail(n_bnd), info
     integer :: i, j
 
 
@@ -312,23 +312,23 @@ contains
       ham_kprm = ham_kprm+fac*ham_r(:,:,loop_rpt)
     end do
     ! Diagonalise H_k (->basis of eigenstates)
-    do j = 1, num_wann
+    do j = 1, n_bnd
       do i = 1, j
         ham_pack(i+((j-1)*j)/2) = ham_kprm(i,j)
       enddo
     enddo
 
     ! Diagonalizing routine from lapack.
-    call ZHPEVX('V', 'A', 'U', num_wann, ham_pack, &
+    call ZHPEVX('V', 'A', 'U', n_bnd, ham_pack, &
                 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                 nfound, eig_int, &
                 u_dagger, &
-                num_wann, cwork, rwork, iwork, ifail, info)
+                n_bnd, cwork, rwork, iwork, ifail, info)
 
   end subroutine calculate_energy
 
 
-  subroutine velocity_sym(nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, num_wann, ibnd, ham_r, v_mean, kvec_int)
+  subroutine velocity_sym(nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, n_bnd, ibnd, ham_r, v_mean, kvec_int)
 
     use intw_matrix_vector, only: ainv
 
@@ -342,8 +342,8 @@ contains
     integer, intent(in) :: nsym
     logical, intent(in) :: TR_sym
     integer, dimension(:,:,:), intent(in) :: s
-    integer, intent(in) :: num_wann, ibnd
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts)
+    integer, intent(in) :: n_bnd, ibnd
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
     real(dp), intent(in), dimension(3) :: kvec_int
     real(dp), intent(out), dimension(3) :: v_mean
 
@@ -357,7 +357,7 @@ contains
 
     v_mean = 0.d0
     do istar = 1, nstar
-      call velocity(nrpts, irvec, ndegen, alat, ag, bg, num_wann, ibnd, ham_r, v, kstar(:,istar))
+      call velocity(nrpts, irvec, ndegen, alat, ag, bg, n_bnd, ibnd, ham_r, v, kstar(:,istar))
       !v = matmul(transpose(at), v)
       !v = matmul(ainv(bg), v)
       !v = matmul(ag, v)
@@ -380,7 +380,7 @@ contains
   end subroutine velocity_sym
 
 
-  subroutine velocity(nrpts, irvec, ndegen, alat, ag, bg, num_wann, ibnd, ham_r, v, k)
+  subroutine velocity(nrpts, irvec, ndegen, alat, ag, bg, n_bnd, ibnd, ham_r, v, k)
 
     use intw_useful_constants, only: tpi, cmplx_i, cmplx_0
     use intw_matrix_vector, only: ainv
@@ -389,24 +389,24 @@ contains
 
     external :: ZHPEVX
 
-    integer, intent(in) :: num_wann, ibnd, nrpts
+    integer, intent(in) :: n_bnd, ibnd, nrpts
     integer, intent(in), dimension(3,nrpts) :: irvec
     integer, intent(in), dimension(nrpts) :: ndegen
     real(dp), intent(in) :: alat
     real(dp), intent(in), dimension(3,3) :: ag, bg
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts)
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
     real(dp), intent(in), dimension(3) :: k
     real(dp), intent(out), dimension(3) :: v
 
-    real(dp), dimension(num_wann) :: eig
+    real(dp), dimension(n_bnd) :: eig
     integer :: i, j, loop_rpt, nfound
-    complex(dp) :: ham_kprm_x(num_wann,num_wann), ham_kprm_y(num_wann,num_wann), &
-                   ham_kprm_z(num_wann,num_wann), ham_kprm(num_wann,num_wann), fac
-    complex(dp) :: u_dagger(num_wann,num_wann), ham_pack(num_wann*(num_wann+1)/2)
+    complex(dp) :: ham_kprm_x(n_bnd,n_bnd), ham_kprm_y(n_bnd,n_bnd), &
+                   ham_kprm_z(n_bnd,n_bnd), ham_kprm(n_bnd,n_bnd), fac
+    complex(dp) :: u_dagger(n_bnd,n_bnd), ham_pack(n_bnd*(n_bnd+1)/2)
     real(dp)    :: rdotk, rcart(3), kcart(3)
-    complex(dp) :: cwork(2*num_wann)
-    real(dp) :: rwork(7*num_wann)
-    integer :: iwork(5*num_wann), ifail(num_wann), info
+    complex(dp) :: cwork(2*n_bnd)
+    real(dp) :: rwork(7*n_bnd)
+    integer :: iwork(5*n_bnd), ifail(n_bnd), info
     real(dp), parameter :: evau = 27.21138602_dp !evau = 27.2113845_dp
 
 
@@ -439,21 +439,21 @@ contains
 
     end do
 
-    do j = 1, num_wann
+    do j = 1, n_bnd
       do i = 1, j
         ham_pack(i+((j-1)*j)/2) = ham_kprm(i,j)
       enddo
     enddo
 
-    call ZHPEVX('V', 'A', 'U', num_wann, ham_pack, &
+    call ZHPEVX('V', 'A', 'U', n_bnd, ham_pack, &
                 0.0_dp, 0.0_dp, 0, 0, -1.0_dp, &
                 nfound, eig, &
                 u_dagger, &
-                num_wann, cwork, rwork, iwork, ifail, info)
+                n_bnd, cwork, rwork, iwork, ifail, info)
 
     v = 0.0
-    do i = 1, num_wann
-      do j = 1, num_wann
+    do i = 1, n_bnd
+      do j = 1, n_bnd
         v(1) = v(1) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_x (i,j) * ( u_dagger(j,ibnd)))
         v(2) = v(2) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_y (i,j) * ( u_dagger(j,ibnd)))
         v(3) = v(3) + real(conjg( u_dagger(i,ibnd) ) * ham_kprm_z (i,j) * ( u_dagger(j,ibnd)))
@@ -588,7 +588,7 @@ contains
   end subroutine tetranodes_by_SplusG
 
 
-  subroutine create_isosurface_IBZ(eiso, num_wann, nrpts, ndegen, irvec, ham_r, alat, ag, bg, nsym, s, TR_sym, verbose, epsvert)
+  subroutine create_isosurface_IBZ(eiso, n_bnd, nrpts, ndegen, irvec, ham_r, alat, ag, bg, nsym, s, TR_sym, verbose, epsvert)
 
     use intw_matrix_vector, only: ainv, norma
 
@@ -596,10 +596,10 @@ contains
 
     ! I/O
     real(dp), intent(in) :: eiso ! Eenrgy of isosurface
-    integer, intent(in) :: num_wann ! Numer of bands on hr
+    integer, intent(in) :: n_bnd ! Numer of bands on hr
     integer, intent(in) :: nrpts, ndegen(nrpts) ! Number of R vectors and their degeneracies on hr
     integer, intent(in) :: irvec(1:3,nrpts) ! R vectors
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts) ! Hamiltonian in Wannier representation
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier representation
     real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3) ! Crystal and reciprocal lattice vectors on columns
     integer, intent(in) :: nsym ! Number of symmetry operations
     integer, intent(in) :: s(1:3,1:3,nsym) ! Symmetry-operation matrices
@@ -622,9 +622,9 @@ contains
     write(*,'("| - Creating isosurface at ",F14.8," eV...     |")') eiso
 
     ! Allocate variables
-    allocate(tetracoord(1:3,1:4), vcoord(3,30000,num_wann), etetra(1:ntetra,1:4,1:num_wann), eig_int(1:num_wann))
+    allocate(tetracoord(1:3,1:4), vcoord(3,30000,n_bnd), etetra(1:ntetra,1:4,1:n_bnd), eig_int(1:n_bnd))
     allocate(kvec_int(1:3), et(1:4), vtr(3,3,2), vcoord_crys(3), v_k(3))
-    allocate(vindex(3,10000,num_wann))
+    allocate(vindex(3,10000,n_bnd))
 
     ! Calculate energies
     !allocate(node_done(4,ntetra))
@@ -637,9 +637,9 @@ contains
         tetracoord(:,inod) = ncoord(:,index_tetra(inod,itet)+1)
         kvec_int(:) = matmul(ainv(bg), tetracoord(:,inod)) ! Tetra node in crystal coordinates
         !
-        call calculate_energy_sym(nsym, s, TR_sym, num_wann, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
-        !call calculate_energy(num_wann, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
-        etetra(itet,inod,1:num_wann) = eig_int(1:num_wann)
+        call calculate_energy_sym(nsym, s, TR_sym, n_bnd, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
+        !call calculate_energy(n_bnd, nrpts, ndegen, irvec, ham_r, kvec_int, eig_int)
+        etetra(itet,inod,1:n_bnd) = eig_int(1:n_bnd)
         !
         !! Check if this node has S+G related node
         !if (ANY(abs(matmul(ainv(bg), tetracoord(:,inod))-1.0_dp).lt.epsvert)) then !only check vertices at border of BZ
@@ -653,7 +653,7 @@ contains
         !      call tetranodes_by_SplusG(tetracoord(:,inod), ncoord(:,index_tetra(jnod,jtet)+1), bg, nsym, s, TR_sym, epsvert, SplusG_node)
         !      if(SplusG_node) then ! {jnod,jtet} is pair of {inod,itet}
         !        print*, itet, inod, jtet, jnod, "related!"
-        !        etetra(jtet, jnod,1:num_wann) = etetra(itet,inod,1:num_wann)
+        !        etetra(jtet, jnod,1:n_bnd) = etetra(itet,inod,1:n_bnd)
         !        node_done(jnod,jtet) = .true.
         !        !cycle inod_loop
         !      end if
@@ -667,11 +667,11 @@ contains
     !deallocate(node_done)
 
     ! Create isosurface
-    allocate(nvert(num_wann), ntri(num_wann))
+    allocate(nvert(n_bnd), ntri(n_bnd))
     nvert = 0
     ntri = 0
     mid_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       do itet = 1, ntetra
         et(1:4) = etetra(itet,1:4,ibnd)
         do inod = 1, 4
@@ -694,7 +694,7 @@ contains
 
     if(verbose) then
       write(*,'("|   Number of triangules and vertices:              |")')
-      do ibnd = 1, num_wann
+      do ibnd = 1, n_bnd
         write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
       end do
     endif
@@ -702,7 +702,7 @@ contains
     ! Total number of triangles and vertices
     tot_ntri = 0
     tot_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       tot_ntri = tot_ntri + ntri(ibnd)
       tot_nvert = tot_nvert + nvert(ibnd)
     end do
@@ -712,14 +712,14 @@ contains
     ! Clean list
     write(*,'("| - Cleaning list of triangles and vertices...      |")')
     !
-    allocate(vert_index(3,tot_ntri,num_wann))
-    allocate(vert_coord(3,tot_nvert,num_wann))
+    allocate(vert_index(3,tot_ntri,n_bnd))
+    allocate(vert_coord(3,tot_nvert,n_bnd))
     vert_coord(:,:,:) = 0.0_dp
     vert_index(:,:,:) = 0
     rdcd_vert = 0
     ivert = 0
     mid_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(ntri(ibnd).eq.0) cycle
       vert_coord(:,1,ibnd) = vcoord(:,1,ibnd)
       ivert = 0
@@ -745,21 +745,21 @@ contains
 
     if(verbose) then
       write(*,'("|   Number of triangles and vertices:               |")')
-      do ibnd = 1, num_wann
+      do ibnd = 1, n_bnd
         if(ntri(ibnd).eq.0) cycle
         write(*,'("|     band ",I4,": ",I6,I6,"                       |")') ibnd, ntri(ibnd), nvert(ibnd)
       end do
     endif
 
     ! Compute velocity on IBZ
-    allocate(vert_veloc(3, tot_nvert, num_wann))
+    allocate(vert_veloc(3, tot_nvert, n_bnd))
     vert_veloc(:,:,:) = 0.0_dp
-    call velocity_on_IBZ(num_wann, nvert, vcoord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, vert_veloc)
+    call velocity_on_IBZ(n_bnd, nvert, vcoord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, vert_veloc)
 
     ! Total number of triangles and vertices
     tot_ntri = 0
     tot_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       tot_ntri = tot_ntri + ntri(ibnd)
       tot_nvert = tot_nvert + nvert(ibnd)
     end do
@@ -767,44 +767,44 @@ contains
   end subroutine create_isosurface_IBZ
 
 
-  subroutine velocity_on_IBZ(num_wann, in_nvert, in_vcoord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, out_veloc)
+  subroutine velocity_on_IBZ(n_bnd, n_vert, v_coord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, v_veloc)
 
     use intw_matrix_vector, only: ainv
 
     implicit none
 
     ! I/O
-    integer, intent(in) :: num_wann, in_nvert(:)
-    real(dp), intent(in) :: in_vcoord(:,:,:)
+    integer, intent(in) :: n_bnd, n_vert(:)
+    real(dp), intent(in) :: v_coord(:,:,:)
     integer, intent(in) :: nrpts, irvec(nrpts), ndegen(nrpts)
     real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3)
     integer, intent(in) :: nsym, s(1:3,1:3,nsym)
     logical, intent(in) :: TR_sym
-    complex(dp), intent(in) :: ham_r(num_wann,num_wann,nrpts)
-    real(dp), intent(out) :: out_veloc(:,:,:)
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
+    real(dp), intent(out) :: v_veloc(:,:,:)
 
     ! Local
     integer :: ibnd, iv
     real(dp) :: vcoord_crys(1:3), v_k(1:3)
 
 
-    out_veloc = 0.0_dp
-    do ibnd = 1, num_wann
+    v_veloc = 0.0_dp
+    do ibnd = 1, n_bnd
       !
-      if(in_nvert(ibnd).eq.0) cycle
+      if(n_vert(ibnd).eq.0) cycle
       !
-      do iv = 1, in_nvert(ibnd)
+      do iv = 1, n_vert(ibnd)
         v_k = 0.0_dp
-        vcoord_crys(:) = matmul(ainv(bg), in_vcoord(:,iv,ibnd))
-        call velocity_sym(nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, num_wann, ibnd, ham_r, v_k, vcoord_crys)
-        out_veloc(:,iv,ibnd) = v_k(:)
+        vcoord_crys(:) = matmul(ainv(bg), v_coord(:,iv,ibnd))
+        call velocity_sym(nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, n_bnd, ibnd, ham_r, v_k, vcoord_crys)
+        v_veloc(:,iv,ibnd) = v_k(:)
       end do ! iv
     end do ! ibnd
 
   end subroutine velocity_on_IBZ
 
 
-  subroutine rotate_IBZ_mesh(bg, s, nvert, ntri, vcoord, veloc, vindex, nstar, symop, epsvert, nvert_rot, ntri_rot, vcoord_rot, veloc_rot, vindex_rot)
+  subroutine rotate_IBZ_mesh(bg, s, n_vert, n_tri, v_coord, v_veloc, v_index, nstar, symop, epsvert, n_vert_rot, n_tri_rot, v_coord_rot, v_veloc_rot, v_index_rot)
 
     use intw_matrix_vector, only: ainv, norma
 
@@ -813,23 +813,23 @@ contains
     ! I/O variables
     real(dp), intent(in) :: bg(1:3,1:3)
     integer, intent(in) :: s(:,:,:)
-    integer, intent(in) :: nvert, ntri
-    real(dp), intent(in) :: vcoord(1:3,nvert)
-    real(dp), intent(in) :: veloc(1:3,nvert)
-    integer, intent(in) :: vindex(1:3,ntri)
+    integer, intent(in) :: n_vert, n_tri
+    real(dp), intent(in) :: v_coord(1:3,n_vert)
+    real(dp), intent(in) :: v_veloc(1:3,n_vert)
+    integer, intent(in) :: v_index(1:3,n_tri)
     integer, intent(in) :: nstar
     integer, intent(in) :: symop(:,:)
     real(dp), intent(in) :: epsvert ! Parameter to detect duplicated vertices
-    integer, intent(out) :: nvert_rot, ntri_rot
-    real(dp), intent(out) :: vcoord_rot(:,:)
-    real(dp), intent(out) :: veloc_rot(:,:)
-    integer, intent(out) :: vindex_rot(:,:)
+    integer, intent(out) :: n_vert_rot, n_tri_rot
+    real(dp), intent(out) :: v_coord_rot(:,:)
+    real(dp), intent(out) :: v_veloc_rot(:,:)
+    integer, intent(out) :: v_index_rot(:,:)
 
     ! Local variables
     integer :: iv, ivert, i, j, it, istar, i_sym, nvert_aux
     real(dp) :: v(1:3), bgi(1:3,1:3)
-    real(dp) :: vcoord_aux(1:3,nstar*nvert), veloc_aux(1:3,nstar*nvert)
-    integer :: vindex_aux(1:3,nstar*ntri)
+    real(dp) :: vcoord_aux(1:3,nstar*n_vert), veloc_aux(1:3,nstar*n_vert)
+    integer :: vindex_aux(1:3,nstar*n_tri)
     real(dp) :: s_cart(1:3,1:3,96)
     !! Parameter
     !real(dp), parameter :: epsvert = 1.0E-5_dp ! Hau handiegia jarri behar dut ondo topatzeko errepikatutakoak... hobetu behar da
@@ -848,76 +848,76 @@ contains
     !end do
 
     nvert_aux = 0
-    ntri_rot = 0
+    n_tri_rot = 0
     do istar = 1, nstar
       if ( symop(istar,1) /= 0 ) then
         i_sym = symop(istar,1)
-        do iv = 1, nvert
+        do iv = 1, n_vert
           nvert_aux = nvert_aux + 1
-          v(1:3) = matmul(bgi, vcoord(1:3,iv))
+          v(1:3) = matmul(bgi, v_coord(1:3,iv))
           !vcoord_aux(1:3,nvert_aux) = matmul(real(s(:,:,i_sym), dp), v)
           vcoord_aux(1:3,nvert_aux) = matmul(s(:,:,i_sym), v)
           !! Transformation in cartesian coords
-          !vcoord_aux(1:3,nvert_aux) = matmul(s_cart(:,:,i_sym), vcoord(1:3,iv))
+          !vcoord_aux(1:3,nvert_aux) = matmul(s_cart(:,:,i_sym), v_coord(1:3,iv))
           !
-          v(1:3) = matmul(bgi, veloc(1:3,iv))
+          v(1:3) = matmul(bgi, v_veloc(1:3,iv))
           !veloc_aux(:,nvert_aux) = matmul(real(s(:,:,i_sym), dp), v)
           veloc_aux(:,nvert_aux) = matmul(s(:,:,i_sym), v)
         end do
-        do it = 1, ntri
-          ntri_rot = ntri_rot + 1
-          vindex_aux(1:3,ntri_rot) = vindex(1:3,it) + (istar-1)*nvert
+        do it = 1, n_tri
+          n_tri_rot = n_tri_rot + 1
+          vindex_aux(1:3,n_tri_rot) = v_index(1:3,it) + (istar-1)*n_vert
         end do
       else if( symop(istar,2) /= 0 ) then ! TR symmetry
         i_sym = symop(istar,2)
-        do iv = 1, nvert
+        do iv = 1, n_vert
           nvert_aux = nvert_aux + 1
-          v(1:3) = matmul(bgi, vcoord(1:3,iv))
+          v(1:3) = matmul(bgi, v_coord(1:3,iv))
           !vcoord_aux(1:3,nvert_aux) = -matmul(real(s(:,:,i_sym), dp), v)
           vcoord_aux(1:3,nvert_aux) = -matmul(s(:,:,i_sym), v)
           !! Transformation in cartesian coords
-          !vcoord_aux(1:3,nvert_aux) = -matmul(s_cart(:,:,i_sym), vcoord(1:3,iv))
+          !vcoord_aux(1:3,nvert_aux) = -matmul(s_cart(:,:,i_sym), v_coord(1:3,iv))
           !
-          v(1:3) = matmul(bgi, veloc(1:3,iv))
+          v(1:3) = matmul(bgi, v_veloc(1:3,iv))
           !veloc_aux(:,nvert_aux) = -matmul(real(s(:,:,i_sym), dp), v)
           veloc_aux(:,nvert_aux) = -matmul(s(:,:,i_sym), v)
         end do
-        do it = 1, ntri
-          ntri_rot = ntri_rot + 1
-          vindex_aux(1:3,ntri_rot) = vindex(1:3,it) + (istar-1)*nvert
+        do it = 1, n_tri
+          n_tri_rot = n_tri_rot + 1
+          vindex_aux(1:3,n_tri_rot) = v_index(1:3,it) + (istar-1)*n_vert
         end do
       end if
     end do
 
     ! Clean list
-    nvert_rot = 0
+    n_vert_rot = 0
     ivert = 0
-    vcoord_rot(:,1) = vcoord_aux(:,1)
-    do i = 1, ntri_rot
+    v_coord_rot(:,1) = vcoord_aux(:,1)
+    do i = 1, n_tri_rot
       v_loop: do iv = 1, 3
-        do j = 1, nvert_rot
-          if ( norma(vcoord_aux(:,vindex_aux(iv,i))-vcoord_rot(:,j)) < epsvert ) then
-            vindex_rot(iv,i) = j
+        do j = 1, n_vert_rot
+          if ( norma(vcoord_aux(:,vindex_aux(iv,i))-v_coord_rot(:,j)) < epsvert ) then
+            v_index_rot(iv,i) = j
             cycle v_loop
           end if
         end do
-        nvert_rot = nvert_rot+1
-        vindex_rot(iv,i) = nvert_rot
-        vcoord_rot(:,nvert_rot) = vcoord_aux(:,vindex_aux(iv,i))
-        veloc_rot(:,nvert_rot) = veloc_aux(:,vindex_aux(iv,i))
+        n_vert_rot = n_vert_rot+1
+        v_index_rot(iv,i) = n_vert_rot
+        v_coord_rot(:,n_vert_rot) = vcoord_aux(:,vindex_aux(iv,i))
+        v_veloc_rot(:,n_vert_rot) = veloc_aux(:,vindex_aux(iv,i))
       end do v_loop
     end do
 
     ! Transform back to cartesian coordinates
-    do j = 1, nvert_rot
-      vcoord_rot(1:3,j) = matmul(bg, vcoord_rot(1:3,j))
-      veloc_rot(1:3,j) = matmul(bg, veloc_rot(1:3,j))
+    do j = 1, n_vert_rot
+      v_coord_rot(1:3,j) = matmul(bg, v_coord_rot(1:3,j))
+      v_veloc_rot(1:3,j) = matmul(bg, v_veloc_rot(1:3,j))
     end do
 
   end subroutine rotate_IBZ_mesh
 
 
-  subroutine write_full_isosurface(bg, nsym, s, TR_sym, num_wann, verbose, epsvert, tag, prefix)
+  subroutine write_full_isosurface(bg, nsym, s, TR_sym, n_bnd, verbose, epsvert, tag, prefix)
 
     use intw_utility, only: find_free_unit, int2str
     use intw_matrix_vector, only: norma
@@ -929,7 +929,7 @@ contains
     integer, intent(in) :: nsym
     integer, intent(in) :: s(:,:,:)
     logical, intent(in) :: TR_sym
-    integer, intent(in) :: num_wann
+    integer, intent(in) :: n_bnd
     logical, intent(in) :: verbose
     real(dp), intent(in) :: epsvert
     character(len=*), intent(in) :: tag
@@ -956,13 +956,13 @@ contains
     ! Rotate mesh
     tot_ntri = sum(ntri(:))
     tot_nvert = sum(nvert(:))
-    allocate(vert_index_rot(3,nstar*tot_ntri,num_wann))
-    allocate(vert_coord_rot(3,nstar*tot_nvert,num_wann))
-    allocate(vert_veloc_rot(3,nstar*tot_nvert,num_wann))
-    allocate(ntri_rot(num_wann), nvert_rot(num_wann))
+    allocate(vert_index_rot(3,nstar*tot_ntri,n_bnd))
+    allocate(vert_coord_rot(3,nstar*tot_nvert,n_bnd))
+    allocate(vert_veloc_rot(3,nstar*tot_nvert,n_bnd))
+    allocate(ntri_rot(n_bnd), nvert_rot(n_bnd))
     ntri_rot = 0
     nvert_rot = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
       call rotate_IBZ_mesh(bg, s, nvert(ibnd), ntri(ibnd), vert_coord(:,:,ibnd), &
                            vert_veloc(:,:,ibnd), vert_index(:,:,ibnd), nstar, symop, epsvert, &
@@ -973,7 +973,7 @@ contains
     ! Total number of triangles and vertices
     tot_ntri = 0
     tot_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       tot_ntri = tot_ntri + ntri_rot(ibnd)
       tot_nvert = tot_nvert + nvert_rot(ibnd)
     end do
@@ -995,13 +995,13 @@ contains
     write(unit=io_unit, fmt="(a)") "OFF"
     write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
     write(unit=io_unit, fmt=*)
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       do iv = 1, nvert_rot(ibnd)
         write(unit=io_unit, fmt="(4f18.10)") ( vert_coord_rot(j,iv,ibnd), j = 1, 3 )
       end do
     end do
     mid_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       do i = 1, ntri_rot(ibnd)
         write(unit=io_unit, fmt="(4I6)") 3, ( mid_nvert+vert_index_rot(j,i,ibnd)-1, j = 1, 3 )
       end do
@@ -1015,7 +1015,7 @@ contains
 
     !
     ! Write band-separated isosurface in OFF format
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
       io_unit = find_free_unit()
       if (present(prefix)) then
@@ -1039,7 +1039,7 @@ contains
     !
     ! Write files with Fermi velocity
     write(*, '("| - Writing Fermi velocity files...                 |")')
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
       io_unit = find_free_unit()
       if (present(prefix)) then
@@ -1058,7 +1058,7 @@ contains
   end subroutine write_full_isosurface
 
 
-  subroutine write_IBZ_isosurface(tag, num_wann, velocities, prefix)
+  subroutine write_IBZ_isosurface(tag, n_bnd, velocities, prefix)
 
     use intw_utility, only: find_free_unit, int2str
     use intw_matrix_vector, only: norma
@@ -1067,7 +1067,7 @@ contains
 
     ! I/O
     character(len=*), intent(in) :: tag
-    integer, intent(in) :: num_wann
+    integer, intent(in) :: n_bnd
     logical, intent(in) :: velocities
     character(len=*), optional, intent(in) :: prefix
 
@@ -1095,13 +1095,13 @@ contains
     write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
     write(unit=io_unit, fmt=*)
     mid_nvert = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
       do iv = 1, nvert(ibnd)
         write(unit=io_unit, fmt="(3F18.10)") ( vert_coord(j,iv,ibnd), j = 1, 3 )
       end do
     end do
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       do itri = 1, ntri(ibnd)
         write(unit=io_unit, fmt="(4I6)") 3, ( mid_nvert+vert_index(j,itri,ibnd)-1, j = 1, 3 )
       end do
@@ -1113,7 +1113,7 @@ contains
     ! Write band-separated IBZ isosurface in OFF format
     tot_nvert = 0
     tot_ntri = 0
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
       io_unit = find_free_unit()
       if (present(prefix)) then
@@ -1146,7 +1146,7 @@ contains
       !
       write(*,'("| - Writing Fermi velocity files...                 |")')
       !
-      do ibnd = 1, num_wann
+      do ibnd = 1, n_bnd
         if(nvert(ibnd).eq.0) cycle
         io_unit = find_free_unit()
         if (present(prefix)) then
@@ -1167,7 +1167,7 @@ contains
   end subroutine write_IBZ_isosurface
 
 
-  subroutine DOS_isosurface(alat, vbz, num_wann, in_nvert, in_ntri, v_coord, v_index, v_veloc, nvert_rot, ntri_rot, v_coord_rot, v_index_rot, v_veloc_rot)
+  subroutine DOS_isosurface(alat, vbz, n_bnd, n_vert, n_tri, v_coord, v_index, v_veloc, n_vert_rot, n_tri_rot, v_coord_rot, v_index_rot, v_veloc_rot)
 
     use intw_utility, only: find_free_unit, int2str
     use intw_useful_constants, only: pi
@@ -1177,7 +1177,7 @@ contains
 
     ! I/O
     real(dp), intent(in) :: alat, vbz
-    integer, intent(in) :: num_wann, in_nvert(:), in_ntri(:), v_index(:,:,:), nvert_rot(:), ntri_rot(:), v_index_rot(:,:,:)
+    integer, intent(in) :: n_bnd, n_vert(:), n_tri(:), v_index(:,:,:), n_vert_rot(:), n_tri_rot(:), v_index_rot(:,:,:)
     real(dp), intent(in) :: v_coord(:,:,:), v_veloc(:,:,:), v_coord_rot(:,:,:), v_veloc_rot(:,:,:)
 
     ! Local
@@ -1187,21 +1187,21 @@ contains
 
 
     ! Allocate variables
-    allocate(vert_area(maxval(in_nvert(:)),num_wann), ifs_area(num_wann))
-    allocate(rot_vert_area(maxval(nvert_rot(:)),num_wann), fs_area(num_wann))
+    allocate(vert_area(maxval(n_vert(:)),n_bnd), ifs_area(n_bnd))
+    allocate(rot_vert_area(maxval(n_vert_rot(:)),n_bnd), fs_area(n_bnd))
 
     io_unit = find_free_unit()
     open(unit=io_unit, action="write", file="DOS.dat", status="unknown")
     ! Loop over all FS sheets
-    do ibnd = 1, num_wann
+    do ibnd = 1, n_bnd
       !
-      if(in_nvert(ibnd).eq.0) cycle
+      if(n_vert(ibnd).eq.0) cycle
       !
       ! Area of each vertex on IFS
-      call vertices_area(in_nvert(ibnd), in_ntri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), vert_area(:,ibnd))
+      call vertices_area(n_vert(ibnd), n_tri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), vert_area(:,ibnd))
       ! Area of IFS
       ifs_area = 0.0_dp
-      do iv = 1, in_nvert(ibnd)
+      do iv = 1, n_vert(ibnd)
         ifs_area(ibnd) = ifs_area(ibnd) + vert_area(iv,ibnd)
       end do
       write(io_unit, *) "Area of "//trim(int2str(ibnd))//" IFS =", ifs_area(ibnd), "(2*pi/alat)**2"
@@ -1209,10 +1209,10 @@ contains
       write(io_unit, *)
 
       ! Area of each vertex on full FS
-      call vertices_area(nvert_rot(ibnd), ntri_rot(ibnd), v_coord_rot(:,:,ibnd), v_index_rot(:,:,ibnd), rot_vert_area(:,ibnd))
+      call vertices_area(n_vert_rot(ibnd), n_tri_rot(ibnd), v_coord_rot(:,:,ibnd), v_index_rot(:,:,ibnd), rot_vert_area(:,ibnd))
       ! Area of IFS
       fs_area = 0.0_dp
-      do iv = 1, nvert_rot(ibnd)
+      do iv = 1, n_vert_rot(ibnd)
         fs_area(ibnd) = fs_area(ibnd) + rot_vert_area(iv,ibnd)
       end do
       write(io_unit, *) "Area of full "//trim(int2str(ibnd))//" FS =", fs_area(ibnd), "(2*pi/alat)**2"
@@ -1231,10 +1231,10 @@ contains
     write(io_unit, *) "Volume of BZ (bohr**-3) =", (vbz*(2.0_dp*pi/alat)**3)
     write(io_unit, *) ""
 
-    do ibnd = 1, num_wann
-      if(nvert_rot(ibnd).eq.0) cycle
+    do ibnd = 1, n_bnd
+      if(n_vert_rot(ibnd).eq.0) cycle
       ne = 0.0_dp
-      do iv = 1, nvert_rot(ibnd)
+      do iv = 1, n_vert_rot(ibnd)
         ne = ne + (1.0_dp/norma(v_veloc_rot(1:3,iv,ibnd))) * (rot_vert_area(iv,ibnd)*(2.0_dp*pi/alat)**2)
       end do
       ne = 2.0_dp * ne / (vbz*(2.0_dp*pi/alat)**3)
@@ -1244,9 +1244,9 @@ contains
     end do
 
     ne = 0.0_dp
-    do ibnd = 1, num_wann
-      if(in_nvert(ibnd).eq.0) cycle
-      do iv = 1, in_nvert(ibnd)
+    do ibnd = 1, n_bnd
+      if(n_vert(ibnd).eq.0) cycle
+      do iv = 1, n_vert(ibnd)
         ne = ne + (1.0_dp/norma(v_veloc(1:3,iv,ibnd))) * (vert_area(iv,ibnd)*(2.0_dp*pi/alat)**2)
       end do
     end do
@@ -1258,9 +1258,9 @@ contains
     write(io_unit, *)
 
     ne = 0.0_dp
-    do ibnd = 1, num_wann
-      if(nvert_rot(ibnd).eq.0) cycle
-      do iv = 1, nvert_rot(ibnd)
+    do ibnd = 1, n_bnd
+      if(n_vert_rot(ibnd).eq.0) cycle
+      do iv = 1, n_vert_rot(ibnd)
         ne = ne + (1.0_dp/norma(v_veloc_rot(1:3,iv,ibnd))) * (rot_vert_area(iv,ibnd)*(2.0_dp*pi/alat)**2)
       end do
     end do
@@ -1283,31 +1283,31 @@ contains
   end subroutine DOS_isosurface
 
 
-  subroutine vertices_area(nvert, ntri, vcoord, vindex, vert_area)
+  subroutine vertices_area(n_vert, n_tri, v_coord, v_index, v_area)
 
     use intw_matrix_vector, only: area_vec
     implicit none
 
     ! I/O variables
-    integer, intent(in) :: nvert, ntri
-    real(dp), intent(in) :: vcoord(3,nvert)
-    integer, intent(in) :: vindex(3,ntri)
-    real(dp), intent(out) :: vert_area(nvert)
+    integer, intent(in) :: n_vert, n_tri
+    real(dp), intent(in) :: v_coord(3,n_vert)
+    integer, intent(in) :: v_index(3,n_tri)
+    real(dp), intent(out) :: v_area(n_vert)
 
     ! Local variables
     integer, parameter :: ntmax = 100
     integer :: iv, jv, it, jt, ivertex
-    integer, dimension(nvert) :: num_of_nghb
-    integer, dimension(nvert,ntmax) :: tri_of_vertex
+    integer, dimension(n_vert) :: num_of_nghb
+    integer, dimension(n_vert,ntmax) :: tri_of_vertex
     real(dp), dimension(3) :: v1, v2, v3
     real(dp) :: tri_area
 
 
     ! Find neighbour triangles of each vertex
     num_of_nghb(:) = 0
-    do it = 1, ntri
+    do it = 1, n_tri
       do jv = 1, 3
-        ivertex = vindex(jv,it)
+        ivertex = v_index(jv,it)
         num_of_nghb(ivertex) = num_of_nghb(ivertex) + 1
         if(num_of_nghb(ivertex) .le. ntmax) then
           tri_of_vertex(ivertex,num_of_nghb(ivertex)) = it
@@ -1318,16 +1318,16 @@ contains
     end do
 
     ! Compute area of each vertex
-    vert_area = 0.0_dp
-    do iv = 1, nvert
+    v_area = 0.0_dp
+    do iv = 1, n_vert
       do jt = 1, num_of_nghb(iv)
         it = tri_of_vertex(iv,jt)
-        v1(:) = vcoord(:,vindex(1,it))
-        v2(:) = vcoord(:,vindex(2,it))
-        v3(:) = vcoord(:,vindex(3,it))
+        v1(:) = v_coord(:,v_index(1,it))
+        v2(:) = v_coord(:,v_index(2,it))
+        v3(:) = v_coord(:,v_index(3,it))
         tri_area = area_vec(v2-v1, v3-v1)
 
-        vert_area(iv) = vert_area(iv) + tri_area/3.0_dp
+        v_area(iv) = v_area(iv) + tri_area/3.0_dp
 
       end do
     end do
