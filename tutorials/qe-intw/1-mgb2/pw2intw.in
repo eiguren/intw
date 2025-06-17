@@ -1,0 +1,11 @@
+mgb2
+&inputpp
+ mesh_dir="./"
+ prefix = "mgb2",
+ ph_dir = "./",
+ phonons = .true.,
+ nqirr = 6,
+ fildvscf = "dvscf"
+ fildyn = "mgb2.dyn"
+/
+

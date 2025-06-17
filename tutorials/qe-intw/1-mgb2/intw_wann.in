@@ -1,0 +1,99 @@
+&input
+ mesh_dir = './'
+ prefix = 'mgb2'
+ nk1 = 12
+ nk2 = 12
+ nk3 = 12
+ TR_symmetry = .false.
+ use_exclude_bands = 'wannier'
+ chemical_potential = 7.3852
+/
+
+&intw2W
+ intw2W_fullzone = .false.
+ intw2W_method = 'CONVOLUTION'
+/
+
+&tri_FS
+TR_sym = .false.
+n1 = 6
+n2 = 6
+n3 = 6
+volume_nodes = .true.
+volnodfac = 0.5
+hr_file = "mgb2_hr_intw.dat"  
+ef = 7.3852
+verbose = .false.
+plot_BZ = .false.
+dos = .false.
+eps_dupv = 1.0E-05
+/
+
+&FS_opt
+collapse = .true.
+collapse_criteria = 0.1
+relax = .true.
+relax_iter = 5000
+newton_raphson = 2
+newton_iter = 20
+relax_vinface = .true.
+eps_vinface = 1.0E-05
+/
+
+&ph
+ nq1 = 3
+ nq2 = 3
+ nq3 = 3
+ nqirr = 6
+ read_for_dynmat = 'dynq'
+ apply_asr = .true.
+/
+
+&DOS
+ ne_dos = 200
+ eini_dos = -6.0
+ efin_dos = 18.0
+ esmear_dos = 0.025   ! eV
+ ktsmear =  0.01
+ nk1_dos = 20
+ nk2_dos = 20
+ nk3_dos = 20
+/
+
+&DOS_ph
+ nomega = 200
+ omega_ini = 0.0
+ omega_fin = .008
+ osmear_q = 0.000075
+/
+
+&elphon
+ ep_bands = 'intw'
+ ep_interp_method = 'wannier'
+ ep_interp_bands = 'ef_crossing'
+ nfs_sheets_initial=3
+ nfs_sheets_final=5
+ ep_mat_file = "ep_mat.dat"
+/
+
+K_PATH
+400 8
+G 0.0 0.0 0.0
+M 0.5 0.0 0.0
+K 0.3333333 0.3333333 0.0
+G 0.0 0.0 0.0
+A 0.0 0.0 0.5
+L 0.5 0.0 0.5
+H 0.3333333 0.3333333 0.5
+A 0.0 0.0 0.5
+
+Q_PATH
+400 8
+G 0.0 0.0 0.0
+M 0.5 0.0 0.0
+K 0.3333333 0.3333333 0.0
+G 0.0 0.0 0.0
+A 0.0 0.0 0.5
+L 0.5 0.0 0.5
+H 0.3333333 0.3333333 0.5
+A 0.0 0.0 0.5
