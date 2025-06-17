@@ -24,11 +24,6 @@ module triFS_mesh_opt
 
   implicit none
 
-  ! Variables of isosurface on IBZ
-  integer, allocatable, public :: opt_nvert(:), opt_ntri(:) ! Optimized triangles and vertices of isosurface on IBZ
-  real(dp), allocatable, public :: opt_vert_coord(:,:,:) ! Optimized triangle vertex coordinates
-  integer, allocatable, public :: opt_vert_index(:,:,:) ! Indices of vertices on optimized triangles
-
   public :: mesh_optimization, newton_rap, check_border, vertices_related_by_SplusG, rotate_to_SplusG, &
             v2edge, edge_collapse, faces_vectors, inner_faces, find_neighbours, find_neighbours_vertex_list, &
             rm_3tri_vrtx, collapse_triangles, collapse_condition, tangential_relaxation, mean_barycenter
@@ -38,10 +33,10 @@ contains
 
   subroutine mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, &
                                relax_vinface, eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, &
-                               alat, ag, bg, nsym, s, TR_sym, n_bnd, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
-                               n_tri, n_vert, v_coord, v_index)
+                               alat, at, bg, nsym, s, TR_sym, n_bnd, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
+                               n_tri, n_vert, v_coord, v_index, v_veloc)
 
-    use triFS_isosurface, only: write_IBZ_isosurface
+    use triFS_isosurface, only: write_IBZ_isosurface, velocity_on_IBZ
 
 
     implicit none
@@ -57,52 +52,61 @@ contains
     real(dp), intent(in) :: ef ! Energy of isosurface
     integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
-    real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! real and reciprocal lattice vectors
+    real(dp), intent(in) :: alat, at(3,3), bg(3,3) ! real and reciprocal lattice vectors
     integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
     integer, intent(in) :: nfaces_IBZ, n_bnd
     integer, intent(in) :: faces_IBZ_as_vert(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: vert_IBZ(:,:) ! IBZ big tetra vertex coordinates
     integer, intent(inout) :: n_tri(n_bnd), n_vert(n_bnd)
-    real(dp), intent(inout) :: v_coord(:,:,:)
+    real(dp), intent(inout) :: v_coord(:,:,:), v_veloc(:,:,:)
     integer, intent(inout) :: v_index(:,:,:)
 
     ! Local
     character(len=25) :: tag_in
     integer :: ibnd
+    ! Variables of isosurface on IBZ
+    integer :: n_vert_aux(n_bnd), n_tri_aux(n_bnd)
+    real(dp) :: v_coord_aux(3,maxval(n_vert),n_bnd)
+    integer :: v_index_aux(3,maxval(n_tri),n_bnd)
 
+
+    !
+    !--------------- Newton-Raphson relaxation before improvement (optional)
+    !
+    if(newton_raphson==2 .and. (collapse .or. relax)) then
+      !
+      write(*,'("|         ---------------------------------         |")')
+      write(*,'("| - Newton-Raphson relaxation of FS...              |")')
+      !
+      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
+                      nsym, s, TR_sym, n_bnd, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
+                      vert_IBZ, n_vert, v_coord, verbose)
+      !
+      write(*,'("|         ---------------------------------         |")')
+      !
+      ! write Newton-relaxed isosurface on IBZ
+      tag_in = "newton_IBZ_FS_tri"
+      call write_IBZ_isosurface(tag_in, n_bnd, .false.)
+      !
+    end if
     !
     !--------------- Edge-collapse
     !
     if(collapse) then
       !
+      write(*,'("|         ---------------------------------         |")')
       write(*,'("| - Edge collapse of triangulated mesh...           |")')
       !
-      allocate(opt_nvert(n_bnd), opt_ntri(n_bnd))
-      allocate(opt_vert_coord(3,maxval(n_vert(:)),n_bnd),opt_vert_index(3,maxval(n_tri(:)),n_bnd))
-      opt_nvert = 0
-      opt_ntri = 0
+      n_vert_aux = n_vert
+      n_tri_aux = n_tri
+      v_coord_aux = v_coord
+      v_index_aux = v_index
       !
-      do ibnd = 1, n_bnd
-        !
-        if (n_vert(ibnd).eq.0) cycle
-        !
-        write(*,'("|                                                   |")')
-        write(*,'("|   Collapsing band ",I4,"                            |")') ibnd
-        !
-        call edge_collapse(collapse_criteria, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
-                           n_vert(ibnd), n_tri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), &
-                           opt_nvert(ibnd), opt_ntri(ibnd), opt_vert_coord(:,:,ibnd), opt_vert_index(:,:,ibnd), &
-                           verbose)
-        !
-      end do
-      !
-      n_vert = opt_nvert
-      n_tri = opt_ntri
-      v_coord = opt_vert_coord
-      v_index = opt_vert_index
-      !
-      deallocate(opt_ntri, opt_nvert, opt_vert_coord, opt_vert_index)
+      call edge_collapse(collapse_criteria, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
+                         n_bnd, n_vert_aux, n_tri_aux, v_coord_aux, v_index_aux, &
+                         n_vert, n_tri, v_coord, v_index, &
+                         verbose)
       !
       write(*,'("|         ---------------------------------         |")')
       !
@@ -112,12 +116,11 @@ contains
       !
     end if
     !
-    if (collapse .and. relax) write(*,'("|         ---------------------------------         |")')
-    !
     !--------------- Tangential relaxation
     !
     if(relax) then
       !
+      write(*,'("|         ---------------------------------         |")')
       write(*,'("| - Tangential relaxation of triangulated mesh...   |")')
       !
       do ibnd = 1, n_bnd
@@ -128,7 +131,7 @@ contains
         write(*,'("|   Relaxing band ",I4,"                              |")') ibnd
         !
         call tangential_relaxation(relax_vinface, eps_vinface, eps_dupv, relax_iter, &
-                                   nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, &
+                                   nrpts, irvec, ndegen, alat, at, bg, nsym, s, TR_sym, &
                                    n_bnd, ham_r, ibnd, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, &
                                    n_vert(ibnd), n_tri(ibnd), v_coord(:,:,ibnd), v_index(:,:,ibnd), &
                                    verbose)
@@ -142,6 +145,30 @@ contains
       call write_IBZ_isosurface(tag_in, n_bnd, .false.)
       !
     end if
+    !
+    !--------------- Newton-Raphson relaxation after improvement
+    !
+    if(newton_raphson>=1) then
+      !
+      write(*,'("|         ---------------------------------         |")')
+      write(*,'("| - Newton-Raphson relaxation of FS...              |")')
+      !
+      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
+                      nsym, s, TR_sym, n_bnd, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
+                      vert_IBZ, n_vert, v_coord, verbose)
+      !
+    end if
+    !
+    ! Compute velocity on improved isosurface on IBZ
+    !
+    call velocity_on_IBZ(n_bnd, n_vert, v_coord, nrpts, irvec, ndegen, alat, at, bg, nsym, s, TR_sym, ham_r, v_veloc)
+    !
+    write(*,'("|         ---------------------------------         |")')
+    !
+    ! write improved isosurface on IBZ
+    tag_in = "opt_IBZ_FS_tri"
+    call write_IBZ_isosurface(tag_in, n_bnd, .false.)
+
 
   end subroutine mesh_optimization
 
@@ -173,17 +200,17 @@ contains
     logical, intent(in) :: verb
 
     ! Parameters
-    !real(dp), parameter :: eps = 1.0E-6_dp
     real(dp), parameter :: lambda = 0.1_dp
     ! Local
     real(dp) :: vface(3,3,nibz_faces)
     real(dp) :: eig_int(n_bnd), v_w(3), vcoord_crys(3)
-    real(dp) :: unit_u(3), unit_u1(3)
+    real(dp) :: unit_u(3)
     integer :: i_iter, ibnd, iv, jv, i, j
     real(dp) :: norma_vw
     logical :: vert_on_border(maxval(n_vert),nibz_faces), vert_on_corner(maxval(n_vert))
     logical :: has_SplusG(maxval(n_vert)), SplusG_pair(maxval(n_vert),maxval(n_vert),nsym,-1:1,-1:1,-1:1,2)
     logical :: vertex_related(maxval(n_vert)), relaxed_vertex(maxval(n_vert))
+    ! real(dp) :: unit_u1(3)
 
 
     ! Define vectors of IBZ big tetra faces
@@ -204,7 +231,7 @@ contains
 
       !--------------- Check which vertices are on border of IBZ
       !
-      call check_border(n_vert(ibnd), v_coord(:,:,ibnd), nibz_faces, vface, nsym, s, TR_sym, &
+      call check_border(n_vert(ibnd), v_coord(:,:,ibnd), nibz_faces, vface, &
                         eps_vinface, vert_on_border, vert_on_corner, verb)
 
 
@@ -325,7 +352,7 @@ contains
   end subroutine newton_rap
 
 
-  subroutine check_border(n_vert, vert_coord, nibz_faces, vface, nsym, s, TR_sym, epsvert, vert_on_border, vert_on_corner, verb)
+  subroutine check_border(n_vert, vert_coord, nibz_faces, vface, epsvert, vert_on_border, vert_on_corner, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
@@ -334,8 +361,6 @@ contains
     ! I/O
     integer, intent(in) :: n_vert, nibz_faces
     real(dp), intent(in) :: vert_coord(:,:), vface(:,:,:)
-    integer, intent(in) :: nsym, s(3,3,nsym)
-    logical, intent(in) :: TR_sym
     real(dp), intent(in) :: epsvert
     logical, intent(out) :: vert_on_border(:,:), vert_on_corner(:)
     logical, intent(in) :: verb
@@ -344,8 +369,6 @@ contains
     logical :: inner_face(nibz_faces)
     integer :: j, iv, k
     real(dp) :: coord(3), face(3,3), coef(3)
-    !! Parameters
-    !real(dp), parameter :: epsvert = 1.0E-5_dp ! Now defined from input
 
 
     ! Check which tetra faces are inner face
@@ -406,7 +429,6 @@ contains
     ! Local
     integer :: isym, ig, jg, kg
     real(dp) :: ivert_crys(3), rot_ivertex(3)
-    !real(dp), parameter :: epsvert = 1.0E-6_dp
 
 
     ! Initialize
@@ -515,7 +537,6 @@ contains
     real(dp), intent(in) :: vface(3,3,nfaces)
     real(dp), intent(inout) :: v_w(3)
 
-    !real(dp), parameter :: epsvert = 1.0E-5_dp
 
     if( sum(abs(cross(vface(:,1,jface), vface(:,1,iface)))) .lt. epsvert ) then
       if(dot_product( v_w(1:3), vface(1:3,1,iface) ) .gt. epsvert ) then
@@ -580,7 +601,7 @@ contains
   end subroutine v2edge
 
 
-  subroutine edge_collapse(eps, nibz_faces, faces_ibz, verts_ibz, in_nvert, in_ntri, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index, verb)
+  subroutine edge_collapse(eps, nibz_faces, faces_ibz, verts_ibz, n_bnd, in_nvert, in_ntri, dif_vert_coord, dif_vert_index, new_nvert, new_ntri, new_dif_vert_coord, new_dif_vert_index, verb)
 
     use intw_matrix_vector, only: ainv, norma, cross
 
@@ -591,12 +612,12 @@ contains
     integer, intent(in) :: nibz_faces ! number of faces on IBZ
     integer, intent(in) :: faces_ibz(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
-    integer, intent(in) :: in_nvert, in_ntri ! input number of triangles, vertices
-    real(dp), intent(inout) :: dif_vert_coord(:,:) ! input vertex coords which will be changed
-    integer, intent(inout) :: dif_vert_index(:,:) ! input triangle indices which will be changed
-    integer, intent(out) :: new_nvert, new_ntri ! output number of vertices and triangles after simplification
-    real(dp), intent(out) :: new_dif_vert_coord(:,:) ! output vertices coordinates
-    integer, intent(out) :: new_dif_vert_index(:,:) ! output triangle vertices
+    integer, intent(in) :: n_bnd, in_nvert(n_bnd), in_ntri(n_bnd) ! input number of triangles, vertices
+    real(dp), intent(inout) :: dif_vert_coord(:,:,:) ! input vertex coords which will be changed
+    integer, intent(inout) :: dif_vert_index(:,:,:) ! input triangle indices which will be changed
+    integer, intent(out) :: new_nvert(n_bnd), new_ntri(n_bnd) ! output number of vertices and triangles after simplification
+    real(dp), intent(out) :: new_dif_vert_coord(:,:,:) ! output vertices coordinates
+    integer, intent(out) :: new_dif_vert_index(:,:,:) ! output triangle vertices
     logical, intent(in) :: verb
 
     ! Parameters
@@ -607,9 +628,9 @@ contains
     logical :: inner_face(nibz_faces)
     real(dp) :: coef(3), coord(3), face(3,3)
     real(dp) :: vface(3,3,nibz_faces)
-    logical :: vert_on_border(in_nvert,nibz_faces), vert_on_corner(in_nvert)
-    integer :: neighbour_triangles(in_ntri,3,nghmax)
-    integer :: i, iv, j, ij, it, ntri_aux, nvert_aux, iter, f, k
+    logical :: vert_on_border(maxval(in_nvert),nibz_faces), vert_on_corner(maxval(in_nvert))
+    integer :: neighbour_triangles(maxval(in_ntri),3,nghmax)
+    integer :: i, iv, j, ij, it, ntri_aux, nvert_aux, iter, f, k, ibnd
     integer :: rmvd_vrtx, rmvd_tri1, rmvd_tri2
 
 
@@ -624,141 +645,149 @@ contains
     !--------------- Collapse edges
     ! I cannot use check_border subr as vertex list is changing constantly...
     !
+    new_nvert = 0
+    new_ntri = 0
     new_dif_vert_coord = 0.0_dp
     new_dif_vert_index = 0
-    new_ntri = in_ntri
-    new_nvert = in_nvert
-
-    write(*,'("|     Number of triangles: ",I4,"                     |")') in_ntri
-    write(*,'("|     Number of vertices:  ",I4,"                     |")') in_nvert
-
-    do iter = 1, tri_elim_iter
-
-      write(*,'("|     Edge collapse, iter ",I4," / ",I4,"               |")') iter, tri_elim_iter
-      ntri_aux = new_ntri
-      nvert_aux = new_nvert
-
-      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
-      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
-
-
-      !--------------- Remove vertices with three neighbours
+    do ibnd = 1, n_bnd
       !
-      ! Check which vertex should be removed
-      if (verb) write(*,'("|       Removing dummy triangles...                 |")')
-      do it = 1, dummy_tri_iter
-
-        if (verb) write(*,'("|       iter ",I4," / ",I4,"                            |")') it, dummy_tri_iter
-
-        ! Assign neighbours
-        call find_neighbours(ntri_aux, dif_vert_index, neighbour_triangles, nghmax)
-
-        ! Check which vertices are on tetra faces
-        vert_on_border = .false.
-        vert_on_corner = .false.
-        do iv = 1, nvert_aux
-          do j = 1, nibz_faces
-
-            !!! JL remove not considering inner faces. I think it makes the difference when S+G symmetries
-            ! Do not consider inner faces
-            if(inner_face(j)) cycle
-            !!! JL
-
-            ! Write coordinate vector of the vertex in terms of tetra face vectors
-            ! 3rd vector is first node, zero unless the face is BZ border. Later changed to normal vector of face.
-            coord(1:3) = dif_vert_coord(1:3,iv)-vface(1:3,3,j)
-            face(:,1) = vface(:,1,j)
-            face(:,2) = vface(:,2,j)
-            face(:,3) = cross(vface(:,2,j),vface(:,1,j))
-            face(:,3) = face(:,3) / norma(face(:,3))
-            coef(1:3) = matmul(ainv(face(1:3,1:3)), coord(1:3))
-            ! Coordinate vector of the vertex is perpendicular to normal vector of face
-            !if(abs(dot_product(face(:,3),coord(:))).lt.epsvert) then
-            if(abs(coef(3)).lt.epsvert) then
-              ! Coordinate vector of the vertex lies in the face plane
-              if(coef(1).ge.0.0_dp-epsvert .and. coef(1).le.1.0_dp+epsvert &
-                 .and. coef(2).ge.0.0_dp-epsvert .and. coef(2).le.1.0_dp+epsvert & !) then
-                 .and. sum(coef(1:2))-1.0_dp.lt.epsvert ) then
-                  !print*, "vert iv on face j:", iv, j
-                  vert_on_border(iv,j) = .true.
+      if (in_nvert(ibnd).eq.0) cycle
+      !
+      write(*,'("|                                                   |")')
+      write(*,'("|   Collapsing band ",I4,"                            |")') ibnd
+      !
+      new_ntri(ibnd) = in_ntri(ibnd)
+      new_nvert(ibnd) = in_nvert(ibnd)
+      !
+      write(*,'("|     Number of triangles: ",I4,"                     |")') new_ntri(ibnd)
+      write(*,'("|     Number of vertices:  ",I4,"                     |")') new_nvert(ibnd)
+      !
+      do iter = 1, tri_elim_iter
+        !
+        write(*,'("|     Edge collapse, iter ",I4," / ",I4,"               |")') iter, tri_elim_iter
+        ntri_aux = new_ntri(ibnd)
+        nvert_aux = new_nvert(ibnd)
+        !
+        if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
+        if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
+        !
+        !--------------- Remove vertices with three neighbours
+        !
+        ! Check which vertex should be removed
+        if (verb) write(*,'("|       Removing dummy triangles...                 |")')
+        do it = 1, dummy_tri_iter
+          !
+          if (verb) write(*,'("|       iter ",I4," / ",I4,"                            |")') it, dummy_tri_iter
+          !
+          ! Assign neighbours
+          call find_neighbours(ntri_aux, dif_vert_index(:,:,ibnd), neighbour_triangles, nghmax)
+          !
+          ! Check which vertices are on tetra faces
+          vert_on_border = .false.
+          vert_on_corner = .false.
+          do iv = 1, nvert_aux
+            do j = 1, nibz_faces
+              !
+              !!! JL remove not considering inner faces. I think it makes the difference when S+G symmetries
+              ! Do not consider inner faces
+              if(inner_face(j)) cycle
+              !!! JL
+              !
+              ! Write coordinate vector of the vertex in terms of tetra face vectors
+              ! 3rd vector is first node, zero unless the face is BZ border. Later changed to normal vector of face.
+              coord(1:3) = dif_vert_coord(1:3,iv,ibnd)-vface(1:3,3,j)
+              face(:,1) = vface(:,1,j)
+              face(:,2) = vface(:,2,j)
+              face(:,3) = cross(vface(:,2,j),vface(:,1,j))
+              face(:,3) = face(:,3) / norma(face(:,3))
+              coef(1:3) = matmul(ainv(face(1:3,1:3)), coord(1:3))
+              ! Coordinate vector of the vertex is perpendicular to normal vector of face
+              !if(abs(dot_product(face(:,3),coord(:))).lt.epsvert) then
+              if(abs(coef(3)).lt.epsvert) then
+                ! Coordinate vector of the vertex lies in the face plane
+                if(coef(1).ge.0.0_dp-epsvert .and. coef(1).le.1.0_dp+epsvert &
+                  .and. coef(2).ge.0.0_dp-epsvert .and. coef(2).le.1.0_dp+epsvert & !) then
+                  .and. sum(coef(1:2))-1.0_dp.lt.epsvert ) then
+                    !print*, "vert iv on face j:", iv, j
+                    vert_on_border(iv,j) = .true.
+                end if
               end if
+            end do
+            k = 0
+            do j = 1, nibz_faces
+              if(vert_on_border(iv,j)) k = k+1
+            end do
+            if(k.ge.2) then
+              vert_on_corner(iv) = .true.
             end if
           end do
-          k = 0
-          do j = 1, nibz_faces
-            if(vert_on_border(iv,j)) k = k+1
+          !
+          rmvd_vrtx = 0
+          rmvd_tri1 = 0
+          rmvd_tri2 = 0
+          f = 0
+          call rm_3tri_vrtx(ntri_aux, dif_vert_index(:,:,ibnd), neighbour_triangles, nghmax, nibz_faces, &
+                            vert_on_border, rmvd_vrtx, rmvd_tri1, rmvd_tri2, f)
+          !
+          if(f==0) exit
+          ! Define new vertex coordinates and lists
+          new_nvert(ibnd) = 0
+          do iv = 1, nvert_aux
+            if(iv==rmvd_vrtx) cycle
+            new_nvert(ibnd) = new_nvert(ibnd)+1
+            dif_vert_coord(:,new_nvert(ibnd),ibnd) = dif_vert_coord(:,iv,ibnd)
           end do
-          if(k.ge.2) then
-            vert_on_corner(iv) = .true.
-          end if
-        end do
-
-        rmvd_vrtx = 0
-        rmvd_tri1 = 0
-        rmvd_tri2 = 0
-        f = 0
-        call rm_3tri_vrtx(ntri_aux, dif_vert_index, neighbour_triangles, nghmax, nibz_faces, &
-                          vert_on_border, rmvd_vrtx, rmvd_tri1, rmvd_tri2, f)
-
-        if(f==0) exit
-        ! Define new vertex coordinates and lists
-        new_nvert = 0
-        do iv = 1, nvert_aux
-          if(iv==rmvd_vrtx) cycle
-          new_nvert = new_nvert+1
-          dif_vert_coord(:,new_nvert) = dif_vert_coord(:,iv)
-        end do
-        new_ntri = 0
-        do i = 1, ntri_aux
-          if(i==rmvd_tri1) cycle
-          if(i==rmvd_tri2) cycle
-          new_ntri = new_ntri+1
-          dif_vert_index(:,new_ntri) = dif_vert_index(:,i)
-          do ij = 1, 3
-            if(dif_vert_index(ij,new_ntri).gt.rmvd_vrtx) dif_vert_index(ij,new_ntri) = dif_vert_index(ij,new_ntri)-1
+          new_ntri(ibnd) = 0
+          do i = 1, ntri_aux
+            if(i==rmvd_tri1) cycle
+            if(i==rmvd_tri2) cycle
+            new_ntri(ibnd) = new_ntri(ibnd)+1
+            dif_vert_index(:,new_ntri(ibnd),ibnd) = dif_vert_index(:,i,ibnd)
+            do ij = 1, 3
+              if(dif_vert_index(ij,new_ntri(ibnd),ibnd).gt.rmvd_vrtx) dif_vert_index(ij,new_ntri(ibnd),ibnd) = dif_vert_index(ij,new_ntri(ibnd),ibnd)-1
+            end do
           end do
+          nvert_aux = new_nvert(ibnd)
+          ntri_aux = new_ntri(ibnd)
         end do
-        nvert_aux = new_nvert
-        ntri_aux = new_ntri
+        !
+        if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
+        if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
+        !
+        !--------------- Collapse vertices
+        !
+        if (verb) write(*,'("|       Collapsing vertices...                      |")')
+        !
+        ! Assign neighbours
+        call find_neighbours(ntri_aux, dif_vert_index(:,:,ibnd), neighbour_triangles, nghmax)
+        !
+        ! Collapse triangles and create new mesh
+        call collapse_triangles(eps, ntri_aux, nvert_aux, dif_vert_index(:,:,ibnd), dif_vert_coord(:,:,ibnd), &
+                                vert_on_border, nibz_faces, nghmax, neighbour_triangles, &
+                                new_ntri(ibnd), new_nvert(ibnd), new_dif_vert_coord(:,:,ibnd), new_dif_vert_index(:,:,ibnd),verb)
+        !
+        !--------------- Re-assign vertex and index coordinates
+        !
+        do iv = 1, new_nvert(ibnd)
+          dif_vert_coord(:,iv,ibnd) = new_dif_vert_coord(:,iv,ibnd)
+        end do
+        dif_vert_index(:,:,ibnd) = new_dif_vert_index(:,:,ibnd)
+        !
+        if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') new_ntri(ibnd)
+        if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') new_nvert(ibnd)
+        !
+        if(ntri_aux==new_ntri(ibnd)) then
+          write(*,'("|     No triangle obeys collapse criteria           |")')
+          write(*,'("|     Edge collapse loop finished                   |")')
+          exit
+        end if
+        !
       end do
-
-      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') ntri_aux
-      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') nvert_aux
-
-
-      !--------------- Collapse vertices
       !
-      if (verb) write(*,'("|       Collapsing vertices...                      |")')
+      write(*,'("|     New number of triangles: ",I4,"                 |")') new_ntri(ibnd)
+      write(*,'("|     New number of vertices:  ",I4,"                 |")') new_nvert(ibnd)
       !
-      ! Assign neighbours
-      call find_neighbours(ntri_aux, dif_vert_index, neighbour_triangles, nghmax)
-
-      ! Collapse triangles and create new mesh
-      call collapse_triangles(eps, ntri_aux, nvert_aux, dif_vert_index, dif_vert_coord, &
-                              vert_on_border, nibz_faces, nghmax, neighbour_triangles, &
-                              new_ntri, new_nvert, new_dif_vert_coord, new_dif_vert_index,verb)
-
-
-      !--------------- Re-assign vertex and index coordinates
-      !
-      do iv = 1, new_nvert
-        dif_vert_coord(:,iv) = new_dif_vert_coord(:,iv)
-      end do
-      dif_vert_index(:,:) = new_dif_vert_index(:,:)
-
-      if (verb) write(*,'("|       Number of triangles: ",I4,"                   |")') new_ntri
-      if (verb) write(*,'("|       Number of vertices:  ",I4,"                   |")') new_nvert
-
-      if(ntri_aux==new_ntri) then
-        write(*,'("|     No triangle obeys collapse criteria           |")')
-        write(*,'("|     Edge collapse loop finished                   |")')
-        exit
-      end if
-
-    end do
-
-    write(*,'("|     New number of triangles: ",I4,"                 |")') new_ntri
-    write(*,'("|     New number of vertices:  ",I4,"                 |")') new_nvert
+    enddo
 
   end subroutine edge_collapse
 
@@ -879,6 +908,7 @@ contains
     integer :: iv, j, jv, ngh
 
 
+    neighbour_triangles = 0
     !Loop over vertices
     do iv = 1, n_vert
       ! Find neighbour triangles of each vertex
@@ -986,8 +1016,8 @@ contains
     ntri_new = ntri_old
     eliminated_vertex = huge(eliminated_vertex)
     triangle_elimination = .false.
-    old_vcoord = vcoord
-    aux_vcoord = vcoord
+    old_vcoord = vcoord(:,1:nvert_old)
+    aux_vcoord = vcoord(:,1:nvert_old)
     !
     tri_loop: do i = 1, ntri_old ! Loop over triangles
 
@@ -1031,12 +1061,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,1,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,1,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,1,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,1,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1053,12 +1083,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,2,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,2,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,2,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,2,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1153,12 +1183,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,1,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,1,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,1,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,1,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,1,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1175,12 +1205,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,3,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,3,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,3,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,3,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1277,12 +1307,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,2,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,2,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,2,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,2,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,2,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1299,12 +1329,12 @@ contains
             oldv1(:) = old_vcoord(:,vindex(2,neighbour_triangles(i,3,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             oldv2(:) = old_vcoord(:,vindex(3,neighbour_triangles(i,3,ij)))-old_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             oldnormal(:) = cross(oldv2(:),oldv1(:))
-            oldnormal(:) = oldnormal(:)/norma(oldnormal)
+            if (norma(oldnormal) > tiny(1.0_dp)) oldnormal(:) = oldnormal(:)/norma(oldnormal)
 
             newv1(:) = aux_vcoord(:,vindex(2,neighbour_triangles(i,3,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             newv2(:) = aux_vcoord(:,vindex(3,neighbour_triangles(i,3,ij)))-aux_vcoord(:,vindex(1,neighbour_triangles(i,3,ij)))
             newnormal(:) = cross(newv2(:),newv1(:))
-            newnormal(:) = newnormal(:)/norma(newnormal)
+            if (norma(newnormal) > tiny(1.0_dp)) newnormal(:) = newnormal(:)/norma(newnormal)
 
             if(dot_product(oldnormal, newnormal).lt.0.0_dp) then
               if (verb) write(*,'("Triangle will not collapse to avoid flip of a neighbour triangle")')
@@ -1487,7 +1517,7 @@ contains
 
     !--------------- Check which vertices are on border of IBZ
     !
-    call check_border(n_vert, v_coord, nibz_faces, vface, nsym, s, TR_sym, &
+    call check_border(n_vert, v_coord, nibz_faces, vface, &
                       eps_vinface, vert_on_border, vert_on_corner, verbose)
 
 

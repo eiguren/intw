@@ -318,56 +318,9 @@ program triFS
   !
   if(collapse .or. relax .or. (newton_raphson>0)) then
     !
-    ! Newton-Raphson relaxation before improvement (optional)
-    if(newton_raphson==2 .and. (collapse .or. relax)) then
-      !
-      write(*,20) "|         ---------------------------------         |"
-      write(*,20) "| - Newton-Raphson relaxation of FS...              |"
-      !
-      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
-                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, nvert, vert_coord, verbose)
-      !
-      write(*,20) "|         ---------------------------------         |"
-      !
-      ! write Newton-relaxed isosurface on IBZ
-      tag_in = "newton_IBZ_FS_tri"
-      call write_IBZ_isosurface(tag_in, num_wann, .false.)
-      !
-    end if
-    !
-    ! Mesh optimization
-    if(collapse .or. relax) then
-      !
-      write(*,20) "|         ---------------------------------         |"
-      !
-      call mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, relax_vinface, &
-                            eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, nsym, s, TR_sym, &
-                            num_wann, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, ntri, nvert, vert_coord, vert_index)
-      !
-    end if
-    !
-    ! Newton-Raphson relaxation after improvement
-    if(newton_raphson>=1) then
-      !
-      write(*,20) "|         ---------------------------------         |"
-      write(*,20) "| - Newton-Raphson relaxation of FS...              |"
-      !
-      call newton_rap(eps_dupv, eps_vinface, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, &
-                      nsym, s, TR_sym, num_wann, newton_iter, nfaces_IBZ, faces_IBZ_as_vert, &
-                      vert_IBZ, nvert, vert_coord, verbose)
-      !
-    end if
-    !
-    ! Compute velocity on improved isosurface on IBZ
-    vert_veloc(:,:,:) = 0.0_dp
-    call velocity_on_IBZ(num_wann, nvert, vert_coord, nrpts, irvec, ndegen, alat, at, bg, nsym, s, TR_sym, ham_r, vert_veloc)
-    !
-    write(*,20) "|         ---------------------------------         |"
-    !
-    ! write improved isosurface on IBZ
-    tag_in = "opt_IBZ_FS_tri"
-    call write_IBZ_isosurface(tag_in, num_wann, .false.)
+    call mesh_optimization(collapse, relax, newton_raphson, collapse_criteria, relax_iter, newton_iter, relax_vinface, &
+                           eps_vinface, eps_dupv, verbose, ef, nrpts, irvec, ndegen, ham_r, alat, at, bg, nsym, s, TR_sym, &
+                           num_wann, nfaces_IBZ, faces_IBZ_as_vert, vert_IBZ, ntri, nvert, vert_coord, vert_index, vert_veloc)
     !
     write(*,20) "|         ---------------------------------         |"
     write(*,20) '|   ...done                                         |'
