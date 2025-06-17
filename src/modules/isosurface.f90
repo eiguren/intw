@@ -1074,7 +1074,7 @@ contains
     io_unit = find_free_unit()
     open(unit=io_unit, action="write", file=filename, status="unknown")
     write(unit=io_unit, fmt="(a)") "OFF"
-    write(unit=io_unit, fmt="(3I10)") tot_nvert, tot_ntri, 0
+    write(unit=io_unit, fmt="(3I10)") sum(nvert),sum(ntri), 0
     write(unit=io_unit, fmt=*)
     mid_nvert = 0
     do ibnd = 1, n_bnd
@@ -1121,6 +1121,11 @@ contains
     write(*,'("|   Total number of triangles and vertices:         |")')
     write(*,'("|     Triangles: ",I6,"                             |")') tot_ntri
     write(*,'("|     Vertices:  ",I6,"                             |")') tot_nvert
+
+    !
+    ! Check tot_ntri and tot_nvert
+    if ( tot_ntri /= sum(ntri) ) stop "ERROR: Wrong tot_ntri"
+    if ( tot_nvert /= sum(nvert) ) stop "ERROR: Wrong tot_nvert"
 
     !
     ! Write file with Fermi velocity
