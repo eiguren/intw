@@ -70,7 +70,7 @@ contains
     io_unit = find_free_unit()
     open(unit=io_unit, action="read", file="Tetrahedralized_IBZ.node", status="unknown")
     read(unit=io_unit, fmt=*) nnode, dmns, dummy1, dummy2
-    allocate(ncoord(1:3, 1:nnode))
+    allocate(ncoord(3,nnode))
     do i = 1, nnode
       read(unit=io_unit, fmt=*) inode, ( ncoord(j,i), j = 1, 3 )
     end do
@@ -79,7 +79,7 @@ contains
     io_unit = find_free_unit()
     open(unit=io_unit, action="read", file="Tetrahedralized_IBZ.ele", status="unknown")
     read(unit=io_unit, fmt=*) ntetra, dummy1, dummy2
-    allocate(index_tetra(4, 1:ntetra))
+    allocate(index_tetra(4,ntetra))
     do i = 1, ntetra
       read(unit=io_unit, fmt=*) itetra, ( index_tetra(j,i), j = 1, 4 )
     end do
@@ -139,9 +139,9 @@ contains
 
     implicit none
 
-    real(dp), intent(inout) :: triangle(1:3,1:3), v(1:3)
+    real(dp), intent(inout) :: triangle(3,3), v(3)
 
-    real(dp) :: tv(1:3,1:3)
+    real(dp) :: tv(3,3)
 
 
     tv = triangle
@@ -258,11 +258,11 @@ contains
 
     implicit none
 
-    integer, intent(in) :: nsym, n_bnd, nrpts, ndegen(:), irvec(:,:)
-    integer, intent(in) :: s(1:3,1:3,nsym)
+    integer, intent(in) :: nsym, n_bnd, nrpts, ndegen(nrpts), irvec(3,nrpts)
+    integer, intent(in) :: s(3,3,nsym)
     logical, intent(in) :: TR_sym
-    complex(dp), intent(in) :: ham_r(:,:,:)
-    real(dp), intent(in ) :: kvec_int(1:3)
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
+    real(dp), intent(in ) :: kvec_int(3)
     real(dp), intent(out) :: eig_mean(n_bnd)
 
     real(dp) :: eig_int(n_bnd)
@@ -274,7 +274,7 @@ contains
 
     eig_mean = 0.0_dp
     do istar = 1, nstar
-      call calculate_energy (n_bnd, nrpts, ndegen, irvec, ham_r, vstar(1:3,istar), eig_int)
+      call calculate_energy(n_bnd, nrpts, ndegen, irvec, ham_r, vstar(1:3,istar), eig_int)
       eig_mean = eig_mean + eig_int
     enddo
 
@@ -291,9 +291,9 @@ contains
 
     external :: ZHPEVX
 
-    integer, intent(in) :: n_bnd, nrpts, ndegen(:), irvec(:,:)
-    complex(dp), intent(in) :: ham_r(:,:,:)
-    real(dp), intent(in) :: kvec_int(1:3)
+    integer, intent(in) :: n_bnd, nrpts, ndegen(nrpts), irvec(3,nrpts)
+    complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
+    real(dp), intent(in) :: kvec_int(3)
     real(dp), intent(out) :: eig_int(n_bnd)
 
     complex(dp) :: ham_kprm(n_bnd,n_bnd), u_dagger(n_bnd,n_bnd), ham_pack(n_bnd*(n_bnd+1)/2), fac
@@ -334,22 +334,18 @@ contains
 
     implicit none
 
-    integer, intent(in) :: nrpts
-    integer, intent(in), dimension(3,nrpts) :: irvec
-    integer, intent(in), dimension(nrpts) :: ndegen
-    real(dp), intent(in) :: alat
-    real(dp), dimension(3,3), intent(in) :: ag, bg
-    integer, intent(in) :: nsym
+    integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts)
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     logical, intent(in) :: TR_sym
-    integer, dimension(:,:,:), intent(in) :: s
     integer, intent(in) :: n_bnd, ibnd
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
-    real(dp), intent(in), dimension(3) :: kvec_int
-    real(dp), intent(out), dimension(3) :: v_mean
+    real(dp), intent(in) :: kvec_int(3)
+    real(dp), intent(out) :: v_mean(3)
 
-    real(dp), parameter :: evau = 27.21138602_dp !evau = 27.2113845
-    integer :: istar, nstar, symmop(96,2) !symmop(48)
-    real(dp) :: v(3), so(3,3), kstar(3,96) !kstar(3,48)
+    real(dp), parameter :: evau = 27.21138602_dp ! evau = 27.2113845
+    integer :: istar, nstar, symmop(96,2) ! symmop(48)
+    real(dp) :: v(3), so(3,3), kstar(3,96) ! kstar(3,48)
 
 
     !call calculate_star_r (mod(kvec_int(:), 1.0_dp), kstar, nstar, symmop)
@@ -389,16 +385,13 @@ contains
 
     external :: ZHPEVX
 
-    integer, intent(in) :: n_bnd, ibnd, nrpts
-    integer, intent(in), dimension(3,nrpts) :: irvec
-    integer, intent(in), dimension(nrpts) :: ndegen
-    real(dp), intent(in) :: alat
-    real(dp), intent(in), dimension(3,3) :: ag, bg
+    integer, intent(in) :: n_bnd, ibnd, nrpts, irvec(3,nrpts), ndegen(nrpts)
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3)
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
-    real(dp), intent(in), dimension(3) :: k
-    real(dp), intent(out), dimension(3) :: v
+    real(dp), intent(in) :: k(3)
+    real(dp), intent(out) :: v(3)
 
-    real(dp), dimension(n_bnd) :: eig
+    real(dp) :: eig(n_bnd)
     integer :: i, j, loop_rpt, nfound
     complex(dp) :: ham_kprm_x(n_bnd,n_bnd), ham_kprm_y(n_bnd,n_bnd), &
                    ham_kprm_z(n_bnd,n_bnd), ham_kprm(n_bnd,n_bnd), fac
@@ -407,7 +400,7 @@ contains
     complex(dp) :: cwork(2*n_bnd)
     real(dp) :: rwork(7*n_bnd)
     integer :: iwork(5*n_bnd), ifail(n_bnd), info
-    real(dp), parameter :: evau = 27.21138602_dp !evau = 27.2113845_dp
+    real(dp), parameter :: evau = 27.21138602_dp ! evau = 27.2113845_dp
 
 
     ham_kprm_x = cmplx_0
@@ -470,7 +463,7 @@ contains
     implicit none
 
     integer, intent(in) :: nsym
-    integer, intent(in) :: s(:,:,:)
+    integer, intent(in) :: s(3,3,nsym)
     logical, intent(in) :: TR_symmetry
     real(dp), intent(in) :: v(3)
     real(dp), intent(out) :: vstar(3,96)
@@ -528,18 +521,16 @@ contains
     implicit none
 
     ! I/O
-    real(dp), intent(in) :: icoord(1:3), jcoord(1:3)
-    real(dp), intent(in) :: bg(1:3,1:3)
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym)
+    real(dp), intent(in) :: icoord(3), jcoord(3)
+    real(dp), intent(in) :: bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     logical, intent(in) :: TR_sym
     real(dp), intent(in) :: epsvert
     logical, intent(out) :: related
 
     ! Local
     integer :: isym, ig, jg, kg
-    real(dp) :: rot_inode(1:3), inode_crys(1:3)
-    !! Parameter
-    !real(dp), parameter :: epsvert = 1.0E-6_dp
+    real(dp) :: rot_inode(3), inode_crys(3)
 
 
     ! initalize
@@ -598,33 +589,26 @@ contains
     real(dp), intent(in) :: eiso ! Eenrgy of isosurface
     integer, intent(in) :: n_bnd ! Numer of bands on hr
     integer, intent(in) :: nrpts, ndegen(nrpts) ! Number of R vectors and their degeneracies on hr
-    integer, intent(in) :: irvec(1:3,nrpts) ! R vectors
+    integer, intent(in) :: irvec(3,nrpts) ! R vectors
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier representation
-    real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3) ! Crystal and reciprocal lattice vectors on columns
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! Crystal and reciprocal lattice vectors on columns
     integer, intent(in) :: nsym ! Number of symmetry operations
-    integer, intent(in) :: s(1:3,1:3,nsym) ! Symmetry-operation matrices
+    integer, intent(in) :: s(3,3,nsym) ! Symmetry-operation matrices
     logical, intent(in) :: TR_sym ! Time-reversal symmetry or not
     logical, intent(in) :: verbose ! .true. if info files are to be written
     real(dp), intent(in) :: epsvert ! Parameter to detect duplicated vertices
 
     ! Local
-    character(len=25) :: tag_in
-    integer :: itet, inod, jtet, jnod, ibnd, itri, j, iv, ivert, rdcd_vert, mid_nvert, tot_nvert, tot_ntri
-    real(dp), allocatable :: tetracoord(:,:), vcoord(:,:,:), etetra(:,:,:), eig_int(:)
-    real(dp), allocatable :: kvec_int(:), et(:), vtr(:,:,:), vcoord_crys(:), v_k(:)
-    integer, allocatable :: vindex(:,:,:), ntr
-    logical :: SplusG_node
-    logical, allocatable :: node_done(:,:)
-    !! Parameter
-    !real(dp), parameter :: epsvert = 1.0E-6_dp ! Parameter to detect duplicated vertices
+    integer :: itet, inod, ibnd, itri, j, iv, ivert, rdcd_vert, mid_nvert, tot_nvert, tot_ntri, ntr
+    real(dp) :: tetracoord(3,4), vcoord(3,30000,n_bnd), etetra(ntetra,4,n_bnd), eig_int(n_bnd)
+    real(dp) :: kvec_int(3), et(4), vtr(3,3,2)
+    integer :: vindex(3,10000,n_bnd)
+    ! integer :: jtet, jnod
+    ! logical :: SplusG_node
+    ! logical, allocatable :: node_done(:,:)
 
 
     write(*,'("| - Creating isosurface at ",F14.8," eV...     |")') eiso
-
-    ! Allocate variables
-    allocate(tetracoord(1:3,1:4), vcoord(3,30000,n_bnd), etetra(1:ntetra,1:4,1:n_bnd), eig_int(1:n_bnd))
-    allocate(kvec_int(1:3), et(1:4), vtr(3,3,2), vcoord_crys(3), v_k(3))
-    allocate(vindex(3,10000,n_bnd))
 
     ! Calculate energies
     !allocate(node_done(4,ntetra))
@@ -754,7 +738,7 @@ contains
     ! Compute velocity on IBZ
     allocate(vert_veloc(3, tot_nvert, n_bnd))
     vert_veloc(:,:,:) = 0.0_dp
-    call velocity_on_IBZ(n_bnd, nvert, vcoord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, vert_veloc)
+    call velocity_on_IBZ(n_bnd, nvert, vert_coord, nrpts, irvec, ndegen, alat, ag, bg, nsym, s, TR_sym, ham_r, vert_veloc)
 
     ! Total number of triangles and vertices
     tot_ntri = 0
@@ -774,18 +758,18 @@ contains
     implicit none
 
     ! I/O
-    integer, intent(in) :: n_bnd, n_vert(:)
+    integer, intent(in) :: n_bnd, n_vert(n_bnd)
     real(dp), intent(in) :: v_coord(:,:,:)
     integer, intent(in) :: nrpts, irvec(nrpts), ndegen(nrpts)
-    real(dp), intent(in) :: alat, ag(1:3,1:3), bg(1:3,1:3)
-    integer, intent(in) :: nsym, s(1:3,1:3,nsym)
+    real(dp), intent(in) :: alat, ag(3,3), bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     logical, intent(in) :: TR_sym
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts)
     real(dp), intent(out) :: v_veloc(:,:,:)
 
     ! Local
     integer :: ibnd, iv
-    real(dp) :: vcoord_crys(1:3), v_k(1:3)
+    real(dp) :: vcoord_crys(3), v_k(3)
 
 
     v_veloc = 0.0_dp
@@ -804,21 +788,21 @@ contains
   end subroutine velocity_on_IBZ
 
 
-  subroutine rotate_IBZ_mesh(bg, s, n_vert, n_tri, v_coord, v_veloc, v_index, nstar, symop, epsvert, n_vert_rot, n_tri_rot, v_coord_rot, v_veloc_rot, v_index_rot)
+  subroutine rotate_IBZ_mesh(bg, nsym, s, n_vert, n_tri, v_coord, v_veloc, v_index, nstar, symop, epsvert, n_vert_rot, n_tri_rot, v_coord_rot, v_veloc_rot, v_index_rot)
 
     use intw_matrix_vector, only: ainv, norma
 
     implicit none
 
     ! I/O variables
-    real(dp), intent(in) :: bg(1:3,1:3)
-    integer, intent(in) :: s(:,:,:)
+    real(dp), intent(in) :: bg(3,3)
+    integer, intent(in) :: nsym, s(3,3,nsym)
     integer, intent(in) :: n_vert, n_tri
-    real(dp), intent(in) :: v_coord(1:3,n_vert)
-    real(dp), intent(in) :: v_veloc(1:3,n_vert)
-    integer, intent(in) :: v_index(1:3,n_tri)
+    real(dp), intent(in) :: v_coord(3,n_vert)
+    real(dp), intent(in) :: v_veloc(3,n_vert)
+    integer, intent(in) :: v_index(3,n_tri)
     integer, intent(in) :: nstar
-    integer, intent(in) :: symop(:,:)
+    integer, intent(in) :: symop(92,2)
     real(dp), intent(in) :: epsvert ! Parameter to detect duplicated vertices
     integer, intent(out) :: n_vert_rot, n_tri_rot
     real(dp), intent(out) :: v_coord_rot(:,:)
@@ -827,12 +811,10 @@ contains
 
     ! Local variables
     integer :: iv, ivert, i, j, it, istar, i_sym, nvert_aux
-    real(dp) :: v(1:3), bgi(1:3,1:3)
-    real(dp) :: vcoord_aux(1:3,nstar*n_vert), veloc_aux(1:3,nstar*n_vert)
-    integer :: vindex_aux(1:3,nstar*n_tri)
-    real(dp) :: s_cart(1:3,1:3,96)
-    !! Parameter
-    !real(dp), parameter :: epsvert = 1.0E-5_dp ! Hau handiegia jarri behar dut ondo topatzeko errepikatutakoak... hobetu behar da
+    real(dp) :: v(3), bgi(3,3)
+    real(dp) :: vcoord_aux(3,nstar*n_vert), veloc_aux(3,nstar*n_vert)
+    integer :: vindex_aux(3,nstar*n_tri)
+    ! real(dp) :: s_cart(3,3,96)
 
 
     bgi = ainv(bg)
@@ -925,9 +907,9 @@ contains
     implicit none
 
     ! I/O
-    real(dp), intent(in) :: bg(1:3,1:3)
+    real(dp), intent(in) :: bg(3,3)
     integer, intent(in) :: nsym
-    integer, intent(in) :: s(:,:,:)
+    integer, intent(in) :: s(3,3,nsym)
     logical, intent(in) :: TR_sym
     integer, intent(in) :: n_bnd
     logical, intent(in) :: verbose
@@ -964,7 +946,7 @@ contains
     nvert_rot = 0
     do ibnd = 1, n_bnd
       if(nvert(ibnd).eq.0) cycle
-      call rotate_IBZ_mesh(bg, s, nvert(ibnd), ntri(ibnd), vert_coord(:,:,ibnd), &
+      call rotate_IBZ_mesh(bg, nsym, s, nvert(ibnd), ntri(ibnd), vert_coord(:,:,ibnd), &
                            vert_veloc(:,:,ibnd), vert_index(:,:,ibnd), nstar, symop, epsvert, &
                            nvert_rot(ibnd), ntri_rot(ibnd), vert_coord_rot(:,:,ibnd), &
                            vert_veloc_rot(:,:,ibnd), vert_index_rot(:,:,ibnd))
