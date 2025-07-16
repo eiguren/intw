@@ -31,7 +31,7 @@ module intw_input_parameters
   !
   ! variables
   ! &input
-  public :: input, mesh_dir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
+  public :: input, outdir, prefix, nk1, nk2, nk3, TR_symmetry, chemical_potential, &
             use_exclude_bands, include_bands_initial, include_bands_final
   ! &intw2W
   public :: intw2W, intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
@@ -61,8 +61,8 @@ module intw_input_parameters
   ! &input namelist variables
   !----------------------------------------------------------------------------!
 
-  character(len=256) :: mesh_dir = 'unassigned'
-  ! The directory where the coarse mesh DFT calculations are stored
+  character(len=256) :: outdir = 'unassigned'
+  ! The directory where the DFT calculations are stored
 
   character(len=256) :: prefix = 'unassigned'
   ! The prefix of the DFT calculation
@@ -249,7 +249,7 @@ module intw_input_parameters
   ! Define namelists
   !----------------------------------------------------------------------------!
 
-  NAMELIST / input / mesh_dir, prefix, nk1, nk2, nk3, &
+  NAMELIST / input / outdir, prefix, nk1, nk2, nk3, &
                      TR_symmetry, chemical_potential, &
                      use_exclude_bands, include_bands_initial, include_bands_final
 
@@ -319,9 +319,9 @@ contains
 
     !  Test the various read parameters
 
-    if ( mesh_dir == 'unassigned' ) then
+    if ( outdir == 'unassigned' ) then
       read_status = .true.
-      write(*,*) 'MISSING mesh_dir'
+      write(*,*) 'MISSING outdir'
     end if
 
     if ( prefix == 'unassigned' ) then
@@ -443,7 +443,7 @@ contains
     if ( read_status ) then
       write(*,*) "PROBLEM!: the input should be of the form:"
       write(*,*) "&input"
-      write(*,*) "             mesh_dir              = 'directory'"
+      write(*,*) "             outdir                = 'directory'"
       write(*,*) "             prefix                = 'prefix'"
       write(*,*) "             nk1                   = integer"
       write(*,*) "             nk2                   = integer"
@@ -510,8 +510,8 @@ contains
       write(*,*) "/"
     end if
 
-    strlen = len_trim(mesh_dir)
-    if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+    strlen = len_trim(outdir)
+    if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
     strlen = len_trim(ph_dir)
     if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
     strlen = len_trim(dvscf_dir)

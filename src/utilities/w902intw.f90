@@ -28,7 +28,7 @@ program w902intw
                             allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
                             allocate_and_build_ham_r, write_ham_r
 
-  use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input
+  use intw_input_parameters, only: nk1, nk2, nk3, outdir, prefix, read_input
 
   use intw_reading, only: read_parameters_data_file_xml, set_num_bands
 
@@ -76,7 +76,7 @@ program w902intw
   ! Check that $prefix.nnkp is present
   !================================================================================
 
-  nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
+  nnkp_file = trim(outdir)//trim(prefix)//".nnkp"
 
   inquire(file=nnkp_file, exist=have_nnkp)
 

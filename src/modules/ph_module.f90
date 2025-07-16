@@ -170,7 +170,7 @@ contains
     !------------------------------------------------------------------
     use intw_utility, only: find_free_unit
     use intw_reading, only: nat
-    use intw_input_parameters, only: mesh_dir, prefix, ph_dir, qlist, nqirr, nq1, nq2, nq3
+    use intw_input_parameters, only: outdir, prefix, ph_dir, qlist, nqirr, nq1, nq2, nq3
 
     implicit none
 
@@ -198,7 +198,7 @@ contains
     allocate(q_irr(3,nqirr))
 
     io_unit = find_free_unit()
-    open(unit=io_unit, file=trim(mesh_dir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
+    open(unit=io_unit, file=trim(outdir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
     if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening qlist."
 
     do iq=1,nqirr
@@ -211,7 +211,7 @@ contains
     write(*,"(A)") "| - Reading displacement patterns...                |"
 
     io_unit = find_free_unit()
-    datafile = trim(mesh_dir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat"
+    datafile = trim(outdir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat"
     open(unit=io_unit, file=datafile, status="old", iostat=ios)
     if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening irrq_patterns."
 
@@ -441,7 +441,7 @@ contains
     use intw_useful_constants, only: cmplx_i, tpi, Ry_to_Ha
     use intw_utility, only: cryst_to_cart, find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
-    use intw_input_parameters, only: mesh_dir, prefix, nqirr, nq1, nq2, nq3, &
+    use intw_input_parameters, only: outdir, prefix, nqirr, nq1, nq2, nq3, &
                                      apply_asr
 
     implicit none
@@ -471,7 +471,7 @@ contains
     iq_done = .false.
 
     ! INTW directory
-    intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
+    intwdir = trim(outdir)//trim(prefix)//".save.intw/"
 
     do iqirr = 1,nqirr
       !
@@ -721,7 +721,7 @@ contains
     use intw_utility, only: find_free_unit
     use intw_reading, only: nr1, nr2, nr3, nspin, spinorb_mag, nat
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
-    use intw_input_parameters, only: mesh_dir, prefix, dvscf_name, nqirr
+    use intw_input_parameters, only: outdir, prefix, dvscf_name, nqirr
 
     implicit none
 
@@ -763,7 +763,7 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num)
+       dv_name=trim(outdir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num)
        !
        open(unit=io_unit, file=dv_name, iostat = ios, &
             form='unformatted', status='old', access='direct', recl=record_length)

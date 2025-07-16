@@ -1,11 +1,5 @@
-# Thi is a trial input file.
-#
-# The computation done in "mesh_dir" is a simple scf + nscf computation,
-# where all the necessary data is saved in prefix.save. 
-#
-/
 &input
-mesh_dir 	=	'./'
+outdir 	=	'./'
 prefix 		= 	'si'
 nk1		=	8
 nk2		=	8

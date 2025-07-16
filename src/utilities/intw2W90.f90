@@ -36,8 +36,8 @@ program intw2W90
                              set_symmetry_relations, deallocate_symmetry_related_k, &
                              deallocate_spin_symmetry_matrices
   use intw_fft, only: allocate_fft, deallocate_fft, generate_nl
-  use intw_input_parameters, only: mesh_dir, prefix, intw2W_fullzone, intw2W_method, tr_symmetry, &
-                                   nk1, nk2, nk3, tr_symmetry, compute_mmn, compute_amn, &
+  use intw_input_parameters, only: outdir, prefix, intw2W_fullzone, intw2W_method, &
+                                   nk1, nk2, nk3, compute_mmn, compute_amn, &
                                    read_input
   use intw_reading, only: kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
                           read_parameters_data_file_xml, get_gvec, &
@@ -109,7 +109,7 @@ program intw2W90
   ! Check that $prefix.nnkp is present
   !================================================================================
   !
-  nnkp_file = trim(mesh_dir)//trim(prefix)//".nnkp"
+  nnkp_file = trim(outdir)//trim(prefix)//".nnkp"
   !
   inquire(file=nnkp_file,exist=have_nnkp)
   !

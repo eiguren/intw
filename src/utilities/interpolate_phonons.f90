@@ -35,7 +35,7 @@ program interpolatephonons
   use intw_matrix_vector, only: ainv
 
   use intw_input_parameters, only: read_input, read_cards, &
-                                   mesh_dir, prefix, &
+                                   outdir, prefix, &
                                    nq1, nq2, nq3, nqirr, fc_mat, &
                                    exist_qpath, nqpath, nqspecial, qspecial, &
                                    nq1_dosph, nq2_dosph, nq3_dosph, &
@@ -281,7 +281,7 @@ program interpolatephonons
   !
   allocate(dyn_qint(3*nat,3*nat), u_qint(3*nat,3*nat), w2_qint(3*nat), w_qint(3*nat))
   !
-  phband_file_name = trim(mesh_dir)//trim(prefix)//".qbnd_int"
+  phband_file_name = trim(outdir)//trim(prefix)//".qbnd_int"
   ph_unit = find_free_unit()
   open(ph_unit, file=phband_file_name, status='unknown')
   write(ph_unit,'(A)') '# q-point   omega(imode=1)[meV]  omega(2)[meV]   omega(3)[meV] ...'
@@ -356,7 +356,7 @@ program interpolatephonons
   dosph = dosph / real(nq1_dosph*nq2_dosph*nq3_dosph,dp) ! Normalize for Nq points
   !
   ! Write DOS to file
-  phband_file_name = trim(mesh_dir)//trim(prefix)//".qdos_int"
+  phband_file_name = trim(outdir)//trim(prefix)//".qdos_int"
   ph_unit = find_free_unit()
   open(ph_unit, file=phband_file_name, status='unknown')
   !

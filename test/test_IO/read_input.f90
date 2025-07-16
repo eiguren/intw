@@ -2,7 +2,7 @@ integer function read_input_test() result(r)
 
   use kinds, only: dp
   use intw_test_module, only: assert
-  use intw_input_parameters, only: read_input, mesh_dir, prefix, nk1, nk2, nk3
+  use intw_input_parameters, only: read_input, outdir, prefix, nk1, nk2, nk3
 
   implicit none
 
@@ -21,8 +21,8 @@ integer function read_input_test() result(r)
     return
   endif
 
-  write(6,*) "mesh_dir:", trim(mesh_dir)
-  if (trim(mesh_dir) /= "./qe/") then
+  write(6,*) "mesh_dir:", trim(outdir)
+  if (trim(outdir) /= "./qe/") then
     r = 1
     return
   endif

@@ -21,8 +21,8 @@ program ep_melements
   use kinds, only: dp
   use intw_version, only: print_intw_version
   use intw_input_parameters, only: nk1, nk2, nk3, &
-                                   nq1, nq2, nq3, nqirr, mesh_dir, &
-                                   ep_mat_file, TR_symmetry, &
+                                   nq1, nq2, nq3, nqirr, outdir, &
+                                   ep_mat_file, &
                                    read_input, use_exclude_bands, &
                                    ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
@@ -454,7 +454,7 @@ program ep_melements
     ep_unit = find_free_unit()
     inquire(iolength=record_lengh) ep_mat_el
     open(unit=ep_unit, iostat=ierr, &
-         file=trim(mesh_dir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
+         file=trim(outdir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
          form='unformatted', status='unknown', access='direct', recl=record_lengh)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
     !

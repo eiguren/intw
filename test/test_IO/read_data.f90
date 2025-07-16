@@ -6,7 +6,7 @@ integer function read_data_test() result(r)
   use intw_reading, only: lspinorb, nsym, alat, &
                           nat, ntyp, nr1, nr2, nr3, &
                           noncolin, spinorb_mag, ecutwfc, ecutrho
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
 
   implicit none
 
@@ -25,7 +25,7 @@ integer function read_data_test() result(r)
 
   r = 0
 
-  mesh_dir = "./qe/"
+  outdir = "./qe/"
   prefix = "cu"
 
   call read_parameters_data_file_xml()

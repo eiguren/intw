@@ -77,7 +77,7 @@ contains
   ! have been called before
   !----------------------------------------------------------------------------!
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
-  use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+  use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
   use intw_useful_constants, only: eps_8
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_num_kpoints, nnkp_kpoints
@@ -93,7 +93,7 @@ contains
   real(kind=dp), allocatable  :: kpts(:,:)
 
   io_unit_chk = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.chk')
+  filename = trim(outdir)//trim(prefix)//trim('.chk')
   open(unit=io_unit_chk,file=filename,status='old',form='unformatted')
 
   ! .nnkp file should be read before calling this subroutine
@@ -188,7 +188,7 @@ contains
   !----------------------------------------------------------------------------!
   ! Allocates and reads the eigenvalues for the relevant num_bands_intw from the .eig file    !
   !----------------------------------------------------------------------------!
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
   use intw_utility, only: find_free_unit
   use intw_reading, only: num_bands_intw
   use intw_intw2wannier, only: nnkp_num_kpoints
@@ -202,7 +202,7 @@ contains
   allocate (eigenval_intw(num_bands_intw,nnkp_num_kpoints))
 
   io_unit=find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
+  filename = trim(outdir)//trim(prefix)//trim('.eig')
   open(unit=io_unit,file=filename,form='formatted',status='old')
   !
   do ik=1,nnkp_num_kpoints
@@ -288,7 +288,7 @@ contains
   subroutine write_formatted_u_mesh()
   !----------------------------------------------------------------------------!
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
   use intw_utility, only: find_free_unit
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
                                nnkp_num_kpoints, nnkp_kpoints
@@ -298,7 +298,7 @@ contains
   integer :: i,ik,ib,iw,io_unit_u
 
   io_unit_u = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.u_mesh')
+  filename = trim(outdir)//trim(prefix)//trim('.u_mesh')
   open(unit=io_unit_u,file=filename,status='unknown')
 
   write(io_unit_u,*)'NBANDS'
@@ -528,7 +528,7 @@ contains
   !----------------------------------------------------------------------------!
   !
   use intw_utility, only: find_free_unit
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
   use intw_reading, only:  num_wann_intw
   use intw_intw2wannier, only : generate_header
   !
@@ -538,7 +538,7 @@ contains
   integer :: io_unit, ir, in, jn
   !
   io_unit = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
+  filename = trim(outdir)//trim(prefix)//trim('_hr_intw.dat')
   open (io_unit, file=filename, form='formatted', status='unknown')
   call generate_header(' ',header)
   write (io_unit, *) trim(header)
@@ -571,13 +571,13 @@ contains
   !  MBR:
   !  This reads: nrpts, ndegen, irvec, ham_r
   !  (num_bands_intw, num_wann_intw have been read previously from nnkp using set_numbands)
-  !  from formatted file mesh_dir/prefix_hr_intw.dat
+  !  from formatted file outdir/prefix_hr_intw.dat
   !----------------------------------------------------------------------------!
   !
   use intw_useful_constants, only: cmplx_0
   use intw_utility, only: find_free_unit
   use intw_reading, only: num_wann_intw
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
   !
   implicit none
   !
@@ -587,7 +587,7 @@ contains
   ! open file and read dimensions
   !
   io_unit = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('_hr_intw.dat')
+  filename = trim(outdir)//trim(prefix)//trim('_hr_intw.dat')
   open (io_unit, file=filename, form='formatted', status='old')
   read (io_unit, *) header
   read (io_unit, *) ir
@@ -639,12 +639,12 @@ contains
   !  which include: nnkp_num_kpoints, nnkp_exclude_bands,
   !  and quantities use_disentanglement, nnkp_excluded_bands, &
   !  nnkp_kpoints, eigenval, lwindow, u_mesh, etc.
-  !  from formatted file mesh_dir/prefix_u_mesh.dat
+  !  from formatted file outdir/prefix_u_mesh.dat
   !
   !----------------------------------------------------------------------------!
   !
   use intw_reading, only: nbands, num_bands_intw, num_wann_intw
-  use intw_input_parameters, only: mesh_dir, prefix
+  use intw_input_parameters, only: outdir, prefix
   use intw_utility, only: find_free_unit
   use intw_intw2wannier, only: nnkp_exclude_bands, nnkp_excluded_bands, &
                                nnkp_num_kpoints, nnkp_kpoints
@@ -654,7 +654,7 @@ contains
   integer :: i,ik,ib,iw,io_unit_u
 
   io_unit_u = find_free_unit()
-  filename = trim(mesh_dir)//trim(prefix)//trim('.u_mesh')
+  filename = trim(outdir)//trim(prefix)//trim('.u_mesh')
   open(unit=io_unit_u,file=filename,status='old')
 
   read(io_unit_u,*) varname !'NBANDS'
