@@ -49,14 +49,14 @@ contains
 
   subroutine allocate_and_get_all_irreducible_wfc()
 
-    use intw_reading, only: nG_max, nkpoints_QE, get_K_folder_data, nspin, num_bands_intw
+    use intw_reading, only: nGk_max, nkpoints_QE, get_K_folder_data, nspin, num_bands_intw
     use intw_useful_constants, only: cmplx_0, ZERO
 
     implicit none
 
-    integer :: list_iG(nG_max)
+    integer :: list_iG(nGk_max)
     real(dp) :: QE_eig(num_bands_intw)
-    complex(dp) :: wfc_g(nG_max,num_bands_intw,nspin)
+    complex(dp) :: wfc_g(nGk_max,num_bands_intw,nspin)
     integer :: i_folder, ispin, iG, ibnd
 
 
@@ -68,11 +68,11 @@ contains
     eig_all_irr = ZERO
     !
     if (allocated(wfc_k_all_irr)) deallocate (wfc_k_all_irr)
-    allocate(wfc_k_all_irr(nkpoints_QE,nG_max,num_bands_intw,nspin))
+    allocate(wfc_k_all_irr(nkpoints_QE,nGk_max,num_bands_intw,nspin))
     wfc_k_all_irr = cmplx_0
     !
     if (allocated(list_iG_all_irr)) deallocate(list_iG_all_irr)
-    allocate(list_iG_all_irr(nkpoints_QE,nG_max))
+    allocate(list_iG_all_irr(nkpoints_QE,nGk_max))
     list_iG_all_irr = 0
     !
     if (allocated(ngk_all_irr)) deallocate(ngk_all_irr)
@@ -107,7 +107,7 @@ contains
 
   subroutine get_psi_general_k_all_wfc(kpoint, ngk, list_iG_k, wfc_k, eig_k)
 
-    use intw_reading, only: s, ftau, nG_max, nspin, kpoints_QE, num_bands_intw
+    use intw_reading, only: s, ftau, nGk_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: full_mesh, symlink, QE_folder_sym, QE_folder_nosym, &
                                apply_TR_to_wfc, rotate_wfc_test
@@ -120,8 +120,8 @@ contains
     !I/O variables
     real(dp), intent(in) :: kpoint(3) ! General k point in crystal coordinates for which wave functions are desired
     integer, intent(out) :: ngk ! Number of components of the wave functions
-    integer, intent(out) :: list_iG_k(nG_max) ! G vector indices of the wave function components
-    complex(dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin) ! Wave function components (also spin component) for all bands
+    integer, intent(out) :: list_iG_k(nGk_max) ! G vector indices of the wave function components
+    complex(dp), intent(out) :: wfc_k(nGk_max,num_bands_intw,nspin) ! Wave function components (also spin component) for all bands
     real(dp), intent(out), optional :: eig_k(num_bands_intw) ! Eigenvalues for all band
 
     !local variables
@@ -131,8 +131,8 @@ contains
     integer :: sym(3,3), G_sym(3), G_plus(3)
     real(dp) :: ftau_sym(3)
     real(dp) :: kpoint_1BZ(3), k_irr(3), ktest(3)
-    integer :: list_iG_irr(nG_max)
-    complex(dp) :: wfc_k_irr(nG_max,num_bands_intw,nspin)
+    integer :: list_iG_irr(nGk_max)
+    complex(dp) :: wfc_k_irr(nGk_max,num_bands_intw,nspin)
 
 
     call find_k_1BZ_and_G(kpoint, nk1, nk2, nk3, i_1bz, j_1bz, k_1bz, kpoint_1bz, G_plus)

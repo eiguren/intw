@@ -28,7 +28,7 @@ module intw_intw2wannier
   !---------------------------------------------------------------------------!
 
   use kinds, only: dp
-  use intw_reading, only: nbands, nG_max, ngm, nspin
+  use intw_reading, only: nbands, nGk_max, ngm, nspin
   use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
@@ -524,8 +524,8 @@ contains
 
     integer        :: ngk1, ngk2
 
-    integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
-    complex(dp)    :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+    integer        :: list_iG_1(nGk_max), list_iG_2(nGk_max)
+    complex(dp)    :: wfc_1(nGk_max,num_bands_intw,nspin), wfc_2(nGk_max,num_bands_intw,nspin)
     real(dp)       :: QE_eig(num_bands_intw)
 
     complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
@@ -641,11 +641,11 @@ contains
     integer        :: ikpt
     integer        :: nb, n_proj
 
-    integer        :: ngk, list_iG(nG_max)
+    integer        :: ngk, list_iG(nGk_max)
 
-    complex(dp)    :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp)    :: wfc(nGk_max,num_bands_intw,nspin)
 
-    complex(dp)    :: guiding_function(nG_max,nspin)
+    complex(dp)    :: guiding_function(nGk_max,nspin)
 
     real(dp)       :: QE_eig(num_bands_intw)
 
@@ -724,8 +724,8 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: ikpt, ngk, n_proj, list_iG(nG_max)
-    complex(dp), intent(out) :: guiding_function(nG_max)
+    integer, intent(in) :: ikpt, ngk, n_proj, list_iG(nGk_max)
+    complex(dp), intent(out) :: guiding_function(nGk_max)
 
     !local variables
 
@@ -733,11 +733,11 @@ contains
     integer :: i, mu, iG
     integer :: proj_nr, proj_l, proj_m
     integer :: l, m, lm
-    real(dp) :: zona, zaxis(3), xaxis(3), ylm(nG_max)
+    real(dp) :: zona, zaxis(3), xaxis(3), ylm(nGk_max)
     real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
     real(dp) :: k_plus_G_cart(3,ngk)
     real(dp) :: norm2
-    real(dp) :: radial_l(nG_max, 0:lmax), coef(lmmax)
+    real(dp) :: radial_l(nGk_max, 0:lmax), coef(lmmax)
     complex(dp) :: four_pi_i_l
 
     !
@@ -840,23 +840,23 @@ contains
     !  The computation is done over all bands using FFT.
     !------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max, nr1, nr2, nr3, num_bands_intw
+    use intw_reading, only: nGk_max, nr1, nr2, nr3, num_bands_intw
     use intw_fft, only: wfc_from_g_to_r, wfc_from_r_to_g
 
     implicit none
 
     !I/O variables
 
-    integer,intent(in) :: list_iG(nG_max)
-    complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-    complex(dp),intent(in) :: guiding_function(nG_max,nspin)
+    integer,intent(in) :: list_iG(nGk_max)
+    complex(dp),intent(in) :: wfc(nGk_max,num_bands_intw,nspin)
+    complex(dp),intent(in) :: guiding_function(nGk_max,nspin)
     complex(dp),intent(out) :: amn(num_bands_intw)
 
     !local variables
 
     integer :: ibnd, ir, is
     complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
-    complex(dp) :: fg(nG_max)
+    complex(dp) :: fg(nGk_max)
 
 
     amn = cmplx_0
@@ -897,15 +897,15 @@ contains
     !     The computation is done over all bands.
     !--------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max, num_bands_intw
+    use intw_reading, only: nGk_max, num_bands_intw
 
     implicit none
 
     !I/O variables
 
     integer, intent(in) :: ngk
-    complex(dp), intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-    complex(dp), intent(in) :: guiding_function(nG_max,nspin)
+    complex(dp), intent(in) :: wfc(nGk_max,num_bands_intw,nspin)
+    complex(dp), intent(in) :: guiding_function(nGk_max,nspin)
     complex(dp), intent(out) :: amn(num_bands_intw)
 
     !local variables
@@ -967,7 +967,7 @@ contains
     !   See the LICENSE file in the original Quantum Espresso source for license details.
     !   For the original source visit: https://www.quantum-espresso.org/
     !
-    use intw_reading, only: nG_max, volume0
+    use intw_reading, only: nGk_max, volume0
     use intw_utility, ONLY : simpson, sphb
     use intw_useful_constants, only: fpi, ZERO
 
@@ -977,7 +977,7 @@ contains
 
     integer, intent(in) :: lmax, proj_nr, ngk
     real(dp), intent(in) :: coef((lmax+1)**2), zona, k_plus_G_cart(3,ngk)
-    real(dp), intent(out) :: radial_l(nG_max, 0:lmax)
+    real(dp), intent(out) :: radial_l(nGk_max, 0:lmax)
 
     !local variables
 
@@ -1172,7 +1172,7 @@ contains
     ! The computation is done over all bands.
     !--------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max
+    use intw_reading, only: nGk_max
 
     implicit none
 
@@ -1181,7 +1181,7 @@ contains
     integer, intent(in) :: ngk, proj_l, proj_m
     real(dp), intent(in) :: xaxis(3), zaxis(3)
     real(dp), intent(in) :: k_plus_G_cart(3,ngk)
-    real(dp), intent(out) :: ylm(nG_max)
+    real(dp), intent(out) :: ylm(nGk_max)
 
     !local variables
 

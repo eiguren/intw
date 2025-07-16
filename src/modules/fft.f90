@@ -230,7 +230,7 @@ contains
 
   subroutine wfc_by_expigr(num_bands, nspin, G, list_iG, wfc)
 
-    use intw_reading, only: gvec, nG_max
+    use intw_reading, only: gvec, nGk_max
     use intw_utility, only: hpsort_integer
     use intw_useful_constants, only: cmplx_0
 
@@ -240,18 +240,18 @@ contains
 
     integer, intent(in) :: num_bands, nspin
     integer, intent(in) :: G(3) ! G vector such that k_out = k_in + G
-    integer, intent(inout) :: list_iG(nG_max) ! On input, G vector indices for k, sorted
+    integer, intent(inout) :: list_iG(nGk_max) ! On input, G vector indices for k, sorted
                                               ! On output, G vector indices for k + G, sorted
-    complex(dp), intent(inout) :: wfc(ng_max,num_bands,nspin) ! On input, wave function components for k
+    complex(dp), intent(inout) :: wfc(nGk_max,num_bands,nspin) ! On input, wave function components for k
                                                               ! On output, wave function components for k + G
 
     !local variables
 
-    integer :: list_iG_k_irr(nG_max)
-    complex(dp) :: wfc_k_irr(ng_max,num_bands,nspin)
+    integer :: list_iG_k_irr(nGk_max)
+    complex(dp) :: wfc_k_irr(nGk_max,num_bands,nspin)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
-    integer :: permutations(nG_max) ! index permutation which orders list_G_k
+    integer :: permutations(nGk_max) ! index permutation which orders list_G_k
     integer :: nb, ispin, nG
 
 
@@ -263,7 +263,7 @@ contains
     ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
     !
     nG = 0
-    do i = 1, nG_max
+    do i = 1, nGk_max
       !
       iG_k_irr = list_iG_k_irr(i)
       !
@@ -308,7 +308,7 @@ contains
     !  code to transform a wavefunction in G space to
     !  a wavefunction in r space.
     !
-    !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+    !     in ::        wfc_g(nGk_max)        : the u_{nk}(G) coefficients
     !                  list_iG               : the indices of the G vectors used
     !                                          in the wave function
     !
@@ -316,7 +316,7 @@ contains
     !                                          in real space, with the space index
     !                                          represented by a scalar.
     !--------------------------------------------------------
-    use intw_reading, only: nG_max, nr1, nr2, nr3
+    use intw_reading, only: nGk_max, nr1, nr2, nr3
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -324,9 +324,9 @@ contains
     external :: cfftnd
 
     integer :: i, iG
-    integer :: list_iG(nG_max)
+    integer :: list_iG(nGk_max)
 
-    complex(dp), intent(in) :: wfc_g(nG_max)
+    complex(dp), intent(in) :: wfc_g(nGk_max)
     complex(dp), intent(out) :: wfc_r(nr1*nr2*nr3)
 
 
@@ -335,7 +335,7 @@ contains
     wfc_r(:) = cmplx_0
 
     ! put wfc_g in wfc_r
-    do i=1,nG_max
+    do i=1,nGk_max
       ! identify the G vector by its index, as stored in list_iG
       iG = list_iG(i)
 
@@ -359,7 +359,7 @@ contains
     !  code to transform a wavefunction in G space to
     !  a wavefunction in r space.
     !
-    !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+    !     in ::        wfc_g(nGk_max)        : the u_{nk}(G) coefficients
     !                  list_iG               : the indices of the G vectors used
     !                                          in the wave function
     !
@@ -367,7 +367,7 @@ contains
     !                                          in real space, with the space index
     !                                          represented by a scalar.
     !--------------------------------------------------------
-    use intw_reading, only: nG_max, nr1, nr2, nr3
+    use intw_reading, only: nGk_max, nr1, nr2, nr3
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -375,9 +375,9 @@ contains
     external :: cfftnd
 
     integer :: i, iG
-    integer :: list_iG(nG_max)
+    integer :: list_iG(nGk_max)
 
-    complex(dp), intent(out) :: wfc_g(nG_max)
+    complex(dp), intent(out) :: wfc_g(nGk_max)
     complex(dp), intent(in) :: wfc_r(nr1*nr2*nr3)
 
     complex(dp) :: aux(nr1*nr2*nr3)
@@ -391,7 +391,7 @@ contains
                                ! this convention reproduces
                                ! the results of pw2wannier EXACTLY
 
-  do i=1,nG_max
+  do i=1,nGk_max
     ! identify the G vector by its index, as stored in list_iG
     iG = list_iG(i)
     if (iG == 0) exit

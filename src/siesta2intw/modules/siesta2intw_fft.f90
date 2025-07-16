@@ -22,7 +22,7 @@ module siesta2intw_fft
 
   implicit none
 
-  public :: ngm, npwx, list_iG, ngk, gvec, gvec_cart, gamma_only, nl, nlm
+  public :: ngm, nGk_max, list_iG, ngk, gvec, gvec_cart, gamma_only, nl, nlm
 
   public :: compute_fft_info, write_fft_info
 
@@ -30,7 +30,7 @@ module siesta2intw_fft
 
   !
   integer :: ngm ! number of G vectors inside the rho cutoff (g2cut)
-  integer :: npwx ! max. number of G vectors inside the wave function cutoff (cutoff)
+  integer :: nGk_max ! max. number of G vectors inside the wave function cutoff (cutoff)
   integer, allocatable, dimension(:,:) :: list_iG ! list of G vectors for each k point
   integer, allocatable, dimension(:) :: ngk ! number of G vectors inside the wave function cutoff for each k point
   integer, allocatable, dimension(:,:) :: gvec ! G vectors in crytal units
@@ -245,7 +245,7 @@ contains
     end do ! ik
 
     ! max. number of G vectors inside the wave function cutoff
-    npwx = maxval(ngk)
+    nGk_max = maxval(ngk)
 
   end subroutine compute_fft_info
 
@@ -286,7 +286,7 @@ contains
     datafile = trim(intwdir)//"iGlist.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted")
     !
-    write(unit=io_unit) npwx
+    write(unit=io_unit) nGk_max
     do ik=1,nwk
        write(unit=io_unit) ngk(ik)
        write(unit=io_unit) list_iG(1:ngk(ik),ik)

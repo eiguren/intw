@@ -214,7 +214,7 @@ contains
   subroutine dvqpsi_local(nbands, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi_local)
 
     use intw_useful_constants, only: cmplx_0
-    use intw_reading, only: nat, nspin, nG_max, nr1, nr2, nr3
+    use intw_reading, only: nat, nspin, nGk_max, nr1, nr2, nr3
     use intw_fft, only: nl
 
     implicit none
@@ -223,9 +223,9 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: nbands, list_iGk(nG_max), list_iGkq(nG_max)
-    complex(kind=dp), intent(in) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin), wfc_k(nG_max,nbands,nspin)
-    complex(kind=dp), intent(out) :: dvpsi_local(nG_max,nbands,nspin,nspin,3*nat)
+    integer, intent(in) :: nbands, list_iGk(nGk_max), list_iGkq(nGk_max)
+    complex(kind=dp), intent(in) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin), wfc_k(nGk_max,nbands,nspin)
+    complex(kind=dp), intent(out) :: dvpsi_local(nGk_max,nbands,nspin,nspin,3*nat)
 
     !local variables
 
@@ -242,7 +242,7 @@ contains
         ! Fourier transform the wave function to real space
         wfc_r1 = cmplx_0
         do ispin = 1, nspin
-          do ig = 1, nG_max
+          do ig = 1, nGk_max
             !
             if (list_iGk(ig)==0) exit
             wfc_r1(nl(list_iGk(ig)),ispin) = wfc_k(ig,ibnd,ispin)
@@ -273,7 +273,7 @@ contains
             !
             call cfftnd(3, (/nr1,nr2,nr3/), -1, wfc_r(:,ispin,jspin))
             !
-            do ig = 1, nG_max
+            do ig = 1, nGk_max
               !
               if (list_iGkq(ig)==0) exit
               !

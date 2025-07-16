@@ -36,7 +36,7 @@ module intw_reading
             nat, ntyp, ityp, tau, tau_cryst, amass, &
             nkpoints_QE, kpoints_QE, &
             nr1, nr2, nr3, ecutwfc, ecutrho, &
-            ngm, gvec, nG_max, gamma_only, &
+            ngm, gvec, nGk_max, gamma_only, &
             nspin, lsda, noncolin, lspinorb, spinorb_mag
 
   !
@@ -175,7 +175,7 @@ module intw_reading
   integer, allocatable :: gvec(:, :)
   ! The global g vectors (to which indices refer).
 
-  integer :: nG_max
+  integer :: nGk_max
   ! The maximum number of G vectors for any k point
 
   logical :: gamma_only
@@ -419,7 +419,7 @@ contains
     if (gamma_only) stop "ERROR: intw does not support gamma_only calculations yet"
 
     read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nG_max
+    read(unit=io_unit, fmt=*) nGk_max
 
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) nbands
@@ -497,7 +497,7 @@ contains
     !------------------------------------------------------------------------
     ! For the kpoint labeled by ik, this subroutine reads all the
     ! wave functions for bands 1, .., nbands and stores them in the array
-    ! wfc(nG_max_k, nbands). It reads the G vectors index array list_iG,
+    ! wfc(nGk_max_k, nbands). It reads the G vectors index array list_iG,
     ! which refers to the global list of G vectors gvecs. It also reads
     ! the eigenvalues.
     !
@@ -530,9 +530,9 @@ contains
 
     !I/O variables
     integer, intent(in) :: ik
-    integer, intent(out) :: list_iG(nG_max)
+    integer, intent(out) :: list_iG(nGk_max)
     real(dp), intent(out) :: eig(num_bands_intw)
-    complex(dp), intent(out) :: wfc(nG_max, num_bands_intw, nspin)
+    complex(dp), intent(out) :: wfc(nGk_max, num_bands_intw, nspin)
     integer, intent(out) :: nG
     character(256), optional, intent(in) :: altprefix
 

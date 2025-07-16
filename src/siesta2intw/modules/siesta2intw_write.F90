@@ -206,7 +206,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, outdir, prefix, phonons
-    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec, gvec_cart
+    use siesta2intw_fft, only: nGk_max, list_iG, ngk, gvec, gvec_cart
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
@@ -270,7 +270,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, cutoff
-    use siesta2intw_fft, only: npwx, gamma_only
+    use siesta2intw_fft, only: nGk_max, gamma_only
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
@@ -393,7 +393,7 @@ contains
 
     ! Max number of G vectors for the wave function
     write(unit=io_unit,fmt=*) "NGMAX"
-    write(unit=io_unit,fmt=*) npwx
+    write(unit=io_unit,fmt=*) nGk_max
 
     ! Number of bands
     write(unit=io_unit,fmt=*) "NBAND"
@@ -811,7 +811,7 @@ contains
     use atm_types, only: nspecies, species
     use siesta2intw_io, only: stdout, intwdir
     use siesta2intw_utils, only: cmplx_0, cmplx_i
-    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec_cart
+    use siesta2intw_fft, only: nGk_max, list_iG, ngk, gvec_cart
 #ifdef DEBUG
     use siesta2intw_fft, only: gamma_only
 #endif
@@ -871,7 +871,7 @@ contains
     allocate(grylm(1:3, 0:(lmaxd+1)**2-1))
     allocate(orbital_gk(nspecies))
     do is=1,nspecies
-      allocate(orbital_gk(is)%o(npwx, species(is)%norbs, nwk))
+      allocate(orbital_gk(is)%o(nGk_max, species(is)%norbs, nwk))
       orbital_gk(is)%o = cmplx_0
     enddo
     rylm = 0.0_dp
@@ -974,7 +974,7 @@ contains
     ! calculation. And it works fine in all situation (non-polarized, collinear
     ! and non-collinear).
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! allocate(evc(nspin*npwx, nbnd, nwk))
+    ! allocate(evc(nspin*nGk_max, nbnd, nwk))
     ! evc = cmplx_0
     !
     ! ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
@@ -1064,7 +1064,7 @@ contains
     ! tested.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    allocate(evc(spinor_comps*npwx))
+    allocate(evc(spinor_comps*nGk_max))
 
     ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
     do ik=1,nwk

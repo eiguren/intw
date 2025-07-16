@@ -26,7 +26,7 @@ program ep_melements
                                    read_input, use_exclude_bands, &
                                    ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
-                          s, nbands, nG_max, nat, nspin, tau, bg, &
+                          s, nbands, nGk_max, nat, nspin, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
                           read_parameters_data_file_xml, &
                           get_gvec, &
@@ -425,17 +425,17 @@ program ep_melements
   write(*,20) '| - Computing matrix elements...                    |'
   !
   ! Allocate wfc related variables
-  allocate(list_igk(nG_max))
-  allocate(list_igkq(nG_max))
-  allocate(wfc_k(nG_max,num_bands_intw,nspin))
-  allocate(wfc_kq(nG_max,num_bands_intw,nspin))
+  allocate(list_igk(nGk_max))
+  allocate(list_igkq(nGk_max))
+  allocate(wfc_k(nGk_max,num_bands_intw,nspin))
+  allocate(wfc_kq(nGk_max,num_bands_intw,nspin))
   !
   ! We will calculate num_bands_ep bands if ep_bands=custom
   ! indexed 1:num_bands_ep (ep_bands_initial to ep_bands_final)
   !
   ! Allocate induced potential related variables (hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz)
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
-  allocate(dvpsi(nG_max,num_bands_ep,nspin,nspin,3*nat))
+  allocate(dvpsi(nGk_max,num_bands_ep,nspin,nspin,3*nat))
   !
   ! Allocate matrix elements variable
   allocate(ep_mat_el(nk1*nk2*nk3,num_bands_ep,num_bands_ep,nspin,nspin,3*nat))
@@ -508,7 +508,7 @@ program ep_melements
             do jbnd=1,num_bands_ep
               do ibnd=1,num_bands_ep
                 !
-                ep_mat_el(ik,ibnd,jbnd,ispin,jspin,imode) = zdotc( nG_max, wfc_kq(:,ibnd,ispin), 1, dvpsi(:,jbnd,ispin,jspin,imode), 1 )
+                ep_mat_el(ik,ibnd,jbnd,ispin,jspin,imode) = zdotc( nGk_max, wfc_kq(:,ibnd,ispin), 1, dvpsi(:,jbnd,ispin,jspin,imode), 1 )
                 !
               enddo !ibnd (intw or custom)
             enddo !jbnd (intw or custom)

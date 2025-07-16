@@ -88,7 +88,7 @@ program ep_on_trFS_dV
                                    nscf_code
 
   use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
-                          nG_max, get_gvec, &
+                          nGk_max, get_gvec, &
                           nspin, noncolin, &
                           at, bg, nr1, nr2, nr3, &
                           nat, tau, nsym, s, &
@@ -598,13 +598,13 @@ program ep_on_trFS_dV
 
   ! allocate dvpsi for only one band, as band index is included in the k indices and thus
   ! run one-by-one in the loops below
-  allocate(dvpsi(nG_max,1,nspin,nspin,3*nat))
+  allocate(dvpsi(nGk_max,1,nspin,nspin,3*nat))
 
   allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
 
-  allocate(list_iG(nG_max), list_iG_p(nG_max))
+  allocate(list_iG(nGk_max), list_iG_p(nGk_max))
   allocate(QE_eig(num_bands_intw), QE_eig_p(num_bands_intw))
-  allocate(wfc(nG_max,num_bands_intw,nspin), wfc_p(nG_max,num_bands_intw,nspin))
+  allocate(wfc(nGk_max,num_bands_intw,nspin), wfc_p(nGk_max,num_bands_intw,nspin))
 
 
   altprefix = trim(prefix)//'-nscf'
@@ -698,7 +698,7 @@ program ep_on_trFS_dV
               do js=1,nspin
                 do is=1,nspin
                   aep_mat_el(ikp,ik, js,is, iat) = &
-                            zdotc( nG_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
+                            zdotc( nGk_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
                 enddo ! is
               enddo ! js
             enddo ! iat

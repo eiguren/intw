@@ -1914,7 +1914,7 @@ contains
     use intw_fft, only: find_iG
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, cmplx_1
     use intw_utility, only: hpsort_integer
-    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
+    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
 
     implicit none
 
@@ -1924,22 +1924,22 @@ contains
     integer, intent(in) :: G_sym(3) ! G vector such that  R*k + G_sym = sym_l * k_irr
     integer, intent(in) :: sym(3,3) ! inverse point group operation the one acting on k (cryst.coord.)
     real(kind=dp), intent(in) :: ftau(3) ! fractional translation associated with point group operation
-    integer, intent(in) :: list_iG_irr(nG_max) ! G vector indices for k_irr
-    complex(kind=dp), intent(in) :: wfc_k_irr(nG_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
-    integer, intent(out) :: list_iG_k(nG_max) ! G vector indices for k, sorted
-    complex(kind=dp), intent(out) :: wfc_k(nG_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
+    integer, intent(in) :: list_iG_irr(nGk_max) ! G vector indices for k_irr
+    complex(kind=dp), intent(in) :: wfc_k_irr(nGk_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
+    integer, intent(out) :: list_iG_k(nGk_max) ! G vector indices for k, sorted
+    complex(kind=dp), intent(out) :: wfc_k(nGk_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
 
     !local variables
 
-    complex(kind=dp) :: wfc_k_aux(nG_max,num_bands_intw,nspin)
+    complex(kind=dp) :: wfc_k_aux(nGk_max,num_bands_intw,nspin)
     integer :: p_i, i, iGk, iG_k
     integer :: Gk(3) ! a vector for k in the IBZ
     integer :: RGk(3) ! ( symmetry operation )* G_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
-    integer :: permutations(nG_max) ! index permutation which orders list_G_k
+    integer :: permutations(nGk_max) ! index permutation which orders list_G_k
     integer :: ibnd, ispin
     integer :: nG  ! counter on the number of G vectors in the array
-    complex(kind=dp) :: phases(nG_max), spin_symmetry(2,2)
+    complex(kind=dp) :: phases(nGk_max), spin_symmetry(2,2)
 
 
     phases(:) = cmplx_0
@@ -1951,7 +1951,7 @@ contains
     !
     ! loop on all Gk, the coefficients of the wavefunction at the IBZ k point
     !
-    do i = 1, nG_max
+    do i = 1, nGk_max
       !
       iGk = list_iG_irr(i)
       !
@@ -2103,23 +2103,23 @@ contains
     use intw_fft, only: find_iG
     use intw_useful_constants, only: cmplx_0
     use intw_utility, only: hpsort_integer
-    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
+    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
 
     implicit none
 
     !I/O variables
 
-    integer, intent(inout) :: list_iG(nG_max)
-    complex(kind=dp), intent(inout) :: wfc(nG_max,num_bands_intw,nspin)
+    integer, intent(inout) :: list_iG(nGk_max)
+    complex(kind=dp), intent(inout) :: wfc(nGk_max,num_bands_intw,nspin)
 
     !local variables
 
     integer :: iG, i_minus_G, i, p_i
     integer :: G(3), minus_G(3)
     integer :: nG ! counter on the number of G vectors in the array
-    integer :: permutations(nG_max) ! index permutation which orders list_G
-    integer :: list_iG_tmp(nG_max)
-    complex(kind=dp) :: wfc_tmp(nG_max,num_bands_intw,nspin)
+    integer :: permutations(nGk_max) ! index permutation which orders list_G
+    integer :: list_iG_tmp(nGk_max)
+    complex(kind=dp) :: wfc_tmp(nGk_max,num_bands_intw,nspin)
 
     ! Initialize the different variables
     !
@@ -2130,7 +2130,7 @@ contains
     !
     ! loop on all G
     !
-    do i=1,nG_max
+    do i=1,nGk_max
       !
       iG = list_iG(i)
       !

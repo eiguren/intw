@@ -22,7 +22,7 @@ program nscf
   use intw_version, only: print_intw_version
   use intw_input_parameters, only: intw2W_method, read_input
   use intw_reading, only: nspin, &
-                          nbands, nG_max, &
+                          nbands, nGk_max, &
                           nr1, nr2, nr3, nbands, nkpoints_QE, &
                           get_gvec, &
                           read_parameters_data_file_xml, &
@@ -45,7 +45,7 @@ program nscf
 
   integer, allocatable     :: list_igk(:,:), ngk(:)
 
-  complex(dp), allocatable :: wfc_k(:,:,:,:) ! nG_max is defined in reading
+  complex(dp), allocatable :: wfc_k(:,:,:,:) ! nGk_max is defined in reading
   real(dp), allocatable    :: QE_eig_k(:,:)
 
   !local/aux variables
@@ -135,10 +135,10 @@ program nscf
   write(*,20) '|                    PPs are OK                     |'
   write(*,20) '|           ---------------------------------       |'
   !
-  allocate (list_igk(nG_max,nkpoints_QE))
+  allocate (list_igk(nGk_max,nkpoints_QE))
   allocate (ngk(nkpoints_QE))
   !
-  allocate (wfc_k(nG_max,nbands,nspin,nkpoints_QE))
+  allocate (wfc_k(nGk_max,nbands,nspin,nkpoints_QE))
   !
   allocate (wfc_k_r(nr1*nr2*nr3))
   !
@@ -205,7 +205,7 @@ contains
     implicit none
 
     !I/O variables in (F fortran style). For example,
-    !Input list_iG_1(:), instead of list_iG_1(nG_max).
+    !Input list_iG_1(:), instead of list_iG_1(nGk_max).
 
     integer,intent(in)      :: list_iG_1(:),ngk1,list_iG_2(:),ngk2
     complex(dp),intent(in)  :: wfc_1(:,:,:), wfc_2(:,:,:)
@@ -216,14 +216,14 @@ contains
 
     !local variables
     integer :: nbnd_l
-    integer :: nG_max_l
+    integer :: nGk_max_l
     integer :: nspin_l
 
     integer :: G2pG1(3)
     integer :: ibnd, jbnd, iG_1, iG_2, iG
 
 
-    nG_max_l  = size(wfc_1,1) !
+    nGk_max_l  = size(wfc_1,1) !
     nbnd_l    = size(wfc_1,2)
     nspin_l    = size(wfc_1,3)
 
