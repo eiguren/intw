@@ -1,5 +1,5 @@
 &input
-    mesh_dir = './'
+    outdir = './'
     prefix = 'si'
     nk1 = 8
     nk2 = 8

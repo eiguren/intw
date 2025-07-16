@@ -67,13 +67,13 @@ $ cat qlist.txt
        6   0.333333333   0.577350269   0.291885581
 ```
 
-INTW reads the phonon data from an individual directory `qq${iq}/` for each q-point index iq. Therefore, `ph.x` must be executed for one q-point at a time. For the `ph.x` input preparation and execution, a script can be used adapted to the needs of the user and the machine. This tutorial already provides the `qq${iq}/` directories with the input files enclosed. 
+INTW reads the phonon data from an individual directory `qq${iq}/` for each q-point index iq. Therefore, `ph.x` must be executed for one q-point at a time. For the `ph.x` input preparation and execution, a script can be used adapted to the needs of the user and the machine. This tutorial already provides the `qq${iq}/` directories with the input files enclosed.
 
 ```
 $ cd qq1
 $ cp -r ../mgb2.save .
 $ ${QE_dir}/pw.x < mgb2.ph.in > mgb2.ph.out
-$ rm -fr mgb2.save 
+$ rm -fr mgb2.save
 $ cd ..
 ```
 
@@ -107,7 +107,7 @@ mgb2.save.intw
 [Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
 
 
-## INTW-Wannier90 interface 
+## INTW-Wannier90 interface
 
 As usual, we run Wannier90 in preprocessing mode to obtain the `mgb2.nnkp` file with `mgb2.win` as input:
 
@@ -122,7 +122,7 @@ $ head mgb2.win
 
 num_bands       =  8
 num_wann        =  5
-dis_froz_max    =  9.0  
+dis_froz_max    =  9.0
 ...
 ```
 
@@ -130,7 +130,7 @@ We will disentangle to work with 5 bands after unitary rotation, the lowest in t
 
 ```
 &input
- mesh_dir = './'
+ outdir = './'
  prefix = 'mgb2'
  nk1 = 12
  nk2 = 12
@@ -150,7 +150,7 @@ The `&intw2W` block is the input for `intw2W90.x`, which will generate `mgb2.eig
 /
 ```
 
-We can run `intw2W90.x`, then Wannier90 normally, and finally `w902intw.x`. 
+We can run `intw2W90.x`, then Wannier90 normally, and finally `w902intw.x`.
 
 ```
 $ ${INTW_dir}/intw2W90.x < intw.in
@@ -190,16 +190,16 @@ Only some of the files produced by `triFS.x` are needed in the electron-phonon c
 
 ```
 $ ls
-... 
-mgb2.${ish}_FS_tri.off       
-mgb2.${ish}_FS_tri_v_k.dat    
-mgb2.${ish}_IBZ_FS_tri.off    
-mgb2.${ish}_IBZ_FS_tri_v_k.dat 
+...
+mgb2.${ish}_FS_tri.off
+mgb2.${ish}_FS_tri_v_k.dat
+mgb2.${ish}_IBZ_FS_tri.off
+mgb2.${ish}_IBZ_FS_tri_v_k.dat
 ...
 ```
 
 where `ish`=3,4,5 are band indices of the Fermi sheets identified by `triFS.x`. :heavy_exclamation_mark:NOTE:  bands are labelled according to `set_num_bands`. If we had used `exclude_bands` earlier, the labels would count the bands in the non-excluded set. These `*.off` files contain the triangularization of the FS in the irreducible Brillouin zone wedge (IBZ) and in the full zone. The `*v_k.dat` files contain the Fermi velocities.
- 
+
 
 [Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
 
@@ -236,7 +236,7 @@ gnuplot> p 'mgb2.qbnd_int' u 1:2 w l ls 1, '' u 1:3 w l ls 1, '' u 1:4 w l ls 1,
 gnuplot> reset
 gnuplot> set xlabel 'omega (Ry)'
 gnuplot> p 'mgb2.qdos_int' w l
-``` 
+```
 
 ![image](./mgb2_ph_bands.png)
 ![image](./mgb2_ph_dos.png)
@@ -272,7 +272,7 @@ do js=1,nspin
    end do
 end do
 ```
-where `ibp` and `ib` are sheet indices, `iksp` and `iks` are the k-point indices inside the sheet, `ikp` and `ik` are global k-point counters, and iat runs over phonon modes. Here `iksp` and `iks` are taken from the triangulation on the full zone and the IBZ. 
+where `ibp` and `ib` are sheet indices, `iksp` and `iks` are the k-point indices inside the sheet, `ikp` and `ik` are global k-point counters, and iat runs over phonon modes. Here `iksp` and `iks` are taken from the triangulation on the full zone and the IBZ.
 
 Finally, the `a2F_on_trFS.x` utility reads the `mgb2_ep_interp.dat`, interpolates the dynamical matrix and integrates the Eliashberg function. This utility reads also the triangulation and velocity files:
 
@@ -307,7 +307,7 @@ To do the same calculation on the FS with Method II we have to calculate the ele
 ${INTW_dir}/ep_melements.x < intw.in
 ```
 
-This will store the elements in files `ep_mat.dat_1` to `ep_mat.dat_27` for the coarse q-point grid. Now, we interpolate these elements from the coarse grid onto the triangulated Fermi surface by Wannier interpolation (see F. Giustino et al., Phys. Rev. B 76 (2007) 165108). To do this, we need the `.off` files and a few more lines in the `&elphon` block of the `intw.in`file: 
+This will store the elements in files `ep_mat.dat_1` to `ep_mat.dat_27` for the coarse q-point grid. Now, we interpolate these elements from the coarse grid onto the triangulated Fermi surface by Wannier interpolation (see F. Giustino et al., Phys. Rev. B 76 (2007) 165108). To do this, we need the `.off` files and a few more lines in the `&elphon` block of the `intw.in`file:
 
 ```
 &elphon
