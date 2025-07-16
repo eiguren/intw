@@ -21,7 +21,7 @@ integer function read_input_test() result(r)
     return
   endif
 
-  write(6,*) "mesh_dir:", trim(outdir)
+  write(6,*) "outdir:", trim(outdir)
   if (trim(outdir) /= "./qe/") then
     r = 1
     return

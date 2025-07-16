@@ -1,7 +1,7 @@
 -- pw2intw
 &inputpp
  prefix = "gaas_irr",
- mesh_dir = "./",
+ outdir = "./",
  phonons = .false.,
  dynxml = .false.,
 /
