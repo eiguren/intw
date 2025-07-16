@@ -65,12 +65,9 @@ contains
     integer  :: n1, n2, n3
     ! integer  :: ng
     integer :: ind(nr1,nr2,nr3), inds(nr1s,nr2s,nr3s)     ! indice de (i,j,k) 3D --> it 1D
-    integer :: ngm, cnt
-    !
+    integer :: nG, cnt
 
-    ! QE Gamma point ngm: 30227
-    !
-    !
+
     cnt=0
     do k=1,nr3
       do j=1,nr2
@@ -80,8 +77,8 @@ contains
         enddo
       enddo
     enddo
-
-
+    !
+    !
     cnt=0
     do k=1,nr3s
       do j=1,nr2s
@@ -97,14 +94,14 @@ contains
     nrj2=int(nr2/2.0)
     nrk3=int(nr3/2.0)
     !
-    ngm=0
+    nG=0
     do  i=-nri1,nri1! contar cuantos gs caen en Ecut
       do  j=-nrj2,nrj2
         do  k=-nrk3,nrk3
           !
           G = i*bg(:,1) + j*bg(:,2) + k*bg(:,3)
           if ( G(1)**2 + G(2)**2 + G(3)**2 <= ecut/tpiba2 ) then
-            ngm=ngm+1
+            nG=nG+1
           end if
           !
         enddo
@@ -117,10 +114,9 @@ contains
     nrk3s=int(nr3s/2.0)
     !
     !
-    !
-    allocate( nl(ngm), nls(ngm) )
-    allocate( fg (ngm) )
-    allocate( gvec(3,ngm) )
+    allocate( nl(nG), nls(nG) )
+    allocate( fg (nG) )
+    allocate( gvec(3,nG) )
     !
     ig=0
     do i=-nri1,nri1
@@ -138,9 +134,7 @@ contains
     enddo
     !
     !
-    !
-    !
-    do ig = 1, ngm
+    do ig = 1, nG
       !
       n1       = modulo((gvec(1,ig)), nr1) +1
       n2       = modulo((gvec(2,ig)), nr2) +1
@@ -159,23 +153,15 @@ contains
     fft_dummy = cmplx(fr, 0.0_dp, kind=dp)
     call cfftnd(3,(/nr1,nr2,nr3/),-1,fft_dummy)
     !
-    do ig=1,ngm
+    do ig=1,nG
       fg(ig)=fft_dummy(nl(ig))
     enddo
     deallocate( fft_dummy )
     !
     !
-    ! open(unit=123,file="FFTfr.dat",status="replace")
-    ! write(123,*) '#          g              FFT[f(x)]'
-    ! do ig=1,ngm
-    !   write(123,"(3i7,2x,2f15.10)") gvec(:,ig),fg(ig)
-    ! enddo
-    ! close(123)
-    !
-    !
     allocate( fft_dummy(nr1s*nr2s*nr3s) )
     fft_dummy  =  (0.0_dp,0.0_dp)
-    do ig=1,ngm
+    do ig=1,nG
          fft_dummy(nls(ig))=fg(ig)
     enddo
     !
@@ -208,8 +194,6 @@ contains
     !
     frs = real(fft_dummy)
     deallocate(fft_dummy)
-    !
-    !
     !
   end subroutine fft_interp_3d_real
 

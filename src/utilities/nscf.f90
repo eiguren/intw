@@ -194,7 +194,7 @@ contains
     !	          pw_mat_el_ij (G)    \sum_GP  wfc_1_i(G-GP) * wfc_2_j(GP)
     !
     !     The G-vectors are referenced by their indices in list_iG1, list_iG2,
-    !     which refer to the global list gvec(3,ngm), which should be defined
+    !     which refer to the global list gvec(1:3,1:nG), which should be defined
     !     BEFORE using this subroutine....ç
     !
     !
@@ -210,7 +210,7 @@ contains
     integer,intent(in)      :: list_iG_1(:),ngk1,list_iG_2(:),ngk2
     complex(dp),intent(in)  :: wfc_1(:,:,:), wfc_2(:,:,:)
 
-    ! In output, we have nbndxnbnd functions in (G), but G in the full ngm list
+    ! In output, we have nbndxnbnd functions in (G), but G in the full 1:nG list
 
     complex(dp),intent(out) :: product_wfc (:,:,:,:,:)
 

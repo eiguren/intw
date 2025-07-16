@@ -36,7 +36,7 @@ module intw_reading
             nat, ntyp, ityp, tau, tau_cryst, amass, &
             nkpoints_QE, kpoints_QE, &
             nr1, nr2, nr3, ecutwfc, ecutrho, &
-            ngm, gvec, nGk_max, gamma_only, &
+            nG, gvec, nGk_max, gamma_only, &
             nspin, lsda, noncolin, lspinorb, spinorb_mag
 
   !
@@ -169,7 +169,7 @@ module intw_reading
   real(dp) :: ecutrho
   ! Cutoff energy for charge density (Hartree)
 
-  integer :: ngm
+  integer :: nG
   ! The number of g vectors
 
   integer, allocatable :: gvec(:, :)
@@ -236,7 +236,7 @@ contains
     integer :: i, j
 
 
-    ! First, read the value of the parameter ngm
+    ! First, read the value of the parameter nG
     datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
 
     inquire(file=datafile, exist=datafile_exists)
@@ -255,7 +255,7 @@ contains
 
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
-    read(unit=io_unit)ngm
+    read(unit=io_unit)nG
     close(unit=io_unit)
 
     !read the data related to the crystal structure
@@ -480,11 +480,11 @@ contains
     datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
-    read(unit=io_unit) ngm
+    read(unit=io_unit) nG
 
-    allocate(gvec(3, ngm))
+    allocate(gvec(3, nG))
 
-    do ig = 1, ngm
+    do ig = 1, nG
       read(unit=io_unit) gvec(1:3, ig)
     end do
 
@@ -493,7 +493,7 @@ contains
   end subroutine get_gvec
 
 
-  subroutine get_K_folder_data(ik, list_iG, wfc, eig, nG, altprefix)
+  subroutine get_K_folder_data(ik, list_iG, wfc, eig, nGk, altprefix)
     !------------------------------------------------------------------------
     ! For the kpoint labeled by ik, this subroutine reads all the
     ! wave functions for bands 1, .., nbands and stores them in the array
@@ -533,7 +533,7 @@ contains
     integer, intent(out) :: list_iG(nGk_max)
     real(dp), intent(out) :: eig(num_bands_intw)
     complex(dp), intent(out) :: wfc(nGk_max, num_bands_intw, nspin)
-    integer, intent(out) :: nG
+    integer, intent(out) :: nGk
     character(256), optional, intent(in) :: altprefix
 
     !logical variables
@@ -560,9 +560,9 @@ contains
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
     !
     ! Read data
-    read(unit=io_unit) nG
+    read(unit=io_unit) nGk
     !
-    read(unit=io_unit) list_iG(1:nG)
+    read(unit=io_unit) list_iG(1:nGk)
     !
     read(unit=io_unit) eig_all(1:nbands)
     !
@@ -573,7 +573,7 @@ contains
         read(unit=io_unit)
       else
         n_yes = n_yes + 1
-        read(unit=io_unit) ( wfc(1:nG, n_yes, is), is = 1, nspin )
+        read(unit=io_unit) ( wfc(1:nGk, n_yes, is), is = 1, nspin )
         eig(n_yes) = eig_all(ibnd)
       endif
         !

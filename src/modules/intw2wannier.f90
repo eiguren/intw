@@ -28,7 +28,7 @@ module intw_intw2wannier
   !---------------------------------------------------------------------------!
 
   use kinds, only: dp
-  use intw_reading, only: nbands, nGk_max, ngm, nspin
+  use intw_reading, only: nbands, nGk_max, nG, nspin
   use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
@@ -1072,25 +1072,25 @@ contains
 !     The computation is done over all bands.
 !
 !     The G-vectors are referenced by their indices in list_iG
-!     which refer to the global list gvec(3,ngm).
+!     which refer to the global list gvec(1:3,1:nG).
 !
 !--------------------------------------------------------------------------------
 
-  use intw_reading, only: ngm
+  use intw_reading, only: nG
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: proj_nr
-  real(dp),intent(in) :: zona, k_plus_G_cart(3,ngm)
-  complex(dp),intent(inout) :: guiding_function(ngm)
+  real(dp),intent(in) :: zona, k_plus_G_cart(3,nG)
+  complex(dp),intent(inout) :: guiding_function(nG)
 
   !local variables
 
   integer :: iG
   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
-  real(dp) :: p(ngm)
+  real(dp) :: p(nG)
 
   z=zona
   z2=z*z
@@ -1101,7 +1101,7 @@ contains
   !
   !find the norms
   !
-  do iG=1,ngm
+  do iG=1,nG
      !
      p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
                + k_plus_G_cart(2,iG)**2 &

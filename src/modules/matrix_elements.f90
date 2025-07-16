@@ -52,7 +52,7 @@ contains
     ! The computation is done over all bands.
     !
     ! The G-vectors are referenced by their indices in list_iG1, list_iG2,
-    ! which refer to the global list gvec(3,ngm), which should be defined
+    ! which refer to the global list gvec(1:3,1:nG), which should be defined
     ! BEFORE using this subroutine.
     !--------------------------------------------------------------------------------
 
@@ -164,7 +164,7 @@ contains
     ! The computation is done over all bands.
     !
     ! The G-vectors are referenced by their indices in list_iG1, list_iG2,
-    ! which refer to the global list gvec(3,ngm), which should be defined
+    ! which refer to the global list gvec(1:3,1:nG), which should be defined
     ! BEFORE using this subroutine.
     !
     ! The matrix element is obtained using the FFT routines.
