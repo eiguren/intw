@@ -33,7 +33,7 @@ program ep_on_trFS_dV
   ! 1st part:
   !
   !    This utility uses < intw.in as others.
-  !    It uses mesh_dir, prefix, and info on which FS sheets are needed.
+  !    It uses outdir, prefix, and info on which FS sheets are needed.
   !    Unlike with Wannier g-element interpolation, here
   !    the location of pw.x and pw2intw.x executables is needed,
   !    which is also given in the intw.in file.
@@ -80,7 +80,7 @@ program ep_on_trFS_dV
 
   use intw_matrix_vector, only: area_vec, ainv
 
-  use intw_input_parameters, only: mesh_dir, prefix, read_input, &
+  use intw_input_parameters, only: outdir, prefix, read_input, &
                                    intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
                                    nq1, nq2, nq3, nqirr, ph_dir, &
                                    use_exclude_bands, &
@@ -324,7 +324,7 @@ program ep_on_trFS_dV
     if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
     if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
@@ -336,7 +336,7 @@ program ep_on_trFS_dV
     ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
     ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
@@ -370,7 +370,7 @@ program ep_on_trFS_dV
 
     ! .off file for this sheet
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -608,7 +608,7 @@ program ep_on_trFS_dV
 
 
   altprefix = trim(prefix)//'-nscf'
-  file_ep = trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
+  file_ep = trim(outdir)//trim(prefix)//trim('_ep_interp.dat')
 
   inquire(file=file_ep,exist=have_ep)
 
@@ -788,9 +788,9 @@ contains
     !================================================================================
 
 
-    file_nscf = trim(mesh_dir)//trim(prefix)//'.nscf.in'
-    file_nscf_out = trim(mesh_dir)//trim(prefix)//'.nscf.out'
-    dir_nscf = trim(mesh_dir)//trim(prefix)//"-nscf.save/"
+    file_nscf = trim(outdir)//trim(prefix)//'.nscf.in'
+    file_nscf_out = trim(outdir)//trim(prefix)//'.nscf.out'
+    dir_nscf = trim(outdir)//trim(prefix)//"-nscf.save/"
 
     inquire(file=file_nscf_out, exist=have_nscf)
 
@@ -846,13 +846,13 @@ contains
         !================================================================================
 
         unit_pw2intw = find_free_unit()
-        file_pw2intw_in = trim(mesh_dir)//'nscf-pw2intw.in'
-        file_pw2intw_out = trim(mesh_dir)//'nscf-pw2intw.out'
+        file_pw2intw_in = trim(outdir)//'nscf-pw2intw.in'
+        file_pw2intw_out = trim(outdir)//'nscf-pw2intw.out'
         open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown')
 
         write(unit_pw2intw, *) trim(prefix)
         write(unit_pw2intw, *) "&inputpp"
-        write(unit_pw2intw, *) "  mesh_dir = './'"
+        write(unit_pw2intw, *) "  outdir = './'"
         write(unit_pw2intw, *) "  ph_dir = './'"
         write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
         write(unit_pw2intw, *) "/"
@@ -876,7 +876,7 @@ contains
         ! if it still exists)
 
         ! Try INTW directory (.save.intw)
-        dir_scf = trim(mesh_dir)//trim(prefix)//".save.intw/"
+        dir_scf = trim(outdir)//trim(prefix)//".save.intw/"
         datafile = trim(dir_scf)//'charge-density.dat'
         inquire(file=datafile, exist=exists_charge_density)
         datafile = trim(dir_scf)//'data-file-schema.xml'
@@ -887,7 +887,7 @@ contains
           write(*,'(A)') '| - Continuation files for nscf not present in:     |'
           write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
 
-          dir_scf = trim(mesh_dir)//trim(prefix)//".save/"
+          dir_scf = trim(outdir)//trim(prefix)//".save/"
           write(*,'(A)') '| - Searching in:                                   |'
           write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
 
@@ -1024,7 +1024,7 @@ contains
       !================================================================================
 
       ! Check if density matrix file is present
-      datafile = trim(mesh_dir)//trim(prefix)//".DM"
+      datafile = trim(outdir)//trim(prefix)//".DM"
       inquire(file=datafile, exist=exists_density_matrix)
 
       if ( .not. exists_density_matrix ) then

@@ -503,7 +503,7 @@ contains
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
-    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+    use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
     use intw_reading, only: num_bands_intw
 
     implicit none
@@ -537,11 +537,11 @@ contains
     ! Open all the needed files
     !-----------------------------------
     io_unit_mmn = find_free_unit()
-    filename = trim(mesh_dir)//trim(prefix)//trim('.mmn')
+    filename = trim(outdir)//trim(prefix)//trim('.mmn')
     open(unit=io_unit_mmn,file=filename,status='unknown')
 
     io_unit_eig = find_free_unit()
-    filename = trim(mesh_dir)//trim(prefix)//trim('.eig')
+    filename = trim(outdir)//trim(prefix)//trim('.eig')
     open(unit=io_unit_eig,file=filename,status='unknown')
 
     !-----------------------------------
@@ -626,7 +626,7 @@ contains
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
     use intw_reading, only : noncolin, num_bands_intw
-    use intw_input_parameters, only: mesh_dir, prefix, nk1, nk2, nk3
+    use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
 
     implicit none
 
@@ -657,7 +657,7 @@ contains
     nkmesh = nk1*nk2*nk3
 
     io_unit_amn = find_free_unit()
-    filename    = trim(mesh_dir)//trim(prefix)//trim('.amn')
+    filename    = trim(outdir)//trim(prefix)//trim('.amn')
     open(unit=io_unit_amn,file=filename,status='unknown')
 
     call generate_header(method,header)

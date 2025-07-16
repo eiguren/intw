@@ -32,7 +32,7 @@ PROGRAM pw2intw
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
-  CHARACTER(len=256) :: mesh_dir = "./"
+  CHARACTER(len=256) :: outdir = "./"
   CHARACTER(len=256) :: data_dir = "./"
   CHARACTER(len=256) :: rho_dir = "./"
   LOGICAL :: phonons = .false.
@@ -50,7 +50,7 @@ PROGRAM pw2intw
   LOGICAL :: files4nscf = .false.
   CHARACTER(len=256) :: datafile
 
-  NAMELIST / inputpp / prefix, mesh_dir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file,&
+  NAMELIST / inputpp / prefix, outdir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file,&
                        nqirr, dynxml, ph_dir, fildyn, fildvscf, files4nscf
 
 
@@ -67,8 +67,8 @@ PROGRAM pw2intw
   READ (5, inputpp, iostat=iostat)
   if (iostat /= 0) call errore( "pw2intw", "ERROR: pw2intw: error reading inputpp", iostat )
 
-  strlen = len_trim(mesh_dir)
-  if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(outdir)
+  if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
   strlen = len_trim(data_dir)
   if ( data_dir(strlen:strlen+1) .ne. "/" ) data_dir(strlen+1:strlen+2) = "/"
   strlen = len_trim(dvscf_dir)
@@ -80,7 +80,7 @@ PROGRAM pw2intw
 
   !
   ! Create intwdir
-  intwdir = trim(mesh_dir)//trim(prefix)//".save.intw/"
+  intwdir = trim(outdir)//trim(prefix)//".save.intw/"
 
   call execute_command_line("mkdir -p "//intwdir)
 
@@ -107,9 +107,9 @@ PROGRAM pw2intw
 
   ! MBR 9/12/24
   if (files4nscf) then  !copy scf schema and charge_density for later QE nscf jobs
-          datafile = trim(mesh_dir)//trim(prefix)//".save/charge-density.dat"
+          datafile = trim(outdir)//trim(prefix)//".save/charge-density.dat"
           call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
-          datafile = trim(mesh_dir)//trim(prefix)//".save/data-file-schema.xml"
+          datafile = trim(outdir)//trim(prefix)//".save/data-file-schema.xml"
           call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
   end if
 

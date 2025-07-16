@@ -33,7 +33,7 @@ program interpolate
   use intw_w90_setup, only: interpolate_1k, interpolated_DOS, &
                             allocate_and_read_ham_r
 
-  use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input, &
+  use intw_input_parameters, only: nk1, nk2, nk3, outdir, prefix, read_input, &
                                    read_cards, exist_kpath, nkpath, nkspecial, kspecial, &
                                    nk1_dos, nk2_dos, nk3_dos, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, &
                                    chemical_potential
@@ -151,7 +151,7 @@ program interpolate
   allocate(u_int(num_wann_intw,num_wann_intw))
   !
   io_unit_b = find_free_unit()
-  bpath_file = trim(mesh_dir)//trim(prefix)//trim('.bnd_int')
+  bpath_file = trim(outdir)//trim(prefix)//trim('.bnd_int')
   open(unit=io_unit_b, file=bpath_file, status='unknown')
   write(io_unit_b,'(A)') '# k-in-path    energy(eV)      weight(1:num_wann_intw)'
   !
@@ -191,7 +191,7 @@ program interpolate
   allocate(DOS(ne_dos), PDOS(ne_dos,num_wann_intw))
   !
   io_unit_d = find_free_unit()
-  dos_file = trim(mesh_dir)//trim(prefix)//trim('.dos_int')
+  dos_file = trim(outdir)//trim(prefix)//trim('.dos_int')
   open(unit=io_unit_d, file=dos_file, status='unknown')
   write(io_unit_d,'(A)') '# E-E_Fermi(eV)      DOS          PDOS(1:num_wann_intw)'
   !
@@ -204,7 +204,7 @@ program interpolate
     write(io_unit_d,'(40e14.6)') ener-chemical_potential, DOS(ie), PDOS(ie,1:num_wann_intw)
     num_elec = num_elec + DOS(ie)*fermi_dirac(ener-chemical_potential, ktsmear)
   end do
-  num_elec = num_elec * estep 
+  num_elec = num_elec * estep
   if (nspin .eq. 1) num_elec = num_elec * 2.0_dp
   !
   close(io_unit_d)

@@ -1,6 +1,6 @@
 proba
 &inputpp
- mesh_dir="./"
+ outdir="./"
  prefix = "gaas",
  ph_dir = "./",
  phonons = .true.,

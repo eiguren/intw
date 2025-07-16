@@ -41,7 +41,7 @@ program a2F_on_trFS
 
   use intw_matrix_vector, only: ainv, area_vec
 
-  use intw_input_parameters, only: mesh_dir, prefix, read_input, &
+  use intw_input_parameters, only: outdir, prefix, read_input, &
                                    nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir, fc_mat, &
                                    nomega, omega_ini, omega_fin, osmear_q, &
                                    read_for_dynmat, &
@@ -217,7 +217,7 @@ program a2F_on_trFS
     if (                is <  10) write(is_loc,"(i1)") nfs_sheet(is)
     if ( 10 <= is .and. is < 100) write(is_loc,"(i2)") nfs_sheet(is)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
@@ -229,7 +229,7 @@ program a2F_on_trFS
     ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
     ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
     read(unit_off,*) comenta
@@ -270,7 +270,7 @@ program a2F_on_trFS
 
     ! .off file for this sheet
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -316,7 +316,7 @@ program a2F_on_trFS
 
     ! velocity for this sheet (use same unit)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri_v_k.dat')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri_v_k.dat')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -348,7 +348,7 @@ program a2F_on_trFS
 
     ! .off file for this sheet
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -393,7 +393,7 @@ program a2F_on_trFS
 
     ! velocity for this sheet (use same unit)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri_v_k.dat')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri_v_k.dat')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -596,7 +596,7 @@ program a2F_on_trFS
 
   write(*,20) '| - Reading ep_mat files...                         |'
 
-  file_ep = trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
+  file_ep = trim(outdir)//trim(prefix)//trim('_ep_interp.dat')
   inquire(file=file_ep, exist=have_ep)
 
   if (.not.have_ep) then
@@ -757,7 +757,7 @@ program a2F_on_trFS
   alpha2F = alpha2F/dosef/vol1bz**2
 
   ! Save a2F
-  file_a2f = trim(mesh_dir)//trim(prefix)//trim('_a2F_interp.dat')
+  file_a2f = trim(outdir)//trim(prefix)//trim('_a2F_interp.dat')
   unit_a2f = find_free_unit()
   open(unit_a2f, file=file_a2f, status='unknown')
   write(unit_a2f,'(A)') '#omega(Ry)  alpha2F(total)    alpha2F(1:nmode)'

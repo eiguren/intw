@@ -1,7 +1,7 @@
 # This is a trial input file.
 /
 &input
-mesh_dir 	=	'./qe/'
+outdir 	=	'./qe/'
 prefix 		= 	'cu'
 nk1		=	8
 nk2		=	8

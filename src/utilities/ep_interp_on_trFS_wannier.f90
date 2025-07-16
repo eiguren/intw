@@ -43,7 +43,7 @@ program ep_on_trFS_wannier
                             wann_rotate_matrix, wann_IFT_1index, wann_FT_1index_1k, &
                             interpolate_1k
 
-  use intw_input_parameters, only: nk1, nk2, nk3, mesh_dir, prefix, read_input, &
+  use intw_input_parameters, only: nk1, nk2, nk3, outdir, prefix, read_input, &
                                    nq1, nq2, nq3, &
                                    ep_bands, ep_bands_initial, ep_bands_final, &
                                    use_exclude_bands, &
@@ -308,7 +308,7 @@ program ep_on_trFS_wannier
     if (                is <  10) write(is_loc,"(i1)") nfs_sheet(is)
     if ( 10 <= is .and. is < 100) write(is_loc,"(i2)") nfs_sheet(is)
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
@@ -321,7 +321,7 @@ program ep_on_trFS_wannier
     ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
     ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
     write(*,*) is, file_off
 
     unit_off = find_free_unit()
@@ -356,7 +356,7 @@ program ep_on_trFS_wannier
 
     ! .off file for this sheet
 
-    file_off = trim(mesh_dir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
@@ -572,7 +572,7 @@ program ep_on_trFS_wannier
   allocate(gep_int(num_wann_intw,num_wann_intw))
   allocate(aep_mat_el(nkpt_tr_tot,nkpt_tr_ibz_tot,nspin,nspin,3*nat))
 
-  file_ep = trim(mesh_dir)//trim(prefix)//trim('_ep_interp.dat')
+  file_ep = trim(outdir)//trim(prefix)//trim('_ep_interp.dat')
 
   inquire(file=file_ep, exist=have_ep)
   print*, 'have_ep?', have_ep

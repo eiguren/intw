@@ -216,7 +216,7 @@ first, let's check the input file for intw:
 ```
 $ cat intw.in
 &input
-    mesh_dir = './'
+    outdir = './'
     prefix = 'si'
     nk1 = 8
     nk2 = 8
@@ -233,7 +233,7 @@ $ cat intw.in
 /
 ```
 
-In the `input` namelist, `mesh_dir` indicates where is placed the `si.save.intw` directory, and `prefix` the label used in SIESTA. `nk1`, `nk2` and `nk3` indicate the k-mesh, which must be the same used for `siesta2intw.x`, and `TR_symmetry` indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not. In the `intw2W` namelist, `intw2W_fullzone` indicates wether the full Brillouin zone is present in the `si.save.intw` directory or not, while `intw2W_method` specifies the method used to compute the amm's. Finally, the `ph` namelist is empty in this example, but it is used to specify information about the phonon structure.
+In the `input` namelist, `outdir` indicates where is placed the `si.save.intw` directory, and `prefix` the label used in SIESTA. `nk1`, `nk2` and `nk3` indicate the k-mesh, which must be the same used for `siesta2intw.x`, and `TR_symmetry` indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not. In the `intw2W` namelist, `intw2W_fullzone` indicates wether the full Brillouin zone is present in the `si.save.intw` directory or not, while `intw2W_method` specifies the method used to compute the amm's. Finally, the `ph` namelist is empty in this example, but it is used to specify information about the phonon structure.
 
 Now, we can run `intw2W90.x` by tying:
 
@@ -498,7 +498,7 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
    ```
    $ cat intw.in
    &input
-     mesh_dir = './'
+     outdir = './'
      prefix = 'cu'
      nk1 = 4
      nk2 = 4

@@ -32,7 +32,7 @@ PROGRAM create_intw_q_dirs
 
   ! I/O
   CHARACTER(len=256) :: prefix = " "
-  CHARACTER(len=256) :: mesh_dir = "./"
+  CHARACTER(len=256) :: outdir = "./"
   CHARACTER(len=256) :: qlist_file = "qlist.txt"
   CHARACTER(len=256) :: ph_dir = "./"
   INTEGER :: nq1, nq2, nq3
@@ -47,7 +47,7 @@ PROGRAM create_intw_q_dirs
   integer, external :: find_free_unit
 
 
-  NAMELIST / inputpp / prefix, mesh_dir, ph_dir, nq1, nq2, nq3, reference_file
+  NAMELIST / inputpp / prefix, outdir, ph_dir, nq1, nq2, nq3, reference_file
 
 
   !
@@ -63,13 +63,13 @@ PROGRAM create_intw_q_dirs
   READ (5, inputpp, iostat=iostat)
   if (iostat /= 0) call errore( "create_intw_q_dirs", "ERROR: create_intw_q_dirs: error reading inputpp", 1 )
 
-  strlen = len_trim(mesh_dir)
-  if ( mesh_dir(strlen:strlen+1) .ne. "/" ) mesh_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(outdir)
+  if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
   strlen = len_trim(ph_dir)
   if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
 
   ! create ph_dir
-  call execute_command_line("mkdir -p "//trim(mesh_dir)//trim(ph_dir))
+  call execute_command_line("mkdir -p "//trim(outdir)//trim(ph_dir))
   !
   ! Read QE data
   prefix_QE = prefix
@@ -81,7 +81,7 @@ PROGRAM create_intw_q_dirs
 
   ! Create qlist_file and qq directories
   iounit = find_free_unit()
-  open(unit=iounit, file=trim(mesh_dir)//trim(qlist_file), status="replace", action="write", iostat=iostat)
+  open(unit=iounit, file=trim(outdir)//trim(qlist_file), status="replace", action="write", iostat=iostat)
   if ( iostat /= 0 ) call errore( "create_intw_q_dirs", "ERROR: create_intw_q_dirs: Error opening qlist_file", 1 )
   !
   do iq=1,nq_irr
@@ -285,12 +285,12 @@ contains
 
     !
     iounit_reference = find_free_unit()
-    open(unit=iounit_reference, file=trim(mesh_dir)//trim(reference_file), status="old", action="read", iostat=ios)
-    if ( ios /= 0 ) stop "write_fdf: Error opening file mesh_dir/reference_file"
+    open(unit=iounit_reference, file=trim(outdir)//trim(reference_file), status="old", action="read", iostat=ios)
+    if ( ios /= 0 ) stop "write_fdf: Error opening file outdir/reference_file"
     !
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(mesh_dir)//trim(filename), status="replace", action="write", iostat=ios)
-    if ( ios /= 0 ) stop "write_fdf: Error opening file mesh_dir/filename"
+    open(unit=iounit, file=trim(outdir)//trim(filename), status="replace", action="write", iostat=ios)
+    if ( ios /= 0 ) stop "write_fdf: Error opening file outdir/filename"
     !
     do
       !

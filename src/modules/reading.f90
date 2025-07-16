@@ -207,7 +207,7 @@ contains
     ! This subroutine reads in atomic positions and composition,
     ! as well as symmetry data from the prefix.save.intw folder.
     !------------------------------------------------------------------
-    use intw_input_parameters, only: mesh_dir, prefix, TR_symmetry
+    use intw_input_parameters, only: outdir, prefix, TR_symmetry
     use intw_utility, only: find_free_unit
     use intw_matrix_vector, only: ainv
     use intw_useful_constants, only: tpi
@@ -218,7 +218,7 @@ contains
     integer :: ii ! a looping variable
 
     character(256) :: datafile ! full path of the data-file.xml file in the .xml file
-    ! note: mesh_dir and prefix are defined in the input_parameter module.
+    ! note: outdir and prefix are defined in the input_parameter module.
 
     integer :: max_nsym ! maximum possible value of nsym. Relevant
     ! variable for the magnetic case.
@@ -237,7 +237,7 @@ contains
 
 
     ! First, read the value of the parameter ngm
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
+    datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
 
     inquire(file=datafile, exist=datafile_exists)
 
@@ -259,7 +259,7 @@ contains
     close(unit=io_unit)
 
     !read the data related to the crystal structure
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"crystal.dat")
+    datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"crystal.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="formatted")
     !ALAT
@@ -435,7 +435,7 @@ contains
     ! The k-points are read in cartesian 2pi/a units: they will be converted
     ! to the more convenient crystal units
     !------------------------------------------------------------------------
-    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_input_parameters, only: outdir, prefix
     use intw_utility, only: find_free_unit
     use intw_matrix_vector, only: ainv
 
@@ -449,7 +449,7 @@ contains
     integer :: i
 
 
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"kpoints.dat")
+    datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"kpoints.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="formatted")
 
@@ -467,7 +467,7 @@ contains
     !------------------------------------------------------------------------
     ! TODO: Add description
     !------------------------------------------------------------------------
-    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_input_parameters, only: outdir, prefix
     use intw_utility, only: find_free_unit
 
     implicit none
@@ -477,7 +477,7 @@ contains
     integer :: ig
 
 
-    datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//"gvectors.dat")
+    datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
     read(unit=io_unit) ngm
@@ -522,7 +522,7 @@ contains
     !      This subroutine is only called in symmetries.f90,
     !      where only the wfc-s within "num_bands_intw" are rotated.
     !------------------------------------------------------------------------
-    use intw_input_parameters, only: mesh_dir, prefix
+    use intw_input_parameters, only: outdir, prefix
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: ZERO, cmplx_0
 
@@ -552,9 +552,9 @@ contains
     100 format('wfc'I5.5'.dat')
     !
     if (present(altprefix)) then
-      datafile = trim(trim(mesh_dir)//trim(altprefix)//".save.intw/"//trim(wfc_file))
+      datafile = trim(trim(outdir)//trim(altprefix)//".save.intw/"//trim(wfc_file))
     else
-      datafile = trim(trim(mesh_dir)//trim(prefix)//".save.intw/"//trim(wfc_file))
+      datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//trim(wfc_file))
     end if
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")

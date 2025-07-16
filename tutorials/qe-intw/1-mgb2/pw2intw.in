@@ -1,6 +1,6 @@
 mgb2
 &inputpp
- mesh_dir="./"
+ outdir = "./"
  prefix = "mgb2",
  ph_dir = "./",
  phonons = .true.,
