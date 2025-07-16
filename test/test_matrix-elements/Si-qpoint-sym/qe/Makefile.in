@@ -5,12 +5,12 @@ QE2INTW_BUILD_DIR=@QE2INTW_BUILD_DIR@
 #MPI_CMD=@MPI_CMD@
 
 
-all: scf_files ph_files q2r_files nscf_files nscf_pw2intw_files
+all: scf_files ph_files q2r_files nscf_files run_nscf_pw2intw
 
 calculation: all
 
 
-.PHONY: all calculation clean run_scf run_ph run_q2r run_nscf run_nscf_pw2intw scf_files ph_files q2r_files nscf_files nscf_pw2intw_files
+.PHONY: all calculation clean run_scf run_ph run_q2r run_nscf run_nscf_pw2intw scf_files ph_files q2r_files nscf_files
 
 
 run_scf:
@@ -53,14 +53,12 @@ PH_FILES_Q3 = qq3/si.ph.out qq3/si.dyn qq3/_ph0/si.dvscf1 qq3/_ph0/si.phsave/pat
 PH_FILES = $(PH_FILES_Q1) $(PH_FILES_Q2) $(PH_FILES_Q3)
 Q2R_FILES = q2r.out si.fc
 NSCF_FILES = si.nscf.out si-nscf.save/data-file-schema.xml si-nscf.save/charge-density.dat si-nscf.save/wfc64.dat
-NSCF_PW2INTW_FILES = nscf.pw2intw.out si-nscf.save.intw/crystal.dat si-nscf.save.intw/wfc00064.dat
 
 
 scf_files: $(SCF_FILES)
 ph_files: $(PH_FILES)
 q2r_files: $(Q2R_FILES)
 nscf_files: $(NSCF_FILES)
-nscf_pw2intw_files: $(NSCF_PW2INTW_FILES)
 
 
 si.nscf.out: $(SCF_FILES)
@@ -111,13 +109,6 @@ q2r.out: $(PH_FILES)
 	make run_q2r
 si.fc: $(PH_FILES)
 	make run_q2r
-
-nscf.pw2intw.out: $(NSCF_FILES)
-	make run_nscf_pw2intw
-si-nscf.save.intw/crystal.dat: $(NSCF_FILES)
-	make run_nscf_pw2intw
-si-nscf.save.intw/wfc00064.dat: $(NSCF_FILES)
-	make run_nscf_pw2intw
 
 
 clean:

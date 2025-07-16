@@ -318,12 +318,8 @@ contains
     write(unit=io_unit,fmt=*) "ECUTRHO"
     write(unit=io_unit,fmt="(f12.6)") g2cut
 
-    ! Colinear spin polarized calculation
-    write(unit=io_unit,fmt=*) "SPIN_COLIN"
-    write(unit=io_unit,fmt=*)  .false. ! We transform the colinear calculations into non-colinear format
-
-    ! Non-colinear spin polarized calculation
-    write(unit=io_unit,fmt=*) "SPIN_NONCOLIN"
+    ! Spin-polarized calculation
+    write(unit=io_unit,fmt=*) "LSPIN"
     write(unit=io_unit,fmt=*)  spin%Col .or. spin%NCol .or. spin%SO ! We transform the colinear calculations into non-colinear format
 
     ! Non-colinear spin polarized calculation with spin-orbit coupling

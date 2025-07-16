@@ -734,7 +734,7 @@ contains
     integer :: io_unit, ios
 
     ! JLB new variables to support collinear spin-polarized calculation
-    LOGICAL :: noncolin_intw, domag_intw, lsda_intw
+    LOGICAL :: lspin, domag_intw
     INTEGER :: nkstot_intw, nbnd_intw
 
     io_unit = find_free_unit()
@@ -745,17 +745,14 @@ contains
     ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
     ! (see also subroutine write_wfc() below)
     ! Here I define new variables to leave the ones read from QE modules unchanged
+    lspin = lsda .or. noncolin
     if (lsda) then
-      noncolin_intw = .true.
-      domag_intw = .true. ! not sure about this one
-      lsda_intw = .false.
+      domag_intw = .true.
       nkstot_intw = nkstot / 2
       nbnd_intw = nbnd * 2
     else
       ! Just leave as in QE
-      noncolin_intw = noncolin
       domag_intw = domag
-      lsda_intw = lsda
       nkstot_intw = nkstot
       nbnd_intw = nbnd
     end if
@@ -783,11 +780,8 @@ contains
     write(unit=io_unit,fmt=*)"ECUTRHO"
     write(unit=io_unit,fmt=*)ecutrho
 
-    write(unit=io_unit,fmt=*)"LSDA"
-    write(unit=io_unit,fmt=*) lsda_intw !lsda
-
-    write(unit=io_unit,fmt=*)"NONCOLIN"
-    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
+    write(unit=io_unit,fmt=*)"LSPIN"
+    write(unit=io_unit,fmt=*) lspin
 
     write(unit=io_unit,fmt=*)"LSPINORB"
     write(unit=io_unit,fmt=*)lspinorb

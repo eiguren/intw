@@ -25,8 +25,8 @@ program ep_melements
                                    ep_mat_file, &
                                    read_input, use_exclude_bands, &
                                    ep_bands, ep_bands_initial, ep_bands_final
-  use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, noncolin, nsym, &
-                          s, nbands, nGk_max, nat, nspin, tau, bg, &
+  use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, lspin, nsym, &
+                          s, nbands, nGk_max, nat, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
                           read_parameters_data_file_xml, &
                           get_gvec, &
@@ -187,17 +187,10 @@ program ep_melements
   ! Print spin information
   !================================================================================
   !
-  if (nspin==1) then
-    write(*,20) '| - Paramagnetic calculation nspin=1                |'
-  elseif (nspin==2) then
+  if (lspin) then
     write(*,20) '| - Spin-polarized calculation nspin = 2            |'
-    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
-    write(*,20) '*****************************************************'
-    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-    write(*,20) '*            program stops.                         *'
-    write(*,20) '*****************************************************'
-    stop
+    write(*,20) '| - Paramagnetic calculation nspin = 1              |'
   endif
   !
   write(*,20) '|         ---------------------------------         |'

@@ -99,9 +99,9 @@ with open(PREFIX+".save.intw/crystal.dat", "r") as f:
         if text == "NKS":
             nkpts = int(lines[i+1].strip())
 
-        if text == "NONCOLIN":
-            noncolin = str(lines[i+1].strip())
-            if noncolin == "T":
+        if text == "LSPIN":
+            lspin = str(lines[i+1].strip())
+            if lspin == "T":
                 nspin = 2
             else:
                 nspin = 1

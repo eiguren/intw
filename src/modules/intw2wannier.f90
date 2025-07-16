@@ -103,7 +103,7 @@ contains
   subroutine deallocate_nnkp()
 !---------------------------------
 
-  use intw_reading, only: noncolin
+  use intw_reading, only: lspin
 
   implicit none
 
@@ -115,8 +115,8 @@ contains
   deallocate(nnkp_proj_x)
   deallocate(nnkp_proj_z)
   deallocate(nnkp_proj_zona)
-  if (noncolin) deallocate(nnkp_proj_spin_axis)
-  if (noncolin) deallocate(nnkp_proj_s)
+  if (lspin) deallocate(nnkp_proj_spin_axis)
+  if (lspin) deallocate(nnkp_proj_s)
   deallocate(nnkp_list_ikpt_nn)
   deallocate(nnkp_list_G)
   deallocate(nnkp_excluded_bands)
@@ -134,7 +134,7 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, noncolin, scan_file_to
+  use intw_reading, only: alat, lspin, scan_file_to
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -204,7 +204,7 @@ contains
   ! projection information
   !==========================
   !
-  if (noncolin) then
+  if (lspin) then
     call scan_file_to (nnkp_unit,'spinor_projections')
     read(nnkp_unit,*) nnkp_n_proj
     allocate(nnkp_proj_s(nnkp_n_proj))
@@ -233,7 +233,7 @@ contains
                        (nnkp_proj_x(i,j),i=1,3), &
                         nnkp_proj_zona(j)
      !
-     if (noncolin) then
+     if (lspin) then
        read(nnkp_unit,*) nnkp_proj_s(j), nnkp_proj_spin_axis(:,j)
        ! Check
        if (abs(nnkp_proj_s(j)) /= 1) then
@@ -316,7 +316,7 @@ contains
 ! This subroutine simply outputs what was read from the nnkp file, for
 ! testing.
 !----------------------------------------------------------------------------!
-  use intw_reading, only: noncolin
+  use intw_reading, only: lspin
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -378,7 +378,7 @@ contains
                           (nnkp_proj_x  (i,j),i=1,3),   &
                            nnkp_proj_zona( j)
 
-      if (noncolin) then
+      if (lspin) then
          write(io_unit,'(I6, 3F12.6)') nnkp_proj_s(j), &
                                        (nnkp_proj_spin_axis(i,j), i=1,3)
       end if
@@ -625,7 +625,7 @@ contains
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    use intw_reading, only : noncolin, num_bands_intw
+    use intw_reading, only : lspin, num_bands_intw
     use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
 
     implicit none
@@ -678,7 +678,7 @@ contains
         call generate_guiding_function(ikpt, ngk, list_iG, n_proj, guiding_function(:,1))
 
         !JLB spinor projection. Should be generalized to quantization axis /= z
-        if (noncolin) then
+        if (lspin) then
           if (nnkp_proj_s(n_proj) < 0) then
             guiding_function(:,2) = guiding_function(:,1)
             guiding_function(:,1) = cmplx_0

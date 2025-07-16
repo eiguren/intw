@@ -37,7 +37,7 @@ module intw_reading
             nkpoints_QE, kpoints_QE, &
             nr1, nr2, nr3, ecutwfc, ecutrho, &
             nG, gvec, nGk_max, gamma_only, &
-            nspin, lsda, noncolin, lspinorb, spinorb_mag
+            nspin, lspin, lspinorb, spinorb_mag
 
   !
   ! subroutines
@@ -187,11 +187,8 @@ module intw_reading
   ! NOTE: Colinear spin-polarized calculations are transformed to a non-colinear
   !       spinor format by pw2intw or siesta2intw.
 
-  logical :: lsda
-  ! If a colinear calculation lsda = T
-
-  logical :: noncolin
-  ! If a noncolinear calculation noncolin = T
+  logical :: lspin
+  ! If a spin-polarized calculation lsda = T
 
   logical :: lspinorb
   ! If spin-orbit non-collinear calculation lspinorb = T
@@ -293,20 +290,20 @@ contains
     tpiba = tpi/alat
     tpiba2 = tpiba*tpiba
 
-    !LSDA
+    !LSPIN
     read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) lsda
-    !NONCOLIN
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) noncolin
-    !LSO
+    read(unit=io_unit, fmt=*) lspin
+
+    !LSPINORB
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) lspinorb
+
     !DOMAG
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) spinorb_mag
-    if (noncolin) then
-       nspin = 2
+
+    if (lspin) then
+      nspin = 2
     else
       nspin = 1
     end if
@@ -708,7 +705,7 @@ contains
       !
       ! Number of wannier functions (after disentanglement)
       ! must be the same as number of projections
-      if (noncolin) then
+      if (lspin) then
         call scan_file_to(nnkp_unit, 'spinor_projections')
         read(nnkp_unit, *) num_wann_intw
       else

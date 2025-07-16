@@ -89,7 +89,7 @@ program ep_on_trFS_dV
 
   use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
                           nGk_max, get_gvec, &
-                          nspin, noncolin, &
+                          nspin, lspin, &
                           at, bg, nr1, nr2, nr3, &
                           nat, tau, nsym, s, &
                           get_K_folder_data
@@ -215,17 +215,10 @@ program ep_on_trFS_dV
   ! Print spin information
   !================================================================================
 
-  if (nspin==1) then
-    write(*,20) '| - Paramagnetic calculation nspin=1                |'
-  elseif (nspin==2) then
+  if (lspin) then
     write(*,20) '| - Spin-polarized calculation nspin = 2            |'
-    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
-    write(*,20) '*****************************************************'
-    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-    write(*,20) '*            program stops.                         *'
-    write(*,20) '*****************************************************'
-    stop
+    write(*,20) '| - Paramagnetic calculation nspin = 1              |'
   endif
 
   write(*,20) '|         ---------------------------------         |'

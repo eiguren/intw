@@ -39,7 +39,7 @@ program intw2W90
   use intw_input_parameters, only: outdir, prefix, intw2W_fullzone, intw2W_method, &
                                    nk1, nk2, nk3, compute_mmn, compute_amn, &
                                    read_input
-  use intw_reading, only: kpoints_QE, nspin, noncolin, nkpoints_QE, nsym, &
+  use intw_reading, only: kpoints_QE, nspin, lspin, nkpoints_QE, nsym, &
                           read_parameters_data_file_xml, get_gvec, &
                           read_kpoints_data_file_xml, deallocate_reading_variables, &
                           num_wann_intw, num_exclude_bands_intw, &
@@ -142,17 +142,10 @@ program intw2W90
   ! Print spin information
   !================================================================================
   !
-  if (nspin==1) then
-    write(*,20) '| - Paramagnetic calculation nspin=1                |'
-  elseif (nspin==2) then
+  if (lspin) then
     write(*,20) '| - Spin-polarized calculation nspin = 2            |'
-    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
-    write(*,20) '*****************************************************'
-    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-    write(*,20) '*            program stops.                         *'
-    write(*,20) '*****************************************************'
-    stop
+    write(*,20) '| - Paramagnetic calculation nspin = 1              |'
   endif
   !
   write(*,20) '|         ---------------------------------         |'
