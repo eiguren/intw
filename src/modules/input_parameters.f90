@@ -36,7 +36,7 @@ module intw_input_parameters
   ! &intw2W
   public :: intw2W, intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
   ! &ph
-  public :: ph, ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, &
+  public :: ph, ph_dir, qlist, read_for_dynmat, fc_mat, &
             nq1, nq2, nq3, nqirr, apply_asr
   ! &DOS
   public :: DOS, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos
@@ -114,13 +114,6 @@ module intw_input_parameters
   character(256) :: ph_dir = './'
   ! Haritz 22/05/2024: At this moment this is only used as the directory where qlist and fc_mat are present
   ! I think that could be removed
-
-  character(256) :: dvscf_dir = './'
-  ! Haritz 22/05/2024: At this moement this variable is not used as all dV's are in .save.intw directory
-
-  character(256) :: dvscf_name = 'dvscf_q'
-  ! Haritz 22/05/2024: At this moement this variable is used, but I think that we should remove it,
-  ! since dvscf_name is asigned by pw2intw and siesta2intw
 
   character(256) :: qlist = 'qlist.txt'
   ! Name of the file containing the irreducible q-points list
@@ -256,7 +249,7 @@ module intw_input_parameters
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, &
                       compute_mmn, compute_amn
 
-  NAMELIST / ph / ph_dir, qlist, read_for_dynmat, fc_mat, dvscf_dir, dvscf_name, ep_mat_file, &
+  NAMELIST / ph / ph_dir, qlist, read_for_dynmat, fc_mat, ep_mat_file, &
                   nq1, nq2, nq3, nqirr, apply_asr
 
   NAMELIST / DOS / nk1_dos, nk2_dos, nk3_dos, ne_dos, &
@@ -465,8 +458,6 @@ contains
       write(*,*) "             qlist           = 'file'"
       write(*,*) "             read_for_dynmat = 'fc' or 'dynq' (D)"
       write(*,*) "             fc_mat          = 'file'"
-      write(*,*) "             dvscf_dir       = 'directory'"
-      write(*,*) "             dvscf_name      = 'file'"
       write(*,*) "             nq1             = integer"
       write(*,*) "             nq2             = integer"
       write(*,*) "             nq3             = integer"
@@ -514,8 +505,6 @@ contains
     if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
     strlen = len_trim(ph_dir)
     if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
-    strlen = len_trim(dvscf_dir)
-    if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
 
     return
 

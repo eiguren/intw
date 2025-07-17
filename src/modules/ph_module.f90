@@ -721,7 +721,7 @@ contains
     use intw_utility, only: find_free_unit
     use intw_reading, only: nr1, nr2, nr3, nspin, lmag, nat
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
-    use intw_input_parameters, only: outdir, prefix, dvscf_name, nqirr
+    use intw_input_parameters, only: outdir, prefix, nqirr
 
     implicit none
 
@@ -763,7 +763,7 @@ contains
        !
        io_unit=find_free_unit()
        !
-       dv_name=trim(outdir)//trim(prefix)//".save.intw/"//trim(prefix)//"."//trim(dvscf_name)//trim(num)
+       dv_name=trim(outdir)//trim(prefix)//".save.intw/"//trim(prefix)//".dvscf_q"//trim(num)
        !
        open(unit=io_unit, file=dv_name, iostat = ios, &
             form='unformatted', status='old', access='direct', recl=record_length)

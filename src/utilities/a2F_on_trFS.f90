@@ -42,7 +42,7 @@ program a2F_on_trFS
   use intw_matrix_vector, only: ainv, area_vec
 
   use intw_input_parameters, only: outdir, prefix, read_input, &
-                                   nk1, nk2, nk3, nq1, nq2, nq3, nqirr, ph_dir, fc_mat, &
+                                   nk1, nk2, nk3, nq1, nq2, nq3, nqirr, fc_mat, &
                                    nomega, omega_ini, omega_fin, osmear_q, &
                                    read_for_dynmat, &
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
