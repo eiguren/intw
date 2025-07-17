@@ -846,8 +846,8 @@ contains
         write(unit_pw2intw, *) trim(prefix)
         write(unit_pw2intw, *) "&inputpp"
         write(unit_pw2intw, *) "  outdir = './'"
-        write(unit_pw2intw, *) "  ph_dir = './'"
         write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
+        write(unit_pw2intw, *) "  phonons = .false."
         write(unit_pw2intw, *) "/"
 
         close(unit_pw2intw)
