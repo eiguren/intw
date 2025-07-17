@@ -323,12 +323,12 @@ contains
     write(unit=io_unit,fmt=*)  spin%Col .or. spin%NCol .or. spin%SO ! We transform the colinear calculations into non-colinear format
 
     ! Non-colinear spin polarized calculation with spin-orbit coupling
-    write(unit=io_unit,fmt=*) "SPIN_SO"
+    write(unit=io_unit,fmt=*) "LSPINORB"
     write(unit=io_unit,fmt=*)  spin%SO
 
-    ! At this moment, for intw, this variable only means if the induced potential is a 2x2 matirx or not, and
-    ! with SIESTA, except if the calculation is non-polarized, we always will write the full 2x2 matrix.
-    write(unit=io_unit,fmt=*) "MAGNETIC CALCULATION"
+    ! This variable means if the induced potential is a 2x2 matirx or not.
+    ! With SIESTA, except if the calculation is non-polarized, we always will write the full 2x2 matrix.
+    write(unit=io_unit,fmt=*) "LMAG"
     write(unit=io_unit,fmt=*) spin%Col .or. spin%NCol .or. spin%SO
     !
     ! TODO: What happens if we have a non-magnetic colinear calculation?

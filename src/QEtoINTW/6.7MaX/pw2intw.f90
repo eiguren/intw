@@ -734,7 +734,7 @@ contains
     integer :: io_unit, ios
 
     ! JLB new variables to support collinear spin-polarized calculation
-    LOGICAL :: lspin, domag_intw
+    LOGICAL :: lspin, lmag
     INTEGER :: nkstot_intw, nbnd_intw
 
     io_unit = find_free_unit()
@@ -747,12 +747,12 @@ contains
     ! Here I define new variables to leave the ones read from QE modules unchanged
     lspin = lsda .or. noncolin
     if (lsda) then
-      domag_intw = .true.
+      lmag = .true.
       nkstot_intw = nkstot / 2
       nbnd_intw = nbnd * 2
     else
       ! Just leave as in QE
-      domag_intw = domag
+      lmag = domag
       nkstot_intw = nkstot
       nbnd_intw = nbnd
     end if
@@ -786,8 +786,8 @@ contains
     write(unit=io_unit,fmt=*)"LSPINORB"
     write(unit=io_unit,fmt=*)lspinorb
 
-    write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
-    write(unit=io_unit,fmt=*)domag_intw !domag
+    write(unit=io_unit,fmt=*)"LMAG"
+    write(unit=io_unit,fmt=*)lmag
 
     write(unit=io_unit,fmt=*)"NAT"
     write(unit=io_unit,fmt=*)nat

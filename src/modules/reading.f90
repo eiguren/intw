@@ -37,7 +37,7 @@ module intw_reading
             nkpoints_QE, kpoints_QE, &
             nr1, nr2, nr3, ecutwfc, ecutrho, &
             nG, gvec, nGk_max, gamma_only, &
-            nspin, lspin, lspinorb, spinorb_mag
+            nspin, lspin, lspinorb, lmag
 
   !
   ! subroutines
@@ -193,9 +193,12 @@ module intw_reading
   logical :: lspinorb
   ! If spin-orbit non-collinear calculation lspinorb = T
 
-  logical :: spinorb_mag ! TODO: I think that we should change the name of this variable, as at this moments only indicates if the induced potential is a 2x2 matrix or not.
-  ! If spinorb_mag = T It is a situation with TR broken and spinor calculation.
-  ! If spinorb_mag = F TR sym. is present!
+  logical :: lmag
+  ! If the calculation is magnetic (time-reversal broken) lmag = T
+  ! NOTE: In QE, if the system has TR symmetry (no magnetization),
+  !       only one spin component of the induced potential is calculated
+  !       and saved to the file, even if the calculation is non-collinear.
+
 
 contains
 
@@ -300,7 +303,7 @@ contains
 
     !DOMAG
     read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) spinorb_mag
+    read(unit=io_unit, fmt=*) lmag
 
     if (lspin) then
       nspin = 2
@@ -365,7 +368,7 @@ contains
             can_use_TR(ii) = .true.
           else
             can_use_TR(ii) = .false.
-            if ( .not. spinorb_mag ) can_use_TR(ii) = .true.
+            if ( .not. lmag ) can_use_TR(ii) = .true.
           end if
         end if !nspin 1 or 2
       end do

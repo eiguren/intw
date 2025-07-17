@@ -5,7 +5,7 @@ integer function read_data_test() result(r)
   use intw_reading, only: read_parameters_data_file_xml
   use intw_reading, only: lspinorb, nsym, alat, &
                           nat, ntyp, nr1, nr2, nr3, &
-                          lspin, spinorb_mag, ecutwfc, ecutrho
+                          lspin, lmag, ecutwfc, ecutrho
   use intw_input_parameters, only: outdir, prefix
 
   implicit none
@@ -18,7 +18,7 @@ integer function read_data_test() result(r)
   integer :: nr1_test = 30, nr2_test = 30, nr3_test = 30
   logical :: lspin_test = .false.
   logical :: lspinorb_test = .false.
-  logical ::spinorb_mag_test = .false.
+  logical ::lmag_test = .false.
   integer, parameter :: nat_test=1
   integer, parameter :: ntyp_test=1
   integer :: nsym_test = 48
@@ -70,7 +70,7 @@ integer function read_data_test() result(r)
     return
   endif
 
-  if (.not.assert(spinorb_mag,spinorb_mag_test,prec)) then
+  if (.not.assert(lmag,lmag_test,prec)) then
     r = 1
     return
   endif

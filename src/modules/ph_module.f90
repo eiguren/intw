@@ -719,7 +719,7 @@ contains
 !-----------------------------------------------------------------------
 
     use intw_utility, only: find_free_unit
-    use intw_reading, only: nr1, nr2, nr3, nspin, spinorb_mag, nat
+    use intw_reading, only: nr1, nr2, nr3, nspin, lmag, nat
     use intw_useful_constants, only: I2, sig_x, sig_y, sig_z, cmplx_0
     use intw_input_parameters, only: outdir, prefix, dvscf_name, nqirr
 
@@ -743,7 +743,7 @@ contains
     dvscf_irr=cmplx_0
     dvscf_cart=cmplx_0
     !
-    if (spinorb_mag) then
+    if (lmag) then
       inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1:nspin**2)
     else
       inquire(iolength=record_length) dvscf_irr(1:nr1*nr2*nr3, 1, 1,1)
@@ -772,7 +772,7 @@ contains
        write(unit=*,fmt="(a,i2,a3)") "|   Reading file "// &
             dv_name(1:max(25,len(trim(dv_name))))//" (ios ", ios, ") |"
        do mode=1, 3*nat
-          if (spinorb_mag) then
+          if (lmag) then
              read (io_unit, rec = mode, iostat = ios) (dvscf_irr(1:nr1*nr2*nr3, iq, mode,ispin),ispin=1,nspin**2)
           else
              read (io_unit, rec = mode, iostat = ios) dvscf_irr(1:nr1*nr2*nr3, iq, mode,1) ! beste guztiak 0
@@ -784,7 +784,7 @@ contains
 
        if (nspin==2) then
           !
-          if (spinorb_mag) then
+          if (lmag) then
              !
              do ir=1,nr1*nr2*nr3
                 do imode=1,3*nat
@@ -817,7 +817,7 @@ contains
                 enddo !imode
              enddo !ir
              !
-          endif !spinorb_mag
+          endif !lmag
           !
        else
           !
@@ -942,7 +942,7 @@ contains
 !--------------------------------------------------------------------------------------------------------
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
     use intw_utility, only: triple_to_joint_index_r
-    use intw_reading, only: s, ftau, nspin, spinorb_mag, at, bg, tau, nat
+    use intw_reading, only: s, ftau, nspin, lmag, at, bg, tau, nat
     use intw_useful_constants, only: cmplx_i, cmplx_0, tpi
     use intw_matrix_vector, only: cmplx_ainv
 
@@ -1078,7 +1078,7 @@ contains
     !
     ! Spinarekin errotatu behar da. Hemen spin matrizeen bidez egina, egin daiteke quaternioi propietateak erabiliz ere.
     !
-    if (nspin==2.and.spinorb_mag) then
+    if (lmag) then
        !
        dv_aux=dv_out
        dv_out=cmplx_0
