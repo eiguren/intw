@@ -1,9 +1,8 @@
-proba
 &inputpp
  outdir="./"
  prefix = "gaas",
- ph_dir = "./",
  phonons = .true.,
+ phdir = "./",
  nqirr = 1,
  dynxml = .false.,
  fildvscf = "dvscf"

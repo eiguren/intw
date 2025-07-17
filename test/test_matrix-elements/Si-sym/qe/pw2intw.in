@@ -1,9 +1,8 @@
-proba
 &inputpp
  outdir="./"
  prefix = "si",
- ph_dir = "./",
  phonons = .true.,
+ phdir = "./",
  nqirr = 1,
  dynxml = .false.,
  fildvscf = "dvscf"

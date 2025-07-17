@@ -515,7 +515,10 @@ target_link_libraries(qe_pp_st_ef_exe
 ###########################################################
 # pw2intw.x
 ###########################################################
-set(src_pw2intw_x src/pw2intw.f90)
+set(src_pw2intw_x src/intw/pw2intw_io.f90
+                  src/intw/pw2intw_utils.f90
+                  src/intw/pw2intw_write.f90
+                  src/intw/pw2intw.f90)
 qe_add_executable(qe_pp_pw2intw_exe ${src_pw2intw_x})
 set_target_properties(qe_pp_pw2intw_exe PROPERTIES OUTPUT_NAME pw2intw.x)
 target_link_libraries(qe_pp_pw2intw_exe
@@ -537,7 +540,7 @@ endif()
 ###########################################################
 # create_intw_q_dirs.x
 ###########################################################
-set(src_create_intw_q_dirs_x src/create_intw_q_dirs.f90)
+set(src_create_intw_q_dirs_x src/intw/create_intw_q_dirs.f90)
 qe_add_executable(qe_pp_create_intw_q_dirs_exe ${src_create_intw_q_dirs_x})
 set_target_properties(qe_pp_create_intw_q_dirs_exe PROPERTIES OUTPUT_NAME create_intw_q_dirs.x)
 target_link_libraries(qe_pp_create_intw_q_dirs_exe
