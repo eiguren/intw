@@ -1,6 +1,6 @@
 # Makefile for postprocessing (PP)
 
-VPATH=@QE2INTW_SRC_DIR@
+VPATH=@QE2INTW_MODULES_SRC_DIR@ @QE2INTW_SRC_DIR@
 
 QE_BUILD_DIR=@QE_BUILD_DIR@
 
@@ -23,16 +23,26 @@ QEMODS = $(QE_BUILD_DIR)/Modules/libqemod.a $(QE_BUILD_DIR)/upflib/libupf.a $(QE
 
 MODULES = $(PWOBJS) $(QEMODS)
 
-all : pw2intw.x create_intw_q_dirs.x
+EXECS = pw2intw.x create_intw_q_dirs.x
+PW2INTW_OBJS = pw2intw_io.o pw2intw_utils.o pw2intw_write.o
 
-pw2intw.x : pw2intw.o $(MODULES) $(LIBOBJS)
-	$(LD) $(LDFLAGS) -o $@ \
-		pw2intw.o $(MODULES) $(LIBOBJS) $(QELIBS)
+all : $(EXECS)
 
-create_intw_q_dirs.x : create_intw_q_dirs.o $(MODULES) $(LIBOBJS)
+pw2intw.x : pw2intw.o $(PW2INTW_OBJS)
 	$(LD) $(LDFLAGS) -o $@ \
-		create_intw_q_dirs.o $(MODULES) $(LIBOBJS) $(QELIBS)
+		$^ $(MODULES) $(LIBOBJS) $(QELIBS)
+
+create_intw_q_dirs.x : create_intw_q_dirs.o
+	$(LD) $(LDFLAGS) -o $@ \
+		$^ $(MODULES) $(LIBOBJS) $(QELIBS)
 
 
 clean :
 	rm -f *.x *.o *.mod
+
+# dependencies
+pw2intw.o : pw2intw_io.o pw2intw_utils.o pw2intw_write.o
+pw2intw_io.o :
+pw2intw_utils.o :
+pw2intw_write.o : pw2intw_io.o pw2intw_utils.o
+create_intw_q_dirs.o :

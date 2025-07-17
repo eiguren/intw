@@ -1,15 +1,19 @@
 
 # Define qe2intw source directories and files
-set(QE2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw src directory." FORCE)
-set(QE2INTW_SRC_FILES ${QE2INTW_SRC_DIR}/pw2intw.f90
+set(QE2INTW_MODULES_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules CACHE PATH "Path to the qe2intw modules src directory." FORCE)
+set(QE2INTW_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${QE_VERSION} CACHE PATH "Path to the qe2intw src directory." FORCE)
+set(QE2INTW_SRC_FILES ${QE2INTW_MODULES_SRC_DIR}/pw2intw_io.f90
+                      ${QE2INTW_MODULES_SRC_DIR}/pw2intw_utils.f90
+                      ${QE2INTW_MODULES_SRC_DIR}/pw2intw_write.f90
+                      ${QE2INTW_SRC_DIR}/pw2intw.f90
                       ${QE2INTW_SRC_DIR}/create_intw_q_dirs.f90
                       )
 
 # Define qe2intw build directory and object and module files
 if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
-  set(QE2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION} CACHE PATH "Path to the pw2intw build directory." FORCE)
+  set(QE2INTW_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/${QE_VERSION} CACHE PATH "Path to the qe2intw build directory." FORCE)
 else()
-  set(QE2INTW_BUILD_DIR ${QE_BUILD_DIR}/bin CACHE PATH "Path to the pw2intw build directory." FORCE)
+  set(QE2INTW_BUILD_DIR ${QE_BUILD_DIR}/bin CACHE PATH "Path to the qe2intw build directory." FORCE)
 endif()
 
 
@@ -46,7 +50,7 @@ if("${QE_CMAKE}" STREQUAL "QE_CMAKE-NOTFOUND")
     BYPRODUCTS ${QE2INTW_BUILD_DIR}/pw2intw.o
     )
 
-    add_custom_command(OUTPUT ${QE2INTW_BUILD_DIR}/create_intw_q_dirs.x
+  add_custom_command(OUTPUT ${QE2INTW_BUILD_DIR}/create_intw_q_dirs.x
     COMMAND make -C ${QE2INTW_BUILD_DIR} create_intw_q_dirs.x | sed 's/^/${OUTPUT_PREFIX}/'
     COMMENT "Building create_intw_q_dirs.x"
     DEPENDS ${QE2INTW_SRC_DIR}/create_intw_q_dirs.f90
@@ -61,9 +65,11 @@ else()
 
   # Create the targets to copy and configure all the qe2intw files to ${QE_HOME}/PP
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp
-    COMMAND cp ${QE2INTW_SRC_FILES} "${QE_HOME}/PP/src/"
+    COMMAND mkdir -p "${QE_HOME}/PP/src/intw"
+    COMMAND rm -f "${QE_HOME}/PP/src/intw/*"
+    COMMAND cp ${QE2INTW_SRC_FILES} "${QE_HOME}/PP/src/intw/"
     COMMAND touch "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/src.stamp"
-    COMMENT "Copying qe2intw to QE/PP"
+    COMMENT "Copying qe2intw to QE/PP/intw"
     DEPENDS ${QE2INTW_SRC_FILES}
     )
 
