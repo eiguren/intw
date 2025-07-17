@@ -314,27 +314,27 @@ contains
 
     if ( outdir == 'unassigned' ) then
       read_status = .true.
-      write(*,*) 'MISSING outdir'
+      write(*,*) 'MISSING outdir!'
     end if
 
     if ( prefix == 'unassigned' ) then
       read_status = .true.
-      write(*,*) 'MISSING prefix'
+      write(*,*) 'MISSING prefix!'
     end if
 
     if ( nk1 == 0 ) then
       read_status = .true.
-      write(*,*) 'MISSING nk1'
+      write(*,*) 'MISSING nk1!'
     end if
 
     if ( nk2 == 0 ) then
       read_status = .true.
-      write(*,*) 'MISSING nk2'
+      write(*,*) 'MISSING nk2!'
     end if
 
     if ( nk3 == 0 ) then
       read_status = .true.
-      write(*,*) 'MISSING nk3'
+      write(*,*) 'MISSING nk3!'
     end if
 
     if ( trim(use_exclude_bands) == 'unassigned' ) then
@@ -344,21 +344,20 @@ contains
              .and. trim(use_exclude_bands) /= 'custom' &
              .and. trim(use_exclude_bands) /= 'wannier' ) then
       read_status = .true.
-      write(*,*) 'Error: Wrong value for use_exclude_bands'
+      write(*,*) 'Error: Wrong value for use_exclude_bands!'
     end if
 
     if ( trim(use_exclude_bands) == 'custom' .and. &
         (include_bands_final*include_bands_initial .le. 0 .or. &
           include_bands_final .lt. include_bands_initial ) ) then
       read_status = .true.
-      write(*,*) 'Error: Invalid use_exclude_bands custom selection. Stopping.'
-      stop
+      write(*,*) 'Error: Invalid use_exclude_bands custom selection!'
     end if
 
     if (      trim(ep_bands) /= 'intw' &
         .and. trim(ep_bands) /= 'custom' ) then
       read_status = .true.
-      write(*,*) 'Error: Wrong value for ep_bands'
+      write(*,*) 'Error: Wrong value for ep_bands!'
     end if
 
     if ( trim(ep_bands) == 'custom' &
@@ -366,13 +365,13 @@ contains
          (      ep_bands_initial*ep_bands_final < 0 &
            .or. ep_bands_final < ep_bands_initial ) ) then
       read_status = .true.
-      write(*,*) 'Error: Invalid ep_bands custom selection. Stopping.'
+      write(*,*) 'Error: Invalid ep_bands custom selection!'
     end if
 
     if (      trim(ep_interp_bands) /= 'intw_bands' &
         .and. trim(ep_interp_bands) /= 'ef_crossing' ) then
       read_status = .true.
-      write(*,*) 'Error: Wrong value for ep_interp_bands'
+      write(*,*) 'Error: Wrong value for ep_interp_bands!'
     end if
 
     if ( trim(ep_interp_bands) == 'ef_crossing' &
@@ -380,14 +379,14 @@ contains
          ( nfs_sheets_initial*nfs_sheets_final < 0 &
            .or. nfs_sheets_final < nfs_sheets_initial ) ) then
       read_status = .true.
-      write(*,*) 'Error: Invalid ep_interp_bands custom selection. Stopping.'
+      write(*,*) 'Error: Invalid ep_interp_bands custom selection!'
     end if
 
     if (trim(ep_interp_method) /= 'unassigned') then
       if (      trim(ep_interp_method) /= 'wannier' &
               .and. trim(ep_interp_method) /= 'dV_interpolate' ) then
         read_status = .true.
-        write(*,*) 'Error: Wrong value for ep_interp_method'
+        write(*,*) 'Error: Wrong value for ep_interp_method!'
       endif
     end if
 
@@ -429,12 +428,12 @@ contains
     if (      trim(read_for_dynmat) /= 'dynq' &
         .and. trim(read_for_dynmat) /= 'fc' ) then
       read_status = .true.
-      write(*,*) 'Error: Wrong value for read_for_dynmat'
+      write(*,*) 'Error: Wrong value for read_for_dynmat!'
     end if
 
 
     if ( read_status ) then
-      write(*,*) "PROBLEM!: the input should be of the form:"
+      write(*,*) "The input should be of the form:"
       write(*,*) "&input"
       write(*,*) "             outdir                = 'directory'"
       write(*,*) "             prefix                = 'prefix'"
