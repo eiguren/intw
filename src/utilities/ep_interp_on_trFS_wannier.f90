@@ -51,7 +51,7 @@ program ep_on_trFS_wannier
                                    ep_mat_file
 
   use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
-                          nat, nspin, noncolin, num_bands_intw, num_wann_intw, at
+                          nat, nspin, lspin, num_bands_intw, num_wann_intw, at
 
   use intw_intw2wannier, only: nnkp_kpoints
 
@@ -164,17 +164,10 @@ program ep_on_trFS_wannier
   ! Print spin information
   !================================================================================
 
-  if (nspin==1) then
-    write(*,20) '| - Paramagnetic calculation nspin=1                |'
-  elseif (nspin==2) then
+  if (lspin) then
     write(*,20) '| - Spin-polarized calculation nspin = 2            |'
-    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
-    write(*,20) '*****************************************************'
-    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-    write(*,20) '*            program stops.                         *'
-    write(*,20) '*****************************************************'
-    stop
+    write(*,20) '| - Paramagnetic calculation nspin = 1              |'
   endif
 
   write(*,20) '|         ---------------------------------         |'

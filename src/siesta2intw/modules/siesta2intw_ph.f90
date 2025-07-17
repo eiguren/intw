@@ -40,7 +40,7 @@ contains
     ! variables
     use siesta_geom, only: isa, na_u, xa
     use m_ntm, only: ntm
-    use siesta2intw_fft, only: ngm, gvec_cart, gamma_only, nl, nlm
+    use siesta2intw_fft, only: nG, gvec_cart, gamma_only, nl, nlm
     use siesta2intw_utils, only: cmplx_0, cmplx_i
 
     implicit none
@@ -66,7 +66,7 @@ contains
     !
     qcart = tpiba * matmul(bg, qcryst)
     qtau = exp(-cmplx_i*sum(qcart(:)*xa(:,ia)))
-    do ig=1,ngm
+    do ig=1,nG
       gtau = exp(-cmplx_i*sum(gvec_cart(:,ig)*xa(:,ia)))
       dv_local(nl(ig)) = dv_local(nl(ig)) -cmplx_i*(qcart(id)+gvec_cart(id, ig))*qtau*gtau*vlocq(ig, nt)
       if (gamma_only) dv_local(nlm(ig)) = dv_local(nlm(ig)) -conjg(cmplx_i*(qcart(id)+gvec_cart(id, ig))*qtau*gtau*vlocq(ig, nt))
@@ -83,9 +83,9 @@ contains
 
     use atm_types, only: nspecies
     use siesta2intw_utils, only: cmplx_0
-    use siesta2intw_fft, only: ngm
+    use siesta2intw_fft, only: nG
 
-    allocate(vlocq(ngm, nspecies))
+    allocate(vlocq(nG, nspecies))
     vlocq = cmplx_0
 
   end subroutine allocate_vloc
@@ -152,7 +152,7 @@ contains
     USE units, ONLY: pi
     use siesta_geom, only: volume_of_some_cell
     use siesta2intw_utils, only: cmplx_0
-    use siesta2intw_fft, only: ngm, gvec_cart
+    use siesta2intw_fft, only: nG, gvec_cart
     ! functions and subroutines
     use siesta2intw_utils, only: simpson
 
@@ -164,7 +164,7 @@ contains
     real(kind=dp), intent(in) :: rab(mesh) ! the derivative of mesh points
     real(kind=dp), intent(in) :: vloc_r(mesh) ! the pseudo on the radial
     real(kind=dp), intent(in) :: Zval ! valence pseudocharge
-    real(kind=dp), intent(out) :: vloc_g(ngm) ! the fourier transform of the potential
+    real(kind=dp), intent(out) :: vloc_g(nG) ! the fourier transform of the potential
 
     real(kind=dp), parameter :: eps = 1.d-8
     !
@@ -187,7 +187,7 @@ contains
     !
     ! perform the integral, after multiplying for the |G| dependent part
     !
-    do ig = 1, ngm
+    do ig = 1, nG
       g2a = sum( (q_cart(:)+gvec_cart(:, ig))**2 )
       if (g2a < eps) then
           vloc_g(ig) = vloc0

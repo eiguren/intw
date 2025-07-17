@@ -494,7 +494,7 @@ contains
     !   See the LICENSE file in the original Quantum Espresso source for license details.
     !   For the original source visit: https://www.quantum-espresso.org/
     !
-    use intw_reading, only: nat, nG_max, ntyp, ityp, tau, bg, tpiba
+    use intw_reading, only: nat, nGk_max, ntyp, ityp, tau, bg, tpiba
     use intw_useful_constants, only: tpi, cmplx_0, cmplx_i
     use intw_fft, only: gvec_cart
     use intw_pseudo, only: upf
@@ -505,9 +505,9 @@ contains
     !I/O variables
 
     integer, intent(in) :: npw !number of PW's in k-point
-    integer, intent(in) :: igk(nG_max) !G list of k-point
+    integer, intent(in) :: igk(nGk_max) !G list of k-point
     real(kind=dp), intent(in) :: kpoint_cryst(3) !k-point vector
-    complex(kind=dp), intent(out) :: kb_projectors(nG_max,nkb) !beta functions
+    complex(kind=dp), intent(out) :: kb_projectors(nGk_max,nkb) !beta functions
 
     !local variables
 
@@ -618,17 +618,17 @@ contains
     !
 
     use intw_useful_constants, only: cmplx_0
-    use intw_reading, only: nspin, nG_max
+    use intw_reading, only: nspin, nGk_max
 
     implicit none
 
     real(kind=dp), intent(in)       :: k_cryst(3)
-    integer, intent(in)             :: list_iGk(nG_max)
+    integer, intent(in)             :: list_iGk(nGk_max)
     integer, intent(in)             :: num_bands
-    complex(kind=dp), intent(in)    :: psi_k(nG_max,num_bands,nspin)
-    complex(kind=dp), intent(inout) :: vnl_psi(nG_max,num_bands,nspin)
+    complex(kind=dp), intent(in)    :: psi_k(nGk_max,num_bands,nspin)
+    complex(kind=dp), intent(inout) :: vnl_psi(nGk_max,num_bands,nspin)
 
-    complex(kind=dp)                :: vkb_k(nG_max,nkb)
+    complex(kind=dp)                :: vkb_k(nGk_max,nkb)
     complex(kind=dp)                :: projec_d(nkb,nspin), DKB_projec_d(nkb,nspin)
     integer                         :: iband, ikb, ispin, jspin
     integer                         :: iG, nGk
@@ -636,7 +636,7 @@ contains
 
     ! Compute non local |beta> projectors of KB PP for k
     nGk = 0
-    do iG=1,nG_max
+    do iG=1,nGk_max
       if (list_iGk(iG)==0) exit
       nGk = nGk + 1
     enddo
@@ -688,18 +688,18 @@ contains
   subroutine multiply_psi_by_dvKB(k_cryst, q_cryst, list_iGk, list_iGkq, num_bands, psi_k, dvnl_psi)
 
     use intw_useful_constants, only: cmplx_0, cmplx_i
-    use intw_reading, only: nat, nspin, nG_max, tpiba, bg
+    use intw_reading, only: nat, nspin, nGk_max, tpiba, bg
     use intw_fft, only: gvec_cart
 
     implicit none
 
     real(kind=dp), intent(in)       :: k_cryst(3), q_cryst(3)
-    integer, intent(in)             :: list_iGk(nG_max), list_iGkq(nG_max)
+    integer, intent(in)             :: list_iGk(nGk_max), list_iGkq(nGk_max)
     integer, intent(in)             :: num_bands
-    complex(kind=dp), intent(in)    :: psi_k(nG_max,num_bands,nspin)
-    complex(kind=dp), intent(inout) :: dvnl_psi(nG_max,num_bands,nspin,nspin,3*nat)
+    complex(kind=dp), intent(in)    :: psi_k(nGk_max,num_bands,nspin)
+    complex(kind=dp), intent(inout) :: dvnl_psi(nGk_max,num_bands,nspin,nspin,3*nat)
 
-    complex(kind=dp)                :: vkb_k(nG_max,nkb), vkb_kq(nG_max,nkb)
+    complex(kind=dp)                :: vkb_k(nGk_max,nkb), vkb_kq(nGk_max,nkb)
     complex(kind=dp)                :: projec_1(nkb,3,nspin), projec_2(nkb,3,nspin)
     complex(kind=dp)                :: DKB_projec_1(nkb,3,nspin,nspin), DKB_projec_2(nkb,3,nspin,nspin)
 
@@ -713,14 +713,14 @@ contains
 
     ! Compute non local |beta> projectors of KB PP for k and k+q
     nGk = 0
-    do iG=1,nG_max
+    do iG=1,nGk_max
       if (list_iGk(iG)==0) exit
       nGk = nGk + 1
     enddo
     call init_KB_projectors(nGk, list_iGk, k_cryst, vkb_k)
     !
     nGkq = 0
-    do iG=1,nG_max
+    do iG=1,nGk_max
       if (list_iGkq(iG)==0) exit
       nGkq = nGkq + 1
     enddo

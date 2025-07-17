@@ -22,15 +22,15 @@ module siesta2intw_fft
 
   implicit none
 
-  public :: ngm, npwx, list_iG, ngk, gvec, gvec_cart, gamma_only, nl, nlm
+  public :: nG, nGk_max, list_iG, ngk, gvec, gvec_cart, gamma_only, nl, nlm
 
   public :: compute_fft_info, write_fft_info
 
   private
 
   !
-  integer :: ngm ! number of G vectors inside the rho cutoff (g2cut)
-  integer :: npwx ! max. number of G vectors inside the wave function cutoff (cutoff)
+  integer :: nG ! number of G vectors inside the rho cutoff (g2cut)
+  integer :: nGk_max ! max. number of G vectors inside the wave function cutoff (cutoff)
   integer, allocatable, dimension(:,:) :: list_iG ! list of G vectors for each k point
   integer, allocatable, dimension(:) :: ngk ! number of G vectors inside the wave function cutoff for each k point
   integer, allocatable, dimension(:,:) :: gvec ! G vectors in crytal units
@@ -80,8 +80,8 @@ contains
     n2 = (ntm(2)-1)/2
     n3 = (ntm(3)-1)/2
 
-    ! count number of G vectors (ngm) inside the rho cutoff
-    ngm = 0
+    ! count number of G vectors (nG) inside the rho cutoff
+    nG = 0
     iloop1: do ig=-n1,n1
       !
       if ( gamma_only .and. ig < 0) cycle iloop1
@@ -95,7 +95,7 @@ contains
           if ( gamma_only .and. ig == 0 .and. jg == 0 .and. kg < 0) cycle kloop1
           !
           gv = tpiba * matmul(bg, (/ig, jg, kg/))
-          if (sum(gv**2) <= g2cut) ngm = ngm + 1
+          if (sum(gv**2) <= g2cut) nG = nG + 1
           !
         enddo kloop1 ! kg
         !
@@ -104,13 +104,13 @@ contains
     enddo iloop1 ! ig
 
     ! compute G vectors inside rho cutoff
-    allocate(gvec_(3,ngm), gvec_cart_(3,ngm), gg_(ngm), perm(ngm))
+    allocate(gvec_(3,nG), gvec_cart_(3,nG), gg_(nG), perm(nG))
     gvec_ = 0
     gvec_cart_ = 0.0_dp
     gg_ = 0.0_dp
     perm = 0
 
-    ngm=0
+    nG=0
     iloop2: do ig=-n1,n1
       !
       if ( gamma_only .and. ig < 0) cycle iloop2
@@ -126,10 +126,10 @@ contains
           gv = tpiba * matmul(bg, (/ig, jg, kg/))
           !
           if (sum(gv**2) <= g2cut) then
-            ngm = ngm + 1
-            gg_(ngm) = sum(gv**2)
-            gvec_cart_(:,ngm) = gv
-            gvec_(:,ngm) = (/ig, jg, kg/)
+            nG = nG + 1
+            gg_(nG) = sum(gv**2)
+            gvec_cart_(:,nG) = gv
+            gvec_(:,nG) = (/ig, jg, kg/)
           end if
           !
         enddo kloop2 ! kg
@@ -139,13 +139,13 @@ contains
     enddo iloop2 ! ig
 
     ! sort G vectors by increasing module
-    allocate(gvec(3,ngm), gvec_cart(3,ngm))
+    allocate(gvec(3,nG), gvec_cart(3,nG))
     gvec = 0
     gvec_cart = 0.0_dp
     !
-    call ordix( gg_, 1, ngm, perm)
+    call ordix( gg_, 1, nG, perm)
     !
-    do ig=1,ngm
+    do ig=1,nG
       gvec(:,ig) = gvec_(:,perm(ig))
       gvec_cart(:,ig) = gvec_cart_(:,perm(ig))
     enddo
@@ -154,14 +154,14 @@ contains
 
     ! generate nl and nlm
     assigned = .false.
-    allocate(nl(ngm))
+    allocate(nl(nG))
     nl = 0
     if (gamma_only) then
-      allocate(nlm(ngm))
+      allocate(nlm(nG))
       nlm = 0
     endif
 
-    do ig = 1, ngm
+    do ig = 1, nG
 
       n1 = modulo( gvec(1, ig), ntm(1) ) + 1
       n2 = modulo( gvec(2, ig), ntm(2) ) + 1
@@ -220,7 +220,7 @@ contains
     end do ! ig
 
     ! compute list_iG and ngk
-    allocate(list_iG(ngm,nwk), ngk(nwk))
+    allocate(list_iG(nG,nwk), ngk(nwk))
     list_iG = 0
     ngk = 0
     !
@@ -232,7 +232,7 @@ contains
       !
       list_iG(:,ik) = -1
       ngk(ik) = 0
-      do ig=1,ngm
+      do ig=1,nG
         !
         gv = tpiba * matmul(bg, gvec(:,ig) + klist_cryst(:,ik) )
         if ( sum(gv**2) <= cutoff ) then
@@ -245,7 +245,7 @@ contains
     end do ! ik
 
     ! max. number of G vectors inside the wave function cutoff
-    npwx = maxval(ngk)
+    nGk_max = maxval(ngk)
 
   end subroutine compute_fft_info
 
@@ -275,8 +275,8 @@ contains
     datafile = trim(intwdir)//"gvectors.dat"
     open(unit=io_unit,file=datafile, status="unknown", action="write", form="unformatted")
     !
-    write(unit=io_unit) ngm
-    do ig=1,ngm
+    write(unit=io_unit) nG
+    do ig=1,nG
       write(unit=io_unit) gvec(:,ig)
     end do
     close(unit=io_unit)
@@ -286,7 +286,7 @@ contains
     datafile = trim(intwdir)//"iGlist.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted")
     !
-    write(unit=io_unit) npwx
+    write(unit=io_unit) nGk_max
     do ik=1,nwk
        write(unit=io_unit) ngk(ik)
        write(unit=io_unit) list_iG(1:ngk(ik),ik)

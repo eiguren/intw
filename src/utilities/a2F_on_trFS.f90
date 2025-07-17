@@ -48,7 +48,7 @@ program a2F_on_trFS
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
   use intw_reading, only: read_parameters_data_file_xml, &
-                          nspin, noncolin, at, bg, volume0, alat, nat, ityp, amass, &
+                          nspin, lspin, at, bg, volume0, alat, nat, ityp, amass, &
                           num_bands_intw, nsym, tau
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
@@ -146,17 +146,10 @@ program a2F_on_trFS
   ! Print spin information
   !================================================================================
 
-  if (nspin==1) then
-    write(*,20) '| - Paramagnetic calculation nspin=1                |'
-  elseif (nspin==2) then
+  if (lspin) then
     write(*,20) '| - Spin-polarized calculation nspin = 2            |'
-    if (noncolin) write(*,20) '| - Non-collinear spin calculation                  |'
   else
-    write(*,20) '*****************************************************'
-    write(*,20) '* ERROR: Allowed values for nspin are 1 or 2        *'
-    write(*,20) '*            program stops.                         *'
-    write(*,20) '*****************************************************'
-    stop
+    write(*,20) '| - Paramagnetic calculation nspin = 1              |'
   endif
 
   write(*,20) '|         ---------------------------------         |'

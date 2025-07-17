@@ -10,6 +10,7 @@ PREFIX = "gaas-nscf"
 NAT = 2
 NMODE = 3*NAT
 NBANDS = 36
+NSPIN = 2
 NK1 = 4
 NK2 = 4
 NK3 = 4
@@ -83,7 +84,7 @@ with open(PREFIX+".save.intw/crystal.dat", "r") as f:
     lines = f.readlines()
     for i, line in enumerate(lines):
 
-        text = re.sub("\s+", ",", line.strip())
+        text = line.strip()
 
         if text == "ALAT":
             alat = float(lines[i+1].strip())
@@ -98,6 +99,13 @@ with open(PREFIX+".save.intw/crystal.dat", "r") as f:
         if text == "NKS":
             nkpts = int(lines[i+1].strip())
 
+        if text == "LSPIN":
+            lspin = str(lines[i+1].strip())
+            if lspin == "T":
+                nspin = 2
+            else:
+                nspin = 1
+
         if text == "AT":
             a1 = list(map(float, re.sub("\s+", ",", lines[i+1].strip()).split(",")))
             a2 = list(map(float, re.sub("\s+", ",", lines[i+2].strip()).split(",")))
@@ -110,6 +118,7 @@ with open(PREFIX+".save.intw/crystal.dat", "r") as f:
 # print(nmode)
 # print(nband)
 # print(nkpts)
+# print(nspin)
 # sys.exit()
 
 # Check the parameters
@@ -121,6 +130,9 @@ if nband != NBANDS:
     sys.exit(1)
 if nkpts != NKPTS:
     print("ERROR: wrong NKPTS")
+    sys.exit(1)
+if nspin != NSPIN:
+    print("ERROR: wrong NSPIN")
     sys.exit(1)
 
 # Read k-point list and find non-degenreated band indices
@@ -174,6 +186,11 @@ with open("qlist.txt", "r") as f:
 # Compare the matrix elements
 #
 
+i1 = NKPTS
+i2 = NKPTS*NBANDS
+i3 = NKPTS*NBANDS*NBANDS
+i4 = NKPTS*NBANDS*NBANDS*NSPIN
+i5 = NKPTS*NBANDS*NBANDS*NSPIN*NSPIN
 for iq in range(NQPTS):
 
     print('\nQ-point %i' % (iq+1))
@@ -200,18 +217,21 @@ for iq in range(NQPTS):
             # print(ikq)
             for ib in range(NBANDS):
                 for jb in range(NBANDS):
-                    iel_up_up = 4*NBANDS*NBANDS*NKPTS*im + 2*NBANDS*NBANDS*NKPTS*0 + NBANDS*NBANDS*NKPTS*0 + NBANDS*NKPTS*jb + NKPTS*ib + ik
-                    iel_up_do = 4*NBANDS*NBANDS*NKPTS*im + 2*NBANDS*NBANDS*NKPTS*1 + NBANDS*NBANDS*NKPTS*0 + NBANDS*NKPTS*jb + NKPTS*ib + ik
-                    iel_do_up = 4*NBANDS*NBANDS*NKPTS*im + 2*NBANDS*NBANDS*NKPTS*0 + NBANDS*NBANDS*NKPTS*1 + NBANDS*NKPTS*jb + NKPTS*ib + ik
-                    iel_do_do = 4*NBANDS*NBANDS*NKPTS*im + 2*NBANDS*NBANDS*NKPTS*1 + NBANDS*NBANDS*NKPTS*1 + NBANDS*NKPTS*jb + NKPTS*ib + ik
-                    me_r = np.abs(mat_r[iel_up_up] + mat_r[iel_up_do] + mat_r[iel_do_up] + mat_r[iel_do_do])
-                    me_t = np.abs(mat_t[iel_up_up] + mat_t[iel_up_do] + mat_t[iel_do_up] + mat_t[iel_do_do])
+                    me_r = 0
+                    me_t = 0
+                    for is1 in range(NSPIN):
+                        for is2 in range(NSPIN):
+                            iel = i5*im + i4*is2 + i3*is1 + i2*jb + i1*ib + ik
+                            me_r += mat_r[iel]
+                            me_t += mat_t[iel]
+                    me_r = np.abs(me_r)
+                    me_t = np.abs(me_t)
                     if (ib+1 in NON_DEG[ikq] and jb+1 in NON_DEG[ik]):
                         if (me_r > MIN_MAT_EL):
                             print("%5i %5i %5i %5i %20.15f %20.15f %20.15f %20.5f" % (
-                                  ik+1, ib+1, jb+1, im+1, me_r,
-                                  me_t, me_r-me_t, (me_r-me_t)/me_r*100)
-                                  )
+                                ik+1, ib+1, jb+1, im+1, me_r,
+                                me_t, me_r-me_t, (me_r-me_t)/me_r*100)
+                                )
                             if np.isnan(me_t) or (abs(me_r-me_t)/me_r*100 > MAX_DIFF_PERCENTAGE):
                                 print("MAX_DIFF_PERCENTAGE exceeded!")
                                 print("ik =", ik+1)

@@ -21,25 +21,24 @@ module intw_reading
   ! TODO: Add a description.
 
   use kinds, only: dp
-  !
-  implicit none
-  !
-  save
-  !
-  !
-  ! variables
-  public :: nbands, num_bands_intw, num_wann_intw, &
-            num_exclude_bands_intw, band_excluded_intw, &
-            s, can_use_TR, ftau, nsym, &
-            atom_pfile, atom_labels, &
-            at, bg, alat, tpiba, tpiba2, volume0, &
-            nat, ntyp, ityp, tau, tau_cryst, amass, &
-            nkpoints_QE, kpoints_QE, &
-            nr1, nr2, nr3, ecutwfc, ecutrho, &
-            ngm, gvec, nG_max, gamma_only, &
-            nspin, lsda, noncolin, lspinorb, spinorb_mag
 
-  !
+  implicit none
+
+  save
+
+  ! variables
+  public :: alat, tpiba, tpiba2, at, volume0, bg, &
+            ntyp, atom_labels, amass, atom_pfile, &
+            nat, tau, tau_cryst, ityp, &
+            nsym, s, ftau, can_use_TR, &
+            nkpoints_QE, kpoints_QE, &
+            nbands, num_bands_intw, num_wann_intw, &
+            num_exclude_bands_intw, band_excluded_intw, &
+            nspin, lspin, lspinorb, lmag, &
+            nr1, nr2, nr3, ecutwfc, ecutrho, &
+            nG, gvec, nGk_max, gamma_only
+
+
   ! subroutines
   public :: read_parameters_data_file_xml, &
             read_kpoints_data_file_xml, &
@@ -48,16 +47,96 @@ module intw_reading
             deallocate_reading_variables, &
             set_num_bands, &
             scan_file_to
-  !
-  private
-  !
 
-  !----------------------------------------------------------------------------!
-  ! Variables strongly inspired by QE variables
-  ! (but not necessarily exactly equivalent!)
-  !----------------------------------------------------------------------------!
+  private
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! unit cell variables
+  ! system / configuration variables
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  real(dp) :: alat
+  ! The lattice parameter TODOD: Units
+
+  real(dp):: tpiba
+  ! tpi/alat
+
+  real(dp) :: tpiba2
+  ! tpiba**2
+
+  real(dp) :: at(3, 3)
+  ! The a1 a2 and a3 lattice vectors column wise TODO: Units
+
+  real(dp) :: volume0
+  ! The volume of the unit cell TODO: units
+
+  real(dp) :: bg(3, 3)
+  ! The reciprocal lattice vectors column wise TODO: units
+
+  integer :: ntyp
+  ! The number types of atoms in the cell
+
+  character(len=3), allocatable :: atom_labels(:)
+  ! atom_label( j ) = name of the j-th atomic type (or species)
+
+  real(dp), allocatable :: amass(:)
+  ! amass(1:ntyp) = atomic masses TODOD: units
+
+  character(len=80), allocatable :: atom_pfile(:)
+  ! atom_pfile( j ) = name of pseudopotential file for
+  ! the j-th atomic type (or species)
+
+  integer :: nat
+  ! The number of atoms in the cell
+
+  real(dp), allocatable :: tau(:, :)
+  ! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
+
+  real(dp), allocatable :: tau_cryst(:, :)
+  ! tau( 1:3, i ) = position of the i-th atom (in Crystal units)
+
+  integer, allocatable :: ityp(:)
+  ! ityp( i ) = type of the i-th atom
+
+  !!!!!!!!!!!!!!!!!!!!!!
+  ! Symmetry variables
+  !!!!!!!!!!!!!!!!!!!!!!
+
+  integer :: nsym
+  ! Number of crystal symmetries
+
+  integer, allocatable :: s(:, :, :)
+  ! Symmetry matrices, in crystal coordinates,
+  ! CAREFUL!!! since the symmetry matrices are expressed
+  ! in the crystal coordinates, they may not *look* like
+  ! rotation matrices: convert to cartesian coordinates
+  ! and they'll have a sensible form.
+
+  real(dp), allocatable :: ftau(:, :)
+  ! Fractional translations, in crystal coordinates.
+
+  logical, allocatable :: can_use_TR(:)
+  ! This array indicates if TR can (should) be used
+  ! with a given point group operation. TR is optional
+  ! if the ground state is not magnetically polarized, but
+  ! can become mandatory; for a magnetic ground state,
+  ! certain rotations can only be permitted in conjunction
+  ! with time reversal symmetry (ie: the rotation flips B, and
+  ! TR flips it back). This array will take note of
+  ! which point group symmetries require TR.
+
   !!!!!!!!!!!!!!!!!!!
-    ! Bands variables
+  ! k-point variables
+  !!!!!!!!!!!!!!!!!!!
+
+  integer :: nkpoints_QE
+  ! Number of k points used in the DFT calculation
+
+  real(dp), allocatable :: kpoints_QE(:, :)
+  ! The kpoints used in the DFT calculation TODO: crystal or Cartesian?
+
+  !!!!!!!!!!!!!!!!!!!
+  ! Bands variables
   !!!!!!!!!!!!!!!!!!!
 
   integer :: nbands
@@ -80,132 +159,59 @@ module intw_reading
   logical, allocatable :: band_excluded_intw(:)
   ! Array determining the bands to be excluded
 
-  !!!!!!!!!!!!!!!!!!!!!!
-    ! Symmetry variables
-  !!!!!!!!!!!!!!!!!!!!!!
-
-  integer, allocatable :: s(:, :, :)
-  ! Symmetry matrices, in crystal coordinates,
-  ! CAREFUL!!! since the symmetry matrices are expressed
-  ! in the crystal coordinates, they may not *look* like
-  ! rotation matrices: convert to cartesian coordinates
-  ! and they'll have a sensible form.
-
-  logical, allocatable :: can_use_TR(:)
-  ! This array indicates if TR can (should) be used
-  ! with a given point group operation. TR is optional
-  ! if the ground state is not magnetically polarized, but
-  ! can become mandatory; for a magnetic ground state,
-  ! certain rotations can only be permitted in conjunction
-  ! with time reversal symmetry (ie: the rotation flips B, and
-  ! TR flips it back). This array will take note of
-  ! which point group symmetries require TR.
-
-  real(dp), allocatable :: ftau(:, :)
-  ! Fractional translations, in crystal coordinates.
-
-  integer :: nsym
-  ! Number of crystal symmetries
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! system / configuration variables
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  character(len=80), allocatable :: atom_pfile(:)
-  ! atom_pfile( j ) = name of pseudopotential file for
-  ! the j-th atomic type (or species)
-
-  character(len=3), allocatable :: atom_labels(:)
-  ! atom_label( j ) = name of the j-th atomic type (or species)
-
-  real(dp) :: at(3, 3)
-  ! The a1 a2 and a3 lattice vectors column wise
-
-  real(dp) :: bg(3, 3)
-  ! The reciprocal lattice vectors column wise
-
-  real(dp) :: alat
-  ! The lattice parameter
-
-  real(dp):: tpiba
-  ! tpi/alat
-
-  real(dp) :: tpiba2
-  ! tpiba**2
-
-  real(dp) :: volume0
-  ! The volume of the unit cell
-
-  integer :: nat
-  ! The number of atoms in the cell
-
-  integer :: ntyp
-  ! The number types of atoms in the cell
-
-  integer, allocatable :: ityp(:)
-  ! ityp( i ) = type of the i-th atom
-
-  real(dp), allocatable :: tau(:, :)
-  ! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
-
-  real(dp), allocatable :: tau_cryst(:, :)
-  ! tau( 1:3, i ) = position of the i-th atom (in Crystal units)
-
-  real(dp), allocatable :: amass(:)
-  ! amass(1:ntyp) = atomic masses
-
-  integer :: nkpoints_QE
-  ! Number of k points used in the DFT calculation
-
-  real(dp), allocatable :: kpoints_QE(:, :)
-  ! The kpoints used in the DFT calculation
-
-  integer :: nr1, nr2, nr3
-  ! The FFT grid
-
-  real(dp) :: ecutwfc
-  ! Cutoff energy for wave functions (Hartree)
-
-  real(dp) :: ecutrho
-  ! Cutoff energy for charge density (Hartree)
-
-  integer :: ngm
-  ! The number of g vectors
-
-  integer, allocatable :: gvec(:, :)
-  ! The global g vectors (to which indices refer).
-
-  integer :: nG_max
-  ! The maximum number of G vectors for any k point
-
-  logical :: gamma_only
-  ! If Gamma is the only k-point and Gamma only tricks are used (half of the G-vectors are used)
-  ! gamma_only = .true.
+  !!!!!!!!!!!!!!!!!!!
+  ! Spin variables
+  !!!!!!!!!!!!!!!!!!!
 
   integer :: nspin
   ! nspin = 1 for non-polarized calculations, nspin = 2 for spin-polarized ones.
   ! NOTE: Colinear spin-polarized calculations are transformed to a non-colinear
   !       spinor format by pw2intw or siesta2intw.
 
-  logical :: lsda
-  ! If a colinear calculation lsda = T
-
-  logical :: noncolin
-  ! If a noncolinear calculation noncolin = T
+  logical :: lspin
+  ! If a spin-polarized calculation (colinear or non-collinear) lspin = T
 
   logical :: lspinorb
   ! If spin-orbit non-collinear calculation lspinorb = T
 
-  logical :: spinorb_mag ! TODO: I think that we should change the name of this variable, as at this moments only indicates if the induced potential is a 2x2 matrix or not.
-  ! If spinorb_mag = T It is a situation with TR broken and spinor calculation.
-  ! If spinorb_mag = F TR sym. is present!
+  logical :: lmag
+  ! If the calculation is magnetic (time-reversal broken) lmag = T
+  ! NOTE: In QE, if the system has TR symmetry (no magnetization),
+  !       only one spin component of the induced potential is calculated
+  !       and saved to the file, even if the calculation is non-collinear.
+
+  !!!!!!!!!!!!!!!!!!!
+  ! Plane-waves variables
+  !!!!!!!!!!!!!!!!!!!
+
+  integer :: nr1, nr2, nr3
+  ! The FFT grid
+
+  real(dp) :: ecutwfc
+  ! Cutoff energy for wave functions (Rydberg)
+
+  real(dp) :: ecutrho
+  ! Cutoff energy for charge density (Rydberg)
+
+  integer :: nG
+  ! The number of g vectors
+
+  integer, allocatable :: gvec(:, :)
+  ! The global g vectors (to which indices refer). TODO: crystal or Cartesian?
+
+  integer :: nGk_max
+  ! The maximum number of G vectors for any k point
+
+  logical :: gamma_only
+  ! If Gamma is the only k-point and Gamma only tricks are used (half of the G-vectors are used)
+  ! gamma_only = .true.
 
 contains
 
   subroutine read_parameters_data_file_xml()
     !------------------------------------------------------------------
-    ! This subroutine reads in atomic positions and composition,
-    ! as well as symmetry data from the prefix.save.intw folder.
+    ! This subroutine reads in atomic positions and composition, symmetries
+    ! and all data from the prefix.save.intw/crystal.dat file.
     !------------------------------------------------------------------
     use intw_input_parameters, only: outdir, prefix, TR_symmetry
     use intw_utility, only: find_free_unit
@@ -214,123 +220,64 @@ contains
 
     implicit none
 
-    integer :: io_unit ! input/output file unit
-    integer :: ii ! a looping variable
+    integer :: io_unit, ierr ! input/output variables
+    integer :: i, j, ii ! loop variables
+    character(len=256) :: dummy
 
     character(256) :: datafile ! full path of the data-file.xml file in the .xml file
     ! note: outdir and prefix are defined in the input_parameter module.
 
+    ! variables for the magnetic case.
     integer :: max_nsym ! maximum possible value of nsym. Relevant
-    ! variable for the magnetic case.
-
     integer :: i_sym
-
     integer, dimension(48) :: trev
-
-    logical :: datafile_exists ! for checking if files in .save.intw folder exist
-
     integer, allocatable, dimension(:, :, :) :: ss
     real(dp), allocatable, dimension(:, :) :: fftau
-    character(len=256) :: dummy
-
-    integer :: i, j
 
 
-    ! First, read the value of the parameter ngm
-    datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
-
-    inquire(file=datafile, exist=datafile_exists)
-
-    if ( .not. datafile_exists ) then
-      write(*, "(a)") '*****************************************************'
-      write(*, "(a)") '*   ERROR                                           *'
-      write(*, "(a)") '*   The file gvectors.dat cannot be found,          *'
-      write(*, "(a)") '*   check if the folder .save.intw                  *'
-      write(*, "(a)") '*   exists or if the prefix in intw input file      *'
-      write(*, "(a)") '*   has been correctly chosen.                      *'
-      write(*, "(a)") '*   STOPPING                                        *'
-      write(*, "(a)") '*****************************************************'
-      stop
-    end if
-
-    io_unit = find_free_unit()
-    open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
-    read(unit=io_unit)ngm
-    close(unit=io_unit)
-
-    !read the data related to the crystal structure
+    ! Read the data related to the crystal structure
     datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"crystal.dat")
     io_unit = find_free_unit()
-    open(unit=io_unit, file=datafile, status="unknown", action="read", form="formatted")
+    open(unit=io_unit, file=datafile, status="unknown", action="read", form="formatted", iostat=ierr)
+    if (ierr/=0) stop "ERROR: read_parameters_data_file_xml: Error opening crystal.dat file!"
+
     !ALAT
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) alat
+
     !AT
     read(unit=io_unit, fmt=*) dummy
     do i = 1, 3
       read(unit=io_unit, fmt=*) ( at(i, j), j = 1, 3 )
     enddo
-    volume0 = alat**3*abs( at(1, 1)*(at(2, 2)*at(3, 3)-at(2, 3)*at(3, 2)) + &
-                           at(1, 2)*(at(2, 3)*at(3, 1)-at(2, 1)*at(3, 3)) + &
-                           at(1, 3)*(at(2, 1)*at(3, 2)-at(2, 2)*at(3, 1)) )
 
     !BG
     read(unit=io_unit, fmt=*) dummy
     do i = 1, 3
       read(unit=io_unit, fmt=*) ( bg(i, j), j = 1, 3 )
     enddo
-    !FFT grid nr1 nr2 nr3
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nr1, nr2, nr3
-
-    !ECUT_WFCS
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) ecutwfc
-    !ECUT_POT
-    read(unit=io_unit, fmt=*)dummy
-    read(unit=io_unit, fmt=*) ecutrho
-
-    tpiba = tpi/alat
-    tpiba2 = tpiba*tpiba
-
-    !LSDA
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) lsda
-    !NONCOLIN
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) noncolin
-    !LSO
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) lspinorb
-    !DOMAG
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) spinorb_mag
-    if (noncolin) then
-       nspin = 2
-    else
-      nspin = 1
-    end if
-
-    !NAT
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nat
 
     !NTYP
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) ntyp
-    if (ntyp<1) stop "ERROR: read_parameters_data_file_xml: ntyp < 1"
 
     allocate(atom_labels(ntyp))
     allocate(atom_pfile(ntyp))
-    allocate(ityp(nat))
-    allocate(tau(3, nat))
-    allocate(tau_cryst(3, nat))
     allocate(amass(ntyp))
+
     !ATOM LABELS and PP files
     read(unit=io_unit, fmt=*) dummy
     do i = 1, ntyp
       read(unit=io_unit, fmt=*) atom_labels(i), amass(i), atom_pfile(i)
     end do
+
+    !NAT
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nat
+
+    allocate(ityp(nat))
+    allocate(tau(3, nat))
+    allocate(tau_cryst(3, nat))
 
     !POSITIONS
     read(unit=io_unit, fmt=*) dummy
@@ -342,11 +289,14 @@ contains
     !NSYM
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) nsym
+
     allocate(s(3, 3, nsym))
     allocate(ftau(3, nsym))
     allocate(can_use_TR(nsym))
-    !
+
+    !SYM
     do ii = 1, nsym
+      read(unit=io_unit, fmt=*) dummy
       read(unit=io_unit, fmt=*) i_sym
       do i = 1, 3
         read(unit=io_unit, fmt=*) ( s(i, j, ii), j = 1, 3 )
@@ -355,6 +305,64 @@ contains
       read(unit=io_unit, fmt=*) trev(ii)
     end do !ii
 
+    !LSPIN
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) lspin
+
+    !LSPINORB
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) lspinorb
+
+    !LMAG
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) lmag
+
+    if (lspin) then
+       nspin = 2
+    else
+      nspin = 1
+    end if
+
+    !NKS
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nkpoints_QE
+
+    !NBAND
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nbands
+
+    !FFT GRID NR1 NR2 NR3
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nr1, nr2, nr3
+
+    !ECUTWFC
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) ecutwfc
+
+    !ECUTRHO
+    read(unit=io_unit, fmt=*)dummy
+    read(unit=io_unit, fmt=*) ecutrho
+
+    !NG
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nG
+
+    !NGK_MAX
+    read(unit=io_unit, fmt=*) dummy
+    read(unit=io_unit, fmt=*) nGk_max
+
+    close(unit=io_unit)
+
+    ! Set some variables
+
+    tpiba = tpi/alat
+    tpiba2 = tpiba*tpiba
+
+    volume0 = alat**3*abs( at(1, 1)*(at(2, 2)*at(3, 3)-at(2, 3)*at(3, 2)) + &
+                           at(1, 2)*(at(2, 3)*at(3, 1)-at(2, 1)*at(3, 3)) + &
+                           at(1, 3)*(at(2, 1)*at(3, 2)-at(2, 2)*at(3, 1)) )
+
+    ! Remove symmetry opreations that are not wanted
 
     if ( (nspin == 1 .or. nspin == 2) .and. TR_symmetry ) then
       ! This is the easy case. Simply read in the symmetries
@@ -368,7 +376,7 @@ contains
             can_use_TR(ii) = .true.
           else
             can_use_TR(ii) = .false.
-            if ( .not. spinorb_mag ) can_use_TR(ii) = .true.
+            if ( .not. lmag ) can_use_TR(ii) = .true.
           end if
         end if !nspin 1 or 2
       end do
@@ -408,23 +416,6 @@ contains
       end do
 
     end if !nspin
-
-    !-KONTUZ
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nkpoints_QE
-
-    !GAMMA_ONLY
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) gamma_only
-    if (gamma_only) stop "ERROR: intw does not support gamma_only calculations yet"
-
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nG_max
-
-    read(unit=io_unit, fmt=*) dummy
-    read(unit=io_unit, fmt=*) nbands
-
-    close(unit=io_unit)
 
   end subroutine read_parameters_data_file_xml
 
@@ -474,17 +465,20 @@ contains
 
     integer :: io_unit
     character(256) :: datafile
-    integer :: ig
+    integer :: ig, nG_read
 
 
     datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"gvectors.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
-    read(unit=io_unit) ngm
 
-    allocate(gvec(3, ngm))
+    read(unit=io_unit) nG_read
 
-    do ig = 1, ngm
+    if (nG/=nG_read) stop "ERROR: get_gvec: Wrong number of G vectors!"
+
+    allocate(gvec(3, nG))
+
+    do ig = 1, nG
       read(unit=io_unit) gvec(1:3, ig)
     end do
 
@@ -493,11 +487,11 @@ contains
   end subroutine get_gvec
 
 
-  subroutine get_K_folder_data(ik, list_iG, wfc, eig, nG, altprefix)
+  subroutine get_K_folder_data(ik, list_iG, wfc, eig, nGk, altprefix)
     !------------------------------------------------------------------------
     ! For the kpoint labeled by ik, this subroutine reads all the
     ! wave functions for bands 1, .., nbands and stores them in the array
-    ! wfc(nG_max_k, nbands). It reads the G vectors index array list_iG,
+    ! wfc(nGk_max, nbands). It reads the G vectors index array list_iG,
     ! which refers to the global list of G vectors gvecs. It also reads
     ! the eigenvalues.
     !
@@ -530,10 +524,10 @@ contains
 
     !I/O variables
     integer, intent(in) :: ik
-    integer, intent(out) :: list_iG(nG_max)
+    integer, intent(out) :: list_iG(nGk_max)
     real(dp), intent(out) :: eig(num_bands_intw)
-    complex(dp), intent(out) :: wfc(nG_max, num_bands_intw, nspin)
-    integer, intent(out) :: nG
+    complex(dp), intent(out) :: wfc(nGk_max, num_bands_intw, nspin)
+    integer, intent(out) :: nGk
     character(256), optional, intent(in) :: altprefix
 
     !logical variables
@@ -560,9 +554,9 @@ contains
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="unformatted")
     !
     ! Read data
-    read(unit=io_unit) nG
+    read(unit=io_unit) nGk
     !
-    read(unit=io_unit) list_iG(1:nG)
+    read(unit=io_unit) list_iG(1:nGk)
     !
     read(unit=io_unit) eig_all(1:nbands)
     !
@@ -573,7 +567,7 @@ contains
         read(unit=io_unit)
       else
         n_yes = n_yes + 1
-        read(unit=io_unit) ( wfc(1:nG, n_yes, is), is = 1, nspin )
+        read(unit=io_unit) ( wfc(1:nGk, n_yes, is), is = 1, nspin )
         eig(n_yes) = eig_all(ibnd)
       endif
         !
@@ -708,7 +702,7 @@ contains
       !
       ! Number of wannier functions (after disentanglement)
       ! must be the same as number of projections
-      if (noncolin) then
+      if (lspin) then
         call scan_file_to(nnkp_unit, 'spinor_projections')
         read(nnkp_unit, *) num_wann_intw
       else

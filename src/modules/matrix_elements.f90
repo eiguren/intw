@@ -52,12 +52,12 @@ contains
     ! The computation is done over all bands.
     !
     ! The G-vectors are referenced by their indices in list_iG1, list_iG2,
-    ! which refer to the global list gvec(3,ngm), which should be defined
+    ! which refer to the global list gvec(1:3,1:nG), which should be defined
     ! BEFORE using this subroutine.
     !--------------------------------------------------------------------------------
 
     use intw_useful_constants, only: zero, one, cmplx_0
-    use intw_reading, only: nG_max, gvec, nspin, num_bands_intw
+    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
     use intw_fft, only : find_iG
 
     implicit none
@@ -65,8 +65,8 @@ contains
     ! I/O variables
 
     integer, intent(in) :: G(3), ngk1, ngk2
-    integer, intent(in) :: list_iG_1(nG_max), list_iG_2(nG_max)
-    complex(dp), intent(in) :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+    integer, intent(in) :: list_iG_1(nGk_max), list_iG_2(nGk_max)
+    complex(dp), intent(in) :: wfc_1(nGk_max,num_bands_intw,nspin), wfc_2(nGk_max,num_bands_intw,nspin)
     complex(dp), intent(out) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
     ! local variables
@@ -79,7 +79,7 @@ contains
     pw_mat_el = cmplx_0
 
     !$omp parallel default(none) &
-    !$omp shared(list_iG_1,list_iG_2,ngk1,num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nG_max,gvec,G) &
+    !$omp shared(list_iG_1,list_iG_2,ngk1,num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nGk_max,gvec,G) &
     !$omp private(i,iG_1,jd,ibnd,jbnd,is,js,pw_mat_el_local)
     !
     ! First, build the pw_mat_el_local arrays, on each thread.
@@ -93,7 +93,7 @@ contains
       !
 #if __GFORTRAN__ & __GNUC__ < 9
       jd(1) = 0
-      do j=1,nG_max
+      do j=1,nGk_max
         if (list_iG_2(j)==iG_1) then
           jd(1) = j
           exit
@@ -164,14 +164,14 @@ contains
     ! The computation is done over all bands.
     !
     ! The G-vectors are referenced by their indices in list_iG1, list_iG2,
-    ! which refer to the global list gvec(3,ngm), which should be defined
+    ! which refer to the global list gvec(1:3,1:nG), which should be defined
     ! BEFORE using this subroutine.
     !
     ! The matrix element is obtained using the FFT routines.
     !-------------------------------------------------------------------------
 
     use intw_fft, only: wfc_from_g_to_r, nl, find_iG
-    use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
+    use intw_reading, only: nr1, nr2, nr3, nGk_max, nspin, num_bands_intw
     use intw_useful_constants, only: zero, one, cmplx_0
 
     implicit none
@@ -181,8 +181,8 @@ contains
     !I/O variables
 
     integer, intent(in) :: G(3)
-    integer, intent(in) :: list_iG_1(nG_max), list_iG_2(nG_max)
-    complex(dp), intent(in) :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+    integer, intent(in) :: list_iG_1(nGk_max), list_iG_2(nGk_max)
+    complex(dp), intent(in) :: wfc_1(nGk_max,num_bands_intw,nspin), wfc_2(nGk_max,num_bands_intw,nspin)
     complex(dp), intent(inout) :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
 
     !local variables
@@ -358,13 +358,13 @@ contains
     ! The computation is done over all bands.
     !--------------------------------------------------------------------------------
     use intw_useful_constants, only: zero, one, cmplx_0, sig_x, sig_y, sig_z
-    use intw_reading, only: nG_max, nspin, num_bands_intw
+    use intw_reading, only: nGk_max, nspin, num_bands_intw
 
     implicit none
 
     !I/O variables
 
-    complex(dp), intent(in) :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp), intent(in) :: wfc(nGk_max,num_bands_intw,nspin)
     complex(dp), intent(out) :: spin(num_bands_intw,3)
 
     !local variables
@@ -373,7 +373,7 @@ contains
 
     spin = cmplx_0
     !
-    do iG=1,nG_max
+    do iG=1,nGk_max
       !
       do ibnd=1,num_bands_intw
         do is=1,nspin
@@ -443,7 +443,7 @@ contains
     ! vector is identified by a triple index.
     !--------------------------------------------------------
 
-    use intw_reading, only: nr1, nr2, nr3, nG_max, nspin, num_bands_intw
+    use intw_reading, only: nr1, nr2, nr3, nGk_max, nspin, num_bands_intw
     use intw_useful_constants, only: zero, one, cmplx_0
     use intw_utility, only: joint_to_triple_index_g
     use intw_fft, only: nl
@@ -451,8 +451,8 @@ contains
     implicit none
 
     ! input
-    integer, intent(in) :: list_iG(nG_max)
-    complex(dp), intent(in) :: wfc_G_1D(nG_max,num_bands_intw,nspin)
+    integer, intent(in) :: list_iG(nGk_max)
+    complex(dp), intent(in) :: wfc_G_1D(nGk_max,num_bands_intw,nspin)
 
     ! output
     complex(dp), intent(out) :: wfc_G_3D(nr1,nr2,nr3,num_bands_intw,nspin)
@@ -469,7 +469,7 @@ contains
 
     ! loop on all G vectors in the array
 
-    do i = 1,nG_max
+    do i = 1,nGk_max
       ! identify the G vector by its index, as stored in list_iG
       iG = list_iG(i)
 

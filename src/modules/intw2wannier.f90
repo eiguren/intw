@@ -28,7 +28,7 @@ module intw_intw2wannier
   !---------------------------------------------------------------------------!
 
   use kinds, only: dp
-  use intw_reading, only: nbands, nG_max, ngm, nspin
+  use intw_reading, only: nbands, nGk_max, nG, nspin
   use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
@@ -103,7 +103,7 @@ contains
   subroutine deallocate_nnkp()
 !---------------------------------
 
-  use intw_reading, only: noncolin
+  use intw_reading, only: lspin
 
   implicit none
 
@@ -115,8 +115,8 @@ contains
   deallocate(nnkp_proj_x)
   deallocate(nnkp_proj_z)
   deallocate(nnkp_proj_zona)
-  if (noncolin) deallocate(nnkp_proj_spin_axis)
-  if (noncolin) deallocate(nnkp_proj_s)
+  if (lspin) deallocate(nnkp_proj_spin_axis)
+  if (lspin) deallocate(nnkp_proj_s)
   deallocate(nnkp_list_ikpt_nn)
   deallocate(nnkp_list_G)
   deallocate(nnkp_excluded_bands)
@@ -134,7 +134,7 @@ contains
 ! opened.
 !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, noncolin, scan_file_to
+  use intw_reading, only: alat, lspin, scan_file_to
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -204,7 +204,7 @@ contains
   ! projection information
   !==========================
   !
-  if (noncolin) then
+  if (lspin) then
     call scan_file_to (nnkp_unit,'spinor_projections')
     read(nnkp_unit,*) nnkp_n_proj
     allocate(nnkp_proj_s(nnkp_n_proj))
@@ -233,7 +233,7 @@ contains
                        (nnkp_proj_x(i,j),i=1,3), &
                         nnkp_proj_zona(j)
      !
-     if (noncolin) then
+     if (lspin) then
        read(nnkp_unit,*) nnkp_proj_s(j), nnkp_proj_spin_axis(:,j)
        ! Check
        if (abs(nnkp_proj_s(j)) /= 1) then
@@ -316,7 +316,7 @@ contains
 ! This subroutine simply outputs what was read from the nnkp file, for
 ! testing.
 !----------------------------------------------------------------------------!
-  use intw_reading, only: noncolin
+  use intw_reading, only: lspin
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -378,7 +378,7 @@ contains
                           (nnkp_proj_x  (i,j),i=1,3),   &
                            nnkp_proj_zona( j)
 
-      if (noncolin) then
+      if (lspin) then
          write(io_unit,'(I6, 3F12.6)') nnkp_proj_s(j), &
                                        (nnkp_proj_spin_axis(i,j), i=1,3)
       end if
@@ -524,8 +524,8 @@ contains
 
     integer        :: ngk1, ngk2
 
-    integer        :: list_iG_1(nG_max), list_iG_2(nG_max)
-    complex(dp)    :: wfc_1(nG_max,num_bands_intw,nspin), wfc_2(nG_max,num_bands_intw,nspin)
+    integer        :: list_iG_1(nGk_max), list_iG_2(nGk_max)
+    complex(dp)    :: wfc_1(nGk_max,num_bands_intw,nspin), wfc_2(nGk_max,num_bands_intw,nspin)
     real(dp)       :: QE_eig(num_bands_intw)
 
     complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
@@ -625,7 +625,7 @@ contains
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    use intw_reading, only : noncolin, num_bands_intw
+    use intw_reading, only : lspin, num_bands_intw
     use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
 
     implicit none
@@ -641,11 +641,11 @@ contains
     integer        :: ikpt
     integer        :: nb, n_proj
 
-    integer        :: ngk, list_iG(nG_max)
+    integer        :: ngk, list_iG(nGk_max)
 
-    complex(dp)    :: wfc(nG_max,num_bands_intw,nspin)
+    complex(dp)    :: wfc(nGk_max,num_bands_intw,nspin)
 
-    complex(dp)    :: guiding_function(nG_max,nspin)
+    complex(dp)    :: guiding_function(nGk_max,nspin)
 
     real(dp)       :: QE_eig(num_bands_intw)
 
@@ -678,7 +678,7 @@ contains
         call generate_guiding_function(ikpt, ngk, list_iG, n_proj, guiding_function(:,1))
 
         !JLB spinor projection. Should be generalized to quantization axis /= z
-        if (noncolin) then
+        if (lspin) then
           if (nnkp_proj_s(n_proj) < 0) then
             guiding_function(:,2) = guiding_function(:,1)
             guiding_function(:,1) = cmplx_0
@@ -724,8 +724,8 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: ikpt, ngk, n_proj, list_iG(nG_max)
-    complex(dp), intent(out) :: guiding_function(nG_max)
+    integer, intent(in) :: ikpt, ngk, n_proj, list_iG(nGk_max)
+    complex(dp), intent(out) :: guiding_function(nGk_max)
 
     !local variables
 
@@ -733,11 +733,11 @@ contains
     integer :: i, mu, iG
     integer :: proj_nr, proj_l, proj_m
     integer :: l, m, lm
-    real(dp) :: zona, zaxis(3), xaxis(3), ylm(nG_max)
+    real(dp) :: zona, zaxis(3), xaxis(3), ylm(nGk_max)
     real(dp) :: k_cryst(3), tau_cryst(3), tau_cart(3)
     real(dp) :: k_plus_G_cart(3,ngk)
     real(dp) :: norm2
-    real(dp) :: radial_l(nG_max, 0:lmax), coef(lmmax)
+    real(dp) :: radial_l(nGk_max, 0:lmax), coef(lmmax)
     complex(dp) :: four_pi_i_l
 
     !
@@ -840,23 +840,23 @@ contains
     !  The computation is done over all bands using FFT.
     !------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max, nr1, nr2, nr3, num_bands_intw
+    use intw_reading, only: nGk_max, nr1, nr2, nr3, num_bands_intw
     use intw_fft, only: wfc_from_g_to_r, wfc_from_r_to_g
 
     implicit none
 
     !I/O variables
 
-    integer,intent(in) :: list_iG(nG_max)
-    complex(dp),intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-    complex(dp),intent(in) :: guiding_function(nG_max,nspin)
+    integer,intent(in) :: list_iG(nGk_max)
+    complex(dp),intent(in) :: wfc(nGk_max,num_bands_intw,nspin)
+    complex(dp),intent(in) :: guiding_function(nGk_max,nspin)
     complex(dp),intent(out) :: amn(num_bands_intw)
 
     !local variables
 
     integer :: ibnd, ir, is
     complex(dp) :: wfc_r(nr1*nr2*nr3), fr(nr1*nr2*nr3)
-    complex(dp) :: fg(nG_max)
+    complex(dp) :: fg(nGk_max)
 
 
     amn = cmplx_0
@@ -897,15 +897,15 @@ contains
     !     The computation is done over all bands.
     !--------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max, num_bands_intw
+    use intw_reading, only: nGk_max, num_bands_intw
 
     implicit none
 
     !I/O variables
 
     integer, intent(in) :: ngk
-    complex(dp), intent(in) :: wfc(nG_max,num_bands_intw,nspin)
-    complex(dp), intent(in) :: guiding_function(nG_max,nspin)
+    complex(dp), intent(in) :: wfc(nGk_max,num_bands_intw,nspin)
+    complex(dp), intent(in) :: guiding_function(nGk_max,nspin)
     complex(dp), intent(out) :: amn(num_bands_intw)
 
     !local variables
@@ -967,7 +967,7 @@ contains
     !   See the LICENSE file in the original Quantum Espresso source for license details.
     !   For the original source visit: https://www.quantum-espresso.org/
     !
-    use intw_reading, only: nG_max, volume0
+    use intw_reading, only: nGk_max, volume0
     use intw_utility, ONLY : simpson, sphb
     use intw_useful_constants, only: fpi, ZERO
 
@@ -977,7 +977,7 @@ contains
 
     integer, intent(in) :: lmax, proj_nr, ngk
     real(dp), intent(in) :: coef((lmax+1)**2), zona, k_plus_G_cart(3,ngk)
-    real(dp), intent(out) :: radial_l(nG_max, 0:lmax)
+    real(dp), intent(out) :: radial_l(nGk_max, 0:lmax)
 
     !local variables
 
@@ -1072,25 +1072,25 @@ contains
 !     The computation is done over all bands.
 !
 !     The G-vectors are referenced by their indices in list_iG
-!     which refer to the global list gvec(3,ngm).
+!     which refer to the global list gvec(1:3,1:nG).
 !
 !--------------------------------------------------------------------------------
 
-  use intw_reading, only: ngm
+  use intw_reading, only: nG
 
   implicit none
 
   !I/O variables
 
   integer,intent(in) :: proj_nr
-  real(dp),intent(in) :: zona, k_plus_G_cart(3,ngm)
-  complex(dp),intent(inout) :: guiding_function(ngm)
+  real(dp),intent(in) :: zona, k_plus_G_cart(3,nG)
+  complex(dp),intent(inout) :: guiding_function(nG)
 
   !local variables
 
   integer :: iG
   real(dp) :: z, z2, z4, z6, z52, sqrt_z, pref
-  real(dp) :: p(ngm)
+  real(dp) :: p(nG)
 
   z=zona
   z2=z*z
@@ -1101,7 +1101,7 @@ contains
   !
   !find the norms
   !
-  do iG=1,ngm
+  do iG=1,nG
      !
      p(iG)=sqrt( k_plus_G_cart(1,iG)**2 &
                + k_plus_G_cart(2,iG)**2 &
@@ -1172,7 +1172,7 @@ contains
     ! The computation is done over all bands.
     !--------------------------------------------------------------------------
 
-    use intw_reading, only: nG_max
+    use intw_reading, only: nGk_max
 
     implicit none
 
@@ -1181,7 +1181,7 @@ contains
     integer, intent(in) :: ngk, proj_l, proj_m
     real(dp), intent(in) :: xaxis(3), zaxis(3)
     real(dp), intent(in) :: k_plus_G_cart(3,ngk)
-    real(dp), intent(out) :: ylm(nG_max)
+    real(dp), intent(out) :: ylm(nGk_max)
 
     !local variables
 

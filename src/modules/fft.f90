@@ -63,15 +63,15 @@ contains
     ! This subroutine simply allocates the arrays needed
     ! by the fft algorithms.
     !--------------------------------------------------------
-    use intw_reading, only: ngm, nr1, nr2, nr3, nat, ntyp
+    use intw_reading, only: nG, nr1, nr2, nr3, nat, ntyp
 
     implicit none
 
-    allocate (nl(ngm), g_fft_map( nr1, nr2, nr3) )
-    allocate (phase(ngm,nat) )
-    allocate (gvec_cart(3,ngm))
-    allocate (gg(ngm))
-    allocate (strf(ngm, ntyp))
+    allocate (nl(nG), g_fft_map( nr1, nr2, nr3) )
+    allocate (phase(nG,nat) )
+    allocate (gvec_cart(3,nG))
+    allocate (gg(nG))
+    allocate (strf(nG, ntyp))
 
   end subroutine allocate_fft
 
@@ -140,15 +140,15 @@ contains
     !                  G_fft_map(n1,n2,n3) = index of G vector in gvec which
     !                                        corresponds to G_fft(n1,n2,n3)
     !
-    !             - It creates an array nl(ng), which returns the scalar
+    !             - It creates an array nl, which returns the scalar
     !               index "nl" corresponding to the triple index (n1,n2,n3)
-    !               of the G vector gvec(ng).
+    !               of the G vector gvec(ig).
     !
     !             - It computes the phases
-    !                    phase(ng,na) = Exp ( -2 pi i gvec(ng) * tau(na) )
+    !                    phase(ig,ia) = Exp ( -2 pi i gvec(ig) * tau(ia) )
     !
     !------------------------------------------------------------------------
-    use intw_reading, only: ngm, gvec, bg, nat, tau, ntyp, ityp, nr1, nr2, nr3, tpiba2
+    use intw_reading, only: nG, gvec, bg, nat, tau, ntyp, ityp, nr1, nr2, nr3, tpiba2
     use intw_utility, only: triple_to_joint_index_r, cryst_to_cart
     use intw_useful_constants, only: tpi, cmplx_i, cmplx_0
 
@@ -158,33 +158,33 @@ contains
 
     logical :: assigned(nr1,nr2,nr3)
     integer :: n1, n2, n3
-    integer :: ng, na, nt
+    integer :: ig, na, nt
 
 
     g_fft_map(:,:,:) = 0
     nl(:) = 0
     assigned(:,:,:) = .false.
     ! loop on all G vectors in the global array gvec
-    do ng = 1, ngm
+    do ig = 1, nG
       ! find the triple index corresponding to the G_fft mesh
       ! NOTE: the function "modulo" always returns a positive number in FORTRAN90
       !       the function "mod" is more dangerous.
 
-      n1 = modulo(gvec(1,ng), nr1)+1
+      n1 = modulo(gvec(1,ig), nr1)+1
 
-      n2 = modulo(gvec(2,ng), nr2)+1
+      n2 = modulo(gvec(2,ig), nr2)+1
 
-      n3 = modulo(gvec(3,ng), nr3)+1
+      n3 = modulo(gvec(3,ig), nr3)+1
 
       if (.not. assigned(n1,n2,n3) ) then
 
         assigned(n1,n2,n3) = .true.
-        g_fft_map(n1,n2,n3) = ng
+        g_fft_map(n1,n2,n3) = ig
 
         ! compute the scalar index corresponding to n1,n2,n3 and
-        ! assign it to nl(ng)
+        ! assign it to nl(ig)
 
-        call triple_to_joint_index_r(nr1,nr2,nr3,nl(ng),n1,n2,n3)
+        call triple_to_joint_index_r(nr1,nr2,nr3,nl(ig),n1,n2,n3)
 
       else
         write(*,*) 'ERROR in generate_nl. FFT mesh too small?'
@@ -196,22 +196,22 @@ contains
         stop
       endif
 
-    end do ! ng
+    end do ! ig
 
     ! Obtain the G vectors in cartesian coordinates
-    gvec_cart(1:3,1:ngm) = gvec(1:3,1:ngm)
-    call cryst_to_cart (ngm, gvec_cart, bg, 1)
+    gvec_cart(1:3,1:nG) = gvec(1:3,1:nG)
+    call cryst_to_cart (nG, gvec_cart, bg, 1)
 
     ! Calculate module squared of the G vectors
-    do ng=1, ngm
-      gg(ng) = tpiba2*dot_product(gvec_cart(:,ng), gvec_cart(:,ng))
+    do ig=1, nG
+      gg(ig) = tpiba2*dot_product(gvec_cart(:,ig), gvec_cart(:,ig))
     enddo
 
     ! Compute the phases
     do na=1,nat
-      do ng=1,ngm
+      do ig=1,nG
         ! the tau vectors are in cartesian, alat units.
-        phase(ng,na) = exp ( -tpi*cmplx_i*dot_product(gvec_cart(:,ng), tau(:,na)) )
+        phase(ig,na) = exp ( -tpi*cmplx_i*dot_product(gvec_cart(:,ig), tau(:,na)) )
       enddo
     enddo
 
@@ -230,7 +230,7 @@ contains
 
   subroutine wfc_by_expigr(num_bands, nspin, G, list_iG, wfc)
 
-    use intw_reading, only: gvec, nG_max
+    use intw_reading, only: gvec, nGk_max
     use intw_utility, only: hpsort_integer
     use intw_useful_constants, only: cmplx_0
 
@@ -240,19 +240,19 @@ contains
 
     integer, intent(in) :: num_bands, nspin
     integer, intent(in) :: G(3) ! G vector such that k_out = k_in + G
-    integer, intent(inout) :: list_iG(nG_max) ! On input, G vector indices for k, sorted
+    integer, intent(inout) :: list_iG(nGk_max) ! On input, G vector indices for k, sorted
                                               ! On output, G vector indices for k + G, sorted
-    complex(dp), intent(inout) :: wfc(ng_max,num_bands,nspin) ! On input, wave function components for k
+    complex(dp), intent(inout) :: wfc(nGk_max,num_bands,nspin) ! On input, wave function components for k
                                                               ! On output, wave function components for k + G
 
     !local variables
 
-    integer :: list_iG_k_irr(nG_max)
-    complex(dp) :: wfc_k_irr(ng_max,num_bands,nspin)
+    integer :: list_iG_k_irr(nGk_max)
+    complex(dp) :: wfc_k_irr(nGk_max,num_bands,nspin)
     integer :: p_i, i, iG_k_irr, iG_k
     integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
-    integer :: permutations(nG_max) ! index permutation which orders list_G_k
-    integer :: nb, ispin, nG
+    integer :: permutations(nGk_max) ! index permutation which orders list_G_k
+    integer :: nb, ispin, nGk
 
 
     !Initialization
@@ -262,28 +262,28 @@ contains
     !
     ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
     !
-    nG = 0
-    do i = 1, nG_max
+    nGk = 0
+    do i = 1, nGk_max
       !
       iG_k_irr = list_iG_k_irr(i)
       !
       if (iG_k_irr == 0) exit ! the index array is zero-padded at the end.
       !
-      nG = nG+1
+      nGk = nGk + 1
       !
       G_k(:) = gvec(:,iG_k_irr) - G(:) ! minus, zeren horrela da konbentzioa exp(-igr) (testatuta dago intw2wan).
       !
       call find_iG(G_k, iG_k)
       !
-      list_iG(nG) = iG_k
+      list_iG(nGk) = iG_k
       !
     enddo
     !
-    call hpsort_integer(nG, list_iG, permutations)
+    call hpsort_integer(nGk, list_iG, permutations)
     wfc_k_irr = wfc
     wfc = cmplx_0
     !
-    do i = 1, nG
+    do i = 1, nGk
       !
       p_i = permutations(i)
       !
@@ -308,7 +308,7 @@ contains
     !  code to transform a wavefunction in G space to
     !  a wavefunction in r space.
     !
-    !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+    !     in ::        wfc_g(nGk_max)        : the u_{nk}(G) coefficients
     !                  list_iG               : the indices of the G vectors used
     !                                          in the wave function
     !
@@ -316,7 +316,7 @@ contains
     !                                          in real space, with the space index
     !                                          represented by a scalar.
     !--------------------------------------------------------
-    use intw_reading, only: nG_max, nr1, nr2, nr3
+    use intw_reading, only: nGk_max, nr1, nr2, nr3
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -324,9 +324,9 @@ contains
     external :: cfftnd
 
     integer :: i, iG
-    integer :: list_iG(nG_max)
+    integer :: list_iG(nGk_max)
 
-    complex(dp), intent(in) :: wfc_g(nG_max)
+    complex(dp), intent(in) :: wfc_g(nGk_max)
     complex(dp), intent(out) :: wfc_r(nr1*nr2*nr3)
 
 
@@ -335,7 +335,7 @@ contains
     wfc_r(:) = cmplx_0
 
     ! put wfc_g in wfc_r
-    do i=1,nG_max
+    do i=1,nGk_max
       ! identify the G vector by its index, as stored in list_iG
       iG = list_iG(i)
 
@@ -359,7 +359,7 @@ contains
     !  code to transform a wavefunction in G space to
     !  a wavefunction in r space.
     !
-    !     in ::        wfc_g(nG_max)         : the u_{nk}(G) coefficients
+    !     in ::        wfc_g(nGk_max)        : the u_{nk}(G) coefficients
     !                  list_iG               : the indices of the G vectors used
     !                                          in the wave function
     !
@@ -367,7 +367,7 @@ contains
     !                                          in real space, with the space index
     !                                          represented by a scalar.
     !--------------------------------------------------------
-    use intw_reading, only: nG_max, nr1, nr2, nr3
+    use intw_reading, only: nGk_max, nr1, nr2, nr3
     use intw_useful_constants, only: cmplx_0
 
     implicit none
@@ -375,9 +375,9 @@ contains
     external :: cfftnd
 
     integer :: i, iG
-    integer :: list_iG(nG_max)
+    integer :: list_iG(nGk_max)
 
-    complex(dp), intent(out) :: wfc_g(nG_max)
+    complex(dp), intent(out) :: wfc_g(nGk_max)
     complex(dp), intent(in) :: wfc_r(nr1*nr2*nr3)
 
     complex(dp) :: aux(nr1*nr2*nr3)
@@ -391,7 +391,7 @@ contains
                                ! this convention reproduces
                                ! the results of pw2wannier EXACTLY
 
-  do i=1,nG_max
+  do i=1,nGk_max
     ! identify the G vector by its index, as stored in list_iG
     iG = list_iG(i)
     if (iG == 0) exit
@@ -407,13 +407,13 @@ contains
     !  This subroutine is a driver which uses the 3D-FFT
     !  code to go from f(G) to f(r).
     !--------------------------------------------------------
-    use intw_reading, only: nr1, nr2, nr3, ngm
+    use intw_reading, only: nr1, nr2, nr3, nG
     use intw_useful_constants, only: cmplx_0
 
     implicit none
 
     integer, intent(in) :: nfunc
-    complex(dp), intent(in) :: fg(ngm,nfunc)
+    complex(dp), intent(in) :: fg(nG,nfunc)
     complex(dp), intent(out) :: fr(nr1*nr2*nr3,nfunc)
 
     integer :: mode, ig
@@ -427,7 +427,7 @@ contains
       aux(:) = cmplx_0
 
       ! put fg in aux
-      do ig=1,ngm
+      do ig=1,nG
         aux(nl(ig)) = fg(ig, mode)
       enddo
 
@@ -478,14 +478,14 @@ contains
     !  This subroutine is a driver which uses the 3D-FFT
     !  code to go from f(r) to f(G).
     !--------------------------------------------------------
-    use intw_reading, only: nr1, nr2, nr3, ngm
+    use intw_reading, only: nr1, nr2, nr3, nG
     use intw_useful_constants, only: cmplx_0
 
     implicit none
 
     integer, intent(in) :: nfunc
     complex(dp), intent(in) :: fr(nr1*nr2*nr3,nfunc)
-    complex(dp), intent(out) :: fg(ngm,nfunc)
+    complex(dp), intent(out) :: fg(nG,nfunc)
 
     integer :: mode, ig, ir
     complex(dp) :: aux(nr1*nr2*nr3)
@@ -503,7 +503,7 @@ contains
 
       call cfftnd(3, (/nr1,nr2,nr3/), -1, aux) ! this is the right convention
 
-      do ig=1,ngm
+      do ig=1,nG
         fg(ig,mode) = aux(nl(ig))
       enddo
     enddo

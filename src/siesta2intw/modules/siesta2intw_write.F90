@@ -206,7 +206,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, outdir, prefix, phonons
-    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec, gvec_cart
+    use siesta2intw_fft, only: nGk_max, list_iG, ngk, gvec, gvec_cart
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
@@ -270,7 +270,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, cutoff
-    use siesta2intw_fft, only: npwx, gamma_only
+    use siesta2intw_fft, only: nG, nGk_max, gamma_only
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
@@ -299,8 +299,78 @@ contains
     ! Reciprocal lattice vectors
     write(unit=io_unit,fmt=*) "BG"
     do i=1,3
-       write(unit=io_unit, fmt="(3f12.6)") bg(i, 1:3)
+      write(unit=io_unit, fmt="(3f12.6)") bg(i, 1:3)
     enddo
+
+    ! Number of species
+    write(unit=io_unit,fmt=*) "NTYP"
+    write(unit=io_unit,fmt=*) nspecies
+
+    ! Atom labels, mass and PP file
+    write(unit=io_unit,fmt=*) "ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
+    do i=1,nspecies
+      write(unit=io_unit,fmt="(a,f16.5,x,a)") trim(species(i)%symbol), species(i)%mass, trim(species(i)%label)
+    enddo
+
+    ! Number of atoms
+    write(unit=io_unit,fmt=*) "NAT"
+    write(unit=io_unit,fmt=*) na_u
+
+    ! Atomic positions
+    write(unit=io_unit,fmt=*) "POSITIONS (1:NAT)"
+    do i=1,na_u
+      write(unit=io_unit,fmt="(a4,i4,3f16.8)") trim(species(isa(i))%symbol), isa(i), xa(1:3, i)/alat
+    end do
+
+    ! Number of symmetries
+    write(unit=io_unit,fmt=*) "NSYM"
+    write(unit=io_unit,fmt=*) nsym
+
+    ! Symmetry operations
+    do isym=1,nsym
+      write(unit=io_unit,fmt=*) "SYM"
+      write(unit=io_unit, fmt="(i8)") isym
+      do i = 1, 3
+        write(unit=io_unit, fmt="(3i8)") s(i, 1:3, isym)
+      enddo
+      write(unit=io_unit, fmt="(3f16.10)")  ftau(1:3, isym)
+      write(unit=io_unit, fmt="(i3)") t_rev(isym)
+    enddo
+
+    ! Spin-polarized calculation
+    write(unit=io_unit,fmt=*) "LSPIN"
+    write(unit=io_unit,fmt=*)  spin%Col .or. spin%NCol .or. spin%SO ! We transform the colinear calculations into non-colinear format
+
+    ! Non-colinear spin polarized calculation with spin-orbit coupling
+    write(unit=io_unit,fmt=*) "LSPINORB"
+    write(unit=io_unit,fmt=*)  spin%SO
+
+    ! This variable means if the induced potential is a 2x2 matirx or not.
+    ! With SIESTA, except if the calculation is non-polarized, we always will write the full 2x2 matrix.
+    write(unit=io_unit,fmt=*) "LMAG"
+    write(unit=io_unit,fmt=*) spin%Col .or. spin%NCol .or. spin%SO
+    !
+    ! TODO: What happens if we have a non-magnetic colinear calculation?
+    !       This type of calculation has no sense, as it would be equivalent to a non-polarized calculation.
+    !       Maybe we could check if this is the case, and print an error or warning message.
+    !
+    ! TODO: What happens if we have a non-magnetic non-colinear calculation?
+    !       If the calculation is not magnetic, the system has time reversal symmetry. By default, SIESTA
+    !       does not use time reversal symmetry to reduce the k-points for non-colinear calculations.
+    !       However, QE does use time reversal symmetry in non-magnetic non-colinear calculations, and
+    !       therefore, only writes one component of the induced potential (rho), as the 2x2 matrix will
+    !       be rho.I2 in such a case. This is what the domag variable indicates in QE.
+    !       We should check and write in the documentation what does imply time reversal symmetry on the
+    !       wave functions, on the Hamiltonian and on the induced potential.
+    !
+
+    ! Number of k-points
+    write(unit=io_unit,fmt=*) "NKS"
+    write(unit=io_unit,fmt=*) nwk
+
+    ! Number of bands
+    write(unit=io_unit,fmt=*) "NBAND"
+    write(unit=io_unit,fmt=*) nbnd
 
     ! FFT grid
     write(unit=io_unit,fmt=*) "FFT GRID"
@@ -318,86 +388,13 @@ contains
     write(unit=io_unit,fmt=*) "ECUTRHO"
     write(unit=io_unit,fmt="(f12.6)") g2cut
 
-    ! Colinear spin polarized calculation
-    write(unit=io_unit,fmt=*) "SPIN_COLIN"
-    write(unit=io_unit,fmt=*)  .false. ! We transform the colinear calculations into non-colinear format
-
-    ! Non-colinear spin polarized calculation
-    write(unit=io_unit,fmt=*) "SPIN_NONCOLIN"
-    write(unit=io_unit,fmt=*)  spin%Col .or. spin%NCol .or. spin%SO ! We transform the colinear calculations into non-colinear format
-
-    ! Non-colinear spin polarized calculation with spin-orbit coupling
-    write(unit=io_unit,fmt=*) "SPIN_SO"
-    write(unit=io_unit,fmt=*)  spin%SO
-
-    ! At this moment, for intw, this variable only means if the induced potential is a 2x2 matirx or not, and
-    ! with SIESTA, except if the calculation is non-polarized, we always will write the full 2x2 matrix.
-    write(unit=io_unit,fmt=*) "MAGNETIC CALCULATION"
-    write(unit=io_unit,fmt=*) spin%Col .or. spin%NCol .or. spin%SO
-    !
-    ! TODO: What happens if we have a non-magnetic colinear calculation?
-    !       This type of calculation has no sense, as it would be equivalent to a non-polarized calculation.
-    !       Maybe we could check if this is the case, and print an error or warning message.
-    !
-    ! TODO: What happens if we have a non-magnetic non-colinear calculation?
-    !       If the calculation is not magnetic, the system has time reversal symmetry. By default, SIESTA
-    !       does not use time reversal symmetry to reduce the k-points for non-colinear calculations.
-    !       However, QE does use time reversal symmetry in non-magnetic non-colinear calculations, and
-    !       therefore, only writes one component of the induced potential (rho), as the 2x2 matrix will
-    !       be rho.I2 in such a case. This is what the domag variable indicates in QE.
-    !       We should check and write in the documentation what does imply time reversal symmetry on the
-    !       wave functions, on the Hamiltonian and on the induced potential.
-    !
-
-    ! Number of atoms
-    write(unit=io_unit,fmt=*) "NAT"
-    write(unit=io_unit,fmt=*) na_u
-
-    ! Number of species
-    write(unit=io_unit,fmt=*) "NTYP"
-    write(unit=io_unit,fmt=*) nspecies
-
-    ! Atom labels, mass and PP file
-    write(unit=io_unit,fmt=*) "ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
-    do i=1,nspecies
-      write(unit=io_unit,fmt="(a,f16.5,x,a)") trim(species(i)%symbol), species(i)%mass, trim(species(i)%label)
-    enddo
-
-    ! Atomic positions
-    write(unit=io_unit,fmt=*) "POSITIONS (1:NAT)"
-    do i=1,na_u
-      write(unit=io_unit,fmt="(a4,i4,3f16.8)") trim(species(isa(i))%symbol), isa(i), xa(1:3, i)/alat
-    end do
-
-    ! Number of symmetries
-    write(unit=io_unit,fmt=*) "NSYM"
-    write(unit=io_unit,fmt=*) nsym
-
-    ! Symmetry operations
-    do isym=1,nsym
-       write(unit=io_unit, fmt="(i8)") isym
-       do i = 1, 3
-          write(unit=io_unit, fmt="(3i8)") s(i, 1:3, isym)
-       enddo
-       write(unit=io_unit, fmt="(3f16.10)")  ftau(1:3, isym)
-       write(unit=io_unit, fmt="(i3)") t_rev(isym)
-    enddo
-
-    ! Number of k-points
-    write(unit=io_unit,fmt=*) "NKS"
-    write(unit=io_unit,fmt=*) nwk
-
-    ! Gamma only wave functions
-    write(unit=io_unit,fmt=*) "GAMMA ONLY"
-    write(unit=io_unit,fmt=*) gamma_only
+    ! Number of G vectors
+    write(unit=io_unit,fmt=*) "NG"
+    write(unit=io_unit,fmt=*) nG
 
     ! Max number of G vectors for the wave function
-    write(unit=io_unit,fmt=*) "NGMAX"
-    write(unit=io_unit,fmt=*) npwx
-
-    ! Number of bands
-    write(unit=io_unit,fmt=*) "NBAND"
-    write(unit=io_unit,fmt=*) nbnd
+    write(unit=io_unit,fmt=*) "NGK_MAX"
+    write(unit=io_unit,fmt=*) nGk_max
 
     close(unit=io_unit)
 
@@ -811,7 +808,7 @@ contains
     use atm_types, only: nspecies, species
     use siesta2intw_io, only: stdout, intwdir
     use siesta2intw_utils, only: cmplx_0, cmplx_i
-    use siesta2intw_fft, only: npwx, list_iG, ngk, gvec_cart
+    use siesta2intw_fft, only: nGk_max, list_iG, ngk, gvec_cart
 #ifdef DEBUG
     use siesta2intw_fft, only: gamma_only
 #endif
@@ -871,7 +868,7 @@ contains
     allocate(grylm(1:3, 0:(lmaxd+1)**2-1))
     allocate(orbital_gk(nspecies))
     do is=1,nspecies
-      allocate(orbital_gk(is)%o(npwx, species(is)%norbs, nwk))
+      allocate(orbital_gk(is)%o(nGk_max, species(is)%norbs, nwk))
       orbital_gk(is)%o = cmplx_0
     enddo
     rylm = 0.0_dp
@@ -974,7 +971,7 @@ contains
     ! calculation. And it works fine in all situation (non-polarized, collinear
     ! and non-collinear).
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! allocate(evc(nspin*npwx, nbnd, nwk))
+    ! allocate(evc(nspin*nGk_max, nbnd, nwk))
     ! evc = cmplx_0
     !
     ! ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
@@ -1064,7 +1061,7 @@ contains
     ! tested.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    allocate(evc(spinor_comps*npwx))
+    allocate(evc(spinor_comps*nGk_max))
 
     ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
     do ik=1,nwk

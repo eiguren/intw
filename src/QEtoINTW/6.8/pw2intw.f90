@@ -95,7 +95,7 @@ PROGRAM pw2intw
   ! Write all data in intw format
   call write_pp_intw()
 
-  call write_crystal_info_and_bands ()
+  call write_crystal_info()
 
   call scf_v_and_rho()
 
@@ -704,7 +704,7 @@ contains
   end subroutine write_wfc
 
 
-  SUBROUTINE write_crystal_info_and_bands
+  subroutine write_crystal_info
 
     USE wvfct, ONLY: nbnd
     USE constants, ONLY: rytoev
@@ -714,7 +714,7 @@ contains
     USE symm_base, ONLY: nsym, s, ft, t_rev, ft
     USE fft_base, ONLY: dfftp
     USE gvecw, ONLY: ecutwfc
-    USE gvect, ONLY: ecutrho
+    USE gvect, ONLY: ecutrho, ngm
     USE spin_orb, ONLY: lspinorb
     USE ions_base, ONLY: nat, ityp, nsp, tau, atm, amass
     USE io_files, ONLY: psfile
@@ -724,38 +724,36 @@ contains
     USE lsda_mod, ONLY: lsda
 
     IMPLICIT NONE
-    !
-    INTEGER, EXTERNAL :: find_free_unit
-    !
-    INTEGER ik, i, j
 
-    INTEGER :: isym
+    INTEGER, EXTERNAL :: find_free_unit
+
+    INTEGER ik, i, j, isym
     CHARACTER(LEN=256) :: datafile
-    integer :: io_unit, ios
+    INTEGER :: io_unit, ios
 
     ! JLB new variables to support collinear spin-polarized calculation
-    LOGICAL :: noncolin_intw, domag_intw, lsda_intw
+    LOGICAL :: lspin, lmag
     INTEGER :: nkstot_intw, nbnd_intw
+
+
+    ! Write crystal.dat file
 
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"crystal.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
-    if (ios /= 0) call errore( "pw2intw", "write_crystal_info_and_bands: error opening crystal.dat", ios )
+    if (ios /= 0) call errore( "pw2intw", "write_crystal_info: error opening crystal.dat", ios )
 
     ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
     ! (see also subroutine write_wfc() below)
     ! Here I define new variables to leave the ones read from QE modules unchanged
+    lspin = lsda .or. noncolin
     if (lsda) then
-      noncolin_intw = .true.
-      domag_intw = .true. ! not sure about this one
-      lsda_intw = .false.
+      lmag = .true.
       nkstot_intw = nkstot / 2
       nbnd_intw = nbnd * 2
     else
       ! Just leave as in QE
-      noncolin_intw = noncolin
-      domag_intw = domag
-      lsda_intw = lsda
+      lmag = domag
       nkstot_intw = nkstot
       nbnd_intw = nbnd
     end if
@@ -774,30 +772,6 @@ contains
        write(unit=io_unit, fmt="(3f12.6)")(bg(i,j), j=1,3)
     enddo
 
-    write(unit=io_unit,fmt=*)"FFT GRID"
-    write(unit=io_unit,fmt=*)dfftp%nr1,dfftp%nr2, dfftp%nr3
-
-    write(unit=io_unit,fmt=*)"ECUTWFC"
-    write(unit=io_unit,fmt=*)ecutwfc
-
-    write(unit=io_unit,fmt=*)"ECUTRHO"
-    write(unit=io_unit,fmt=*)ecutrho
-
-    write(unit=io_unit,fmt=*)"LSDA"
-    write(unit=io_unit,fmt=*) lsda_intw !lsda
-
-    write(unit=io_unit,fmt=*)"NONCOLIN"
-    write(unit=io_unit,fmt=*)noncolin_intw !noncolin
-
-    write(unit=io_unit,fmt=*)"LSPINORB"
-    write(unit=io_unit,fmt=*)lspinorb
-
-    write(unit=io_unit,fmt=*)"SPINORB_MAG (KONTUZ, hau aldatu da)"
-    write(unit=io_unit,fmt=*)domag_intw !domag
-
-    write(unit=io_unit,fmt=*)"NAT"
-    write(unit=io_unit,fmt=*)nat
-
     write(unit=io_unit,fmt=*)"NTYP"
     write(unit=io_unit,fmt=*)nsp
 
@@ -805,6 +779,9 @@ contains
     do i=1,nsp
        write(unit=io_unit,fmt="(a,f16.5,x,a)")atm(i), amass(i), trim(psfile(i))
     enddo
+
+    write(unit=io_unit,fmt=*)"NAT"
+    write(unit=io_unit,fmt=*)nat
 
     write(unit=io_unit,fmt=*)"POSITIONS (1:NAT)"
     do i=1,nat
@@ -815,7 +792,8 @@ contains
     write(unit=io_unit,fmt=*)nsym
 
     do isym=1,nsym
-       write(unit=io_unit,fmt="(i8)") isym
+       write(unit=io_unit,fmt=*)"SYM"
+       write(unit=io_unit,fmt="(i8)")isym
        do i=1, 3
           write(unit=io_unit, fmt="(3i8)") (s(i,j,isym), j=1,3)
        enddo
@@ -824,34 +802,54 @@ contains
        write(unit=io_unit,fmt="(48i3)")t_rev (isym)
     enddo
 
+    write(unit=io_unit,fmt=*)"LSPIN"
+    write(unit=io_unit,fmt=*) lspin
+
+    write(unit=io_unit,fmt=*)"LSPINORB"
+    write(unit=io_unit,fmt=*)lspinorb
+
+    write(unit=io_unit,fmt=*)"LMAG"
+    write(unit=io_unit,fmt=*)lmag
+
     write(unit=io_unit,fmt=*)"NKS"
     write(unit=io_unit,fmt=*)nkstot_intw !nkstot
-
-    write(unit=io_unit,fmt=*)"GAMMA ONLY"
-    write(unit=io_unit,fmt=*) gamma_only
-
-    write(unit=io_unit,fmt=*)"NGMAX"
-    write(unit=io_unit,fmt=*)npwx
 
     write(unit=io_unit,fmt=*)"NBAND"
     write(unit=io_unit,fmt=*)nbnd_intw !nbnd
 
+    write(unit=io_unit,fmt=*)"FFT GRID"
+    write(unit=io_unit,fmt=*)dfftp%nr1,dfftp%nr2, dfftp%nr3
+
+    write(unit=io_unit,fmt=*)"ECUTWFC"
+    write(unit=io_unit,fmt=*)ecutwfc
+
+    write(unit=io_unit,fmt=*)"ECUTRHO"
+    write(unit=io_unit,fmt=*)ecutrho
+
+    write(unit=io_unit,fmt=*)"NG"
+    write(unit=io_unit,fmt=*)ngm
+
+    write(unit=io_unit,fmt=*)"NGK_MAX"
+    write(unit=io_unit,fmt=*)npwx
+
     close(unit=io_unit)
 
+    ! Write kpoints.dat file
 
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"kpoints.dat"
     open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
-    if (ios /= 0) call errore( "pw2intw", "write_crystal_info_and_bands: error openeing kpoints.dat", ios )
+    if (ios /= 0) call errore( "pw2intw", "write_crystal_info: error openeing kpoints.dat", ios )
     !
-    DO ik=1,nkstot_intw !nkstot
+    do ik=1,nkstot_intw !nkstot
       write(unit=io_unit,fmt="(100f16.10)")( xk(i,ik), i = 1, 3 )
       !write(unit=io_unit,fmt="(100f16.10)") ( et(ibnd,ik)*rytoev, ibnd=1,nbnd )
-    ENDDO
+    enddo
     !
     close(unit=io_unit)
 
-  END SUBROUTINE write_crystal_info_and_bands
+  end subroutine write_crystal_info
+
 
 
   subroutine write_tag(string,i,tag)
