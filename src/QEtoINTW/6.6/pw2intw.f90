@@ -33,12 +33,8 @@ PROGRAM pw2intw
   ! I/O
   CHARACTER(len=256) :: prefix = " "
   CHARACTER(len=256) :: outdir = "./"
-  CHARACTER(len=256) :: data_dir = "./"
-  CHARACTER(len=256) :: rho_dir = "./"
   LOGICAL :: phonons = .false.
-  CHARACTER(len=256) :: qlist_file = "qlist.txt"
-  CHARACTER(len=256) :: ph_dir = "./"
-  CHARACTER(len=256) :: dvscf_dir = "./"
+  CHARACTER(len=256) :: phdir = "./"
   integer :: nqirr = 0
   logical :: dynxml = .false.
   CHARACTER(len=256) :: fildyn = "matdyn"
@@ -50,8 +46,8 @@ PROGRAM pw2intw
   LOGICAL :: files4nscf = .false.
   CHARACTER(len=256) :: datafile
 
-  NAMELIST / inputpp / prefix, outdir, phonons, data_dir, dvscf_dir, rho_dir, qlist_file,&
-                       nqirr, dynxml, ph_dir, fildyn, fildvscf, files4nscf
+  NAMELIST / inputpp / prefix, outdir, phonons, &
+                       phdir, nqirr, dynxml, fildyn, fildvscf, files4nscf
 
 
   !
@@ -69,14 +65,8 @@ PROGRAM pw2intw
 
   strlen = len_trim(outdir)
   if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
-  strlen = len_trim(data_dir)
-  if ( data_dir(strlen:strlen+1) .ne. "/" ) data_dir(strlen+1:strlen+2) = "/"
-  strlen = len_trim(dvscf_dir)
-  if ( dvscf_dir(strlen:strlen+1) .ne. "/" ) dvscf_dir(strlen+1:strlen+2) = "/"
-  strlen = len_trim(rho_dir)
-  if ( rho_dir(strlen:strlen+1) .ne. "/" ) rho_dir(strlen+1:strlen+2) = "/"
-  strlen = len_trim(ph_dir)
-  if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(phdir)
+  if ( phdir(strlen:strlen+1) .ne. "/" ) phdir(strlen+1:strlen+2) = "/"
 
   !
   ! Create intwdir
@@ -318,7 +308,7 @@ contains
       call write_tag("qq", iq, q_dir)
       !
       ! Read irreducible patterns
-      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
+      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
       inquire(file=datafile, exist=existitu)
       if (.not. existitu) call errore( "pw2intw", "write_phonon_info: patterns.1.xml not found", 1 )
       !
@@ -397,7 +387,7 @@ contains
       !
       ! Open file for reading
       io_unit_read = find_free_unit()
-      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
+      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
       open( unit=io_unit_read, file=trim(datafile), iostat=ios, &
             form="unformatted", status="old", action="read", access="direct", recl=rl )
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to read", ios )
@@ -464,7 +454,7 @@ contains
       !
       ! Open file for reading
       io_unit_read = find_free_unit()
-      datafile = trim(ph_dir)//trim(q_dir)//"/"//trim(fildyn)
+      datafile = trim(phdir)//trim(q_dir)//"/"//trim(fildyn)
       open( unit=io_unit_read, file=trim(datafile), iostat=ios, status="old", action="read" )
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to read", ios )
       !
@@ -555,7 +545,7 @@ contains
       !
       call write_tag("qq", iq, q_dir)
       !
-      datafile = trim(ph_dir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
+      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
       inquire(file=datafile, exist=existitu)
       if (existitu) then
         call write_tag(trim(prefix)//".rho_q", iq, rho_file)
