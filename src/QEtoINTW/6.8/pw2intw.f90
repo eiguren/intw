@@ -44,7 +44,6 @@ PROGRAM pw2intw
   INTEGER :: iostat, strlen
 
   LOGICAL :: files4nscf = .false.
-  CHARACTER(len=256) :: datafile
 
   NAMELIST / inputpp / prefix, outdir, phonons, &
                        phdir, nqirr, dynxml, fildyn, fildvscf, files4nscf
@@ -95,19 +94,30 @@ PROGRAM pw2intw
 
   if (phonons) call write_phonon_info()
 
-  ! MBR 9/12/24
-  if (files4nscf) then  !copy scf schema and charge_density for later QE nscf jobs
-          datafile = trim(outdir)//trim(prefix)//".save/charge-density.dat"
-          call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
-          datafile = trim(outdir)//trim(prefix)//".save/data-file-schema.xml"
-          call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
-  end if
+  if (files4nscf) call copy_nscf_files()
 
   !
   ! End job
   call environment_end( "pw2intw" )
 
 contains
+
+  subroutine copy_nscf_files()
+    !
+    ! Copy scf schema and charge_density for later QE nscf jobs
+    !
+    implicit none
+
+    CHARACTER(len=256) :: datafile
+
+
+    datafile = trim(outdir)//trim(prefix)//".save/charge-density.dat"
+    call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
+
+    datafile = trim(outdir)//trim(prefix)//".save/data-file-schema.xml"
+    call execute_command_line("cp "//trim(datafile)//" "//trim(intwdir) )
+
+  end subroutine copy_nscf_files
 
 
   SUBROUTINE write_pp_intw()
