@@ -161,20 +161,9 @@ program ep_melements
   !
   call set_num_bands()
   !
-  ! MBR 13/05/2024
-  ! Check consistency with input flag use_exclude_bands
+  ! Select bands for which ep elements will be calculated
   !
-  if (trim(use_exclude_bands) .eq. 'all' .and. num_bands_intw .lt. nbands) then
-    write(*,*) ' use_exclude_bands == all chosen, but bands have been excluded previously.'
-    write(*,*) ' nbands = ', nbands
-    write(*,*) ' num_bands_intw = ', num_bands_intw
-    write(*,*) ' This is an inconsistency. Stopping.'
-    stop
-  end if
-  !
-  ! Information about bands for which ep elements will be calculated
-  !
-  if (trim(ep_bands) .eq. 'custom') then ! only a handful of bands
+  if (trim(ep_bands) .eq. 'custom') then
     num_bands_ep = ep_bands_final-ep_bands_initial+1
     write(*,*) ' ep_bands == custom chosen.'
     write(*,*) ' ep elements to be calculated for bands ', ep_bands_initial, &

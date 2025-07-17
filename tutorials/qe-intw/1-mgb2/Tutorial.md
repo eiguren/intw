@@ -126,7 +126,7 @@ dis_froz_max    =  9.0
 ...
 ```
 
-We will disentangle to work with 5 bands after unitary rotation, the lowest in the energy range. In the following `intw.in` input we have selected `use_exclude_bands = 'wannier'`, which in this particular case would be equivalent to `use_exclude_bands = 'qe'`. Here we indicate in the `&input` block the grid and the Fermi energy from mgb2.scf.out, which is needed later:
+We will disentangle to work with 5 bands after unitary rotation, the lowest in the energy range. In the following `intw.in` input we have selected `use_exclude_bands = 'wannier'`. Here we indicate in the `&input` block the grid and the Fermi energy from mgb2.scf.out, which is needed later:
 
 ```
 &input

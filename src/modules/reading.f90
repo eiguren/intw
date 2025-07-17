@@ -671,8 +671,8 @@ contains
     inquire(file=nnkp_filename, exist=have_nnkp)
 
     ! control consistency with use_exclude_bands flag
-    if ( have_nnkp .and. trim(use_exclude_bands) .eq. 'all' ) then
-            write(*, '(A)') '| - use_exclude_bands = all in input but            |'
+    if ( have_nnkp .and. trim(use_exclude_bands) .eq. 'none' ) then
+            write(*, '(A)') '| - use_exclude_bands = none in input but           |'
             write(*, '(A)') '| - .nnkp file found. Inconsistency!!               |'
             write(*, '(A)') ' Stopping '
             stop
@@ -726,7 +726,7 @@ contains
       num_bands_intw = nbands - num_exclude_bands_intw
       !
     ! all bands from DFT
-    else if ( trim(use_exclude_bands) .eq. 'all' ) then
+    else if ( trim(use_exclude_bands) .eq. 'none' ) then
       write(*, '(A)') '| - Setting number of bands from calculation        |'
       write(*, '(A)') '|           ---------------------------------       |'
       !

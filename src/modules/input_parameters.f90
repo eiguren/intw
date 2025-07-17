@@ -79,11 +79,12 @@ module intw_input_parameters
   character(256) :: use_exclude_bands="unassigned"
   ! Three options to exclude bands from INTW
   ! This flags is to control the bands used in various utilities:
-  !     use_exclude_bands="all": we use all bands (nbands) from the DFT calculation
+  !     use_exclude_bands="none": we don't exclude any band and therefore we use all bands from the DFT calculation (nbands)
   !          (Error if nnkp file is present)
-  !     use_exclude_bands="wannier": we  remove the bands indicated by Wannier90 in nnkp file
+  !          TODO: Haritz 17/07/2025: Should we raise this error?
+  !     use_exclude_bands="wannier": we exclude the bands indicated by Wannier90 in nnkp file
   !          (Error if nnkp file is NOT present)
-  !     use_exclude_bands="custom": will read a range of allow bands out of the whole nbands list
+  !     use_exclude_bands="custom": will read a range of bands out of the whole nbands list and exclude the rest of bands
   !          (Error if include_bands_initial, include_bands_final not present)
   integer ::  include_bands_initial = 0, include_bands_final = 0
 
@@ -340,7 +341,7 @@ contains
     if ( trim(use_exclude_bands) == 'unassigned' ) then
       read_status = .true.
       write(*,*) 'MISSING use_exclude_bands'
-    else if (      trim(use_exclude_bands) /= 'all' &
+    else if (      trim(use_exclude_bands) /= 'none' &
              .and. trim(use_exclude_bands) /= 'custom' &
              .and. trim(use_exclude_bands) /= 'wannier' ) then
       read_status = .true.
@@ -442,7 +443,7 @@ contains
       write(*,*) "             nk3                   = integer"
       write(*,*) "             TR_symmetry           = T or F"
       write(*,*) "             chemical_potential    = real"
-      write(*,*) "             use_exclude_bands     = 'all', 'wannier' or 'custom'"
+      write(*,*) "             use_exclude_bands     = 'none', 'wannier' or 'custom'"
       write(*,*) "             include_bands_initial = integer"
       write(*,*) "             include_bands_final   = integer"
       write(*,*) "/"

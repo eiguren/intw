@@ -83,7 +83,6 @@ program ep_on_trFS_dV
   use intw_input_parameters, only: outdir, prefix, read_input, &
                                    intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
                                    nq1, nq2, nq3, nqirr, ph_dir, &
-                                   use_exclude_bands, &
                                    ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
                                    nscf_code
 
