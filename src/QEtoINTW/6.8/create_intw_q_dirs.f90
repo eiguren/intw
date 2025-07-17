@@ -34,7 +34,7 @@ PROGRAM create_intw_q_dirs
   CHARACTER(len=256) :: prefix = " "
   CHARACTER(len=256) :: outdir = "./"
   CHARACTER(len=256) :: qlist_file = "qlist.txt"
-  CHARACTER(len=256) :: ph_dir = "./"
+  CHARACTER(len=256) :: phdir = "./"
   INTEGER :: nq1, nq2, nq3
   CHARACTER(len=256) :: reference_file
 
@@ -47,7 +47,7 @@ PROGRAM create_intw_q_dirs
   integer, external :: find_free_unit
 
 
-  NAMELIST / inputpp / prefix, outdir, ph_dir, nq1, nq2, nq3, reference_file
+  NAMELIST / inputpp / prefix, outdir, phdir, nq1, nq2, nq3, reference_file
 
 
   !
@@ -65,11 +65,11 @@ PROGRAM create_intw_q_dirs
 
   strlen = len_trim(outdir)
   if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
-  strlen = len_trim(ph_dir)
-  if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
+  strlen = len_trim(phdir)
+  if ( phdir(strlen:strlen+1) .ne. "/" ) phdir(strlen+1:strlen+2) = "/"
 
-  ! create ph_dir
-  call execute_command_line("mkdir -p "//trim(outdir)//trim(ph_dir))
+  ! create phdir
+  call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir))
   !
   ! Read QE data
   prefix_QE = prefix
@@ -89,11 +89,11 @@ PROGRAM create_intw_q_dirs
     call write_tag("qq", iq, q_dir)
     !
     ! Create directory
-    call execute_command_line("mkdir -p "//trim(ph_dir)//trim(q_dir))
+    call execute_command_line("mkdir -p "//trim(phdir)//trim(q_dir))
     !
     ! Write input file
     qirr_cart = matmul(bg, qirr_cryst(:, iq))
-    call write_ph_in(trim(ph_dir)//trim(reference_file), trim(ph_dir)//trim(q_dir)//"/"//trim(reference_file), qirr_cart)
+    call write_ph_in(trim(phdir)//trim(reference_file), trim(phdir)//trim(q_dir)//"/"//trim(reference_file), qirr_cart)
     !
     write(iounit, "(i3,3f18.10)") iq, qirr_cart
     !
