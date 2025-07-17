@@ -270,7 +270,7 @@ contains
     use writewave, only: nwk
     use m_ntm, only: ntm
     use siesta2intw_io, only: stdout, intwdir, cutoff
-    use siesta2intw_fft, only: nGk_max, gamma_only
+    use siesta2intw_fft, only: nG, nGk_max, gamma_only
     use siesta2intw_symmetry, only: nsym, s, ftau, t_rev
     ! functions and subroutines
     use siesta2intw_io, only: find_free_unit
@@ -299,24 +299,43 @@ contains
     ! Reciprocal lattice vectors
     write(unit=io_unit,fmt=*) "BG"
     do i=1,3
-       write(unit=io_unit, fmt="(3f12.6)") bg(i, 1:3)
+      write(unit=io_unit, fmt="(3f12.6)") bg(i, 1:3)
     enddo
 
-    ! FFT grid
-    write(unit=io_unit,fmt=*) "FFT GRID"
-    write(unit=io_unit,fmt=*) ntm(1:3)
+    ! Number of species
+    write(unit=io_unit,fmt=*) "NTYP"
+    write(unit=io_unit,fmt=*) nspecies
 
-    ! Wave function cutoff
-    write(unit=io_unit,fmt=*) "ECUTWFC"
-    write(unit=io_unit,fmt="(f12.6)") cutoff
+    ! Atom labels, mass and PP file
+    write(unit=io_unit,fmt=*) "ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
+    do i=1,nspecies
+      write(unit=io_unit,fmt="(a,f16.5,x,a)") trim(species(i)%symbol), species(i)%mass, trim(species(i)%label)
+    enddo
 
-    ! Charge density cutoff
-    if (cutoff .gt. g2cut) then
-      write(stdout, *) "WARNING: The wave function cutoff is higher than the MeshCutoff used in the siesta calculation:"
-      write(stdout, *) "WARNING: The G-vectors could be limited by the size of the FFT grid imposed by MeshCutoff."
-    endif
-    write(unit=io_unit,fmt=*) "ECUTRHO"
-    write(unit=io_unit,fmt="(f12.6)") g2cut
+    ! Number of atoms
+    write(unit=io_unit,fmt=*) "NAT"
+    write(unit=io_unit,fmt=*) na_u
+
+    ! Atomic positions
+    write(unit=io_unit,fmt=*) "POSITIONS (1:NAT)"
+    do i=1,na_u
+      write(unit=io_unit,fmt="(a4,i4,3f16.8)") trim(species(isa(i))%symbol), isa(i), xa(1:3, i)/alat
+    end do
+
+    ! Number of symmetries
+    write(unit=io_unit,fmt=*) "NSYM"
+    write(unit=io_unit,fmt=*) nsym
+
+    ! Symmetry operations
+    do isym=1,nsym
+      write(unit=io_unit,fmt=*) "SYM"
+      write(unit=io_unit, fmt="(i8)") isym
+      do i = 1, 3
+        write(unit=io_unit, fmt="(3i8)") s(i, 1:3, isym)
+      enddo
+      write(unit=io_unit, fmt="(3f16.10)")  ftau(1:3, isym)
+      write(unit=io_unit, fmt="(i3)") t_rev(isym)
+    enddo
 
     ! Spin-polarized calculation
     write(unit=io_unit,fmt=*) "LSPIN"
@@ -345,55 +364,37 @@ contains
     !       wave functions, on the Hamiltonian and on the induced potential.
     !
 
-    ! Number of atoms
-    write(unit=io_unit,fmt=*) "NAT"
-    write(unit=io_unit,fmt=*) na_u
-
-    ! Number of species
-    write(unit=io_unit,fmt=*) "NTYP"
-    write(unit=io_unit,fmt=*) nspecies
-
-    ! Atom labels, mass and PP file
-    write(unit=io_unit,fmt=*) "ATOM_LABELS, MASS AND PP_FILE (1:NTYP)"
-    do i=1,nspecies
-      write(unit=io_unit,fmt="(a,f16.5,x,a)") trim(species(i)%symbol), species(i)%mass, trim(species(i)%label)
-    enddo
-
-    ! Atomic positions
-    write(unit=io_unit,fmt=*) "POSITIONS (1:NAT)"
-    do i=1,na_u
-      write(unit=io_unit,fmt="(a4,i4,3f16.8)") trim(species(isa(i))%symbol), isa(i), xa(1:3, i)/alat
-    end do
-
-    ! Number of symmetries
-    write(unit=io_unit,fmt=*) "NSYM"
-    write(unit=io_unit,fmt=*) nsym
-
-    ! Symmetry operations
-    do isym=1,nsym
-       write(unit=io_unit, fmt="(i8)") isym
-       do i = 1, 3
-          write(unit=io_unit, fmt="(3i8)") s(i, 1:3, isym)
-       enddo
-       write(unit=io_unit, fmt="(3f16.10)")  ftau(1:3, isym)
-       write(unit=io_unit, fmt="(i3)") t_rev(isym)
-    enddo
-
     ! Number of k-points
     write(unit=io_unit,fmt=*) "NKS"
     write(unit=io_unit,fmt=*) nwk
 
-    ! Gamma only wave functions
-    write(unit=io_unit,fmt=*) "GAMMA ONLY"
-    write(unit=io_unit,fmt=*) gamma_only
-
-    ! Max number of G vectors for the wave function
-    write(unit=io_unit,fmt=*) "NGMAX"
-    write(unit=io_unit,fmt=*) nGk_max
-
     ! Number of bands
     write(unit=io_unit,fmt=*) "NBAND"
     write(unit=io_unit,fmt=*) nbnd
+
+    ! FFT grid
+    write(unit=io_unit,fmt=*) "FFT GRID"
+    write(unit=io_unit,fmt=*) ntm(1:3)
+
+    ! Wave function cutoff
+    write(unit=io_unit,fmt=*) "ECUTWFC"
+    write(unit=io_unit,fmt="(f12.6)") cutoff
+
+    ! Charge density cutoff
+    if (cutoff .gt. g2cut) then
+      write(stdout, *) "WARNING: The wave function cutoff is higher than the MeshCutoff used in the siesta calculation:"
+      write(stdout, *) "WARNING: The G-vectors could be limited by the size of the FFT grid imposed by MeshCutoff."
+    endif
+    write(unit=io_unit,fmt=*) "ECUTRHO"
+    write(unit=io_unit,fmt="(f12.6)") g2cut
+
+    ! Number of G vectors
+    write(unit=io_unit,fmt=*) "NG"
+    write(unit=io_unit,fmt=*) nG
+
+    ! Max number of G vectors for the wave function
+    write(unit=io_unit,fmt=*) "NGK_MAX"
+    write(unit=io_unit,fmt=*) nGk_max
 
     close(unit=io_unit)
 
