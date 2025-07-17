@@ -1,8 +1,7 @@
-proba
 &inputpp
  prefix = "cu",
- ph_dir = "./",
  phonons = .true.,
+ phdir = "./",
  nqirr = 8,
  dynxml = .false.,
  fildvscf = "dvscf"
