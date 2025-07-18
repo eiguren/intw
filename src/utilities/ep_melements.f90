@@ -28,9 +28,9 @@ program ep_melements
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, lspin, nsym, &
                           s, nbands, nGk_max, nat, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
-                          read_parameters_data_file_xml, &
+                          read_parameters_data_file, &
                           get_gvec, &
-                          read_kpoints_data_file_xml, &
+                          read_kpoints_data_file, &
                           set_num_bands
   use intw_pseudo, only: read_all_pseudo
   use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
@@ -152,7 +152,7 @@ program ep_melements
   !
   write(*,20) '| - Reading calculation parameters...               |'
   !
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
   !
   !
   !================================================================================
@@ -251,7 +251,7 @@ program ep_melements
   !
   allocate(kpoints_QE(3,nkpoints_QE))
   !
-  call read_kpoints_data_file_xml(kpoints_QE)
+  call read_kpoints_data_file(kpoints_QE)
   !
   !
   !================================================================================

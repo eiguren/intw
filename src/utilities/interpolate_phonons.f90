@@ -41,7 +41,7 @@ program interpolatephonons
                                    nq1_dosph, nq2_dosph, nq3_dosph, &
                                    nomega, omega_ini, omega_fin, osmear_q, read_for_dynmat
 
-  use intw_reading, only: read_parameters_data_file_xml, &
+  use intw_reading, only: read_parameters_data_file, &
                           nat, bg, at, tpiba, nsym, tau
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
@@ -117,7 +117,7 @@ program interpolatephonons
   !
   write(*,20) '| - Reading calculation parameters...               |'
   !
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
   !
   !
   !================================================================================

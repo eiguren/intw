@@ -40,8 +40,8 @@ module intw_reading
 
 
   ! subroutines
-  public :: read_parameters_data_file_xml, &
-            read_kpoints_data_file_xml, &
+  public :: read_parameters_data_file, &
+            read_kpoints_data_file, &
             get_gvec, &
             get_K_folder_data, &
             deallocate_reading_variables, &
@@ -208,7 +208,7 @@ module intw_reading
 
 contains
 
-  subroutine read_parameters_data_file_xml()
+  subroutine read_parameters_data_file()
     !------------------------------------------------------------------
     ! This subroutine reads in atomic positions and composition, symmetries
     ! and all data from the prefix.save.intw/crystal.dat file.
@@ -239,7 +239,7 @@ contains
     datafile = trim(trim(outdir)//trim(prefix)//".save.intw/"//"crystal.dat")
     io_unit = find_free_unit()
     open(unit=io_unit, file=datafile, status="unknown", action="read", form="formatted", iostat=ierr)
-    if (ierr/=0) stop "ERROR: read_parameters_data_file_xml: Error opening crystal.dat file!"
+    if (ierr/=0) stop "ERROR: read_parameters_data_file: Error opening crystal.dat file!"
 
     !ALAT
     read(unit=io_unit, fmt=*) dummy
@@ -417,10 +417,10 @@ contains
 
     end if !nspin
 
-  end subroutine read_parameters_data_file_xml
+  end subroutine read_parameters_data_file
 
 
-  subroutine read_kpoints_data_file_xml(kpoints_cryst)
+  subroutine read_kpoints_data_file(kpoints_cryst)
     !------------------------------------------------------------------------
     ! This subroutine reads the prefix.save.intw/kpoints.dat file.
     ! The k-points are read in cartesian 2pi/a units: they will be converted
@@ -451,7 +451,7 @@ contains
 
     close(unit=io_unit)
 
-  end subroutine read_kpoints_data_file_xml
+  end subroutine read_kpoints_data_file
 
 
   subroutine get_gvec()
@@ -650,7 +650,7 @@ contains
     ! (the number of bands in the DFT calculation).
     ! JLB: I think it would be useful to add the option to set them on input.
     !
-    ! WARNING: This subroutine must always be called after "read_parameters_data_file_xml"
+    ! WARNING: This subroutine must always be called after "read_parameters_data_file"
     !          so that nbands is set.
     !
     ! MBR 20/05/2024: three options for exclude_bands

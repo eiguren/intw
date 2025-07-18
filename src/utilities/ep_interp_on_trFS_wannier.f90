@@ -50,7 +50,7 @@ program ep_on_trFS_wannier
                                    ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
                                    ep_mat_file
 
-  use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
+  use intw_reading, only: read_parameters_data_file, set_num_bands, &
                           nat, nspin, lspin, num_bands_intw, num_wann_intw, at
 
   use intw_intw2wannier, only: nnkp_kpoints
@@ -150,7 +150,7 @@ program ep_on_trFS_wannier
 
   write(*,20) '| - Reading calculation parameters...               |'
 
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
 
   !================================================================================
   ! Set the number of bands

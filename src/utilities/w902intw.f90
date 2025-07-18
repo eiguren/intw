@@ -30,7 +30,7 @@ program w902intw
 
   use intw_input_parameters, only: nk1, nk2, nk3, outdir, prefix, read_input
 
-  use intw_reading, only: read_parameters_data_file_xml, set_num_bands
+  use intw_reading, only: read_parameters_data_file, set_num_bands
 
   use intw_intw2wannier, only: read_nnkp_file
 
@@ -97,7 +97,7 @@ program w902intw
 
   write(*,20) '| - Reading calculation parameters...               |'
 
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
 
 
   !================================================================================

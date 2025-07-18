@@ -25,8 +25,8 @@ program nscf
                           nbands, nGk_max, &
                           nr1, nr2, nr3, nbands, nkpoints_QE, &
                           get_gvec, &
-                          read_parameters_data_file_xml, &
-                          read_kpoints_data_file_xml, &
+                          read_parameters_data_file, &
+                          read_kpoints_data_file, &
                           get_K_folder_data
   use intw_pseudo, only: read_all_pseudo
   use intw_utility, only: get_timing, print_date_time
@@ -92,7 +92,7 @@ program nscf
   !       particular, read in the symmetry matrices!!!
   !================================================================================
   !
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
   !
   !
   call get_gvec()
@@ -150,7 +150,7 @@ program nscf
   !
   allocate(kpoints_QE(3,nkpoints_QE))
   !
-  call read_kpoints_data_file_xml(kpoints_QE)
+  call read_kpoints_data_file(kpoints_QE)
   write(*,20) '|      k point list (crystal)                       |'
   do ik=1, nkpoints_QE
      write(*,"(a,i4,3f12.6,a)")'|',ik,kpoints_QE(:,ik),'           |'

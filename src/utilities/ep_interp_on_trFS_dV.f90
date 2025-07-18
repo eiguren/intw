@@ -86,7 +86,7 @@ program ep_on_trFS_dV
                                    ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
                                    nscf_code
 
-  use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file_xml, &
+  use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file, &
                           nGk_max, get_gvec, &
                           nspin, lspin, &
                           at, bg, nr1, nr2, nr3, &
@@ -199,7 +199,7 @@ program ep_on_trFS_dV
 
   write(*,20) '| - Reading calculation parameters...               |'
 
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
 
 
   !================================================================================

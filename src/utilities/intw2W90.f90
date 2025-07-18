@@ -40,8 +40,8 @@ program intw2W90
                                    nk1, nk2, nk3, compute_mmn, compute_amn, &
                                    read_input
   use intw_reading, only: kpoints_QE, nspin, lspin, nkpoints_QE, nsym, &
-                          read_parameters_data_file_xml, get_gvec, &
-                          read_kpoints_data_file_xml, deallocate_reading_variables, &
+                          read_parameters_data_file, get_gvec, &
+                          read_kpoints_data_file, deallocate_reading_variables, &
                           num_wann_intw, num_exclude_bands_intw, &
                           set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
@@ -128,7 +128,7 @@ program intw2W90
   ! Read the parameters from the SCF calculation
   !================================================================================
   !
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
   !
   !
   !================================================================================
@@ -213,7 +213,7 @@ program intw2W90
   !
   allocate(kpoints_QE(3,nkpoints_QE))
   !
-  call read_kpoints_data_file_xml(kpoints_QE)
+  call read_kpoints_data_file(kpoints_QE)
   !
   !
   !================================================================================

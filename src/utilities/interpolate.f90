@@ -38,7 +38,7 @@ program interpolate
                                    nk1_dos, nk2_dos, nk3_dos, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, &
                                    chemical_potential
 
-  use intw_reading, only: read_parameters_data_file_xml, set_num_bands, &
+  use intw_reading, only: read_parameters_data_file, set_num_bands, &
                           num_wann_intw, &
                           at, bg, tpiba, nspin
 
@@ -100,7 +100,7 @@ program interpolate
   !
   ! From this, I only need seednames, actually,
   ! until intw.in is modified to include postprocessing options
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
   !
   !
   !================================================================================

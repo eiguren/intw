@@ -47,7 +47,7 @@ program a2F_on_trFS
                                    read_for_dynmat, &
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
-  use intw_reading, only: read_parameters_data_file_xml, &
+  use intw_reading, only: read_parameters_data_file, &
                           nspin, lspin, at, bg, volume0, alat, nat, ityp, amass, &
                           num_bands_intw, nsym, tau
 
@@ -139,7 +139,7 @@ program a2F_on_trFS
 
   write(*,20) '| - Reading calculation parameters...               |'
 
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
 
 
   !================================================================================

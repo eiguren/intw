@@ -2,7 +2,7 @@ integer function read_data_test() result(r)
 
   use kinds, only: dp
   use intw_test_module, only: assert
-  use intw_reading, only: read_parameters_data_file_xml
+  use intw_reading, only: read_parameters_data_file
   use intw_reading, only: lspinorb, nsym, alat, &
                           nat, ntyp, nr1, nr2, nr3, &
                           lspin, lmag, ecutwfc, ecutrho
@@ -28,7 +28,7 @@ integer function read_data_test() result(r)
   outdir = "./qe/"
   prefix = "cu"
 
-  call read_parameters_data_file_xml()
+  call read_parameters_data_file()
 
   if (.not.assert(alat,alat_test,prec)) then
     r = 1
