@@ -570,7 +570,7 @@ contains
     use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
     use intw_utility, only: cryst_to_cart, find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
-    use intw_reading, only: s, can_use_TR
+    use intw_reading, only: s, TR
     use intw_symmetries, only: rtau_index, rtau
     use intw_matrix_vector, only: ainv, det
 
@@ -585,13 +585,12 @@ contains
     ! Local
     real(kind=dp) :: q_cart(3), Rq_cart(3), s_cryst(3,3), s_cart(3,3)
     integer :: ia, ja, Sia, Sja
-    logical :: tr
     complex(kind=dp) :: phase
 
 
     ! Get the rotation matrix of the symmetry operation
     s_cryst = dble(s(:,:,isym))
-    TR = can_use_TR(isym)
+    ! TR(isym)
     s_cart = transpose(matmul(at, matmul(transpose(s_cryst), ainv(at))))
 
     ! Rotate the Q point

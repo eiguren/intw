@@ -796,7 +796,7 @@ contains
     !--------------------------------------------------------------------------
     use intw_useful_constants, only: eps_8
     use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
-    use intw_reading, only: nsym, s, can_use_TR
+    use intw_reading, only: nsym, s, TR, lmag
 
     implicit none
 
@@ -910,9 +910,11 @@ contains
         !
       endif !possible_full_mesh
       !
-      ! loop on all point group operations
+      ! loop on all symmetry operations without TR
       !
       do isym=1,nsym
+        !
+        if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
         !
         ! rotate the k-point.
         !
@@ -958,13 +960,17 @@ contains
         !
       enddo ! isym
       !
+      ! repeat with TR symmetry, if allowed (or required!)
+      !
       do isym=1,nsym
         !
-        rotated_kpt = matmul(dble(s(:,:,isym)),kpt)
-        !
-        ! repeat with TR symmetry, if allowed (or required!)
-        !
-        if (can_use_TR(isym)) then
+        if (TR(isym)) then
+          !
+          ! rotate the k-point
+          !
+          rotated_kpt = matmul(dble(s(:,:,isym)),kpt)
+          !
+          ! TR
           !
           rotated_kpt = -rotated_kpt
           !

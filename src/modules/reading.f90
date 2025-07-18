@@ -30,7 +30,7 @@ module intw_reading
   public :: alat, tpiba, tpiba2, at, volume0, bg, &
             ntyp, atom_labels, amass, atom_pfile, &
             nat, tau, tau_cryst, ityp, &
-            nsym, s, ftau, can_use_TR, &
+            nsym, s, ftau, TR, &
             nkpoints_QE, kpoints_QE, &
             nbands, num_bands_intw, num_wann_intw, &
             num_exclude_bands_intw, band_excluded_intw, &
@@ -115,7 +115,7 @@ module intw_reading
   real(dp), allocatable :: ftau(:, :)
   ! Fractional translations, in crystal coordinates.
 
-  logical, allocatable :: can_use_TR(:)
+  logical, allocatable :: TR(:)
   ! This array indicates if TR can (should) be used
   ! with a given point group operation. TR is optional
   ! if the ground state is not magnetically polarized, but
@@ -230,9 +230,9 @@ contains
     ! variables for the magnetic case.
     integer :: max_nsym ! maximum possible value of nsym. Relevant
     integer :: i_sym
-    integer, dimension(48) :: trev
     integer, allocatable, dimension(:, :, :) :: ss
     real(dp), allocatable, dimension(:, :) :: fftau
+    integer, allocatable, dimension(:) :: trev
 
 
     ! Read the data related to the crystal structure
@@ -290,18 +290,18 @@ contains
     read(unit=io_unit, fmt=*) dummy
     read(unit=io_unit, fmt=*) nsym
 
-    allocate(s(3, 3, nsym))
-    allocate(ftau(3, nsym))
-    allocate(can_use_TR(nsym))
+    allocate(ss(3, 3, nsym))
+    allocate(fftau(3, nsym))
+    allocate(trev(nsym))
 
     !SYM
     do ii = 1, nsym
       read(unit=io_unit, fmt=*) dummy
       read(unit=io_unit, fmt=*) i_sym
       do i = 1, 3
-        read(unit=io_unit, fmt=*) ( s(i, j, ii), j = 1, 3 )
+        read(unit=io_unit, fmt=*) ( ss(i, j, ii), j = 1, 3 )
       enddo
-      read(unit=io_unit, fmt=*) ( ftau(j, ii), j = 1, 3 )
+      read(unit=io_unit, fmt=*) ( fftau(j, ii), j = 1, 3 )
       read(unit=io_unit, fmt=*) trev(ii)
     end do !ii
 
@@ -364,58 +364,47 @@ contains
 
     ! Remove symmetry opreations that are not wanted
 
-    if ( (nspin == 1 .or. nspin == 2) .and. TR_symmetry ) then
-      ! This is the easy case. Simply read in the symmetries
+    if ( lmag ) then
 
-      do ii = 1, nsym
-        if ( nspin == 1 ) then
-          can_use_TR(ii) = TR_symmetry
-        else if ( nspin == 2 ) then
-
-          if ( trev(ii) == 1 ) then
-            can_use_TR(ii) = .true.
-          else
-            can_use_TR(ii) = .false.
-            if ( .not. lmag ) can_use_TR(ii) = .true.
-          end if
-        end if !nspin 1 or 2
-      end do
-    else if ( nspin == 2 .and. (.not. TR_symmetry) ) then
-      ! This case is slightly more complicated. QE by default seems to
-      ! assume time reversal symmetry is sometimes ok even in the presence
-      ! of a B field. This is only true if B is colinear! I don't think it is
-      ! true in the non-colinear case. Thus, rotations combined with TR must
-      ! be suppressed!
-
+      ! Count valid symmetries
       max_nsym = nsym
-
       nsym = 0
-
       do ii = 1, max_nsym
-        if ( trev(ii) == 0 ) nsym = nsym + 1
+        if ( trev(ii) == 0 .or. TR_symmetry ) nsym = nsym + 1
       end do
 
-      ! next, populate the symmetry array
-      allocate(ss(3, 3, max_nsym))
-      allocate(fftau(3, max_nsym))
+      allocate(s(3, 3, nsym))
+      allocate(ftau(3, nsym))
+      allocate(TR(nsym))
 
-      can_use_TR(:) = .false.
-      ss(:, :, 1:max_nsym) = s(:, :, 1:max_nsym)
-      fftau(1:3, 1:max_nsym) = ftau(1:3, 1:max_nsym)
-
-      s = 0
-      ftau = 0.0_dp
-
+      ! Select only valid symmetries
       i_sym = 0
       do ii = 1, max_nsym
-        if ( trev(ii) == 0 ) then
+        if ( trev(ii) == 0 .or. TR_symmetry ) then
           i_sym = i_sym + 1
           s(:, :, i_sym) = ss(:, :, ii)
           ftau(:, i_sym) = fftau(:, ii)
-        end if
+          TR(i_sym) = trev(ii) == 1
+        endif
       end do
 
-    end if !nspin
+    else
+
+      ! This is the easy case. Simply read in the symmetries
+
+      allocate(s(3, 3, nsym))
+      allocate(ftau(3, nsym))
+      allocate(TR(nsym))
+
+      s = ss
+      ftau = fftau
+      TR = TR_symmetry ! If .not. lmag trev does not mean anything, it is allways 0
+
+    end if
+
+    deallocate(ss)
+    deallocate(fftau)
+    deallocate(trev)
 
   end subroutine read_parameters_data_file
 
