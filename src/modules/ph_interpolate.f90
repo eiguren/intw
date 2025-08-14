@@ -336,7 +336,7 @@ module intw_ph_interpolate
     ! transform to dyn(q) and diagonalize
     do iq=1,nqmesh
       qpoint = qmesh(:,iq)
-      call mat_inv_four_t(qpoint, nq1, nq2, nq3, 3*nat, frc, dyn_q(:,:,iq))
+      call mat_inv_four_t(qpoint, nq1, nq2, nq3, frc, dyn_q(:,:,iq))
       call dyn_diagonalize_1q(3*nat, dyn_q(:,:,iq), u_q(:,:,iq), w2_q(:,iq))
     end do
 

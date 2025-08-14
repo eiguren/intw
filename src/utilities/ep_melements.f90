@@ -442,7 +442,7 @@ program ep_melements
     !
     ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
     dvq_local = cmplx_0
-    call get_dv(qpoint,3*nat,nspin,dvq_local)
+    call get_dv(qpoint, dvq_local)
     !
     ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
     call calculate_local_part_dv(qpoint, dvq_local)

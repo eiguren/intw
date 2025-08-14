@@ -549,7 +549,7 @@ program ep_on_trFS_dV
 
     ! Compute induced potential using symmetries
     dvq_local = cmplx_0
-    call get_dv(qpoint, 3*nat, nspin, dvq_local)
+    call get_dv(qpoint, dvq_local)
 
     ! Compute local part of the derivative of the KB PP
     call calculate_local_part_dv(qpoint, dvq_local)
