@@ -363,7 +363,7 @@ contains
 
     if ( trim(ep_bands) == 'custom' &
          .and. &
-         (      ep_bands_initial*ep_bands_final < 0 &
+         (      ep_bands_initial*ep_bands_final <= 0 &
            .or. ep_bands_final < ep_bands_initial ) ) then
       read_status = .true.
       write(*,*) 'Error: Invalid ep_bands custom selection!'
