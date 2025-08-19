@@ -1428,7 +1428,13 @@ end function intgr_spline_gaussq
     implicit none
     real(dp) :: x, kt, fermi_dirac
     ! With finite T
-    fermi_dirac = 1.0_dp/(exp(x/kt) + 1.0_dp)
+    if (x < -5*kt) then
+      fermi_dirac = 1.0_dp
+    else if (x > 5*kt) then
+      fermi_dirac = 0.0_dp
+    else
+      fermi_dirac = 1.0_dp/(exp(x/kt) + 1.0_dp)
+    endif
     !  T=0 limit
     ! fermi_dirac = 0.5_dp* (-sign(1.0_dp,x) + 1.0_dp)
   return
