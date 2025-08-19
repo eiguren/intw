@@ -37,13 +37,13 @@ program a2F_on_trFS
 
   use intw_utility, only: get_timing, print_date_time, find_free_unit, &
                           cryst_to_cart, generate_kmesh, &
-                          smeared_delta, smeared_lorentz
+                          smeared_delta, smeared_lorentz, fermi_dirac
 
   use intw_matrix_vector, only: ainv, area_vec
 
   use intw_input_parameters, only: outdir, prefix, read_input, &
                                    nk1, nk2, nk3, nq1, nq2, nq3, nqirr, fc_mat, &
-                                   nomega, omega_ini, omega_fin, osmear_q, &
+                                   nomega, omega_ini, omega_fin, osmear_q, omega_cut, &
                                    read_for_dynmat, &
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
@@ -748,6 +748,32 @@ program a2F_on_trFS
 
   ! divide by the N(E_F) factor and by 1BZ-volume^2 (because of k and k' integrals)
   alpha2F = alpha2F/dosef/vol1bz**2
+
+  ! Filter w -> 0
+  if (omega_cut > 0.0_dp) then
+
+    do imode=1,3*nat
+
+      ! Find a2F(omega_cut)
+      do iomega=1,nomega
+        omega = omega_ini + omega_step*real(iomega-1,dp)
+        if (omega > omega_cut) then
+          omega_cut = omega
+          rfacq = alpha2F(imode,iomega)
+          exit
+        endif
+      enddo
+
+      ! Apply filter
+      do iomega=1,nomega
+        omega = omega_ini + omega_step*real(iomega-1,dp)
+        alpha2F(imode, iomega) = rfacq * (omega/omega_cut)**2 * fermi_dirac(omega-omega_cut, 0.1_dp*omega_cut) &
+                               + alpha2F(imode, iomega) * ( 1.0_dp-fermi_dirac(omega-omega_cut, 0.1_dp*omega_cut) )
+      enddo
+
+    enddo
+
+  endif
 
   ! Save a2F
   file_a2f = trim(outdir)//trim(prefix)//trim('_a2F_interp.dat')

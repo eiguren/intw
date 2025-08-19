@@ -41,7 +41,7 @@ module intw_input_parameters
   ! &DOS
   public :: DOS, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos
   ! &DOS_ph
-  public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q
+  public :: DOS_ph, nq1_dosph, nq2_dosph, nq3_dosph, nomega, omega_ini, omega_fin, osmear_q, omega_cut
   ! &elphon
   public :: elphon, ep_mat_file, ep_bands, ep_bands_initial, ep_bands_final, ep_interp_method, &
             ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, nscf_code, &
@@ -157,7 +157,10 @@ module intw_input_parameters
   ! Number of energy points in DOS plot
 
   real(dp) :: omega_ini = 0.0_dp, omega_fin = 0.005_dp, osmear_q = 0.000075
-  ! Energy range and smearing width for phonon DOS plot. In Ry!!
+  ! Energy range and smearing width for phonon DOS plot (Units: Ry)
+
+  real(dp) :: omega_cut = 0.0_dp
+  ! Phonon energy cut-off for removing w -> 0 peak in a2F (Units: Ry)
 
   !----------------------------------------------------------------------------!
   ! &elphon namelist variables for ep elements calculation
@@ -257,7 +260,7 @@ module intw_input_parameters
                    eini_dos, efin_dos, esmear_dos, ktsmear
 
   NAMELIST / DOS_ph / nq1_dosph, nq2_dosph, nq3_dosph, nomega, &
-                      omega_ini, omega_fin, osmear_q
+                      omega_ini, omega_fin, osmear_q, omega_cut
 
   NAMELIST / elphon / ep_bands, ep_bands_initial, ep_bands_final, &
                       ep_interp_method, ep_interp_bands, &
