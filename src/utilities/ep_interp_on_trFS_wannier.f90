@@ -55,7 +55,7 @@ program ep_on_trFS_wannier
 
   use intw_intw2wannier, only: nnkp_kpoints
 
-  use intw_ph, only: nqmesh, qmesh, read_ph_information_xml
+  use intw_ph, only: nqmesh, qmesh, read_ph_information
 
   use intw_ph_interpolate, only: allocate_and_build_ws_irvec_q, &
                                  irvec_q, nrpts_q, ndegen_q
@@ -240,7 +240,7 @@ program ep_on_trFS_wannier
   write(*,20) '| - Reading phonon info...                          |'
 
   ! Read irreducible q-points and irreducible patterns
-  call read_ph_information_xml()
+  call read_ph_information()
 
 
   !================================================================================

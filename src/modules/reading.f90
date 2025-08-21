@@ -224,8 +224,7 @@ contains
     integer :: i, j, ii ! loop variables
     character(len=256) :: dummy
 
-    character(256) :: datafile ! full path of the data-file.xml file in the .xml file
-    ! note: outdir and prefix are defined in the input_parameter module.
+    character(256) :: datafile
 
     ! variables for the magnetic case.
     integer :: max_nsym ! maximum possible value of nsym. Relevant

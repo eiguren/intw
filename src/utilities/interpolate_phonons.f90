@@ -46,8 +46,7 @@ program interpolatephonons
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
-
-                     read_ph_information_xml
+                     read_ph_information
 
   use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
                                  dyn_q_to_dyn_r, dyn_interp_1q, &
@@ -127,7 +126,7 @@ program interpolatephonons
   write(*,20) '| - Reading phonon info...                          |'
   !
   ! Read q-points and irreducible patterns
-  call read_ph_information_xml()
+  call read_ph_information()
   !
   allocate(q_irr_cryst(3,nqirr))
   do iq=1,nqirr

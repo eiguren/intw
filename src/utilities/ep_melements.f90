@@ -56,7 +56,7 @@ program ep_melements
                       allocate_fft
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
                      nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
-                     read_ph_information_xml, &
+                     read_ph_information, &
                      read_allq_dvr, &
                      get_dv
   use intw_allwfcs, only: allocate_and_get_all_irreducible_wfc, &
@@ -314,7 +314,7 @@ program ep_melements
   write(*,20) '| - Reading q-points...                             |'
   !
   ! Read q-points and irreducible patterns
-  call read_ph_information_xml()
+  call read_ph_information()
   !
   allocate(q_irr_cryst(3,nqirr))
   do iq=1,nqirr

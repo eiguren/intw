@@ -33,7 +33,7 @@ module intw_ph
             symlink_q
   !
   ! subroutines
-  public :: rot_gep, read_ph_information_xml, readfc, mat_inv_four_t, read_allq_dvr, &
+  public :: rot_gep, read_ph_information, readfc, mat_inv_four_t, read_allq_dvr, &
             get_dv, rot_dvq, func_by_gr, wsinit, deallocate_ph, &
             read_dynq, set_asr_frc, set_asr_dynq, rotate_dyn
   !
@@ -162,10 +162,10 @@ contains
 
   end function rot_k_index
 
-  subroutine read_ph_information_xml()
+  subroutine read_ph_information()
     !------------------------------------------------------------------
     !
-    !This subroutine reads the information related to phonons from xml files.
+    !This subroutine reads the information related to phonons from files.
     !
     !------------------------------------------------------------------
     use intw_utility, only: find_free_unit
@@ -176,8 +176,7 @@ contains
 
     integer ::  io_unit, ios
 
-    character(256) :: datafile ! full path of the data-file.xml file
-    ! in the .xml file
+    character(256) :: datafile
 
     integer :: imode, jmode, iq
     !
@@ -199,7 +198,7 @@ contains
 
     io_unit = find_free_unit()
     open(unit=io_unit, file=trim(outdir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
-    if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening qlist."
+    if (ios /= 0) stop "ERROR: read_ph_information: error opening qlist."
 
     do iq=1,nqirr
       read(io_unit,*) dummy, q_irr(1:3,iq)
@@ -213,7 +212,7 @@ contains
     io_unit = find_free_unit()
     datafile = trim(outdir)//trim(prefix)//".save.intw/"//"irrq_patterns.dat"
     open(unit=io_unit, file=datafile, status="old", iostat=ios)
-    if (ios /= 0) stop "ERROR: read_ph_information_xml: error opening irrq_patterns."
+    if (ios /= 0) stop "ERROR: read_ph_information: error opening irrq_patterns."
 
     !Read displacement patters for each q.
     allocate(u_irr(nmodes,nmodes,nqirr))
@@ -227,7 +226,7 @@ contains
 
     close(unit=io_unit)
 
-  end subroutine read_ph_information_xml
+  end subroutine read_ph_information
 
   SUBROUTINE readfc ( flfrc, frc )
     !

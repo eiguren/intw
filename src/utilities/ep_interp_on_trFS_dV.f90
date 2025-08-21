@@ -108,7 +108,7 @@ program ep_on_trFS_dV
 
   use intw_fft, only: generate_nl, allocate_fft
 
-  use intw_ph, only: nqmesh, qmesh, read_ph_information_xml, &
+  use intw_ph, only: nqmesh, qmesh, read_ph_information, &
                      q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
                      QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q
 
@@ -445,7 +445,7 @@ program ep_on_trFS_dV
   write(*,20) '| - Reading phonon info...                          |'
 
   ! Read irreducible q-points and irreducible patterns
-  call read_ph_information_xml()
+  call read_ph_information()
 
   allocate(q_irr_cryst(3,nqirr))
 
