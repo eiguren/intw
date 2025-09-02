@@ -181,7 +181,7 @@ contains
     ! induced potential variables
     real(kind=dp), allocatable, dimension(:,:) :: dv ! Potential induced by the displacement of an irreducible atom along an irreducible Cartesian direction
     real(kind=dp), allocatable, dimension(:,:,:) :: dv_rot ! Potential induced by the displacement of an irreducible atom along all Cartesian directions
-    real(kind=dp), allocatable, dimension(:,:,:) :: dvvq
+    complex(kind=dp), allocatable, dimension(:,:,:) :: dvvq
     complex(kind=dp), allocatable, dimension(:,:,:) :: dvq
     complex(kind=dp), allocatable, dimension(:,:,:) :: dvq_write
     !
@@ -229,7 +229,7 @@ contains
     allocate(dvq_write(maxp/nr1/nr2/nr3,nspin,3))
     dv = 0.0_dp
     dv_rot = 0.0_dp
-    dvvq = 0.0_dp
+    dvvq = cmplx_0
     dvq = cmplx_0
     dvq_write = cmplx_0
     !
@@ -633,9 +633,9 @@ contains
                       !
                       if (Sk==kind) then
                         !
-                        if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*dvvq(ir,ispin,1) + coefx_cart(2)*dvvq(ir,ispin,2) + coefx_cart(3)*dvvq(ir,ispin,3)
-                        if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*dvvq(ir,ispin,1) + coefy_cart(2)*dvvq(ir,ispin,2) + coefy_cart(3)*dvvq(ir,ispin,3)
-                        if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*dvvq(ir,ispin,1) + coefz_cart(2)*dvvq(ir,ispin,2) + coefz_cart(3)*dvvq(ir,ispin,3)
+                        if (id == 1) rho_xsf(Si,Sj) = coefx_cart(1)*real(dvvq(ir,ispin,1)) + coefx_cart(2)*real(dvvq(ir,ispin,2)) + coefx_cart(3)*real(dvvq(ir,ispin,3))
+                        if (id == 2) rho_xsf(Si,Sj) = coefy_cart(1)*real(dvvq(ir,ispin,1)) + coefy_cart(2)*real(dvvq(ir,ispin,2)) + coefy_cart(3)*real(dvvq(ir,ispin,3))
+                        if (id == 3) rho_xsf(Si,Sj) = coefz_cart(1)*real(dvvq(ir,ispin,1)) + coefz_cart(2)*real(dvvq(ir,ispin,2)) + coefz_cart(3)*real(dvvq(ir,ispin,3))
                         !
                       endif
                       !
@@ -1040,7 +1040,7 @@ contains
     integer, intent(in) :: ia
     real(kind=dp), dimension(:,:,:), intent(in) :: dvv ! dV_R(r): Potential induced by the displacement of atom ia (u_ia) in the supercell (r in sc)
     real(kind=dp), dimension(3), intent(in) :: q_cryst ! in unit cell crystal coordinates
-    real(kind=dp), dimension(:,:,:), intent(out) :: dvvq ! dV_q: Potential induced by the periodic displacement of atom ia (u_ia*e^{iqR}) in the supercell cell (r in sc)
+    complex(kind=dp), dimension(:,:,:), intent(out) :: dvvq ! dV_q: Potential induced by the periodic displacement of atom ia (u_ia*e^{iqR}) in the supercell cell (r in sc)
     !
     real(kind=dp), dimension(3,27) :: vecs_cryst
     real(kind=dp), dimension(27) :: vecs_lenght
@@ -1062,7 +1062,7 @@ contains
     if (size(dvvq, dim=2) /= nspin) stop "ERROR: dVR_to_dVq_sc: wrong spin dimensions in output"
     if (size(dvvq, dim=3) /= 3) stop "ERROR: dVR_to_dVq_sc: wrong spatial dimensions in output"
     !
-    dvvq = 0.0_dp
+    dvvq = cmplx_0
     do ja=1,nat
       !
       if ( .not. eqvect(tau_cryst(:,ia)*(/nr1, nr2, nr3/), tau_cryst(:,ja)*(/nr1, nr2, nr3/)) ) cycle ! i.e. if the atoms are equivalent by translation
@@ -1139,7 +1139,7 @@ contains
     !
     implicit none
     !
-    real(kind=dp), dimension(:,:,:), intent(in) :: dvvq ! dV_q: Potential induced by the periodic displacement of an atom (u_ia*e^{iqR}) in the supercell cell (r in sc)
+    complex(kind=dp), dimension(:,:,:), intent(in) :: dvvq ! dV_q: Potential induced by the periodic displacement of an atom (u_ia*e^{iqR}) in the supercell cell (r in sc)
     real(kind=dp), dimension(3), intent(in) :: q_cryst ! in unit cell crystal coordinates
     complex(kind=dp), dimension(:,:,:), intent(inout) :: dvq ! dV_q: Periodic part of the potential induced by the periodic displacement of an atom (u_ia*e^{iqR}) in the unit cell (r in uc)
     !
