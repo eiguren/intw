@@ -5,10 +5,9 @@
     nk2 = 8
     nk3 = 8
     TR_symmetry = .false.
+    use_exclude_bands = 'wannier'
 /
 &intw2W
     intw2W_fullzone = .false.
     intw2W_method = 'CONVOLUTION'
-/
-&ph
 /

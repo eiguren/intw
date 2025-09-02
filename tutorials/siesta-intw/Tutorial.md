@@ -222,6 +222,7 @@ $ cat intw.in
     nk2 = 8
     nk3 = 8
     TR_symmetry = .false.
+    use_exclude_bands = 'wannier'
 /
 
 &intw2W
@@ -233,7 +234,7 @@ $ cat intw.in
 /
 ```
 
-In the `input` namelist, `outdir` indicates where is placed the `si.save.intw` directory, and `prefix` the label used in SIESTA. `nk1`, `nk2` and `nk3` indicate the k-mesh, which must be the same used for `siesta2intw.x`, and `TR_symmetry` indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not. In the `intw2W` namelist, `intw2W_fullzone` indicates wether the full Brillouin zone is present in the `si.save.intw` directory or not, while `intw2W_method` specifies the method used to compute the amm's. Finally, the `ph` namelist is empty in this example, but it is used to specify information about the phonon structure.
+In the `input` namelist, `outdir` indicates where is placed the `si.save.intw` directory, and `prefix` the label used in SIESTA. `nk1`, `nk2` and `nk3` indicate the k-mesh, which must be the same used for `siesta2intw.x`, `TR_symmetry` indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not and `use_exclude_bands = 'wannier'` specifies to use the `exclude_bands` specified in `wannier90` input. In the `intw2W` namelist, `intw2W_fullzone` indicates wether the full Brillouin zone is present in the `si.save.intw` directory or not, while `intw2W_method` specifies the method used to compute the amm's. Finally, the `ph` namelist is empty in this example, but it is used to specify information about the phonon structure.
 
 Now, we can run `intw2W90.x` by tying:
 
@@ -504,6 +505,7 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
      nk2 = 4
      nk3 = 4
      TR_symmetry = .false.
+     use_exclude_bands = 'none'
    /
    &intw2W
      intw2W_fullzone = .false.
@@ -517,7 +519,7 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
    /
    ```
 
-   In addition to the parameters that we have already seen in the first example, in this case we also need to specfy the `ph` namelist, where `nq1`, `nq2` and `nq3` indicate the q-mesh, and `nqirr` the number of irreducible q-points.
+   In this example, `use_exclude_bands = 'none'` indicates to don't exclude any band, i.e. to use all bands from the calculation. And in addition to the parameters that we have already seen in the first example, in this case we also need to specfy the `ph` namelist, where `nq1`, `nq2` and `nq3` indicate the q-mesh, and `nqirr` the number of irreducible q-points.
 
    So, let's run `ep_melements.x` by typing:
 
