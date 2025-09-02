@@ -145,9 +145,9 @@ do
     fi
 
     if [ "$verbose" = "YES" ] || [ "$vverbose" = "YES" ] ; then
-        echo "Copying files *.psf and $dm to $dir" | sed 's/and  //'
+        echo "Copying files *.{psf,vps,psml} and $dm to $dir" | sed 's/and  //'
     fi
-    cp *.psf $dm $dir
+    cp *.{psf,vps,psml} $dm $dir
 
     cd $dir
 
