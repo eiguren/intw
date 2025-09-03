@@ -1325,29 +1325,6 @@ contains
   end function sphb
 
 
-  function lancoz_funtzioa(n,x)
-    !
-    ! inguruko hurbilekin interpolatzeko metodoa.
-    !
-
-    use units, only: pi
-
-    implicit none
-
-    integer, intent(in) :: n
-    real (kind=dp)      :: x, lancoz_funtzioa
-
-    if (x<epsilon(x)) then
-       lancoz_funtzioa = 0.0_dp
-    else if (abs(x)<=n) then
-       lancoz_funtzioa = n * sin(pi *x ) * sin (pi*x/n) /(pi*x)**2
-    else
-       lancoz_funtzioa = 0.0_dp
-    end if
-
-  end function lancoz_funtzioa
-
-
   subroutine irreduciblek(nk1, nk2, nk3, nirr, kirr)
     !
     ! Find irreducible k-points
