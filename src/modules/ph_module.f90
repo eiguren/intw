@@ -446,7 +446,7 @@ contains
     !
     use intw_reading, only: nat
     use intw_useful_constants, only: cmplx_i, tpi, Ry_to_Ha
-    use intw_utility, only: cryst_to_cart, find_free_unit, &
+    use intw_utility, only: find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_input_parameters, only: outdir, prefix, nqirr, nq1, nq2, nq3, &
                                      apply_asr
@@ -576,8 +576,7 @@ contains
     !
     use intw_reading, only: nat, at, bg
     use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
-    use intw_utility, only: cryst_to_cart, find_free_unit, &
-                            triple_to_joint_index_g, find_k_1BZ_and_G
+    use intw_utility, only: triple_to_joint_index_g, find_k_1BZ_and_G
     use intw_reading, only: s, TR
     use intw_symmetries, only: rtau_index, rtau
     use intw_matrix_vector, only: ainv, det

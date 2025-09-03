@@ -98,10 +98,8 @@ module intw_intw2wannier
 
 
 contains
-  !
-!---------------------------------
-  subroutine deallocate_nnkp()
-!---------------------------------
+
+subroutine deallocate_nnkp()
 
   use intw_reading, only: lspin
 
@@ -122,17 +120,14 @@ contains
   deallocate(nnkp_excluded_bands)
 
   end subroutine deallocate_nnkp
-!----------------------------------------------
-!**********************************************
-!------------------------------------------
+
+
   subroutine read_nnkp_file(nnkp_file)
-!------------------------------------------
-!
-!----------------------------------------------------------------------------!
-! This subroutine reads the .nnkp input file produced by W90.
-! It assumes the file has been checked for existence and is already
-! opened.
-!----------------------------------------------------------------------------!
+    !----------------------------------------------------------------------------!
+    ! This subroutine reads the .nnkp input file produced by W90.
+    ! It assumes the file has been checked for existence and is already
+    ! opened.
+    !----------------------------------------------------------------------------!
 
   use intw_reading, only: alat, lspin, scan_file_to
   use intw_utility, only: find_free_unit
@@ -306,16 +301,14 @@ contains
   return
 
   end subroutine read_nnkp_file
-!--------------------------------------
-!**************************************
-!--------------------------------------
+
+
   subroutine output_nnkp_file()
-!--------------------------------------
-!
-!----------------------------------------------------------------------------!
-! This subroutine simply outputs what was read from the nnkp file, for
-! testing.
-!----------------------------------------------------------------------------!
+    !----------------------------------------------------------------------------!
+    ! This subroutine simply outputs what was read from the nnkp file, for
+    ! testing.
+    !----------------------------------------------------------------------------!
+
   use intw_reading, only: lspin
   use intw_utility, only: find_free_unit
 
@@ -404,16 +397,13 @@ contains
   200 format(I4,6x,I4,2x,3I4)
 
   end subroutine output_nnkp_file
-!-----------------------------------------------
-!***********************************************
-!-----------------------------------------------
+
+
   subroutine intw2W90_check_mesh(nkmesh,kmesh)
-!-----------------------------------------------
-!
-!--------------------------------------------------------------------!
-! This subroutine checks that the irreducible kpoints and the mesh
-! read from the nnkp file are related.
-!--------------------------------------------------------------------!
+    !--------------------------------------------------------------------!
+    ! This subroutine checks that the irreducible kpoints and the mesh
+    ! read from the nnkp file are related.
+    !--------------------------------------------------------------------!
 
   implicit none
 
@@ -466,16 +456,13 @@ contains
   return
 
   end subroutine intw2W90_check_mesh
-!--------------------------------------------
-!********************************************
-!--------------------------------------------
+
+
   subroutine generate_header(method,header)
-!--------------------------------------------
-!
-!-----------------------------------------------------------
-! This is a utility routine which creates a date and time
-! header to provide a time stamp in our files
-!-----------------------------------------------------------
+    !-----------------------------------------------------------
+    ! This is a utility routine which creates a date and time
+    ! header to provide a time stamp in our files
+    !-----------------------------------------------------------
 
   character(256) :: header
   character(8)   :: cdate
@@ -498,8 +485,8 @@ contains
     ! This subroutine computes the plane wave matrix elements  needed by Wannier90
     ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
     ! the needed matrix elements.
-    !
     !----------------------------------------------------------------------------!
+
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
@@ -832,12 +819,12 @@ contains
 
   subroutine get_guiding_function_overlap_FFT(list_iG, wfc, guiding_function, amn)
     !------------------------------------------------------------------------
-    !  This subroutine computes the overlap between a given wavefunction
-    !  wfc and a given guiding_function (assumed normalized)
+    ! This subroutine computes the overlap between a given wavefunction
+    ! wfc and a given guiding_function (assumed normalized)
     !
-    !                    amn(band) =  < wfc(band) |  guiding_function > .
+    !                   amn(band) =  < wfc(band) |  guiding_function > .
     !
-    !  The computation is done over all bands using FFT.
+    ! The computation is done over all bands using FFT.
     !------------------------------------------------------------------------
 
     use intw_reading, only: nGk_max, nr1, nr2, nr3, num_bands_intw
@@ -889,12 +876,12 @@ contains
 
   subroutine get_guiding_function_overlap_convolution(ngk, wfc, guiding_function, amn)
     !--------------------------------------------------------------------------
-    !     This subroutine computes the overlap between a given wavefunction
-    !     wfc and a given guiding_function (assumed normalized)
+    ! This subroutine computes the overlap between a given wavefunction
+    ! wfc and a given guiding_function (assumed normalized)
     !
-    !	                amn(band) =  < wfc(band) |  guiding_function > .
+    !             amn(band) =  < wfc(band) |  guiding_function > .
     !
-    !     The computation is done over all bands.
+    ! The computation is done over all bands.
     !--------------------------------------------------------------------------
 
     use intw_reading, only: nGk_max, num_bands_intw
@@ -1057,24 +1044,20 @@ contains
     return
 
   end subroutine get_radial_part_numerical
-!**************************************************************************
-!--------------------------------------------------------------------------
+
+
   subroutine get_radial_part(proj_nr,zona,k_plus_G_cart,guiding_function)
-!--------------------------------------------------------------------------
-!
-!--------------------------------------------------------------------------------
-!
-!     This subroutine computes the overlap between a given wavefunction
-!     wfc and a given guiding_function (assumed normalized)
-!
-!	                amn(band) =  < wfc(band) |  guiding_function > .
-!
-!     The computation is done over all bands.
-!
-!     The G-vectors are referenced by their indices in list_iG
-!     which refer to the global list gvec(1:3,1:nG).
-!
-!--------------------------------------------------------------------------------
+    !--------------------------------------------------------------------------------
+    ! This subroutine computes the overlap between a given wavefunction
+    ! wfc and a given guiding_function (assumed normalized)
+    !
+    !             amn(band) =  < wfc(band) |  guiding_function > .
+    !
+    ! The computation is done over all bands.
+    !
+    ! The G-vectors are referenced by their indices in list_iG
+    ! which refer to the global list gvec(1:3,1:nG).
+    !--------------------------------------------------------------------------------
 
   use intw_reading, only: nG
 
@@ -1159,9 +1142,8 @@ contains
   return
 
   end subroutine get_radial_part
-!---------------------------------------------------------------------------
-!***************************************************************************
-!---------------------------------------------------------------------------
+
+
   subroutine get_angular_part(proj_l, proj_m, xaxis, zaxis, ngk, k_plus_G_cart, ylm)
     !--------------------------------------------------------------------------
     ! This subroutine computes appropriate spherical harmonic corresponding
@@ -1412,12 +1394,10 @@ contains
 
 
   subroutine projection_expansion(l, mr, coef)
-!----------------------------------------
-!
-!--------------------------------------------------------------------------
-!     Outputs expansion coefficients for hybrid projections,
-!     following wannier90 user guide table 3.2
-!--------------------------------------------------------------------------
+    !--------------------------------------------------------------------------
+    ! Outputs expansion coefficients for hybrid projections,
+    ! following wannier90 user guide table 3.2
+    !--------------------------------------------------------------------------
 
    use intw_useful_constants, only: ZERO
 
@@ -1598,10 +1578,10 @@ contains
 
 !===================================================
             ! MBR 18/04/24: currently unused!!!
-    subroutine get_bvec_list (bvec)
-! Reads the first k-vector and its neighbours shells from nnkp, and
-! returns the list of the nnkp_nnkpts b-vectors used by W90
-! in fractional coordinates
+  subroutine get_bvec_list (bvec)
+    ! Reads the first k-vector and its neighbours shells from nnkp, and
+    ! returns the list of the nnkp_nnkpts b-vectors used by W90
+    ! in fractional coordinates
 
   implicit none
   real(dp) , intent(out) :: bvec(3,nnkp_nnkpts)
@@ -1618,25 +1598,16 @@ contains
 
   return
   end subroutine get_bvec_list
-!===================================================
 
-
-
-!----------------------------------------------------------------------------!
-!
-!
 end module intw_intw2wannier
-!
-!
-!----------------------------------------------------------------------------!
-!
+
 ! This functions are originally distributed as part of the Quantum Espresso code and has
 ! been adapted to INTW:
 !   Copyright (C) 2003-2013 Quantum ESPRESSO and Wannier90 groups
 !   Distributed under the terms of the GNU General Public License.
 !   See the LICENSE file in the original Quantum Espresso source for license details.
 !   For the original source visit: https://www.quantum-espresso.org/
-!
+
 !======== l = 0 =====================================================================
 function s(cost,phi)
   use kinds, only: dp
@@ -1678,6 +1649,7 @@ function py(cost,phi)
    py   =  sqrt(3.d0/fpi) * sint * sin(phi)
    return
 end function py
+
 !======== l = 2 =====================================================================
 function dz2(cost,phi)
   use kinds, only: dp
@@ -1727,6 +1699,7 @@ function dxy(cost,phi)
    dxy  =  sqrt(3.75d0/fpi) * sint*sint * sin(2.d0*phi)
    return
 end function dxy
+
 !======== l = 3 =====================================================================
 function fz3(cost,phi)
   use kinds, only: dp

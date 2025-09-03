@@ -120,7 +120,7 @@ contains
 
     !I/O variables
 
-    complex(kind=dp), intent(inout) :: v_local(nr1*nr2*nr3) ! spin idependentea da baina koherentzia mantenduko dugu.
+    complex(kind=dp), intent(inout) :: v_local(nr1*nr2*nr3)
 
     !local variables
     integer :: nt, ig
@@ -161,7 +161,7 @@ contains
     !I/O variables
 
     real(kind=dp), intent(in) :: q_cryst(3)
-    complex(kind=dp), intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin) ! spin idependentea da baina koherentzia mantenduko dugu.
+    complex(kind=dp), intent(inout) :: dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin)
 
     !local variables
     complex(kind=dp) :: eigqts(nat)

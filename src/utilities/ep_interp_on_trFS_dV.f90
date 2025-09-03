@@ -368,7 +368,7 @@ program ep_on_trFS_dV
 
     read(unit_off,*) comenta
     read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
-    ! read(unit_off,'(/)') ! DUDA... esto dependdera de como está escrito el salto de línea en el fichero, creo...
+    ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
     if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop
@@ -576,7 +576,7 @@ program ep_on_trFS_dV
   write(*,20) '|                                                   |'
   write(*,20) '====================================================='
 
-  ! DUDA dvq_local_R en la supercelda (valores en r+R) deberia salir real?
+  ! DUDA dvq_local_R in the supercell should be real?
 
 
   !******************************* Part III *************************************

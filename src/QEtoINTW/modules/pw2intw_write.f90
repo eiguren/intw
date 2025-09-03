@@ -73,7 +73,7 @@ contains
       write(unit=io_unit,fmt="(a)")"ATOM LABEL"
       write(unit=io_unit,fmt=*) upf(is)%psd
 
-      !TODO: Hau zuzendu, batzuetan ez du idazten
+      !TODO: Correct this, sometimes it doesn't write
       write(unit=io_unit,fmt="(a)")"IS RELAT."
       write(unit=io_unit,fmt=*) upf(is)%has_so
 

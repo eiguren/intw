@@ -292,7 +292,7 @@ contains
                         write(*, *) 'Found collinear vertices. Stopping '
                         if (verb) write(info_unit, *) 'Found collinear vertices. Stopping '
                         STOP
-                        !Momentuz hau saltatu. Ez dirudi hau gertatu daitekeenik.
+                        ! Skip this for the moment. It looks this can not happen
                       end if !if (norma(normalvector) < eps1)
                     end if ! not areequal
                     !
@@ -909,7 +909,7 @@ contains
     integer       :: i, j, i_sym, nbt
     real(dp) :: b_tetra_irr_l(1:3,1:4,nt_max)
     integer       :: tetra_equiv_l(nt_max), tetra_symlink_l(nt_max,1:2)
-    integer       :: overlap(nsym,2) ! 2 Time.R kontatzeko
+    integer       :: overlap(nsym,2)
     real(dp) :: t1(3,4), t2(3,4)
     integer       :: maxindex(2), it
 
@@ -918,17 +918,17 @@ contains
     tetra_equiv_l = tetra_equiv
     tetra_symlink_l = tetra_symlink
 
-    nbt = 1 !lehenegoa ez dugu mugituko eta kontatzen dugu ia eginda dagoela.
+    nbt = 1 ! We will not move the first one and we count it is already done
     b_tetra_irr(1:3,1:4,1) = b_tetra_irr_l(1:3,1:4,1)
 
-    ! bueltan b_tetra_irr izango do rotatutakoa ...
+    ! b_tetra_irr will be the rotated one in return
 
     do i = 2, n_b_tetra_irr
       overlap(:,1) = 0
       do i_sym = 1, nsym
-        t1 = rot_tetra(bcell, s(:,:,i_sym), b_tetra_irr_l(1:3,1:4,i)) ! b_tetra_irr_l rotatu aurretik
+        t1 = rot_tetra(bcell, s(:,:,i_sym), b_tetra_irr_l(1:3,1:4,i)) ! b_tetra_irr_l before rotation
         do j = 1, nbt
-          t2 = b_tetra_irr(1:3,1:4,j) ! b_tetra_irr rotatuta, berria dagoeneko
+          t2 = b_tetra_irr(1:3,1:4,j) ! b_tetra_irr rotated
           overlap(i_sym,1) = overlap(i_sym,1) + overlap_tetra(t1, t2)
         enddo
       enddo
@@ -955,7 +955,7 @@ contains
 
     enddo !i
 
-      ! Aktualizatu tetra_equiv eta tetra_symlink
+      ! Update tetra_equiv and tetra_symlink
       it_loop: do it = 1, n_b_tetra_all
 
         do i = 1, 4

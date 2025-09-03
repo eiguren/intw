@@ -260,8 +260,8 @@ program ep_on_trFS_wannier
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
 
-  ! DUDA kmesh is equal to nnkp_kpoints, but I do not if this is general
-  ! si no, hay que usar kmesh explicitamente en las (I)FTs
+  ! DUDA kmesh is equal to nnkp_kpoints, but I do not know if this is general
+  ! if not, we have to use kmesh explicitly in the (I)FTs
   ! do ik=1,nkmesh
   !   write(*,'(i3,3f7.3)') ik, kmesh(:,ik)-nnkp_kpoints(:,ik)
   ! end do
@@ -355,7 +355,7 @@ program ep_on_trFS_wannier
 
     read(unit_off,*) comenta
     read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
-    ! read(unit_off,'(/)') ! DUDA... esto dependdera de como está escrito el salto de línea en el fichero, creo...
+    ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
     if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop

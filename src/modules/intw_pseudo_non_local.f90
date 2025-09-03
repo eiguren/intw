@@ -432,7 +432,7 @@ contains
     ! Calculate dimensions for array tab (including a possible factor
     ! coming from cell contraction during variable cell relaxation/MD)
     !
-    nqx = int( sqrt(2*ecutwfc) / dq + 4 ) ! x2 zeren Ry -> Hartree egin behar
+    nqx = int( sqrt(2*ecutwfc) / dq + 4 ) ! x2 because Ry -> Hartree
     !
     ! q-point grid for interpolation
     !

@@ -415,7 +415,7 @@ program ep_melements
   ! We will calculate num_bands_ep bands if ep_bands=custom
   ! indexed 1:num_bands_ep (ep_bands_initial to ep_bands_final)
   !
-  ! Allocate induced potential related variables (hauek behekoak ph_module.mod-n definituta daude eta aldagai globalak dira kontuz)
+  ! Allocate induced potential related variables
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
   allocate(dvpsi(nGk_max,num_bands_ep,nspin,nspin,3*nat))
   !
@@ -440,14 +440,13 @@ program ep_melements
          form='unformatted', status='unknown', access='direct', recl=record_lengh)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
     !
-    ! Potentzialaren alde induzitua kalkulatu simetria erabiliz (errotazioz beharrezkoa izanez).
+    ! Get induced potential for q
     dvq_local = cmplx_0
     call get_dv(qpoint, dvq_local)
     !
-    ! Alde induzituari (goian), KB pseudopotentzialaren(pp) deribatuaren ALDE LOKALA gehitu.
+    ! Add local part of the KB-PP to the induced potential
     call calculate_local_part_dv(qpoint, dvq_local)
     !
-    ! Bi subroutina hauek (goikoak), biak batera joan behar dira beti).
     do ik=1,nkmesh
       !
       kpoint=kmesh(:,ik)
@@ -456,13 +455,13 @@ program ep_melements
       !
       write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
       !
-      ! Uhina lortu RAM memorian dauden uhin irreduzibleak errotatuta
+      ! Get wave functions for k and k+q
       call get_psi_general_k_all_wfc(       kpoint,  npw,  list_iGk,  wfc_k)
       call get_psi_general_k_all_wfc(kpoint+qpoint, npwq, list_iGkq, wfc_kq)
       !
       !
-      ! psi_k uhinak, potentzial induzitua + KB pp-ren ALDE LOKALAREN
-      ! batuketarekin biderkatu (output-a:dvpsi): dv_local x |psi_k> (G)
+      ! Multiply induced potential + local part of KB-PP with wave function:
+      ! dvpsi: dv_q^local x | psi_k > (G)
       !
       if ( trim(ep_bands) .eq. 'intw') then
         call dvqpsi_local(num_bands_intw, list_iGk, list_iGkq, wfc_k, dvq_local, dvpsi)
@@ -471,9 +470,9 @@ program ep_melements
                           wfc_k(:,ep_bands_initial:ep_bands_final,:), dvq_local, dvpsi)
       end if
       !
-      ! psi_k uhinak KB potentzialaren alde ez lokalarekin biderkatu eta emaitza dvpsi aldagaiari gehitu:
-      !                    dvpsi^q_k --> dvpsi^q_k + D^q_mode [ KB ] |psi_k> (G)
-      !                                  (lokala) + (ez lokala)
+      ! Add non-local part of KB-PP multiplied with the wave function:
+      ! dvpsi: --> dvpsi + dq^mode [ KB projectors ] x | psi_k > (G)
+      !            local + non-local
       !
       if ( trim(ep_bands) .eq. 'intw') then
         call multiply_psi_by_dvKB(kpoint, qpoint, list_iGk, list_iGkq, num_bands_intw, wfc_k, dvpsi)
@@ -482,9 +481,10 @@ program ep_melements
                                   num_bands_ep,  wfc_k(:,ep_bands_initial:ep_bands_final,:), dvpsi)
       end if
       !
-      do imode=1,3*nat ! Osagai kanonikoak, ez dira moduak, kontuz
+      do imode=1,3*nat ! This are Cartesian modes, not real phonon modes
         !
-        ! Matrize elementuak kalkulatu
+        ! Compute matrix elements:
+        ! ep_mat_el: < psi_{k+q} | x dvpsi
         do jspin=1,nspin
           do ispin=1,nspin
             do jbnd=1,num_bands_ep
@@ -521,8 +521,6 @@ program ep_melements
     !
   enddo !iq
 
-
-  deallocate (ep_mat_el)
   !
   !
   !================================================================================

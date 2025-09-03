@@ -75,6 +75,7 @@ contains
 
   end subroutine allocate_fft
 
+
   subroutine deallocate_fft()
     !--------------------------------------------------------
     ! This subroutine simply deallocates the arrays needed
@@ -87,6 +88,7 @@ contains
     deallocate (strf)
 
   end subroutine deallocate_fft
+
 
   subroutine generate_nl()
     !------------------------------------------------------------------------
@@ -260,7 +262,7 @@ contains
     list_iG_k_irr = list_iG
     list_iG = 0
     !
-    ! loop on all G_k_irr, the coefficients of the wavefunction at the IBZ k point
+    ! loop on all G_k_irr, the coefficients of the wave function at the IBZ k point
     !
     nGk = 0
     do i = 1, nGk_max
@@ -271,7 +273,7 @@ contains
       !
       nGk = nGk + 1
       !
-      G_k(:) = gvec(:,iG_k_irr) - G(:) ! minus, zeren horrela da konbentzioa exp(-igr) (testatuta dago intw2wan).
+      G_k(:) = gvec(:,iG_k_irr) - G(:) ! minus by convention: exp(-iGr)
       !
       call find_iG(G_k, iG_k)
       !
@@ -353,6 +355,7 @@ contains
 
   end subroutine wfc_from_g_to_r
 
+
   subroutine wfc_from_r_to_g (list_iG,wfc_r, wfc_g)
     !--------------------------------------------------------
     !  This subroutine is a driver which uses the 3D-FFT
@@ -401,6 +404,7 @@ contains
   enddo
 
   end subroutine wfc_from_r_to_g
+
 
   subroutine func_from_g_to_r (nfunc, fg, fr)
     !--------------------------------------------------------
@@ -510,6 +514,7 @@ contains
 
   end subroutine func_from_r_to_g
 
+
   subroutine find_iG(G,iG)
     !----------------------------------------------------------------------------!
     !     Given a G vector in crystal coordinates, this subroutine
@@ -543,6 +548,7 @@ contains
     ! This subroutine puts the coarse force
     ! constants in the smooth force constant
     ! array
+    ! NOTE: (Haritz 03/09/2025): This subroutine is not used and has not been tested
     !-------------------------------------------
     use intw_useful_constants, only: cmplx_0
     implicit none
@@ -589,11 +595,4 @@ contains
 
  end subroutine coarse_to_smooth
 
-
-!----------------------------------------------------------------------------!
-!
-!
-  end module intw_fft
-!
-!
-!----------------------------------------------------------------------------!
+end module intw_fft

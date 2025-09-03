@@ -862,8 +862,9 @@ contains
 
     call build_basis_g_table()
 
-    !lehenik transformatu esferikoa egin espezie bakoitzarentzat. Gero atomoa mugitzean xa(:,ia)
-    !fase bat besterik ez du aldatuko
+    ! First, compute the spherical Fourier transform for the basis set orbitals.
+    ! Then, for each atomic possition xa(:,ia) we just have to add a phase.
+
     allocate(rylm( 0:(lmaxd+1)**2))
     allocate(grylm(1:3, 0:(lmaxd+1)**2-1))
     allocate(orbital_gk(nspecies))
@@ -874,7 +875,6 @@ contains
     rylm = 0.0_dp
     grylm = 0.0_dp
     !
-    !Behean specie bakoitzarentzat orbitalentzat Fourier egin jatorrian egongo balira bezala
     do ik = 1, nwk
       !
       write(stdout, "(a5,i0,a8,i0)") "ik = ", ik, ", ngk = ", ngk(ik)
@@ -882,20 +882,20 @@ contains
       !
       do iG = 1, ngk(ik)
         !
-        kpg = sqrt(sum( ( kpoint(:) + gvec_cart(:, list_iG(ig, ik)) )**2 )) ! |k+G| moduloa.
-        kg_unit = - (kpoint(:) + gvec_cart(:, list_iG(ig, ik))) ! (k+G)/|k+G| unitate bektorea
+        kpg = sqrt(sum( ( kpoint(:) + gvec_cart(:, list_iG(ig, ik)) )**2 )) ! |k+G| modulus.
+        kg_unit = - (kpoint(:) + gvec_cart(:, list_iG(ig, ik))) ! (k+G)/|k+G| unit vector
         if (kpg>1.0E-9) kg_unit = kg_unit/kpg
-        call rlylm( lmaxd, kg_unit, rylm, grylm ) ! lamx bateraiko kalkulatzen ditu Ylm guztiak
+        call rlylm( lmaxd, kg_unit, rylm, grylm ) ! compute all Ylm up to lamx
         !
         do is = 1, nspecies
           !
           do io = 1, species(is)%norbs
             !
-            l = species(is)%orb_l(io)    !orbital horren l
-            m = species(is)%orb_m(io)    !orbital horren m
+            l = species(is)%orb_l(io) ! l of the orbital
+            m = species(is)%orb_m(io) ! m of the orbital
             !
-            ind = l**2 + l + m !+ 1     ! hau indize bateratua lm
-            phase = cmplx_i**l ! i^l faktorea exp(kr) = 4pi \sum_{lm} i^l j_l(kr) Y_lm(^k) Y_lm(^r)
+            ind = l**2 + l + m !+ 1 ! unified lm index
+            phase = cmplx_i**l ! i^l factor exp(kr) = 4pi \sum_{lm} i^l j_l(kr) Y_lm(^k) Y_lm(^r)
             !
             orbital_gk(is)%o(iG, io, ik) = 4*pi * phase * rylm(ind) * spline_g_of_phi(is, io, kpg)
             !
@@ -921,9 +921,9 @@ contains
     do is=1,nspecies
       do io=1,species(is)%norbs
         !
-        l = species(is)%orb_l(io)    !orbital horren l
-        m = species(is)%orb_m(io)    !orbital horren m
-        ind = l**2 + l + m !+ 1     ! hau indize bateratua lm
+        l = species(is)%orb_l(io)    ! l of the orbital
+        m = species(is)%orb_m(io)    ! m of the orbital
+        ind = l**2 + l + m !+ 1     ! unified lm index
         write(stdout,*) "print orb:", is, io, l, m
         write(is*10000+io,"(a)") "#             r            mod           real           imag"
         !
@@ -943,7 +943,7 @@ contains
             or = 2.0_dp*real(or, dp) - orbital_gk(is)%o(1,io,ik)
           endif
           !
-          call rlylm( l, (/r1,r2,r3/), rylm, grylm )  ! lamx bateraiko kalkulatzen ditu Ylm guztiak
+          call rlylm( l, (/r1,r2,r3/), rylm, grylm ) ! compute all Ylm up to lamx
           !
           or = or/volume_of_some_cell
           if (rylm(ind).gt.0.000001_dp) or = or/rylm(ind)
@@ -974,7 +974,7 @@ contains
     ! allocate(evc(nspin*nGk_max, nbnd, nwk))
     ! evc = cmplx_0
     !
-    ! ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
+    ! ! Use Fourier transform of the orbitals to compute wave function Fourier transform
     ! call cpu_time(t0)
     ! do ik=1,nwk
     !   kpoint(1:3) = kirr_cart(1:3, ik)
@@ -982,11 +982,11 @@ contains
     !   do iG=1,ngk(ik)
     !     do ipol=1,nspin
     !       do io=1,no_u
-    !         ia = iaorb(io) ! zein atomori dagokion orbital hori
-    !         is = isa(ia)   ! zein den atomo speciea
+    !         ia = iaorb(io) ! Index of the atom to wich this orbital belongs
+    !         is = isa(ia) ! Index of the atomic species to wich this orbital belongs
     !         io_l = iphorb(io) ! Orbital index of each orbital in its atom
     !         io_u = indxuo(io) ! Index of equivalent orbital in "u" cell
-    !         kr = sum( (- gvec_cart(:,list_iG(ig,ik))) * xa(:,ia)) ! xa-k alat biderkatuta dauka alat, eta kpoit 2pi/alat
+    !         kr = sum( (- gvec_cart(:,list_iG(ig,ik))) * xa(:,ia)) ! xa-k is multiplied by alat, and kpoit by 2pi/alat
     !         phase = cmplx(cos(kr),sin(kr))
     !         evc((ipol-1)*ngk(ik)+ig, :,ik) = evc((ipol-1)*ngk(ik)+ig, :,ik) + &
     !             phase * orbital_gk(is)%o(iG,io_l,ik) * wf(io_u, ipol, 1:nbnd, ik) / sqrt(volume_of_some_cell)
@@ -1063,7 +1063,7 @@ contains
 
     allocate(evc(spinor_comps*nGk_max))
 
-    ! Orbitalen Fourier aprobetxatu uhien Fourier T. kalkulatzeko
+    ! Use Fourier transform of the orbitals to compute wave function Fourier transform
     do ik=1,nwk
       !
       kpoint(1:3) = kirr_cart(1:3, ik)
@@ -1086,8 +1086,8 @@ contains
         !
         do io=1,no_u
           !
-          ia = iaorb(io) ! zein atomori dagokion orbital hori
-          is = isa(ia)   ! zein den atomo speciea
+          ia = iaorb(io) ! Index of the atom to wich this orbital belongs
+          is = isa(ia) ! Index of the atomic species to wich this orbital belongs
           io_l = iphorb(io) ! Orbital index of each orbital in its atom
           io_u = indxuo(io) ! Index of equivalent orbital in "u" cell
           !
@@ -1193,8 +1193,7 @@ contains
     integer, parameter :: nq = 500
     integer :: is, io, iq
 
-    ! allocate bat egin spezie eta orbital kopuru maximoa duen atomoa hartuta
-    ! batzuk ez dira erabiltzen beraz
+    ! allocate with the dimensions of the atomic specie with the maximum number of orbitals
     allocate(phi_g_table(nspecies, maxval(species(:)%norbs), nq))
     allocate(phi_g_y2   (nspecies, maxval(species(:)%norbs), nq))
     allocate(gg_list(nq))
@@ -1202,8 +1201,8 @@ contains
     phi_g_y2 = 0.0_dp
     gg_list = 0.0_dp
 
-    !ASIER: Hemen m ezberdinetako Fourier Tr. berdinak dira
-    !       eta dena den kalkulatzen da errazagoa izateagatik.
+    ! ASIER: Here the Fourier transform for different m are the same,
+    !        but it is computed anyway for simplicity of the code
 
     do is=1,nspecies
       !
@@ -1252,7 +1251,7 @@ contains
 
   function g_of_phi(is,io,gg)
     !
-    ! Runge-Kutta4 (=Simpson) integrazioa \int^rc_0 r**2 * bessel(l,k*r) * phi(is,io,r) dr
+    ! Runge-Kutta4 (=Simpson) integration \int^rc_0 r**2 * bessel(l,k*r) * phi(is,io,r) dr
     !
 
     use atm_types, only: species
@@ -1265,7 +1264,7 @@ contains
     real(kind=dp) :: g_of_phi
     !-lokal
     integer :: ir
-    integer,parameter :: nr = 500 ! integratzeko 500 puntu [0,rc]. Ez dakit merezi duen orokortzea
+    integer,parameter :: nr = 500 ! 500 points to integrate [0,rc]. I don't know if it's worth generalizing
     real(kind=dp) :: r, k1, k2, phi, dphidr, h, rh1, rh2
     integer :: l
     real(kind=dp), parameter :: sqrt3 = 0.577350269189626_dp
@@ -1276,7 +1275,7 @@ contains
 
     g_of_phi = 0.0_dp
     r = 0.0_dp
-    ! Gauss koadratura n=2 pausuz pausu
+    ! Gauss quadrature n=2 step by step
     do ir=1,nr
        r = (ir-1)*h ! (nr-1)*rc/nr=rc-h
        rh1 = r + h/2*( 1.0_dp - sqrt3 )
@@ -1298,8 +1297,6 @@ contains
 
     implicit none
 
-    ! ASIER:: Errekursiboki definitu dut (kontuz)
-    ! behar bada siestan badago beste zerbait
     real(kind=dp), intent(in) :: x
     integer, intent(in) :: n
     real(kind=dp) :: sphb_
