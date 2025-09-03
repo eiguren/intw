@@ -45,7 +45,6 @@ module intw_symmetries
             set_symmetry_relations, find_inverse_symmetry_matrices_indices, &
             allocate_and_build_spin_symmetry_matrices, deallocate_spin_symmetry_matrices, &
             compute_rotation_axis, rotaxis_crystal, &
-            find_the_irreducible_k_set_and_equiv2, &
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, irr_kp_grid_to_full, calculate_star_r, &
             calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
@@ -1013,7 +1012,7 @@ contains
   end subroutine rotaxis_crystal
 
 
-  subroutine find_the_irreducible_k_set_and_equiv2(nspt, k_entire, k_irr, nk_irr, equiv, symlink, sym_G)
+  subroutine find_the_irreducible_k_set_and_equiv(nspt, k_entire, k_irr, nk_irr, equiv, symlink, sym_G)
     !------------------------------------------------------------------
     ! This subroutine finds the irreducible k set for the a general k list
     !------------------------------------------------------------------
@@ -1132,127 +1131,8 @@ contains
       enddo
     enddo
 
-  end subroutine find_the_irreducible_k_set_and_equiv2
-
-  subroutine find_the_irreducible_k_set_and_equiv(nspt, k_entire, k_irr, nk_irr, equiv)!, symlink, sym_G)
-    !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k set for the a general k list
-    !------------------------------------------------------------------
-    use intw_input_parameters, only: TR_symmetry
-    use intw_reading, only: nsym, s, at, bg
-
-    implicit none
-
-    !input
-
-    integer, intent(in):: nspt
-
-    real(kind=dp), intent(in) :: k_entire(3,nspt)
-
-    ! output
-    integer, intent(out):: nk_irr
-    real(kind=dp) :: k_irr(3,nspt)
-    integer :: equiv(nspt) ! which is the equivalent point
-
-    !local variables
-    integer :: sym_G(1:3,nspt), symlink(nspt,1:2)
-    real(kind=dp):: k_rot(3), dist1, dist2
-
-    integer :: i, j ! triple indices
-
-    integer :: ns
-
-    integer :: ikpt ! joint index, joint index obtained by symmetry
-
-    integer :: ii, jj, kk
-
-    logical :: found(nspt)
-    real(kind=dp), parameter :: eps = 10E-7
-
-    ! Find which symmetry operation is the identity
-    ! most likely always the first element, but let's be sure
-
-
-    found  = .false.
-    nk_irr = 0
-
-    do i=1,nspt
-      if (.not. found(i)) then
-        found(i) = .true.
-        nk_irr = nk_irr + 1
-        k_irr(1:3,nk_irr) = k_entire(1:3,i)
-        equiv(i) = nk_irr
-
-        do ns=1,nsym
-          k_rot = matmul(dble(s(:,:,ns)), k_irr(:,nk_irr))
-
-          do j=1, nspt
-
-            if (((abs(modulo(k_entire(1,j)-k_rot(1),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(1,j)-k_rot(1),1.0_dp)       )<eps)) .and.&
-                ((abs(modulo(k_entire(2,j)-k_rot(2),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(2,j)-k_rot(2),1.0_dp)       )<eps)) .and.&
-                ((abs(modulo(k_entire(3,j)-k_rot(3),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(3,j)-k_rot(3),1.0_dp)       )<eps))) then
-
-                equiv(j) = nk_irr
-                found(j) = .true.
-                symlink(j,1) = ns
-                symlink(j,2) = 0
-                sym_G(:,j) = nint(k_entire(:,j) - k_rot(:))
-                cycle
-            endif
-
-            if (TR_symmetry) then
-
-              if (((abs(modulo(k_entire(1,j)+k_rot(1),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(1,j)+k_rot(1),1.0_dp)       )<eps)) .and.&
-                  ((abs(modulo(k_entire(2,j)+k_rot(2),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(2,j)+k_rot(2),1.0_dp)       )<eps)) .and.&
-                  ((abs(modulo(k_entire(3,j)+k_rot(3),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(3,j)+k_rot(3),1.0_dp)       )<eps))) then
-                equiv(j) = nk_irr
-                found(j) = .true.
-                symlink(j,1) = ns
-                symlink(j,2) = 1
-                sym_G(:,j) = nint(k_entire(:,j) -(- k_rot(:)))
-
-              endif
-            endif
-
-          end do !j
-
-        enddo ! ns
-
-      end if !found
-
-    enddo !i
-
-
-    do ikpt=1,nk_irr
-
-      k_rot(:) = matmul(bg,k_irr(:,ikpt))
-
-      dist1 = sum(k_rot(:)**2)
-
-      do ii=-1,1
-        do jj=-1,1
-          do kk=-1,1
-
-            k_rot(:) = matmul(bg,k_irr(:,ikpt)) + matmul(bg, dble((/ii,jj,kk/)))
-            dist2 = sum(k_rot(:)**2)
-
-            if (dist2<dist1) then
-                k_irr(:,ikpt) = matmul(transpose(at), k_rot)
-                dist1 = dist2
-            endif
-
-          enddo
-        enddo
-      enddo
-    enddo
-
   end subroutine find_the_irreducible_k_set_and_equiv
+
 
   subroutine find_the_irreducible_k_set(nk1, nk2, nk3, kmesh, kpoints_irr, nk_irr)
     !------------------------------------------------------------------
