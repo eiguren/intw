@@ -41,9 +41,10 @@ module intw_symmetries
             rtau, rtau_cryst, symtable
   !
   ! subroutines
-  public :: allocate_symmetry_related_k, deallocate_spin_symmetry_matrices, &
-            deallocate_symmetry_related_k, find_inverse_symmetry_matrices_indices, &
-            allocate_and_build_spin_symmetry_matrices, rotaxis_crystal, &
+  public :: allocate_symmetry_related_k, deallocate_symmetry_related_k, &
+            find_inverse_symmetry_matrices_indices, &
+            allocate_and_build_spin_symmetry_matrices, deallocate_spin_symmetry_matrices, &
+            compute_rotation_axis, rotaxis_crystal, &
             set_symmetry_relations, find_the_irreducible_k_set_and_equiv2, &
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, irr_kp_grid_to_full, calculate_star_r, &
@@ -149,16 +150,6 @@ contains
     return
 
   end subroutine allocate_symmetry_related_k
-
-
-  subroutine deallocate_spin_symmetry_matrices()
-    !------------------------------------------------------------------
-    ! This subroutine deallocates the array spin_symmetry_matrices
-    !------------------------------------------------------------------
-
-    deallocate(spin_symmetry_matrices)
-
-  end subroutine deallocate_spin_symmetry_matrices
 
 
   subroutine deallocate_symmetry_related_k()
@@ -402,6 +393,16 @@ contains
     return
 
   end subroutine allocate_and_build_spin_symmetry_matrices
+
+
+  subroutine deallocate_spin_symmetry_matrices()
+    !------------------------------------------------------------------
+    ! This subroutine deallocates the array spin_symmetry_matrices
+    !------------------------------------------------------------------
+
+    deallocate(spin_symmetry_matrices)
+
+  end subroutine deallocate_spin_symmetry_matrices
 
 
   subroutine compute_rotation_axis(A, axis, angle)
