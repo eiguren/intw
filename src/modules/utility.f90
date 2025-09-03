@@ -42,7 +42,7 @@ module intw_utility
             print_date_time
   !
   ! functions
-  public :: intgr_spline_gaussq, multiple, weight_ph, &
+  public :: intgr_spline_gaussq, multiple, &
             qe_erf, qe_erfc, find_free_unit, conmesurate_and_coarser, &
             smeared_delta, smeared_lorentz, fermi_dirac, int2str
   !
@@ -1015,19 +1015,6 @@ end function intgr_spline_gaussq
   end subroutine find_r_in_WS_cell
 
 
-  function weight_ph(x)
-
-    implicit none
-
-    real(dp), intent(in) :: x
-    real(dp) :: weight_ph
-    real(dp),parameter :: x0=0.002d0 !x0=0.0001d0 !x0=0.0004d0 !x0=0.0006d0 !x0=0.003
-    real(dp),parameter :: sigma=0.00001d0 !sigma=0.000001d0 !sigma=0.0001d0 !sigma=0.00002d0 !sigma=0.0003
-
-    weight_ph = 1/(1+exp((x0-x)/sigma))
-
-  end function weight_ph
-
   subroutine errore (a,b,i)
     character(len=*), intent(in) :: a,b
     integer :: i
@@ -1397,37 +1384,38 @@ end function intgr_spline_gaussq
   ! smearing functions for integrals
 
   function smeared_delta(x,s)
+    !gaussian
     use kinds, only: dp
     use intw_useful_constants, only: tpi
     implicit none
     real(dp) :: x,s, smeared_delta
-    !gaussian
+
     if (-4*s < x .and. x < 4*s) then
       smeared_delta = exp(-0.5_dp*(x/s)**2 ) / (s*sqrt(tpi))
     else
       smeared_delta = 0.0_dp
     endif
-  return
+
   end function smeared_delta
 
   function smeared_lorentz(x,s)
-          ! MBR 280624
+    ! MBR 280624
     use kinds, only: dp
     use intw_useful_constants, only: pi
     implicit none
     real(dp) :: x,s, smeared_lorentz
-    !lorentz
+
     smeared_lorentz = s / (pi*(s*s+x*x))
-  return
+
   end function smeared_lorentz
 
   function fermi_dirac(x, kt)
-          ! x = energy - e_fermi, kT = Boltzmann * temp, same units
+    ! x = energy - e_fermi, kT = Boltzmann * temp, same units
     use kinds, only: dp
     use intw_useful_constants, only: tpi
     implicit none
     real(dp) :: x, kt, fermi_dirac
-    ! With finite T
+
     if (x < -5*kt) then
       fermi_dirac = 1.0_dp
     else if (x > 5*kt) then
@@ -1435,9 +1423,7 @@ end function intgr_spline_gaussq
     else
       fermi_dirac = 1.0_dp/(exp(x/kt) + 1.0_dp)
     endif
-    !  T=0 limit
-    ! fermi_dirac = 0.5_dp* (-sign(1.0_dp,x) + 1.0_dp)
-  return
+
   end function fermi_dirac
 
 
