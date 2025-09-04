@@ -1012,7 +1012,7 @@ contains
   end subroutine rotaxis_crystal
 
 
-  subroutine find_size_of_irreducible_k_set(nk1, nk2, nk3, kmesh, nk_irr)
+  subroutine find_size_of_irreducible_k_set(nk1, nk2, nk3, nk_irr)
     !------------------------------------------------------------------
     ! This subroutine finds the number of k-points in the IBZ, based
     ! on the symmetry operations to be used.
@@ -1027,8 +1027,6 @@ contains
     !input
     integer, intent(in) :: nk1, nk2, nk3
     ! The input k division
-    real(kind=dp), intent(in) :: kmesh(3,nk1*nk2*nk3)
-    ! The full kmesh, in canonical order
 
     !output
     integer, intent(out) :: nk_irr

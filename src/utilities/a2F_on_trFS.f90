@@ -489,7 +489,7 @@ program a2F_on_trFS
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh, qmesh_nqirr)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh_nqirr)
 
 
   !================================================================================

@@ -471,7 +471,7 @@ program ep_on_trFS_dV
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh, nq_irr)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, nq_irr)
 
 
   !================================================================================

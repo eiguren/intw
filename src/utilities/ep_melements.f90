@@ -265,7 +265,7 @@ program ep_melements
   call generate_kmesh(kmesh,nk1,nk2,nk3)
   !
   ! Find the size of the irreducible set of k-points (IBZ)
-  call find_size_of_irreducible_k_set(nk1,nk2,nk3,kmesh,nk_irr)
+  call find_size_of_irreducible_k_set(nk1,nk2,nk3,nk_irr)
   !
   !
   !================================================================================
@@ -334,7 +334,7 @@ program ep_melements
   call generate_kmesh(qmesh,nq1,nq2,nq3)
   !
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1,nq2,nq3,qmesh,nq_irr)
+  call find_size_of_irreducible_k_set(nq1,nq2,nq3,nq_irr)
   !
   !
   !================================================================================
