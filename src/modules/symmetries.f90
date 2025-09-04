@@ -84,55 +84,54 @@ module intw_symmetries
 
 contains
 
-  subroutine allocate_symmetry_related_k(nk1, nk2, nk3, nsym)
+  subroutine allocate_symmetry_related_k(nk1, nk2, nk3)
     !------------------------------------------------------------------
-    !   nk1, nk2, nk3 are the MP coefficient of the mesh, and nsym is
-    !   the total number of point group operations.
+    ! nk1, nk2, nk3 are the MP coefficient of the mesh
     !
-    !   Define kpt to be a vector in the 1BZ, and ikpt to be its
-    !   joint index. Let kpt_irr be a symmetry equivalent k-point to kpt.
-    !   Finally, let i_folder be an index which represents the QE folders.
+    ! Define kpt to be a vector in the 1BZ, and ikpt to be its index.
+    ! Let kpt_irr be a symmetry equivalent k-point to kpt.
+    ! Finally, let i_folder be an index which represents the QE folders.
     !
-    !   This subroutine allocates the arrays
+    ! This subroutine allocates the arrays
     !
-    !   - QE_folder_sym   : this array indicates in which QE folder "i_folder"
-    !                       the kpoint "kpt_irr", which is symmetry equivalent to
-    !                       "kpt", can be found.
+    ! - QE_folder_sym : this array indicates in which QE folder "i_folder"
+    !                   the kpoint "kpt_irr", which is symmetry equivalent to
+    !                   "kpt", can be found.
     !
-    !   - symlink         : What rotation-like operation must be performed
-    !                       on "kpt_irr" to obtain "kpt".
+    ! - symlink       : What rotation-like operation must be performed
+    !                   on "kpt_irr" to obtain "kpt".
     !
-    !   - sym_G           : What G translation must be applied to the rotated
-    !                       "kpt_irr" to obtain "kpt".
+    ! - sym_G         : What G translation must be applied to the rotated
+    !                   "kpt_irr" to obtain "kpt".
     !
-    !   In equations:
-    !           R        = symlink(ikpt)
-    !           i_folder = QE_folder_sym(ikpt)
-    !           G        = sym_G(ikpt)
+    ! In equations:
+    !         R        = symlink(ikpt)
+    !         i_folder = QE_folder_sym(ikpt)
+    !         G        = sym_G(ikpt)
     !
-    !           =========>  R*kpt_irr = kpt+G
+    !         =========>  R*kpt_irr = kpt+G
     !
-    !   Also, in the case that a full mesh is present in the QE folders
-    !   the following arrays will be allocated
-    !   - QE_folder_nosym : this array indicates in which QE folder "i_folder"
-    !                       the kpoint "kpt_1", which is translation equivalent to
-    !                       "kpt", can be found.
+    ! Also, in the case that a full mesh is present in the QE folders
+    ! the following arrays will be allocated
+    ! - QE_folder_nosym : this array indicates in which QE folder "i_folder"
+    !                     the kpoint "kpt_1", which is translation equivalent to
+    !                     "kpt", can be found.
     !
-    !   - nosym_G         : What G translation must be applied to
-    !                       "kpt_1" to obtain "kpt".
+    ! - nosym_G         : What G translation must be applied to
+    !                     "kpt_1" to obtain "kpt".
     !
-    !   In equations:
-    !           i_folder = QE_folder_nosym(ikpt)
-    !           G        = nosym_G(ikpt)
+    ! In equations:
+    !         i_folder = QE_folder_nosym(ikpt)
+    !         G        = nosym_G(ikpt)
     !
-    !           =========>  kpt_1 = kpt+G
+    !         =========>  kpt_1 = kpt+G
     !------------------------------------------------------------------
 
     implicit none
 
     !I/O variables
 
-    integer,intent(in) :: nk1, nk2, nk3, nsym
+    integer,intent(in) :: nk1, nk2, nk3
 
     !local variables
 
@@ -140,37 +139,30 @@ contains
 
     nkmesh = nk1*nk2*nk3
     !
-    allocate(QE_folder_sym(nkmesh))
-    allocate(sym_G(3,nkmesh))
-    allocate(symlink(nkmesh,2))
     allocate(QE_folder_nosym(nkmesh))
     allocate(nosym_G(3,nkmesh))
     !
-    return
+    allocate(QE_folder_sym(nkmesh))
+    allocate(sym_G(3,nkmesh))
+    !
+    allocate(symlink(nkmesh,2))
 
   end subroutine allocate_symmetry_related_k
 
 
   subroutine deallocate_symmetry_related_k()
-    !----------------------------------------------------
-    !
     !------------------------------------------------------------------
     ! This subroutine deallocates the arrays equiv and symlink.
     !------------------------------------------------------------------
+    implicit none
 
-    if (allocated(symlink)) deallocate(symlink)
-    !
-    if (allocated(sym_G)) deallocate(sym_G)
-    !
-    if (allocated(QE_folder_sym)) deallocate(QE_folder_sym)
-    !
     if (allocated(QE_folder_nosym)) deallocate(QE_folder_nosym)
-    !
-    if (allocated(inverse_indices)) deallocate(inverse_indices)
-    !
     if (allocated(nosym_G)) deallocate(nosym_G)
     !
-    return
+    if (allocated(QE_folder_sym)) deallocate(QE_folder_sym)
+    if (allocated(sym_G)) deallocate(sym_G)
+    !
+    if (allocated(symlink)) deallocate(symlink)
 
   end subroutine deallocate_symmetry_related_k
 

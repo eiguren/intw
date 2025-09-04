@@ -246,7 +246,7 @@ program intw2W90
   !================================================================================
   !
   ! Allocate arrays
-  call allocate_symmetry_related_k(nk1, nk2, nk3, nsym)
+  call allocate_symmetry_related_k(nk1, nk2, nk3)
   !
   ! Fill the symmetry arrays
   call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE,kmesh, k_points_consistent, &
