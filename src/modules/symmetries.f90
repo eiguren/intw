@@ -985,10 +985,10 @@ contains
   end subroutine rotaxis_crystal
 
 
-  subroutine find_size_of_irreducible_k_set(nk1, nk2, nk3, nk_irr)
+  subroutine find_size_of_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr)
     !------------------------------------------------------------------
-    ! This subroutine finds the number of k-points in the IBZ, based
-    ! on the symmetry operations to be used.
+    ! This subroutine finds the size of the irreducible k-point set for
+    ! the canonical 1BZ (nk_1, nk_2, nk_3) MP mesh.
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
@@ -998,12 +998,12 @@ contains
     implicit none
 
     !input
-    integer, intent(in) :: nk1, nk2, nk3
+    integer, intent(in) :: nk_1, nk_2, nk_3
     ! The input k division
 
     !output
     integer, intent(out) :: nk_irr
-    ! N. of irreducible k points found for the nk_1 nk_2 nk_3 division.
+    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
 
     !local variables
     real(kind=dp) :: k_rot(3), k_1BZ(3), k_irr(3)
@@ -1012,21 +1012,22 @@ contains
     integer :: G(3)
     integer :: isym
     integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
-    logical :: found(nk1*nk2*nk3)
-
+    logical :: found(nk_1*nk_2*nk_3)
 
     !
     ! Initialize output
+    !
     nk_irr = 0
     !
     ! loop on the whole mesh, in the appropriate order (very important!)
+    !
     found = .false.
-    do i=1,nk1
-      do j=1,nk2
-        do k=1,nk3
+    do i=1,nk_1
+      do j=1,nk_2
+        do k=1,nk_3
           !
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1, nk2, nk3, ikpt, i, j, k)
+          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
           !
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
@@ -1036,9 +1037,9 @@ contains
             !
             nk_irr = nk_irr + 1
             !
-            k_irr(1) = dble(i-1)/nk1
-            k_irr(2) = dble(j-1)/nk2
-            k_irr(3) = dble(k-1)/nk3
+            k_irr(1) = dble(i-1)/nk_1
+            k_irr(2) = dble(j-1)/nk_2
+            k_irr(3) = dble(k-1)/nk_3
             !
             ! loop on all symmetry operations
             do isym=1,nsym
@@ -1053,14 +1054,14 @@ contains
               k_rot(:) = matmul(dble(s(:,:,isym)), k_irr(:))
               !
               ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
               !
               ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
               ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
               if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1, nk2, nk3, ikpts, is, js, ks)
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
                 if (.not. found(ikpts)) found(ikpts) = .true.
                 !
@@ -1077,13 +1078,13 @@ contains
               k_rot = -matmul(dble(s(:,:,isym)), k_irr(:))
               !
               ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
               !
               ! we check again the value of dk, so if k_1BZ+G = k_rot
               if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1, nk2, nk3, ikpts, is, js, ks)
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
                 if (.not.found(ikpts)) found(ikpts) = .true.
                 !
@@ -1100,10 +1101,10 @@ contains
   end subroutine find_size_of_irreducible_k_set
 
 
-  subroutine find_the_irreducible_k_set(nk1, nk2, nk3, nk_irr, kpoints_irr)
+  subroutine find_the_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr, kpoints_irr)
     !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k set for the canonical
-    ! 1BZ mesh.
+    ! This subroutine finds the irreducible k-point set for the canonical
+    ! 1BZ (nk_1, nk_2, nk_3) MP mesh.
     !------------------------------------------------------------------
     use intw_useful_constants, only: eps_8
     use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
@@ -1112,16 +1113,16 @@ contains
     implicit none
 
     !input
-    integer, intent(in) :: nk1, nk2, nk3
+    integer, intent(in) :: nk_1, nk_2, nk_3
     ! The input k division
 
     !output
     integer, intent(out) :: nk_irr
-    ! How many points were found?
+    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
 
-    real(kind=dp), intent(out) :: kpoints_irr(3,nk1*nk2*nk3)
-    ! The irreducible kpoints in crystal triple coordinates.
-    ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
+    real(kind=dp), intent(out) :: kpoints_irr(3,nk_1*nk_2*nk_3)
+    ! The irreducible k-point set in crystal coordinates.
+    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
 
     !local variables
@@ -1131,7 +1132,7 @@ contains
     integer :: G(3)
     integer :: isym
     integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
-    logical :: found(nk1*nk2*nk3)
+    logical :: found(nk_1*nk_2*nk_3)
 
 
     !
@@ -1141,12 +1142,12 @@ contains
     !
     ! loop on the whole mesh, in the appropriate order (very important!)
     found = .false.
-    do i=1,nk1
-      do j=1,nk2
-        do k=1,nk3
+    do i=1,nk_1
+      do j=1,nk_2
+        do k=1,nk_3
           !
           ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1, nk2, nk3, ikpt, i, j, k)
+          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
           !
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
@@ -1156,9 +1157,9 @@ contains
             !
             nk_irr = nk_irr + 1
             !
-            kpoints_irr(1,nk_irr) = dble(i-1)/nk1
-            kpoints_irr(2,nk_irr) = dble(j-1)/nk2
-            kpoints_irr(3,nk_irr) = dble(k-1)/nk3
+            kpoints_irr(1,nk_irr) = dble(i-1)/nk_1
+            kpoints_irr(2,nk_irr) = dble(j-1)/nk_2
+            kpoints_irr(3,nk_irr) = dble(k-1)/nk_3
             !
             ! loop on all symmetry operations
             do isym=1,nsym
@@ -1173,14 +1174,14 @@ contains
               k_rot = matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
               !
               ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
               !
               ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
               ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
               if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1, nk2, nk3, ikpts, is, js, ks)
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
                 if (.not. found(ikpts)) found(ikpts) = .true.
                 !
@@ -1197,13 +1198,13 @@ contains
               k_rot = -matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
               !
               ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
               !
               ! we check again the value of dk, so if k_1BZ+G = k_rot
               if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
                 !
                 ! what is the scalar index
-                call triple_to_joint_index_g(nk1, nk2, nk3, ikpts, is, js, ks)
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
                 if (.not.found(ikpts)) found(ikpts) = .true.
                 !
