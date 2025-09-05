@@ -178,9 +178,9 @@ program interpolatephonons
   ! Find the size of the irreducible set of q-points (IBZ)
   call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh_nqirr)
   !
-  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
-                              QE_folder_nosym_q, QE_folder_sym_q, &
-                              nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
+  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, &
+                              QE_folder_nosym_q, nosym_G_q, QE_folder_sym_q, sym_G_q, &
+                              symlink_q, full_mesh_q, IBZ_q)
   !
   !
   !================================================================================

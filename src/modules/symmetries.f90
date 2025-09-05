@@ -87,44 +87,6 @@ contains
   subroutine allocate_symmetry_related_k(nk1, nk2, nk3)
     !------------------------------------------------------------------
     ! nk1, nk2, nk3 are the MP coefficient of the mesh
-    !
-    ! Define kpt to be a vector in the 1BZ, and ikpt to be its index.
-    ! Let kpt_irr be a symmetry equivalent k-point to kpt.
-    ! Finally, let i_folder be an index which represents the QE folders.
-    !
-    ! This subroutine allocates the arrays
-    !
-    ! - QE_folder_sym : this array indicates in which QE folder "i_folder"
-    !                   the kpoint "kpt_irr", which is symmetry equivalent to
-    !                   "kpt", can be found.
-    !
-    ! - symlink       : What rotation-like operation must be performed
-    !                   on "kpt_irr" to obtain "kpt".
-    !
-    ! - sym_G         : What G translation must be applied to the rotated
-    !                   "kpt_irr" to obtain "kpt".
-    !
-    ! In equations:
-    !         R        = symlink(ikpt)
-    !         i_folder = QE_folder_sym(ikpt)
-    !         G        = sym_G(ikpt)
-    !
-    !         =========>  R*kpt_irr = kpt+G
-    !
-    ! Also, in the case that a full mesh is present in the QE folders
-    ! the following arrays will be allocated
-    ! - QE_folder_nosym : this array indicates in which QE folder "i_folder"
-    !                     the kpoint "kpt_1", which is translation equivalent to
-    !                     "kpt", can be found.
-    !
-    ! - nosym_G         : What G translation must be applied to
-    !                     "kpt_1" to obtain "kpt".
-    !
-    ! In equations:
-    !         i_folder = QE_folder_nosym(ikpt)
-    !         G        = nosym_G(ikpt)
-    !
-    !         =========>  kpt_1 = kpt+G
     !------------------------------------------------------------------
 
     implicit none
@@ -167,17 +129,67 @@ contains
   end subroutine deallocate_symmetry_related_k
 
 
-  subroutine set_symmetry_relations(nk1_, nk2_, nk3_, nkpoints_QE_, kpoints_QE_, kmesh_, &
-                                    k_points_consistent_, QE_folder_nosym_, QE_folder_sym_, &
-                                    nosym_G_, sym_G_, symlink_, full_mesh_, IBZ_)
+  subroutine set_symmetry_relations(nk_1, nk_2, nk_3, nk_irr, k_irr, &
+                                    equiv_nosym_, G_nosym_, equiv_sym_, G_sym_, &
+                                    symlink_, full_mesh_, IBZ_)
     !--------------------------------------------------------------------------!
-    !     This subroutine fills in the symmetry arrays allocated by
-    !     the subroutine "allocate_symmetry_related_k", and tests if the
-    !     contents of the QE_folders are consistent with the MP mesh.
+    ! Given an irreducible k-point set k_irr(1:nk_irr), this subroutine tests if
+    ! it is consistent with the full (nk_1, nk_2, nk_3) MP mesh, and finds the
+    ! connection to the full MP BZ.
     !
-    !     If the QE folders contain a full MP mesh, this subroutine will
-    !     also tabulate the relationship between the k-points in the folders
-    !     and the canonical k-points. This will be useful for testing.
+    ! If k_irr(1:nk_irr) contains the full MP BZ, this subroutine will also
+    ! tabulate the relationship between the k-points in the k_irr(1:nk_irr) set
+    ! and the canonical 1BZ k-points. This will be useful for testing.
+    !
+    ! Define kpt to be a k-point in the 1BZ of the MP mesh, and ikpt to be its index.
+    ! Let kpt_irr be a symmetry equivalent k-point to kpt, and ikpt_irr be its index in k_irr(1:nk_irr).
+    !
+    ! INPUT:
+    !
+    ! - nk_1, nk_2, nk_3 : The MP mesh.
+    !
+    ! - nk_irr : The size of the irreducible k-point set.
+    !
+    ! - k_irr(3,nk_irr) : The irreducible k-point set in crystal coordinates.
+    !
+    ! OUTPUT:
+    !
+    ! - equiv_sym(nk_1*nk_2*nk_3) : The index of "kpt_irr" in the k-point set
+    !                               which is symmetry equivalent to "kpt".
+    !
+    ! - G_sym(nk_1*nk_2*nk_3) : What G translation must be applied to the rotated
+    !                           "kpt_irr" to obtain "kpt".
+    !
+    ! - symlink(nk_1*nk_2*nk_3,2) : What symmetry operation must be performed
+    !                               on "kpt_irr" to obtain "kpt".
+    !
+    ! In equations:
+    !         ikpt_irr = equiv_sym(ikpt)
+    !         R        = symlink(ikpt)
+    !         G        = G_sym(ikpt)
+    !
+    !         =========>  R*k_irr(ikpt_irr) = kmesh(ikpt) + G
+    !
+    ! In the case that a full mesh is present,
+    ! the following arrays will also be filled:
+    !
+    ! - equiv_nosym(nk_1*nk_2*nk_3) : The index of "kpt_irr" in the k-point set
+    !                                 which is translation equivalent to "kpt".
+    !
+    ! - G_nosym(nk_1*nk_2*nk_3) : What G translation must be applied to
+    !                             "kpt_irr" to obtain "kpt".
+    !
+    ! In equations:
+    !         ikpt_irr = equiv_nosym(ikpt)
+    !         G        = G_nosym(ikpt)
+    !
+    !         =========>  k_irr(ikpt_irr) = kmesh(ikpt) + G
+    !
+    ! Additionally, the following variables will be set to check consistency:
+    !
+    ! - IBZ : .true. if the full MP mesh is recovered form the k-point set.
+    !
+    ! - full_mesh : .true. if the k-point set contains the full MP mesh.
     !--------------------------------------------------------------------------
     use intw_useful_constants, only: eps_8
     use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
@@ -185,113 +197,91 @@ contains
 
     implicit none
 
-    !I/O variables
-
-    integer, intent(in) :: nk1_, nk2_, nk3_, nkpoints_QE_  ! Number of k points found in the QE folders
-    real(kind=dp), intent(in) :: kpoints_QE_(3,nkpoints_QE_)  ! The kpoints read from the QE folders
-    real(kind=dp), intent(in) :: kmesh_(3,nk1_*nk2_*nk3_)  ! The kmesh points, in canonical order
-    logical, intent(out) :: k_points_consistent_  ! test if the kpoints are consistent with parameters of input
-    integer, intent(out) :: QE_folder_nosym_(nk1_*nk2_*nk3_), QE_folder_sym_(nk1_*nk2_*nk3_)
-    integer, intent(out) :: nosym_G_(3,nk1_*nk2_*nk3_), sym_G_(3,nk1_*nk2_*nk3_)
-    integer, intent(out) :: symlink_(nk1_*nk2_*nk3_,2)
-    logical, intent(out) :: full_mesh_, IBZ_
+    !input
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    integer, intent(in) :: nk_irr
+    real(kind=dp), intent(in) :: k_irr(3,nk_irr)
 
     !output
-    !     This subroutine will fill in the global arrays
-    !             - QE_folder_sym(nk1*nk2*nk3)
-    !             - sym_G(3,nk1*nk2*nk3)
-    !             - symlink(nk1*nk2*nk3,2)
-    !
-    !     IF a full mesh is potentially present, it will also fill the arrays
-    !             - QE_folder_nosym(nk1*nk2*nk3)
-    !             - nosym_G(3,nk1*nk2*nk3)
+    integer, intent(out) :: equiv_nosym_(nk_1*nk_2*nk_3), G_nosym_(3,nk_1*nk_2*nk_3)
+    integer, intent(out) :: equiv_sym_(nk_1*nk_2*nk_3), G_sym_(3,nk_1*nk_2*nk_3)
+    integer, intent(out) :: symlink_(nk_1*nk_2*nk_3,2)
+    logical, intent(out) :: full_mesh_, IBZ_
 
     !local variables
-
-    real(kind=dp) :: kpt(3), rotated_kpt(3), kpt_in_1BZ(3), kpt_on_mesh(3), d_kpt(3)
-    logical :: kpoint_is_found_sym(nk1_*nk2_*nk3_), kpoint_is_found_nosym(nk1_*nk2_*nk3_)
+    real(kind=dp) :: kpt(3), rotated_kpt(3), kpt_in_1BZ(3), kpt_on_mesh(3)
+    logical :: kpoint_is_found_sym(nk_1*nk_2*nk_3), kpoint_is_found_nosym(nk_1*nk_2*nk_3)
     logical :: possible_full_mesh
-    integer :: nkmesh, G(3)
-    integer :: ikpt, i, j, k, i_folder, isym
+    integer :: G(3)
+    integer :: ikpt_irr, ikpt, i, j, k, isym
 
+    !
     ! initialize arrays to a negative number: if there is a bug
     ! in the code, it will thus look for inexistent folders. It
     ! is better to crash than to produce wrong results!
     !
-    QE_folder_sym_(:)   = -4
-    QE_folder_nosym_(:) = -4
+    equiv_nosym_ = -4
+    G_nosym_ = -4
+    equiv_sym_ = -4
+    G_sym_ = -4
+    symlink_ = -4
+    full_mesh_ = .false.
+    IBZ_ = .false.
     !
-    k_points_consistent_ = .true.
+    ! Check if k_irr can possibly contain the full MP mesh
     !
-    nosym_G_ = -4
-    sym_G_ = -4
+    if (nk_irr==nk_1*nk_2*nk_3) then
+      possible_full_mesh = .true.
+    else
+      possible_full_mesh = .false.
+    endif
+    !
+    ! Loop on all k-points in k_irr
     !
     kpoint_is_found_sym(:)   = .false.
     kpoint_is_found_nosym(:) = .false.
-    nkmesh = nk1_*nk2_*nk3_
     !
-    if (nkpoints_QE_==nkmesh) then
-      !
-      possible_full_mesh = .true.
-      !
-    else
-      !
-      possible_full_mesh = .false.
-      !
-    endif
-    !
-    !
-    do i_folder=1,nkpoints_QE_
+    do ikpt_irr=1,nk_irr
       !
       ! coordinates of this k-point, which need not lie in the 1BZ
       !
-      kpt = kpoints_QE_(:,i_folder)
+      kpt = k_irr(:,ikpt_irr)
       !
       ! extract the triple coordinates, the kpt in the 1BZ and
       ! the G vector
       !
-      call find_k_1BZ_and_G(kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
+      call find_k_1BZ_and_G(kpt, nk_1, nk_2, nk_3, i, j, k, kpt_in_1BZ, G)
       !
       ! test that this triple index indeed produces the k-point.
-      ! This tests that the kpoint is indeed on a mesh consistent
+      ! This tests that the k-point is indeed on a mesh consistent
       ! with the input file.
       !
-      kpt_on_mesh(1) = dble(i-1)/dble(nk1_)
-      kpt_on_mesh(2) = dble(j-1)/dble(nk2_)
-      kpt_on_mesh(3) = dble(k-1)/dble(nk3_)
+      kpt_on_mesh(1) = dble(i-1)/dble(nk_1)
+      kpt_on_mesh(2) = dble(j-1)/dble(nk_2)
+      kpt_on_mesh(3) = dble(k-1)/dble(nk_3)
       !
-      ! make sure this is identical to the original k-point
-      !
-      d_kpt = kpt_in_1BZ - kpt_on_mesh
-      !
-      if (sqrt(dot_product(d_kpt,d_kpt)) > eps_8) then
+      if ( any( abs(kpt_in_1BZ - kpt_on_mesh) > eps_8 ) ) then
         !
-        k_points_consistent_ = .false.
+        write(*,*) 'consistency FAILURE'
+        write(*,'(A,3F8.4)') '        kpt = ', kpt
+        write(*,'(A,3F8.4)') ' kpt_in_1BZ = ', kpt_in_1BZ
+        write(*,'(A,3F8.4)') 'kpt_on_mesh = ', kpt_on_mesh
+        write(*,'(A,3I4)')   '   i, j , k = ', i, j, k
         !
-        write(*,*) ' consistency FAILURE '
-        write(*,'(A,3F8.4)') ' kpt        = ',kpt
-        write(*,'(A,3F8.4)') ' kpt_in_1BZ = ',kpt_in_1BZ
-        write(*,'(A,3F8.4)') ' kpt_on_mesh= ',kpt_on_mesh
-        write(*,'(A,3I4)')   ' i, j , k   = ',i,j,k
-        !
-        exit
+        stop
         !
       endif
-      !
-      ! if the k-points are not consistent with the input parameters,
-      ! an error will be thrown in the main code. Assume consistency
-      ! from this point on.
       !
       ! if there is the possibility of a full mesh being present,
       ! find the correspondence
       !
       if (possible_full_mesh) then
         !
-          call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
-          !
-          kpoint_is_found_nosym(ikpt) = .true.
-          QE_folder_nosym_(ikpt)       = i_folder
-          nosym_G_(:,ikpt)             = G
+        call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
+        !
+        kpoint_is_found_nosym(ikpt) = .true.
+        equiv_nosym_(ikpt) = ikpt_irr
+        G_nosym_(:,ikpt) = G
         !
       endif !possible_full_mesh
       !
@@ -303,7 +293,7 @@ contains
         !
         ! rotate the k-point.
         !
-        rotated_kpt = matmul(dble(s(:,:,isym)),kpt)
+        rotated_kpt = matmul(dble(s(:,:,isym)), kpt)
         !
         !  There is an added layer of complexity introduced by the fact
         !  that we are using crystal coordinates. The convention for the
@@ -320,28 +310,28 @@ contains
         ! extract the triple coordinates, the kpt in the 1BZ and
         ! the G vector
         !
-        call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
+        call find_k_1BZ_and_G(rotated_kpt, nk_1, nk_2, nk_3, i, j, k, kpt_in_1BZ, G)
         !
         ! Tabulate this point as found, but only if allowed to do so!
         !
         ! find its joint coordinate
         !
-        call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
+        call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
         !
         ! if this point hasn't been found before, well, it's found now!
         !
         if (.not.kpoint_is_found_sym(ikpt)) then
           !
           kpoint_is_found_sym(ikpt) = .true.
-          QE_folder_sym_(ikpt)       = i_folder
-          sym_G_(:,ikpt)             = G
+          equiv_sym_(ikpt) = ikpt_irr
+          G_sym_(:,ikpt) = G
           !ASIER 09/03/20222
           !we are taking the inverse of the inverse twice all over the code.
-          !symlink(ikpt,1)           = inverse_index(isym)
-          symlink_(ikpt,1)           = isym
-          symlink_(ikpt,2)           = 0
+          !symlink(ikpt,1) = inverse_index(isym)
+          symlink_(ikpt,1) = isym
+          symlink_(ikpt,2) = 0
           !
-        endif
+        endif ! not found
         !
       enddo ! isym
       !
@@ -349,50 +339,41 @@ contains
       !
       do isym=1,nsym
         !
-        if (TR(isym)) then
-          !
-          ! rotate the k-point
-          !
-          rotated_kpt = matmul(dble(s(:,:,isym)),kpt)
-          !
-          ! TR
-          !
-          rotated_kpt = -rotated_kpt
-          !
-          call find_k_1BZ_and_G(rotated_kpt,nk1_,nk2_,nk3_,i,j,k,kpt_in_1BZ,G)
-          !
-          ! find its joint coordinate
-          !
-          call triple_to_joint_index_g(nk1_,nk2_,nk3_,ikpt,i,j,k)
-          !
-          if (.not.kpoint_is_found_sym(ikpt)) then
-            !
-            kpoint_is_found_sym(ikpt) = .true.
-            QE_folder_sym_(ikpt)       = i_folder
-            sym_G_(:,ikpt)             = -G
-            symlink_(ikpt,1)           = isym
-            !symlink(ikpt,1)           = inverse_indices(isym)
-            symlink_(ikpt,2)           = 1
-            !
-            ! CAREFUL! It is now -G which enters the sym_G array
-            ! See the rotation code for details, as well as the
-            ! symmetries document.
-            !
-          endif ! not found
-          !
-        endif ! TR
+        if (.not. TR(isym)) cycle
         !
-      enddo !isym
+        ! rotate the k-point + TR
+        !
+        rotated_kpt = -matmul(dble(s(:,:,isym)), kpt)
+        !
+        call find_k_1BZ_and_G(rotated_kpt, nk_1, nk_2, nk_3, i, j, k, kpt_in_1BZ, G)
+        !
+        ! find its joint coordinate
+        !
+        call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
+        !
+        if (.not.kpoint_is_found_sym(ikpt)) then
+          !
+          kpoint_is_found_sym(ikpt) = .true.
+          equiv_sym_(ikpt) = ikpt_irr
+          G_sym_(:,ikpt) = -G
+          ! symlink(ikpt,1) = inverse_indices(isym)
+          symlink_(ikpt,1) = isym
+          symlink_(ikpt,2) = 1
+          !
+          ! CAREFUL! It is now -G which enters the G_sym array
+          ! See the rotation code for details, as well as the
+          ! symmetries document.
+          !
+        endif ! not found
+        !
+      enddo ! isym
       !
-    enddo !i_folder
+    enddo ! ikpt_irr
     !
-    ! test if all the kmesh points were found, and store the result
-    ! in these GLOBAL logical variables
+    ! test if all the kmesh points were found
     !
     IBZ_       = all(kpoint_is_found_sym)
     full_mesh_ = all(kpoint_is_found_nosym)
-    !
-    return
 
   end subroutine set_symmetry_relations
 
