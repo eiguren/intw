@@ -42,14 +42,15 @@ module intw_symmetries
   !
   ! subroutines
   public :: allocate_symmetry_related_k, deallocate_symmetry_related_k, &
-            set_symmetry_relations, find_inverse_symmetry_matrices_indices, &
+            set_symmetry_relations, find_size_of_irreducible_k_set, &
+            find_the_irreducible_k_set, find_the_irreducible_k_set_and_equiv, &
+            find_inverse_symmetry_matrices_indices, rot_atoms, &
             allocate_and_build_spin_symmetry_matrices, deallocate_spin_symmetry_matrices, &
             compute_rotation_axis, rotaxis_crystal, &
-            find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
-            find_entire_nice_BZ, calculate_star_r, &
-            calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
-            apply_TR_to_wfc, find_size_of_irreducible_k_set, &
-            multable
+            rotate_wfc, apply_TR_to_wfc, &
+            find_entire_nice_BZ, &
+            calculate_star_r, calculate_star, &
+            echo_symmetry_1BZ, multable
   !
   ! functions
   public :: eqvect
@@ -374,8 +375,388 @@ contains
     !
     IBZ_       = all(kpoint_is_found_sym)
     full_mesh_ = all(kpoint_is_found_nosym)
+    !
+    if ( (.not. IBZ_) .and. (.not. full_mesh_) ) stop "ERROR in set_symmetry_relations: At least one k-point does not map properly"
 
   end subroutine set_symmetry_relations
+
+
+  subroutine find_size_of_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr)
+    !------------------------------------------------------------------
+    ! This subroutine finds the size of the irreducible k-point set for
+    ! the canonical 1BZ (nk_1, nk_2, nk_3) MP mesh.
+    !------------------------------------------------------------------
+    use intw_useful_constants, only: eps_8
+    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_reading, only: nsym, s, TR, lmag
+
+    implicit none
+
+    !input
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    ! The input k division
+
+    !output
+    integer, intent(out) :: nk_irr
+    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
+
+    !local variables
+    real(kind=dp) :: k_rot(3), k_1BZ(3), k_irr(3)
+    integer :: i, j, k ! triple indices
+    integer :: is, js, ks ! triple indices  obtained by symmetry
+    integer :: G(3)
+    integer :: isym
+    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    logical :: found(nk_1*nk_2*nk_3)
+
+    !
+    ! Initialize output
+    !
+    nk_irr = 0
+    !
+    ! loop on the whole mesh, in the appropriate order (very important!)
+    !
+    found = .false.
+    do i=1,nk_1
+      do j=1,nk_2
+        do k=1,nk_3
+          !
+          ! find scalar index of point (i,j,k)
+          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
+          !
+          ! operate on this point only if it has not already been found!
+          if (.not. found(ikpt)) then
+            !
+            ! it's found now. This point is part of the IBZ.
+            found(ikpt) = .true.
+            !
+            nk_irr = nk_irr + 1
+            !
+            k_irr(1) = dble(i-1)/nk_1
+            k_irr(2) = dble(j-1)/nk_2
+            k_irr(3) = dble(k-1)/nk_3
+            !
+            ! loop on all symmetry operations
+            do isym=1,nsym
+              !
+              if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
+              !
+              ! perform matrix product
+              ! CAREFUL! since the matrix is in crystal coordinates,
+              ! and it acts in reciprocal space, the convention is :
+              !          k_rot(i) = sum_j s(i,j)*k(j)
+              !
+              k_rot(:) = matmul(dble(s(:,:,isym)), k_irr(:))
+              !
+              ! find what point in the 1BZ this corresponds to
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
+              !
+              ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
+              ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
+              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
+                !
+                ! what is the scalar index
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
+                !
+                if (.not. found(ikpts)) found(ikpts) = .true.
+                !
+              endif ! dk
+              !
+            enddo ! isym
+            !
+            ! repeat with TR symmetry, if allowed (or required!)
+            !
+            do isym=1,nsym
+              !
+              if (.not. TR(isym)) cycle
+              !
+              k_rot = -matmul(dble(s(:,:,isym)), k_irr(:))
+              !
+              ! find what point in the 1BZ this corresponds to
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
+              !
+              ! we check again the value of dk, so if k_1BZ+G = k_rot
+              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
+                !
+                ! what is the scalar index
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
+                !
+                if (.not.found(ikpts)) found(ikpts) = .true.
+                !
+              endif ! dk
+              !
+            enddo ! isym
+            !
+          endif ! found(ikpt)
+          !
+        enddo ! k
+      enddo ! j
+    enddo ! i
+
+  end subroutine find_size_of_irreducible_k_set
+
+
+  subroutine find_the_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr, kpoints_irr, weight_irr)
+    !------------------------------------------------------------------
+    ! This subroutine finds the irreducible k-point set for the canonical
+    ! 1BZ (nk_1, nk_2, nk_3) MP mesh.
+    !------------------------------------------------------------------
+    use intw_useful_constants, only: eps_8
+    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
+    use intw_reading, only: nsym, s, TR, lmag
+
+    implicit none
+
+    !input
+    integer, intent(in) :: nk_1, nk_2, nk_3
+    ! The input k division
+
+    !output
+    integer, intent(out) :: nk_irr
+    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
+
+    real(kind=dp), intent(out) :: kpoints_irr(3,nk_1*nk_2*nk_3)
+    ! The irreducible k-point set in crystal coordinates.
+    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
+    ! it is supposed that we still do not know the value of nk_irr
+
+    real(kind=dp), optional, intent(out) :: weight_irr(nk_1*nk_2*nk_3)
+    ! The weight of of each irreducible k-point for BZ integrations.
+    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
+    ! it is supposed that we still do not know the value of nk_irr
+
+    !local variables
+    real(kind=dp) :: k_rot(3), k_1BZ(3)
+    integer :: i, j, k ! triple indices
+    integer :: is, js, ks ! triple indices obtained by symmetry
+    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: isym
+    integer :: nstarr
+    integer :: G(3)
+    logical :: found(nk_1*nk_2*nk_3)
+
+
+    !
+    ! Initialize output
+    nk_irr = 0
+    kpoints_irr = 0.0_dp
+    if (present(weight_irr)) weight_irr = 0.0_dp
+    !
+    ! loop on the whole mesh, in the appropriate order (very important!)
+    found = .false.
+    do i=1,nk_1
+      do j=1,nk_2
+        do k=1,nk_3
+          !
+          ! find scalar index of point (i,j,k)
+          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
+          !
+          ! operate on this point only if it has not already been found!
+          if (.not. found(ikpt)) then
+            !
+            nk_irr = nk_irr + 1
+            !
+            kpoints_irr(1,nk_irr) = dble(i-1)/nk_1
+            kpoints_irr(2,nk_irr) = dble(j-1)/nk_2
+            kpoints_irr(3,nk_irr) = dble(k-1)/nk_3
+            !
+            nstarr = 0
+            !
+            ! loop on all symmetry operations
+            do isym=1,nsym
+              !
+              if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
+              !
+              ! perform matrix product
+              ! CAREFUL! since the matrix is in crystal coordinates,
+              ! and it acts in reciprocal space, the convention is :
+              !          k_rot(i) = sum_j s(i,j)*k(j)
+              !
+              k_rot = matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
+              !
+              ! find what point in the 1BZ this corresponds to
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
+              !
+              ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
+              ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
+              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
+                !
+                ! what is the scalar index
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
+                !
+                if (.not. found(ikpts)) then
+                  found(ikpts) = .true.
+                  nstarr = nstarr + 1
+                endif
+                !
+              endif ! dk
+              !
+            enddo ! isym
+            !
+            ! repeat with TR symmetry, if allowed (or required!)
+            !
+            do isym=1,nsym
+              !
+              if (.not. TR(isym)) cycle
+              !
+              k_rot = -matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
+              !
+              ! find what point in the 1BZ this corresponds to
+              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
+              !
+              ! we check again the value of dk, so if k_1BZ+G = k_rot
+              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
+                !
+                ! what is the scalar index
+                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
+                !
+                if (.not. found(ikpts)) then
+                  found(ikpts) = .true.
+                  nstarr = nstarr + 1
+                endif
+                !
+              endif ! dk
+              !
+            enddo ! isym
+            !
+            if (present(weight_irr)) weight_irr(nk_irr) = dble(nstarr)/(nk_1*nk_2*nk_3)
+            !
+          endif ! found(ikpt)
+          !
+        enddo ! k
+      enddo ! j
+    enddo ! i
+
+  end subroutine find_the_irreducible_k_set
+
+
+  subroutine find_the_irreducible_k_set_and_equiv(nkpts, k_set, nk_irr, k_irr, equiv_, G_, symlink_)
+    !------------------------------------------------------------------
+    ! This subroutine finds the irreducible k-point set for a general k-point list
+    !------------------------------------------------------------------
+    use intw_reading, only: nsym, s, TR, lmag
+    use intw_useful_constants, only: eps_7
+
+    implicit none
+
+    !input
+
+    integer, intent(in) :: nkpts
+    ! Size of the general k-point set
+
+    real(kind=dp), intent(in) :: k_set(3,nkpts)
+    ! General k-point set
+
+    ! output
+    integer :: nk_irr
+    ! N. of irreducible k-points found for the general k-point set
+
+    real(kind=dp) :: k_irr(3,nkpts)
+    ! The irreducible k-point set in crystal coordinates.
+    ! The size of the array is nkpts instead of nk_irr;
+    ! it is supposed that we still do not know the value of nk_irr
+
+    integer :: equiv_(nkpts)
+    ! which is the equivalent point
+
+    integer, intent(out) :: G_(3,nkpts)
+    !
+
+    integer, intent(out) :: symlink_(nkpts,2)
+    !
+
+    !local variables
+    real(kind=dp) :: k_rot(3)
+    integer :: ik, jk, isym
+    logical :: found(nkpts)
+
+    !
+    ! Initialize output variables
+    !
+    nk_irr = 0
+    k_irr = 0.0_dp
+    equiv_ = -4
+    G_ = -4
+    symlink_ = -4
+    !
+    ! Loop on all k-points in k_irr
+    !
+    found  = .false.
+    do ik=1,nkpts
+      !
+      if (found(ik)) cycle
+      !
+      nk_irr = nk_irr + 1
+      k_irr(1:3,nk_irr) = modulo(k_set(1:3,ik), 1.0_dp)
+      !
+      ! loop on all symmetry operations without TR
+      !
+      do isym=1,nsym
+        !
+        if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
+        !
+        ! rotate the k-point
+        !
+        k_rot = matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
+        !
+        do jk=1,nkpts
+          !
+          if (found(jk)) cycle
+          !
+          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
+            !
+            ! if this point hasn't been found before, well, it's found now!
+            !
+            found(jk) = .true.
+            !
+            equiv_(jk) = nk_irr
+            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
+            symlink_(jk,1) = isym
+            symlink_(jk,2) = 0
+            !
+          endif
+          !
+        enddo ! jk
+        !
+      enddo ! isym
+      !
+      !
+      ! repeat with TR symmetry, if allowed (or required!)
+      !
+      do isym=1,nsym
+        !
+        if (.not. TR(isym)) cycle
+        !
+        ! rotate the k-point + TR
+        !
+        k_rot = -matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
+        !
+        do jk=1,nkpts
+          !
+          if (found(jk)) cycle
+          !
+          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
+            !
+            ! if this point hasn't been found before, well, it's found now!
+            !
+            found(jk) = .true.
+            !
+            equiv_(jk) = nk_irr
+            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
+            symlink_(jk,1) = isym
+            symlink_(jk,2) = 1
+            !
+          endif
+          !
+        enddo ! jk
+        !
+      enddo ! isym
+      !
+    enddo ! ik
+    !
+    if (.not. all(found)) stop "ERROR in find_the_irreducible_k_set_and_equiv: At least one k-point does not map properly"
+
+  end subroutine find_the_irreducible_k_set_and_equiv
 
 
   subroutine find_inverse_symmetry_matrices_indices()
@@ -497,6 +878,95 @@ contains
     return
 
   end subroutine find_inverse_symmetry_matrices_indices
+
+
+  subroutine rot_atoms(nat, nsym, tau)
+
+    use intw_reading, only: nr1, nr2, nr3, s, ftau, at, bg, tau_cryst
+
+    implicit none
+
+    integer, intent(in) :: nat, nsym
+    real(kind=dp), intent(in) :: tau(3,nat)
+    !out global
+    !    integer, intent(out) :: rtau_index(nat,nsym)
+    !    real(kind=dp), intent(out) :: rtau(3,nsym,nat)
+    !    real(kind=dp), intent(out) :: rtau_cryst(3,nsym,nat)
+
+    integer :: i, j, h
+    integer :: isym
+    integer :: nr(3)
+    integer :: a_index, na
+
+    integer :: ipol, jpol, kpol, lpol
+
+    real(kind=dp), parameter :: epsat = 1E-3
+
+    real(kind=dp) :: s_cart(3,3,nsym)
+
+    do isym=1,nsym
+      do ipol=1,3
+        do jpol=1,3
+          s_cart(ipol,jpol,isym) = 0.d0
+          do kpol=1,3
+            do lpol=1,3
+              s_cart(ipol,jpol,isym) = s_cart(ipol,jpol,isym) + at(ipol,kpol) * &
+                                       s(lpol,kpol,isym) * bg(jpol,lpol)
+            enddo
+          enddo
+        enddo
+      enddo
+    enddo
+
+    nr = (/nr1,nr2,nr3/)
+
+    rtau_index = -11
+
+    do i=1,nat
+      do isym=1,nsym
+        do ipol=1,3
+
+          rtau_cryst(ipol,isym,i) = s(1,ipol,isym) * tau_cryst(1,i) + &
+                                    s(2,ipol,isym) * tau_cryst(2,i) + &
+                                    s(3,ipol,isym) * tau_cryst(3,i)
+
+          rtau_cryst(ipol,isym,i) = rtau_cryst (ipol,isym,i) - dble(ftau(ipol,isym))
+
+        end do
+
+       enddo
+    enddo
+
+    do i=1,nat
+      do isym=1,nsym
+        do j=1,nat
+          if (eqvect(rtau_cryst(:,isym,i), tau_cryst(:,j), (/0.d0,0.0d0,0.0d0/))) rtau_index(i,isym) = j
+        enddo
+      enddo
+    enddo
+
+    do isym=1,nsym
+      do na=1,nat
+        a_index = rtau_index(na,isym)
+        do h=1,3
+          rtau(h,isym,na) = s_cart(1,h, isym) * tau(1,na) + &
+                            s_cart(2,h, isym) * tau(2,na) + &
+                            s_cart(3,h, isym) * tau(3,na)
+
+          rtau(h,isym,na) = rtau(h,isym,na) - tau(h,a_index)
+        end do
+       enddo
+    enddo
+
+    do i=1,nat
+      do isym=1,nsym
+        if (rtau_index(i,isym).eq.0) then
+          write(*,*)'ERROR in rot_at: At least one atom does not map properly under sym. op.', isym, 'atom:', i
+        endif
+      enddo
+    enddo
+
+  end subroutine rot_atoms
 
 
   subroutine allocate_and_build_spin_symmetry_matrices(nsym)
@@ -985,389 +1455,278 @@ contains
   end subroutine rotaxis_crystal
 
 
-  subroutine find_size_of_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr)
-    !------------------------------------------------------------------
-    ! This subroutine finds the size of the irreducible k-point set for
-    ! the canonical 1BZ (nk_1, nk_2, nk_3) MP mesh.
-    !------------------------------------------------------------------
-    use intw_input_parameters, only: TR_symmetry
-    use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
-    use intw_reading, only: nsym, s, TR, lmag
+  subroutine rotate_wfc(wfc_k_irr, list_iG_irr, wfc_k, list_iG_k, i_sym, sym, ftau, G_sym)
+    !--------------------------------------------------------------------------------------------------------
+    ! This subroutine takes in the periodic part of a wavefunction psi_{nk} and
+    ! returns the periodic part of psi_{n Rk}, where Rk is the rotated k-vector.
+    !
+    ! The wavefunctions have the form
+    !			psi_{nk}(r) = e^{ikr}/sqrt{V} u_{nk}(r)
+    !			u_{nk}(r)   = \sum_G e^{iGr} u_{nk}(G).
+    !
+    !
+    !  a crystal rotation-like symmetry can be expressed as
+    !		S = { R | f }
+    !	where R is a rotation and f a fractional translation.
+    !
+    ! Note that symmetry is implemented in a very confusing way in Quantum Espresso.
+
+    ! On the one hand, section A.4 of the Quantum Espresso reference paper,
+    ! 		"Quantum Espresso: a modular and open-source software project for
+    !  			quantum simulations of materials",
+    !     suggests the convention:
+    !           r' =  { R | f } r = R * ( r + f )  !! NOTE: this is NOT the usual textbook definition!
+    !
+    ! HOWEVER: poking around in the code suggests that the convention actually
+    !	     used in the code is
+    !           r' =  { R | f } r = R * r - f
+    !
+    !	(This only matters in non-symmorphic systems)
+    ! In what follows, the second convention will be used.
+    !
+    ! assumptions:
+    !			-  i_sym is the index of the symmetry operation
+    !			-  sym is a point group operation:
+    !                        it is the INVERSE of the actual operation; this is the
+    !                        appropriate operator to act on k, in crystal coordinates
+    !			-  k_irr is a k-point in the IBZ
+    !			-  sym * k_irr  = k + G_sym, with k in the 1BZ
+    !
+    !	applying the point group operation yields
+    !
+    !           u_{nk}(sym_l*G+G_sym) =  e^{i R*G*tau} u_{nk_irr}(G)
+    !--------------------------------------------------------------------------------------------------------
+    use intw_fft, only: find_iG
+    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, cmplx_1
+    use intw_utility, only: hpsort_integer
+    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
 
     implicit none
 
-    !input
-    integer, intent(in) :: nk_1, nk_2, nk_3
-    ! The input k division
+    !I/O variables
 
-    !output
-    integer, intent(out) :: nk_irr
-    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
+    integer, intent(in) :: i_sym ! index of the symmetry operation
+    integer, intent(in) :: G_sym(3) ! G vector such that  R*k + G_sym = sym_l * k_irr
+    integer, intent(in) :: sym(3,3) ! inverse point group operation the one acting on k (cryst.coord.)
+    real(kind=dp), intent(in) :: ftau(3) ! fractional translation associated with point group operation
+    integer, intent(in) :: list_iG_irr(nGk_max) ! G vector indices for k_irr
+    complex(kind=dp), intent(in) :: wfc_k_irr(nGk_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
+    integer, intent(out) :: list_iG_k(nGk_max) ! G vector indices for k, sorted
+    complex(kind=dp), intent(out) :: wfc_k(nGk_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
 
     !local variables
-    real(kind=dp) :: k_rot(3), k_1BZ(3), k_irr(3)
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
-    integer :: G(3)
-    integer :: isym
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
-    logical :: found(nk_1*nk_2*nk_3)
 
+    complex(kind=dp) :: wfc_k_aux(nGk_max,num_bands_intw,nspin)
+    integer :: p_i, i, iGk, iG_k
+    integer :: Gk(3) ! a vector for k in the IBZ
+    integer :: RGk(3) ! ( symmetry operation )* G_k
+    integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
+    integer :: permutations(nGk_max) ! index permutation which orders list_G_k
+    integer :: ibnd, ispin
+    integer :: nG  ! counter on the number of G vectors in the array
+    complex(kind=dp) :: phases(nGk_max), spin_symmetry(2,2)
+
+
+    phases(:) = cmplx_0
+    wfc_k(:,:,:) = cmplx_0
     !
-    ! Initialize output
+    list_iG_k(:) = 0
+    nG = 0
+    permutations(:) = 0
     !
-    nk_irr = 0
+    ! loop on all Gk, the coefficients of the wave function at the IBZ k-point
     !
-    ! loop on the whole mesh, in the appropriate order (very important!)
+    do i = 1, nGk_max
+      !
+      iGk = list_iG_irr(i)
+      !
+      if (iGk==0) exit  ! the index array is zero-padded at the end.
+      nG = nG + 1 ! only increment if iGk /= 0!
+      !
+      Gk = gvec(:,iGk)
+      !
+      RGk = matmul(sym,Gk)
+      !
+      !ASIER: Gk and NOT RGk!!!
+      ! - sign is well checked below.
+      phases(nG) = exp(-cmplx_I*tpi*dot_product(Gk, ftau))
+
+      G_k(:) = RGk(:) + G_sym(:)
+      call find_iG(G_k, iG_k)
+      !
+      list_iG_k(nG) = iG_k
+      !
+    enddo
     !
-    found = .false.
-    do i=1,nk_1
-      do j=1,nk_2
-        do k=1,nk_3
+    call hpsort_integer(nG, list_iG_k, permutations)
+    !
+    do i = 1, nG
+      !
+      ! compute the wfc element
+      !
+      p_i = permutations(i)
+      !
+      do ibnd = 1, num_bands_intw
+        do ispin = 1, nspin
           !
-          ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
+          wfc_k(i,ibnd,ispin) = wfc_k_irr(p_i,ibnd,ispin) * phases(p_i)
           !
-          ! operate on this point only if it has not already been found!
-          if (.not. found(ikpt)) then
-            !
-            ! it's found now. This point is part of the IBZ.
-            found(ikpt) = .true.
-            !
-            nk_irr = nk_irr + 1
-            !
-            k_irr(1) = dble(i-1)/nk_1
-            k_irr(2) = dble(j-1)/nk_2
-            k_irr(3) = dble(k-1)/nk_3
-            !
-            ! loop on all symmetry operations
-            do isym=1,nsym
-              !
-              if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
-              !
-              ! perform matrix product
-              ! CAREFUL! since the matrix is in crystal coordinates,
-              ! and it acts in reciprocal space, the convention is :
-              !          k_rot(i) = sum_j s(i,j)*k(j)
-              !
-              k_rot(:) = matmul(dble(s(:,:,isym)), k_irr(:))
-              !
-              ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
-              !
-              ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
-              ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
-              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
-                !
-                ! what is the scalar index
-                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
-                !
-                if (.not. found(ikpts)) found(ikpts) = .true.
-                !
-              endif ! dk
-              !
-            enddo ! isym
-            !
-            ! repeat with TR symmetry, if allowed (or required!)
-            !
-            do isym=1,nsym
-              !
-              if (.not. TR(isym)) cycle
-              !
-              k_rot = -matmul(dble(s(:,:,isym)), k_irr(:))
-              !
-              ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
-              !
-              ! we check again the value of dk, so if k_1BZ+G = k_rot
-              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
-                !
-                ! what is the scalar index
-                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
-                !
-                if (.not.found(ikpts)) found(ikpts) = .true.
-                !
-              endif ! dk
-              !
-            enddo ! isym
-            !
-          endif ! found(ikpt)
+        enddo !ispin
+      enddo !ibnd
+      !
+    enddo !i
+
+    !
+    if (nspin==2) then
+      !
+      wfc_k_aux = wfc_k
+      spin_symmetry = spin_symmetry_matrices(:,:,inverse_indices(i_sym))
+      !
+      do i = 1, nG
+        do ibnd = 1, num_bands_intw
           !
-        enddo ! k
-      enddo ! j
-    enddo ! i
+          ! JLB, MBR 29/06/2023
+          wfc_k(i,ibnd,:) = matmul(spin_symmetry, wfc_k_aux(i,ibnd,:))
+          !
+        enddo !ibnd
+      enddo !i
+      !
+    endif ! If non-collinear
 
-  end subroutine find_size_of_irreducible_k_set
+  end subroutine rotate_wfc
 
 
-  subroutine find_the_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr, kpoints_irr, weight_irr)
-    !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k-point set for the canonical
-    ! 1BZ (nk_1, nk_2, nk_3) MP mesh.
-    !------------------------------------------------------------------
-    use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
-    use intw_reading, only: nsym, s, TR, lmag
+  subroutine apply_TR_to_wfc(wfc, list_iG)
+    !-----------------------------------------------------------------------------
+    ! This subroutine takes in a wavefunction wfc = u_{n-k} and
+    ! returns, in the same array, wfc^* = u_{n-k}^*, which is equal to
+    ! u_{nk} if time-reversal symmetry applies.
+    !
+    ! Actually, -k is in the 1BZ, but k may not be. Define
+    !                     k = k_I+G_TR
+    !
+    !     The wavefunctions are represented as
+    !             u_{-k}(r) = \sum_{G} C_{-k}(G) e^{iGr} ===> wfc(iG) = C_{-k}(G)
+    !
+    !             u_{k }(r) = \sum_{G} C_{k}(G) e^{iGr}
+    !
+    !             u_{k_I}(r) = \sum_{G} C_{k_I}(G) e^{iGr}
+    !
+    !           ===>  C_{k_I} (G_TR-G) = C^*_{-k}(G)
+    !-----------------------------------------------------------------------------
+    use intw_fft, only: find_iG
+    use intw_useful_constants, only: cmplx_0
+    use intw_utility, only: hpsort_integer
+    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
 
     implicit none
 
-    !input
-    integer, intent(in) :: nk_1, nk_2, nk_3
-    ! The input k division
+    !I/O variables
 
-    !output
-    integer, intent(out) :: nk_irr
-    ! N. of irreducible k-points found for the nk_1 nk_2 nk_3 MP mesh.
-
-    real(kind=dp), intent(out) :: kpoints_irr(3,nk_1*nk_2*nk_3)
-    ! The irreducible k-point set in crystal coordinates.
-    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
-    ! it is supposed that we still do not know the value of nk_irr
-
-    real(kind=dp), optional, intent(out) :: weight_irr(nk_1*nk_2*nk_3)
-    ! The weight of of each irreducible k-point for BZ integrations.
-    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
-    ! it is supposed that we still do not know the value of nk_irr
+    integer, intent(inout) :: list_iG(nGk_max)
+    complex(kind=dp), intent(inout) :: wfc(nGk_max,num_bands_intw,nspin)
 
     !local variables
-    real(kind=dp) :: k_rot(3), k_1BZ(3)
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices obtained by symmetry
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
-    integer :: isym
-    integer :: nstarr
-    integer :: G(3)
-    logical :: found(nk_1*nk_2*nk_3)
 
+    integer :: iG, i_minus_G, i, p_i
+    integer :: G(3), minus_G(3)
+    integer :: nG ! counter on the number of G vectors in the array
+    integer :: permutations(nGk_max) ! index permutation which orders list_G
+    integer :: list_iG_tmp(nGk_max)
+    complex(kind=dp) :: wfc_tmp(nGk_max,num_bands_intw,nspin)
 
+    ! Initialize the different variables
     !
-    ! Initialize output
-    nk_irr = 0
-    kpoints_irr = 0.0_dp
-    if (present(weight_irr)) weight_irr = 0.0_dp
+    nG = 0
+    permutations = 0
+    list_iG_tmp = 0
+    wfc_tmp = cmplx_0
     !
-    ! loop on the whole mesh, in the appropriate order (very important!)
-    found = .false.
-    do i=1,nk_1
-      do j=1,nk_2
-        do k=1,nk_3
-          !
-          ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpt, i, j, k)
-          !
-          ! operate on this point only if it has not already been found!
-          if (.not. found(ikpt)) then
-            !
-            nk_irr = nk_irr + 1
-            !
-            kpoints_irr(1,nk_irr) = dble(i-1)/nk_1
-            kpoints_irr(2,nk_irr) = dble(j-1)/nk_2
-            kpoints_irr(3,nk_irr) = dble(k-1)/nk_3
-            !
-            nstarr = 0
-            !
-            ! loop on all symmetry operations
-            do isym=1,nsym
-              !
-              if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
-              !
-              ! perform matrix product
-              ! CAREFUL! since the matrix is in crystal coordinates,
-              ! and it acts in reciprocal space, the convention is :
-              !          k_rot(i) = sum_j s(i,j)*k(j)
-              !
-              k_rot = matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
-              !
-              ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
-              !
-              ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
-              ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
-              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
-                !
-                ! what is the scalar index
-                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
-                !
-                if (.not. found(ikpts)) then
-                  found(ikpts) = .true.
-                  nstarr = nstarr + 1
-                endif
-                !
-              endif ! dk
-              !
-            enddo ! isym
-            !
-            ! repeat with TR symmetry, if allowed (or required!)
-            !
-            do isym=1,nsym
-              !
-              if (.not. TR(isym)) cycle
-              !
-              k_rot = -matmul(dble(s(:,:,isym)), kpoints_irr(:,nk_irr))
-              !
-              ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot, nk_1, nk_2, nk_3, is, js, ks, k_1BZ, G)
-              !
-              ! we check again the value of dk, so if k_1BZ+G = k_rot
-              if ( all( abs(k_rot - (k_1BZ + dble(G))) < eps_8 ) ) then
-                !
-                ! what is the scalar index
-                call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
-                !
-                if (.not. found(ikpts)) then
-                  found(ikpts) = .true.
-                  nstarr = nstarr + 1
-                endif
-                !
-              endif ! dk
-              !
-            enddo ! isym
-            !
-            if (present(weight_irr)) weight_irr(nk_irr) = dble(nstarr)/(nk_1*nk_2*nk_3)
-            !
-          endif ! found(ikpt)
-          !
-        enddo ! k
-      enddo ! j
-    enddo ! i
-
-  end subroutine find_the_irreducible_k_set
-
-
-  subroutine find_the_irreducible_k_set_and_equiv(nkpts, k_set, nk_irr, k_irr, equiv_, G_, symlink_)
-    !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k-point set for a general k-point list
-    !------------------------------------------------------------------
-    use intw_reading, only: nsym, s, TR, lmag, at, bg
-    use intw_useful_constants, only: eps_7
-
-    implicit none
-
-    !input
-
-    integer, intent(in) :: nkpts
-    ! Size of the general k-point set
-
-    real(kind=dp), intent(in) :: k_set(3,nkpts)
-    ! General k-point set
-
-    ! output
-    integer :: nk_irr
-    ! N. of irreducible k-points found for the general k-point set
-
-    real(kind=dp) :: k_irr(3,nkpts)
-    ! The irreducible k-point set in crystal coordinates.
-    ! The size of the array is nkpts instead of nk_irr;
-    ! it is supposed that we still do not know the value of nk_irr
-
-    integer :: equiv_(nkpts)
-    ! which is the equivalent point
-
-    integer, intent(out) :: G_(3,nkpts)
+    ! loop on all G
     !
-
-    integer, intent(out) :: symlink_(nkpts,2)
-    !
-
-    !local variables
-    real(kind=dp) :: k_rot(3), dist1, dist2
-    integer :: ik, jk, isym
-    integer :: ikpt, i, j, k
-    logical :: found(nkpts)
-
-    !
-    ! Initialize output variables
-    !
-    nk_irr = 0
-    k_irr = 0.0_dp
-    equiv_ = -4
-    G_ = -4
-    symlink_ = -4
-    !
-    ! Loop on all k-points in k_irr
-    !
-    found  = .false.
-    do ik=1,nkpts
+    do i=1,nGk_max
       !
-      if (found(ik)) cycle
+      iG = list_iG(i)
       !
-        nk_irr = nk_irr + 1
-      k_irr(1:3,nk_irr) = modulo(k_set(1:3,ik), 1.0_dp)
+      ! We work with G that contribute in the wfc
       !
-      ! loop on all symmetry operations without TR
+      if (iG == 0) exit  ! the index array is zero-padded at the end.
       !
-      do isym=1,nsym
-        !
-        if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
-        !
-        ! rotate the k-point
-        !
-        k_rot = matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
-        !
-        do jk=1,nkpts
-          !
-          if (found(jk)) cycle
-          !
-          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
-            !
-            ! if this point hasn't been found before, well, it's found now!
-            !
-            found(jk) = .true.
-            !
-            equiv_(jk) = nk_irr
-            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
-            symlink_(jk,1) = isym
-            symlink_(jk,2) = 0
-            !
-            endif
-          !
-        enddo ! jk
-        !
-      enddo ! isym
+      nG = nG + 1
+      G = gvec(:,iG)
       !
+      minus_G = -G
       !
-      ! repeat with TR symmetry, if allowed (or required!)
+      ! find the index of -G
       !
-      do isym=1,nsym
-        !
-        if (.not. TR(isym)) cycle
-        !
-        ! rotate the k-point + TR
-        !
-        k_rot = -matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
-        !
-        do jk=1,nkpts
-          !
-          if (found(jk)) cycle
-          !
-          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
-            !
-            ! if this point hasn't been found before, well, it's found now!
-            !
-            found(jk) = .true.
-            !
-            equiv_(jk) = nk_irr
-            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
-            symlink_(jk,1) = isym
-            symlink_(jk,2) = 1
-            !
-                endif
-          !
-        enddo ! jk
-        !
-      enddo ! isym
+      call find_iG(minus_G,i_minus_G)
       !
-    enddo ! ik
+      list_iG_tmp(nG) = i_minus_G
+      !
+      ! conjugate the wavefunction
+      !
+      wfc_tmp(nG,:,:) = conjg(wfc(i,:,:))
+      !
+    enddo
     !
-    if (.not. all(found)) stop "ERROR in find_the_irreducible_k_set_and_equiv: At least one k-point does not map properly"
+    ! There is no guarantee that the indices in list_iG_k will be sorted in ascending
+    ! order! This is not an absolute necessity, but it would be nice and consistent for
+    ! the indices to be sorted.
+    ! Sort the indices using a canned heap sort subroutine.
+    !
+    call hpsort_integer(nG,list_iG_tmp,permutations)
+    !
+    ! To understand how this works, consider an example:
+    !
+    !            i      f(i)        iG(i)   permutation(i)
+    !            ---------------------------------------
+    !            1      0.1         4            2
+    !            2      0.2         1            4
+    !            3      0.3         3            3
+    !            4      0.4         2            1
+    !
+    !            j   sort(iG)(j)    sort(f)(j)
+    !            ------------------------------------
+    !            1      1               0.2
+    !            2      2               0.4
+    !            3      3               0.3
+    !            4      4               0.1
+    !
+    !             ===> sort(f) (j)  =   f( permutation(j) )
+    !
+    !
+    ! list_iG_tmp is now properly sorted, and can be dumped in the input/output variable
+    !
+    list_iG = list_iG_tmp
+    !
+    ! finally, populate the conjugated wave function
+    !
+    do i=1,nG
+      !
+      p_i = permutations(i)
+      !
+      ! compute the wfc element
+      !
+      if (nspin==1) then
+        !
+        wfc(i,:,:) = wfc_tmp(p_i,:,:)
+        !
+      elseif (nspin==2) then
+        !
+        wfc(i,:,1) = -wfc_tmp(p_i,:,2)
+        wfc(i,:,2) = wfc_tmp(p_i,:,1)
+        !
+      endif !nspin
+      !
+    enddo !i
 
-  end subroutine find_the_irreducible_k_set_and_equiv
+  end subroutine apply_TR_to_wfc
 
 
   subroutine find_entire_nice_BZ(nk1, nk2, nk3, nspt, ksvec)
     !------------------------------------------------------------------
     ! input: private nk1 nk2 nk3, output full BZ nk>nk1*nk2*nk3 for tria_diag by AE.&IGdG.
+    ! NOTE Haritz 08/09/2025: This subroutine is not tested as it is not used anywhere
     !------------------------------------------------------------------
     use intw_input_parameters, only: TR_symmetry
     use intw_useful_constants, only: eps_8
@@ -1567,7 +1926,8 @@ contains
       vstar(1:3,nstar) = vrot(1:3)
       symop(nstar)=isym
 
-1987  continue
+      1987 continue
+
     enddo
 
 
@@ -1604,404 +1964,42 @@ contains
       vstar(1:3,nstar) = vrot(1:3)
       symop(nstar) = isym
 
-1984  continue
+      1984 continue
 
     enddo
 
   end subroutine calculate_star
 
-  subroutine echo_symmetry_1BZ(nk_1,nk_2,nk_3,nk_irr,equiv,symlink)
+
+  subroutine echo_symmetry_1BZ(nk_1, nk_2, nk_3, nk_irr, equiv_, symlink_)
     !--------------------------------------------------------------------------------
-    !
     ! simple writing routine, for testing purposes
-    !
     !--------------------------------------------------------------------------------
-    use intw_utility, only: find_free_unit
+    use intw_useful_constants, only: stdout
 
     implicit none
 
     integer, intent(in) :: nk_1, nk_2, nk_3, nk_irr
-    integer, intent(in) :: equiv(nk_1*nk_2*nk_3)
-    integer, intent(in) :: symlink(nk_1*nk_2*nk_3,2)
+    integer, intent(in) :: equiv_(nk_1*nk_2*nk_3)
+    integer, intent(in) :: symlink_(nk_1*nk_2*nk_3,2)
 
-    integer :: io_unit
     integer :: i, nkr
 
     nkr = nk_1*nk_2*nk_3
 
-    io_unit = find_free_unit()
-    open(io_unit,file='equivalence_of_k_points.test')
-    write(io_unit,'(a,i4)')'          nk_irr  = ', nk_irr
-    write(io_unit,'(a)')'----------------------------'
+    write(stdout,'(a)') '|         ---------------------------------         |'
+    write(stdout,'(a)') '| - Symmetry relations:                             |'
+    write(stdout,"('|   nk_irr: ',i4,'                                    |')") nk_irr
 
-    write(io_unit,'(a)')'          Nk              Equivalent      Symmetry           Time reversal. '
-    write(io_unit,'(a)')'                          in reduced l.   connection.        not used:0, used :1  '
-    write(io_unit,'(a)')'-----------------------------------------------------------------------------------------------'
+    write(stdout,'(a)') '|    ik       equiv     symlink      TR             |'
 
     do i=1,nkr
-      write(io_unit,100) i, equiv(i), symlink(i,:)
+      write(stdout,"('| ',i5,7x,i5,7x,i5,3x,i5,12x,' |')") i, equiv_(i), symlink_(i,:)
     enddo
 
-    close(io_unit)
+    write(stdout,'(a)') '|         ---------------------------------         |'
 
-100 format(i10,12x,i10,12x,i10,12x,i10)
   end subroutine echo_symmetry_1BZ
-
-  subroutine rot_atoms(nat, nsym, tau)
-
-    use intw_reading, only: nr1, nr2, nr3, s, ftau, at, bg, tau_cryst
-
-    implicit none
-
-    integer, intent(in) :: nat, nsym
-    real(kind=dp), intent(in) :: tau(3,nat)
-    !out global
-    !    integer, intent(out) :: rtau_index(nat,nsym)
-    !    real(kind=dp), intent(out) :: rtau(3,nsym,nat)
-    !    real(kind=dp), intent(out) :: rtau_cryst(3,nsym,nat)
-
-    integer :: i, j, h
-    integer :: isym
-    integer :: nr(3)
-    integer :: a_index, na
-
-    integer :: ipol, jpol, kpol, lpol
-
-    real(kind=dp), parameter :: epsat = 1E-3
-
-    real(kind=dp) :: s_cart(3,3,nsym)
-
-    do isym=1,nsym
-      do ipol=1,3
-        do jpol=1,3
-          s_cart(ipol,jpol,isym) = 0.d0
-          do kpol=1,3
-            do lpol=1,3
-              s_cart(ipol,jpol,isym) = s_cart(ipol,jpol,isym) + at(ipol,kpol) * &
-                                       s(lpol,kpol,isym) * bg(jpol,lpol)
-            enddo
-          enddo
-        enddo
-      enddo
-    enddo
-
-    nr = (/nr1,nr2,nr3/)
-
-    rtau_index = -11
-
-    do i=1,nat
-      do isym=1,nsym
-        do ipol=1,3
-
-          rtau_cryst(ipol,isym,i) = s(1,ipol,isym) * tau_cryst(1,i) + &
-                                    s(2,ipol,isym) * tau_cryst(2,i) + &
-                                    s(3,ipol,isym) * tau_cryst(3,i)
-
-          rtau_cryst(ipol,isym,i) = rtau_cryst (ipol,isym,i) - dble(ftau(ipol,isym))
-
-        end do
-
-       enddo
-    enddo
-
-    do i=1,nat
-      do isym=1,nsym
-        do j=1,nat
-          if (eqvect(rtau_cryst(:,isym,i), tau_cryst(:,j), (/0.d0,0.0d0,0.0d0/))) rtau_index(i,isym) = j
-        enddo
-      enddo
-    enddo
-
-    do isym=1,nsym
-      do na=1,nat
-        a_index = rtau_index(na,isym)
-        do h=1,3
-          rtau(h,isym,na) = s_cart(1,h, isym) * tau(1,na) + &
-                            s_cart(2,h, isym) * tau(2,na) + &
-                            s_cart(3,h, isym) * tau(3,na)
-
-          rtau(h,isym,na) = rtau(h,isym,na) - tau(h,a_index)
-        end do
-       enddo
-    enddo
-
-    do i=1,nat
-      do isym=1,nsym
-        if (rtau_index(i,isym).eq.0) then
-          write(*,*)'ERROR in rot_at: At least one atom does not map properly under sym. op.', isym, 'atom:', i
-        endif
-      enddo
-    enddo
-
-  end subroutine rot_atoms
-
-
-  subroutine rotate_wfc_test(wfc_k_irr, list_iG_irr, wfc_k, list_iG_k, i_sym, sym, ftau, G_sym)
-    !--------------------------------------------------------------------------------------------------------
-    ! This subroutine takes in the periodic part of a wavefunction psi_{nk} and
-    ! returns the periodic part of psi_{n Rk}, where Rk is the rotated k-vector.
-    !
-    ! The wavefunctions have the form
-    !			psi_{nk}(r) = e^{ikr}/sqrt{V} u_{nk}(r)
-    !			u_{nk}(r)   = \sum_G e^{iGr} u_{nk}(G).
-    !
-    !
-    !  a crystal rotation-like symmetry can be expressed as
-    !		S = { R | f }
-    !	where R is a rotation and f a fractional translation.
-    !
-    ! Note that symmetry is implemented in a very confusing way in Quantum Espresso.
-
-    ! On the one hand, section A.4 of the Quantum Espresso reference paper,
-    ! 		"Quantum Espresso: a modular and open-source software project for
-    !  			quantum simulations of materials",
-    !     suggests the convention:
-    !           r' =  { R | f } r = R * ( r + f )  !! NOTE: this is NOT the usual textbook definition!
-    !
-    ! HOWEVER: poking around in the code suggests that the convention actually
-    !	     used in the code is
-    !           r' =  { R | f } r = R * r - f
-    !
-    !	(This only matters in non-symmorphic systems)
-    ! In what follows, the second convention will be used.
-    !
-    ! assumptions:
-    !			-  i_sym is the index of the symmetry operation
-    !			-  sym is a point group operation:
-    !                        it is the INVERSE of the actual operation; this is the
-    !                        appropriate operator to act on k, in crystal coordinates
-    !			-  k_irr is a k-point in the IBZ
-    !			-  sym * k_irr  = k + G_sym, with k in the 1BZ
-    !
-    !	applying the point group operation yields
-    !
-    !           u_{nk}(sym_l*G+G_sym) =  e^{i R*G*tau} u_{nk_irr}(G)
-    !--------------------------------------------------------------------------------------------------------
-    use intw_fft, only: find_iG
-    use intw_useful_constants, only: tpi, cmplx_0, cmplx_i, cmplx_1
-    use intw_utility, only: hpsort_integer
-    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
-
-    implicit none
-
-    !I/O variables
-
-    integer, intent(in) :: i_sym ! index of the symmetry operation
-    integer, intent(in) :: G_sym(3) ! G vector such that  R*k + G_sym = sym_l * k_irr
-    integer, intent(in) :: sym(3,3) ! inverse point group operation the one acting on k (cryst.coord.)
-    real(kind=dp), intent(in) :: ftau(3) ! fractional translation associated with point group operation
-    integer, intent(in) :: list_iG_irr(nGk_max) ! G vector indices for k_irr
-    complex(kind=dp), intent(in) :: wfc_k_irr(nGk_max,num_bands_intw,nspin) ! wfc at point k_irr in the IBZ
-    integer, intent(out) :: list_iG_k(nGk_max) ! G vector indices for k, sorted
-    complex(kind=dp), intent(out) :: wfc_k(nGk_max,num_bands_intw,nspin) ! rotated wfc at point k in the 1BZ
-
-    !local variables
-
-    complex(kind=dp) :: wfc_k_aux(nGk_max,num_bands_intw,nspin)
-    integer :: p_i, i, iGk, iG_k
-    integer :: Gk(3) ! a vector for k in the IBZ
-    integer :: RGk(3) ! ( symmetry operation )* G_k
-    integer :: G_k(3) ! a vector for Rk, the point in the 1BZ
-    integer :: permutations(nGk_max) ! index permutation which orders list_G_k
-    integer :: ibnd, ispin
-    integer :: nG  ! counter on the number of G vectors in the array
-    complex(kind=dp) :: phases(nGk_max), spin_symmetry(2,2)
-
-
-    phases(:) = cmplx_0
-    wfc_k(:,:,:) = cmplx_0
-    !
-    list_iG_k(:) = 0
-    nG = 0
-    permutations(:) = 0
-    !
-    ! loop on all Gk, the coefficients of the wavefunction at the IBZ k point
-    !
-    do i = 1, nGk_max
-      !
-      iGk = list_iG_irr(i)
-      !
-      if (iGk==0) exit  ! the index array is zero-padded at the end.
-      nG = nG + 1 ! only increment if iGk /= 0!
-      !
-      Gk = gvec(:,iGk)
-      !
-      RGk = matmul(sym,Gk)
-      !
-      !ASIER: Gk and NOT RGk!!!
-      ! - sign is well checked below.
-      phases(nG) = exp(-cmplx_I*tpi*dot_product(Gk, ftau))
-
-      G_k(:) = RGk(:) + G_sym(:)
-      call find_iG(G_k, iG_k)
-      !
-      list_iG_k(nG) = iG_k
-      !
-    enddo
-    !
-    call hpsort_integer(nG, list_iG_k, permutations)
-    !
-    do i = 1, nG
-      !
-      ! compute the wfc element
-      !
-      p_i = permutations(i)
-      !
-      do ibnd = 1, num_bands_intw
-        do ispin = 1, nspin
-          !
-          wfc_k(i,ibnd,ispin) = wfc_k_irr(p_i,ibnd,ispin) * phases(p_i)
-          !
-        enddo !ispin
-      enddo !ibnd
-      !
-    enddo !i
-
-    !
-    if (nspin==2) then
-      !
-      wfc_k_aux = wfc_k
-      spin_symmetry = spin_symmetry_matrices(:,:,inverse_indices(i_sym))
-      !
-      do i = 1, nG
-        do ibnd = 1, num_bands_intw
-          !
-          ! JLB, MBR 29/06/2023
-          wfc_k(i,ibnd,:) = matmul(spin_symmetry, wfc_k_aux(i,ibnd,:))
-          !
-        enddo !ibnd
-      enddo !i
-      !
-    endif ! If non-collinear
-
-  end subroutine rotate_wfc_test
-
-
-  subroutine apply_TR_to_wfc(wfc, list_iG)
-    !-----------------------------------------------------------------------------
-    ! This subroutine takes in a wavefunction wfc = u_{n-k} and
-    ! returns, in the same array, wfc^* = u_{n-k}^*, which is equal to
-    ! u_{nk} if time-reversal symmetry applies.
-    !
-    ! Actually, -k is in the 1BZ, but k may not be. Define
-    !                     k = k_I+G_TR
-    !
-    !     The wavefunctions are represented as
-    !             u_{-k}(r) = \sum_{G} C_{-k}(G) e^{iGr} ===> wfc(iG) = C_{-k}(G)
-    !
-    !             u_{k }(r) = \sum_{G} C_{k}(G) e^{iGr}
-    !
-    !             u_{k_I}(r) = \sum_{G} C_{k_I}(G) e^{iGr}
-    !
-    !           ===>  C_{k_I} (G_TR-G) = C^*_{-k}(G)
-    !-----------------------------------------------------------------------------
-    use intw_fft, only: find_iG
-    use intw_useful_constants, only: cmplx_0
-    use intw_utility, only: hpsort_integer
-    use intw_reading, only: nGk_max, gvec, nspin, num_bands_intw
-
-    implicit none
-
-    !I/O variables
-
-    integer, intent(inout) :: list_iG(nGk_max)
-    complex(kind=dp), intent(inout) :: wfc(nGk_max,num_bands_intw,nspin)
-
-    !local variables
-
-    integer :: iG, i_minus_G, i, p_i
-    integer :: G(3), minus_G(3)
-    integer :: nG ! counter on the number of G vectors in the array
-    integer :: permutations(nGk_max) ! index permutation which orders list_G
-    integer :: list_iG_tmp(nGk_max)
-    complex(kind=dp) :: wfc_tmp(nGk_max,num_bands_intw,nspin)
-
-    ! Initialize the different variables
-    !
-    nG = 0
-    permutations = 0
-    list_iG_tmp = 0
-    wfc_tmp = cmplx_0
-    !
-    ! loop on all G
-    !
-    do i=1,nGk_max
-      !
-      iG = list_iG(i)
-      !
-      ! We work with G that contribute in the wfc
-      !
-      if (iG == 0) exit  ! the index array is zero-padded at the end.
-      !
-      nG = nG + 1
-      G = gvec(:,iG)
-      !
-      minus_G = -G
-      !
-      ! find the index of -G
-      !
-      call find_iG(minus_G,i_minus_G)
-      !
-      list_iG_tmp(nG) = i_minus_G
-      !
-      ! conjugate the wavefunction
-      !
-      wfc_tmp(nG,:,:) = conjg(wfc(i,:,:))
-      !
-    enddo
-    !
-    ! There is no guarantee that the indices in list_iG_k will be sorted in ascending
-    ! order! This is not an absolute necessity, but it would be nice and consistent for
-    ! the indices to be sorted.
-    ! Sort the indices using a canned heap sort subroutine.
-    !
-    call hpsort_integer(nG,list_iG_tmp,permutations)
-    !
-    ! To understand how this works, consider an example:
-    !
-    !            i      f(i)        iG(i)   permutation(i)
-    !            ---------------------------------------
-    !            1      0.1         4            2
-    !            2      0.2         1            4
-    !            3      0.3         3            3
-    !            4      0.4         2            1
-    !
-    !            j   sort(iG)(j)    sort(f)(j)
-    !            ------------------------------------
-    !            1      1               0.2
-    !            2      2               0.4
-    !            3      3               0.3
-    !            4      4               0.1
-    !
-    !             ===> sort(f) (j)  =   f( permutation(j) )
-    !
-    !
-    ! list_iG_tmp is now properly sorted, and can be dumped in the input/output variable
-    !
-    list_iG = list_iG_tmp
-    !
-    ! finally, populate the conjugated wave function
-    !
-    do i=1,nG
-      !
-      p_i = permutations(i)
-      !
-      ! compute the wfc element
-      !
-      if (nspin==1) then
-        !
-        wfc(i,:,:) = wfc_tmp(p_i,:,:)
-        !
-      elseif (nspin==2) then
-        !
-        wfc(i,:,1) = -wfc_tmp(p_i,:,2)
-        wfc(i,:,2) = wfc_tmp(p_i,:,1)
-        !
-      endif !nspin
-      !
-    enddo !i
-
-  end subroutine apply_TR_to_wfc
 
 
   logical function eqvect(x, y, f)
