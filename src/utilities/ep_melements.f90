@@ -47,7 +47,6 @@ program ep_melements
                              symtable, rtau_index, rtau, rtau_cryst, &
                              rot_atoms, &
                              find_size_of_irreducible_k_set, &
-                             find_the_irreducible_k_set, &
                              allocate_symmetry_related_k, &
                              find_inverse_symmetry_matrices_indices, &
                              allocate_and_build_spin_symmetry_matrices, &

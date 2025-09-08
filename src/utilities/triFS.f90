@@ -25,9 +25,8 @@ program triFS
   use triFS_isosurface, only: vert_veloc_rot, vert_veloc, vert_index_rot, vert_coord_rot, ntri_rot, nvert_rot, &
                         vert_index, vert_coord, nvert, ntri, &
                         read_tetrahedra, create_isosurface_IBZ, write_full_isosurface, DOS_isosurface, &
-                        velocity_on_IBZ, write_IBZ_isosurface
-  use triFS_mesh_opt, only: newton_rap, mesh_optimization
-  use intw_matrix_vector, only: ainv
+                        write_IBZ_isosurface
+  use triFS_mesh_opt, only: mesh_optimization
   use intw_utility, only: find_free_unit, get_timing, print_date_time
   use intw_input_parameters, only: input, prefix
   use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s

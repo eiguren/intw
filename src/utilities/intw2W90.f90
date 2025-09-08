@@ -30,7 +30,7 @@ program intw2W90
                                generate_amn_using_allwfc, deallocate_nnkp
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, &
                              symlink, find_size_of_irreducible_k_set, &
-                             find_the_irreducible_k_set, allocate_symmetry_related_k, &
+                             allocate_symmetry_related_k, &
                              find_inverse_symmetry_matrices_indices, &
                              allocate_and_build_spin_symmetry_matrices, &
                              set_symmetry_relations, deallocate_symmetry_related_k, &

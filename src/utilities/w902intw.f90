@@ -24,7 +24,7 @@ program w902intw
 
   use intw_utility, only: get_timing, print_date_time
 
-  use intw_w90_setup, only: read_w90_chk, read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
+  use intw_w90_setup, only: read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
                             allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
                             allocate_and_build_ham_r, write_ham_r
 

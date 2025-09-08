@@ -76,7 +76,7 @@ contains
   ! This subroutine assumes set_num_bands() and read_nnkp_file()
   ! have been called before
   !----------------------------------------------------------------------------!
-  use intw_reading, only: nbands, num_bands_intw, num_wann_intw
+  use intw_reading, only: num_bands_intw, num_wann_intw
   use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
   use intw_utility, only: find_free_unit
   use intw_useful_constants, only: eps_8
