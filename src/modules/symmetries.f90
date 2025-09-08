@@ -1221,124 +1221,132 @@ contains
   end subroutine find_the_irreducible_k_set
 
 
-  subroutine find_the_irreducible_k_set_and_equiv(nspt, k_entire, k_irr, nk_irr, equiv, symlink, sym_G)
+  subroutine find_the_irreducible_k_set_and_equiv(nkpts, k_set, nk_irr, k_irr, equiv_, G_, symlink_)
     !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k set for the a general k list
+    ! This subroutine finds the irreducible k-point set for a general k-point list
     !------------------------------------------------------------------
-    use intw_input_parameters, only: TR_symmetry
-    use intw_reading, only: nsym, s, at, bg
+    use intw_reading, only: nsym, s, TR, lmag, at, bg
+    use intw_useful_constants, only: eps_7
 
     implicit none
 
     !input
 
-    integer, intent(in) :: nspt
+    integer, intent(in) :: nkpts
+    ! Size of the general k-point set
 
-    real(kind=dp), intent(in) :: k_entire(3,nspt)
+    real(kind=dp), intent(in) :: k_set(3,nkpts)
+    ! General k-point set
 
     ! output
     integer :: nk_irr
-    real(kind=dp) :: k_irr(3,nspt)
-    integer :: equiv(nspt) ! which is the equivalent point
-    integer, intent(out) :: sym_G(1:3,nspt), symlink(nspt,1:2)
+    ! N. of irreducible k-points found for the general k-point set
+
+    real(kind=dp) :: k_irr(3,nkpts)
+    ! The irreducible k-point set in crystal coordinates.
+    ! The size of the array is nkpts instead of nk_irr;
+    ! it is supposed that we still do not know the value of nk_irr
+
+    integer :: equiv_(nkpts)
+    ! which is the equivalent point
+
+    integer, intent(out) :: G_(3,nkpts)
+    !
+
+    integer, intent(out) :: symlink_(nkpts,2)
+    !
 
     !local variables
     real(kind=dp) :: k_rot(3), dist1, dist2
+    integer :: ik, jk, isym
+    integer :: ikpt, i, j, k
+    logical :: found(nkpts)
 
-    integer :: i, j ! triple indices
-
-    integer :: ns
-
-    integer :: ikpt ! joint index, joint index obtained by symmetry
-
-    integer :: ii, jj, kk
-
-    logical :: found(nspt)
-    real(kind=dp), parameter :: eps = 10E-7
-
-    ! Find which symmetry operation is the identity
-    ! most likely always the first element, but let's be sure
-
-
-    found  = .false.
+    !
+    ! Initialize output variables
+    !
     nk_irr = 0
-
-    do i=1,nspt
-      if (.not. found(i)) then
-        found(i) = .true.
+    k_irr = 0.0_dp
+    equiv_ = -4
+    G_ = -4
+    symlink_ = -4
+    !
+    ! Loop on all k-points in k_irr
+    !
+    found  = .false.
+    do ik=1,nkpts
+      !
+      if (found(ik)) cycle
+      !
         nk_irr = nk_irr + 1
-        k_irr(1:3,nk_irr) = k_entire(1:3,i)
-        equiv(i) = nk_irr
-
-        do ns=1,nsym
-
-          k_rot = matmul(dble(s(:,:,ns)), k_irr(:,nk_irr))
-
-          do j=1,nspt
-
-            if (((abs(modulo(k_entire(1,j)-k_rot(1),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(1,j)-k_rot(1),1.0_dp)       )<eps)) .and.&
-                ((abs(modulo(k_entire(2,j)-k_rot(2),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(2,j)-k_rot(2),1.0_dp)       )<eps)) .and.&
-                ((abs(modulo(k_entire(3,j)-k_rot(3),1.0_dp)-1.0_dp)<eps) .or. &
-                 (abs(modulo(k_entire(3,j)-k_rot(3),1.0_dp)       )<eps))) then
-
-              equiv(j) = nk_irr
-              found(j) = .true.
-              symlink(j,1) = ns
-              symlink(j,2) = 0
-              sym_G(:,j) = nint(k_entire(:,j) - k_rot(:))
-              cycle
+      k_irr(1:3,nk_irr) = modulo(k_set(1:3,ik), 1.0_dp)
+      !
+      ! loop on all symmetry operations without TR
+      !
+      do isym=1,nsym
+        !
+        if (lmag .and. TR(isym)) cycle ! This symmetry operation needs TR, do not use it yet
+        !
+        ! rotate the k-point
+        !
+        k_rot = matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
+        !
+        do jk=1,nkpts
+          !
+          if (found(jk)) cycle
+          !
+          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
+            !
+            ! if this point hasn't been found before, well, it's found now!
+            !
+            found(jk) = .true.
+            !
+            equiv_(jk) = nk_irr
+            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
+            symlink_(jk,1) = isym
+            symlink_(jk,2) = 0
+            !
             endif
-
-            if (TR_symmetry) then
-
-              if (((abs(modulo(k_entire(1,j)+k_rot(1),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(1,j)+k_rot(1),1.0_dp)       )<eps)) .and.&
-                  ((abs(modulo(k_entire(2,j)+k_rot(2),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(2,j)+k_rot(2),1.0_dp)       )<eps)) .and.&
-                  ((abs(modulo(k_entire(3,j)+k_rot(3),1.0_dp)-1.0_dp)<eps) .or. &
-                   (abs(modulo(k_entire(3,j)+k_rot(3),1.0_dp)       )<eps))) then
-                equiv(j) = nk_irr
-                found(j) = .true.
-                symlink(j,1) = ns
-                symlink(j,2) = 1
-                sym_G(:,j) = nint(k_entire(:,j) -(- k_rot(:)))
-
+          !
+        enddo ! jk
+        !
+      enddo ! isym
+      !
+      !
+      ! repeat with TR symmetry, if allowed (or required!)
+      !
+      do isym=1,nsym
+        !
+        if (.not. TR(isym)) cycle
+        !
+        ! rotate the k-point + TR
+        !
+        k_rot = -matmul(dble(s(:,:,isym)), k_irr(:,nk_irr))
+        !
+        do jk=1,nkpts
+          !
+          if (found(jk)) cycle
+          !
+          if ( all( abs(modulo(k_set(:,jk), 1.0_dp)-modulo(k_rot(:), 1.0_dp)) < eps_7 ) ) then
+            !
+            ! if this point hasn't been found before, well, it's found now!
+            !
+            found(jk) = .true.
+            !
+            equiv_(jk) = nk_irr
+            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
+            symlink_(jk,1) = isym
+            symlink_(jk,2) = 1
+            !
                 endif
-            endif
-
-          end do !j
-
-        enddo ! ns
-
-      end if !found
-
-    enddo !i
-
-
-    do ikpt=1,nk_irr
-
-      k_rot(:) = matmul(bg,k_irr(:,ikpt))
-
-      dist1 = sum(k_rot(:)**2)
-
-      do ii=-1,1
-        do jj=-1,1
-          do kk=-1,1
-
-            k_rot(:) = matmul(bg,k_irr(:,ikpt)) + matmul(bg, dble((/ii,jj,kk/)))
-            dist2 = sum(k_rot(:)**2)
-
-            if (dist2<dist1) then
-              k_irr(:,ikpt) = matmul(transpose(at), k_rot)
-              dist1 = dist2
-            endif
-
-          enddo
-        enddo
-      enddo
-    enddo
+          !
+        enddo ! jk
+        !
+      enddo ! isym
+      !
+    enddo ! ik
+    !
+    if (.not. all(found)) stop "ERROR in find_the_irreducible_k_set_and_equiv: At least one k-point does not map properly"
 
   end subroutine find_the_irreducible_k_set_and_equiv
 
