@@ -240,6 +240,7 @@ program ep_on_trFS_dV
   call find_inverse_symmetry_matrices_indices()
 
   ! Calculate the multiplication talble for symmetry operations
+  allocate(symtable(nsym, nsym))
   call multable(nsym, s, symtable)
 
   ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations

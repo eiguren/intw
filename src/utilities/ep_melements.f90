@@ -202,7 +202,8 @@ program ep_melements
   call find_inverse_symmetry_matrices_indices()
   !
   ! Calculate the multiplication talble for symmetry operations
-  call multable(nsym,s,symtable)
+  allocate(symtable(nsym,nsym))
+  call multable(nsym, s, symtable)
   !
   ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
   call allocate_and_build_spin_symmetry_matrices(nsym)

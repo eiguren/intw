@@ -81,7 +81,7 @@ module intw_symmetries
   real(kind=dp), allocatable :: rtau(:,:,:)
   real(kind=dp), allocatable :: rtau_cryst(:,:,:)
 
-  integer :: symtable(48,48)
+  integer, allocatable :: symtable(:,:)
 
 contains
 
@@ -2034,8 +2034,8 @@ contains
 
     !I/O variables
 
-    integer, intent(in) :: nsym, s(3,3,48) ! number of symmetry+symm matrices
-    integer, intent(out) :: table(48,48) ! the multiplication table
+    integer, intent(in) :: nsym, s(3,3,nsym) ! number of symmetry+symm matrices
+    integer, intent(out) :: table(nsym,nsym) ! the multiplication table
 
     !local variables
 
