@@ -26,7 +26,7 @@ program ep_melements
                                    read_input, use_exclude_bands, &
                                    ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, lspin, nsym, &
-                          s, nbands, nGk_max, nat, tau, bg, &
+                          s, nGk_max, nat, tau, bg, &
                           nr1, nr2, nr3, num_bands_intw, &
                           read_parameters_data_file, &
                           get_gvec, &
@@ -43,7 +43,7 @@ program ep_melements
                           find_k_1BZ_and_G
   use intw_matrix_vector, only: ainv
   use intw_useful_constants, only: cmplx_0, cmplx_1
-  use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, nosym_G, sym_G, symlink, &
+  use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, symlink, &
                              symtable, rtau_index, rtau, rtau_cryst, &
                              rot_atoms, &
                              find_size_of_irreducible_k_set, &
@@ -55,7 +55,7 @@ program ep_melements
   use intw_fft, only: generate_nl, &
                       allocate_fft
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
-                     nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
+                     symlink_q, q_irr, q_irr_cryst, &
                      read_ph_information, &
                      read_allq_dvr, &
                      get_dv
@@ -68,14 +68,12 @@ program ep_melements
   implicit none
 
   !k point related variables
-  logical                  :: k_points_consistent
   integer                  :: ik, nk_irr, nkmesh
   integer                  :: num_bands_ep
   real(dp),allocatable     :: kmesh(:,:)
   real(dp)                 :: kpoint(3), kpoint_cart(3), kqpoint_cart(3)
 
   !q point related variables
-  logical                  :: q_points_consistent
   real(dp)                 :: qpoint(3)
   integer                  :: iq, nq_irr
   logical                  :: full_mesh_q, IBZ_q
@@ -202,7 +200,8 @@ program ep_melements
   call find_inverse_symmetry_matrices_indices()
   !
   ! Calculate the multiplication talble for symmetry operations
-  call multable(nsym,s,symtable)
+  allocate(symtable(nsym,nsym))
+  call multable(nsym, s, symtable)
   !
   ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
   call allocate_and_build_spin_symmetry_matrices(nsym)
@@ -265,7 +264,7 @@ program ep_melements
   call generate_kmesh(kmesh,nk1,nk2,nk3)
   !
   ! Find the size of the irreducible set of k-points (IBZ)
-  call find_size_of_irreducible_k_set(nk1,nk2,nk3,kmesh,nk_irr)
+  call find_size_of_irreducible_k_set(nk1,nk2,nk3,nk_irr)
   !
   !
   !================================================================================
@@ -273,12 +272,12 @@ program ep_melements
   !================================================================================
   !
   ! Allocate arrays
-  call allocate_symmetry_related_k(nk1,nk2,nk3,nsym)
+  call allocate_symmetry_related_k(nk1,nk2,nk3)
   !
   ! Fill the symmetry arrays
-  call set_symmetry_relations(nk1,nk2,nk3,nkpoints_QE,kpoints_QE,kmesh, k_points_consistent, &
-                              QE_folder_nosym, QE_folder_sym, &
-                              nosym_G, sym_G, symlink, full_mesh, IBZ)
+  call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE, &
+                              QE_folder_nosym, QE_folder_sym, symlink, &
+                              full_mesh, IBZ)
   !
   !
   !================================================================================
@@ -334,7 +333,7 @@ program ep_melements
   call generate_kmesh(qmesh,nq1,nq2,nq3)
   !
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1,nq2,nq3,qmesh,nq_irr)
+  call find_size_of_irreducible_k_set(nq1,nq2,nq3,nq_irr)
   !
   !
   !================================================================================
@@ -343,13 +342,11 @@ program ep_melements
   !
   allocate(QE_folder_nosym_q(nqmesh))
   allocate(QE_folder_sym_q(nqmesh))
-  allocate(nosym_G_q(3,nqmesh))
-  allocate(sym_G_q(3,nqmesh))
   allocate(symlink_q(nqmesh,2))
   !
-  call set_symmetry_relations(nq1,nq2,nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
-                              QE_folder_nosym_q, QE_folder_sym_q, &
-                              nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
+  call set_symmetry_relations(nq1,nq2,nq3, nqirr, q_irr_cryst, &
+                              QE_folder_nosym_q, QE_folder_sym_q, symlink_q, &
+                              full_mesh_q, IBZ_q)
   !
   !
   !================================================================================

@@ -110,7 +110,7 @@ contains
     use intw_reading, only: s, ftau, nGk_max, nspin, kpoints_QE, num_bands_intw
     use intw_input_parameters, only: nk1, nk2, nk3
     use intw_symmetries, only: full_mesh, symlink, QE_folder_sym, QE_folder_nosym, &
-                               apply_TR_to_wfc, rotate_wfc_test
+                               apply_TR_to_wfc, rotate_wfc
     use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
     use intw_fft, only: wfc_by_expigr
     use intw_useful_constants, only : eps_5, ZERO
@@ -190,7 +190,7 @@ contains
         G_sym = nint(kpoint - ktest)
       end if
       !
-      call rotate_wfc_test(wfc_k_irr, list_iG_irr, wfc_k, list_iG_k, i_sym, sym, ftau_sym, (/0, 0, 0/))
+      call rotate_wfc(wfc_k_irr, list_iG_irr, wfc_k, list_iG_k, i_sym, sym, ftau_sym, (/0, 0, 0/))
       !
       ! If time-reversal is present, the wavefunction currently stored
       ! in wfc_k is actually for (-k). Complex conjugation must now

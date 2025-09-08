@@ -30,7 +30,7 @@ module intw_ph
   ! variables
   public :: q_irr, u_irr, dvscf_cart, dvscf_irr, &
             nqmesh, qmesh, q_irr_cryst, &
-            QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q
+            QE_folder_nosym_q, QE_folder_sym_q, symlink_q
   !
   ! subroutines
   public :: rot_gep, read_ph_information, readfc, mat_inv_four_t, read_allq_dvr, &
@@ -53,8 +53,6 @@ module intw_ph
 
   integer, allocatable :: QE_folder_nosym_q(:)
   integer, allocatable :: QE_folder_sym_q(:)
-  integer, allocatable :: nosym_G_q(:,:)
-  integer, allocatable :: sym_G_q(:,:)
   integer, allocatable :: symlink_q(:,:)
 
 

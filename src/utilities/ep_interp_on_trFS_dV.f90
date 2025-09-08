@@ -110,7 +110,7 @@ program ep_on_trFS_dV
 
   use intw_ph, only: nqmesh, qmesh, read_ph_information, &
                      q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
-                     QE_folder_nosym_q, QE_folder_sym_q, nosym_G_q, sym_G_q, symlink_q
+                     QE_folder_nosym_q, QE_folder_sym_q, symlink_q
 
   use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
 
@@ -132,7 +132,6 @@ program ep_on_trFS_dV
   real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
 
   ! for part II
-  logical :: q_points_consistent
   logical :: full_mesh_q, IBZ_q
   integer :: nq_irr
   integer :: iq, ir, jr, ir1, ir2, ir3
@@ -240,6 +239,7 @@ program ep_on_trFS_dV
   call find_inverse_symmetry_matrices_indices()
 
   ! Calculate the multiplication talble for symmetry operations
+  allocate(symtable(nsym, nsym))
   call multable(nsym, s, symtable)
 
   ! Set up spin_symmetry_matrices, needed to rotate wave functions and indueced potential for non-colinear calculations
@@ -471,7 +471,7 @@ program ep_on_trFS_dV
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh, nq_irr)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, nq_irr)
 
 
   !================================================================================
@@ -480,13 +480,11 @@ program ep_on_trFS_dV
 
   allocate(QE_folder_nosym_q(nqmesh))
   allocate(QE_folder_sym_q(nqmesh))
-  allocate(nosym_G_q(3,nqmesh))
-  allocate(sym_G_q(3,nqmesh))
   allocate(symlink_q(nqmesh,2))
 
-  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, qmesh, q_points_consistent, &
-                              QE_folder_nosym_q, QE_folder_sym_q, &
-                              nosym_G_q, sym_G_q, symlink_q, full_mesh_q, IBZ_q)
+  call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, &
+                              QE_folder_nosym_q, QE_folder_sym_q, symlink_q, &
+                              full_mesh_q, IBZ_q)
 
 
   !================================================================================
