@@ -16,14 +16,6 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-#ifdef GIT_VERSION_PRESENT
-! Example: v0.0.0-502-gff5fbda (commit ff5fbda, 502 commits ahead from parent tag v0.0.0)
-#define VERSION "@GIT_VERSION@"
-#else
-! Obtained from the version number specified in cmake project()
-#define VERSION "v@PROJECT_VERSION@"
-#endif
-
 module intw_version
 
   ! variables
@@ -32,7 +24,13 @@ module intw_version
   ! subroutines
   public :: print_intw_version
 
-  character(25), parameter :: version = VERSION
+#ifdef VERSION_STRING
+  character(25), parameter :: version = VERSION_STRING
+  ! VERSION_STRING is passed as a pre-processing variable.
+  ! This variable will be set by CMake from the version number specified in
+  ! cmake project() (for example, v1.0.0), or, if possible, using 'git describe'
+  ! (for example, v1.0.0-502-gff5fbda: commit ff5fbda, 502 commits ahead from parent tag v0.0.0).
+#endif
 
 contains
 
@@ -44,7 +42,9 @@ subroutine print_intw_version()
 
   implicit none
 
+#ifdef VERSION_STRING
   write(*,'("|     INTW version: ",A25,"       |")') version
+#endif
 
 #ifdef _OPENMP
 
@@ -52,7 +52,7 @@ subroutine print_intw_version()
   !$omp parallel
   if (omp_in_parallel()) then
     !$omp master
-    write(*,'("|     Running in parallel mode with ",I3," threads     |")') omp_get_num_threads()
+    write(*,'("|     Running parallel version with ",I3," threads     |")') omp_get_num_threads()
     !$omp end master
   else
     write(*,'("|     Running parallel version in serial mode       |")')
@@ -61,7 +61,7 @@ subroutine print_intw_version()
 
 #else
 
-  write(*,'("|     Running in serial mode                        |")')
+  write(*,'("|     Running serial version                        |")')
 
 #endif
 

@@ -22,11 +22,10 @@ set(SOURCES
   fft_interp.f90
   w90_setup.f90
   ph_interpolate.f90
+  version.f90
 )
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.f90.in" "${CMAKE_CURRENT_BINARY_DIR}/version.f90" @ONLY)
-list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}/version.f90")
-set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/version.f90" PROPERTIES COMPILE_DEFINITIONS ${VERSION_COMPILE_DEFINITIONS})
+set_source_files_properties("version.f90" PROPERTIES COMPILE_DEFINITIONS -DVERSION_STRING="${VERSION_STRING}")
 
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod_files)

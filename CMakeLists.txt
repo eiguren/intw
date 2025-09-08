@@ -15,9 +15,10 @@ project(intw
 execute_process(COMMAND git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --dirty OUTPUT_VARIABLE GIT_VERSION RESULTS_VARIABLE GIT_RESULT OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(GIT_RESULT EQUAL 0)
   # git describe command succeeded, use the retrieved version number
-  set(VERSION_COMPILE_DEFINITIONS "-DGIT_VERSION_PRESENT")
+  set(VERSION_STRING "${GIT_VERSION}")
 else()
-  set(VERSION_COMPILE_DEFINITIONS "")
+  # git describe command failed, use version number specified in project()
+  set(VERSION_STRING "v${PROJECT_VERSION}")
 endif()
 
 
