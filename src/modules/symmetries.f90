@@ -48,7 +48,7 @@ module intw_symmetries
             find_the_irreducible_k_set_and_equiv, find_the_irreducible_k_set, &
             find_entire_nice_BZ, calculate_star_r, &
             calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
-            intw_check_mesh, apply_TR_to_wfc, find_size_of_irreducible_k_set, &
+            apply_TR_to_wfc, find_size_of_irreducible_k_set, &
             multable
   !
   ! functions
@@ -1875,77 +1875,6 @@ contains
     endif ! If non-collinear
 
   end subroutine rotate_wfc_test
-
-
-  subroutine intw_check_mesh(nk_1, nk_2, nk_3, kmesh, nk_irr, k_irr, nkpoints_QE, kpoints_QE)
-    !----------------------------------------------------------------------------!
-    !     This subroutine compares the mesh points kmesh to the global array
-    !     kpoints (which comes from the QE folders) in order to determine if
-    !             1) kpoints = kmesh
-    !             2) kpoints = irreducible zone
-    !             3) none of the above
-    !----------------------------------------------------------------------------!
-    use intw_useful_constants, only: eps_8
-
-    implicit none
-
-    integer, intent(in) :: nk_1, nk_2, nk_3
-    real(kind=dp), intent(in) :: kmesh(3,nk_1*nk_2*nk_3)
-    integer, intent(in) :: nk_irr
-    integer, intent(in) :: k_irr(3,nk_irr)
-    integer, intent(in) :: nkpoints_QE
-    real(kind=dp), intent(in) :: kpoints_QE(3,nkpoints_QE)
-
-    real(kind=dp) :: kpt(3)
-    integer :: ikpt, nkmesh
-    real(kind=dp) :: norm
-
-    nkmesh = nk_1*nk_2*nk_3
-
-    full_mesh = .true.
-    IBZ       = .true.
-
-    ! First, establish if a full mesh is present
-    if (nkpoints_QE /= nkmesh) then
-      full_mesh = .false.
-    else
-       do ikpt=1,nkmesh
-
-        norm = sqrt( (kpoints_QE(1,ikpt)-kmesh(1,ikpt))**2 + &
-                     (kpoints_QE(2,ikpt)-kmesh(2,ikpt))**2 + &
-                     (kpoints_QE(3,ikpt)-kmesh(3,ikpt))**2 )
-
-        if (norm > eps_8) then
-          full_mesh = .false.
-          exit
-        end if
-
-       end do
-
-    end if
-
-    ! if a full mesh is NOT present, is the IBZ present?
-    if (full_mesh .or. (nkpoints_QE /= nk_irr)) then
-      IBZ = .false.
-    else
-      do ikpt=1,nk_irr
-        kpt(1) = dble(k_irr(1,ikpt)-1)/nk_1
-        kpt(2) = dble(k_irr(2,ikpt)-1)/nk_2
-        kpt(3) = dble(k_irr(3,ikpt)-1)/nk_3
-
-        norm = sqrt( (kpoints_QE(1,ikpt)-kpt(1))**2 + &
-                     (kpoints_QE(2,ikpt)-kpt(2))**2 + &
-                     (kpoints_QE(3,ikpt)-kpt(3))**2 )
-
-        if (norm > eps_8) then
-          IBZ = .false.
-          exit
-        end if
-
-      end do
-    end if
-
-  end subroutine intw_check_mesh
 
 
   subroutine apply_TR_to_wfc(wfc, list_iG)
