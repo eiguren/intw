@@ -52,7 +52,7 @@ program a2F_on_trFS
                           num_bands_intw, nsym, tau
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
-                     nosym_G_q, sym_G_q, symlink_q, q_irr, q_irr_cryst, &
+                     symlink_q, q_irr, q_irr_cryst, &
                      read_ph_information
 
   use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
@@ -66,7 +66,7 @@ program a2F_on_trFS
   implicit none
 
   logical :: read_status
-  logical :: q_points_consistent, full_mesh_q, IBZ_q
+  logical :: full_mesh_q, IBZ_q
   character(5) :: is_loc, comenta
   character(100) :: file_off, file_a2f
   integer :: unit_off, unit_a2f
@@ -498,13 +498,11 @@ program a2F_on_trFS
 
   allocate(QE_folder_nosym_q(nqmesh))
   allocate(QE_folder_sym_q(nqmesh))
-  allocate(nosym_G_q(3,nqmesh))
-  allocate(sym_G_q(3,nqmesh))
   allocate(symlink_q(nqmesh,2))
 
   call set_symmetry_relations(nq1, nq2, nq3, nqirr, q_irr_cryst, &
-                              QE_folder_nosym_q, nosym_G_q, QE_folder_sym_q, sym_G_q, &
-                              symlink_q, full_mesh_q, IBZ_q)
+                              QE_folder_nosym_q, QE_folder_sym_q, symlink_q, &
+                              full_mesh_q, IBZ_q)
 
 
   !================================================================================

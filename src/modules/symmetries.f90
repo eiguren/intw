@@ -36,9 +36,10 @@ module intw_symmetries
   implicit none
   !
   ! variables
-  public :: symlink, sym_G, nosym_G, QE_folder_sym, QE_folder_nosym, inverse_indices, &
-            identity_matrix_index, spin_symmetry_matrices, full_mesh, IBZ, rtau_index, &
-            rtau, rtau_cryst, symtable
+  public :: QE_folder_sym, QE_folder_nosym, symlink, full_mesh, IBZ, &
+            inverse_indices, identity_matrix_index, symtable, &
+            rtau_index, rtau, rtau_cryst, &
+            spin_symmetry_matrices
   !
   ! subroutines
   public :: allocate_symmetry_related_k, deallocate_symmetry_related_k, &
@@ -58,30 +59,36 @@ module intw_symmetries
   private
   !
   save
+
   !
+  integer, allocatable :: QE_folder_nosym(:)
+
+  !
+  integer, allocatable :: QE_folder_sym(:)
+
+  ! Index of the symmetry operation (rotation, TR) that links a
+  ! k-point with its equivalent point in the irreducible set
   integer, allocatable :: symlink(:,:)
-  integer, allocatable :: sym_G(:,:)
-  integer, allocatable :: nosym_G(:,:)
-
-  integer, allocatable :: QE_folder_sym(:), QE_folder_nosym(:)
-
-  integer, allocatable :: inverse_indices(:)
-  integer :: identity_matrix_index
-
-  ! this variable will contain the 2x2 matrices which rotate
-  ! spinors.
-  complex(kind=dp), allocatable :: spin_symmetry_matrices(:,:,:)
 
   ! logical variables defining what is present in the QE folders
   logical :: full_mesh, IBZ
 
-  !Asier && Idoia 17 07 2014
-  !Identy of atoms under symmetry operation
+  ! Index of the inverse symmetry operations
+  integer, allocatable :: inverse_indices(:)
+
+  ! Index of the identity symmetry within all symmetry operations
+  integer :: identity_matrix_index
+
+  ! Multiplication table of the symmetry group
+  integer, allocatable :: symtable(:,:)
+
+  ! 2x2 matrices to rotate spinors
+  complex(kind=dp), allocatable :: spin_symmetry_matrices(:,:,:)
+
+  ! Identy of atoms under symmetry operations
   integer, allocatable :: rtau_index(:,:)
   real(kind=dp), allocatable :: rtau(:,:,:)
   real(kind=dp), allocatable :: rtau_cryst(:,:,:)
-
-  integer, allocatable :: symtable(:,:)
 
 contains
 
@@ -103,10 +110,8 @@ contains
     nkmesh = nk1*nk2*nk3
     !
     allocate(QE_folder_nosym(nkmesh))
-    allocate(nosym_G(3,nkmesh))
     !
     allocate(QE_folder_sym(nkmesh))
-    allocate(sym_G(3,nkmesh))
     !
     allocate(symlink(nkmesh,2))
 
@@ -120,10 +125,8 @@ contains
     implicit none
 
     if (allocated(QE_folder_nosym)) deallocate(QE_folder_nosym)
-    if (allocated(nosym_G)) deallocate(nosym_G)
     !
     if (allocated(QE_folder_sym)) deallocate(QE_folder_sym)
-    if (allocated(sym_G)) deallocate(sym_G)
     !
     if (allocated(symlink)) deallocate(symlink)
 
@@ -131,8 +134,8 @@ contains
 
 
   subroutine set_symmetry_relations(nk_1, nk_2, nk_3, nk_irr, k_irr, &
-                                    equiv_nosym_, G_nosym_, equiv_sym_, G_sym_, &
-                                    symlink_, full_mesh_, IBZ_)
+                                    equiv_nosym_, equiv_sym_, symlink_, &
+                                    full_mesh_, IBZ_)
     !--------------------------------------------------------------------------!
     ! Given an irreducible k-point set k_irr(1:nk_irr), this subroutine tests if
     ! it is consistent with the full (nk_1, nk_2, nk_3) MP mesh, and finds the
@@ -158,16 +161,12 @@ contains
     ! - equiv_sym(nk_1*nk_2*nk_3) : The index of "kpt_irr" in the k-point set
     !                               which is symmetry equivalent to "kpt".
     !
-    ! - G_sym(nk_1*nk_2*nk_3) : What G translation must be applied to the rotated
-    !                           "kpt_irr" to obtain "kpt".
-    !
     ! - symlink(nk_1*nk_2*nk_3,2) : What symmetry operation must be performed
     !                               on "kpt_irr" to obtain "kpt".
     !
     ! In equations:
     !         ikpt_irr = equiv_sym(ikpt)
     !         R        = symlink(ikpt)
-    !         G        = G_sym(ikpt)
     !
     !         =========>  R*k_irr(ikpt_irr) = kmesh(ikpt) + G
     !
@@ -177,12 +176,8 @@ contains
     ! - equiv_nosym(nk_1*nk_2*nk_3) : The index of "kpt_irr" in the k-point set
     !                                 which is translation equivalent to "kpt".
     !
-    ! - G_nosym(nk_1*nk_2*nk_3) : What G translation must be applied to
-    !                             "kpt_irr" to obtain "kpt".
-    !
     ! In equations:
     !         ikpt_irr = equiv_nosym(ikpt)
-    !         G        = G_nosym(ikpt)
     !
     !         =========>  k_irr(ikpt_irr) = kmesh(ikpt) + G
     !
@@ -204,8 +199,8 @@ contains
     real(kind=dp), intent(in) :: k_irr(3,nk_irr)
 
     !output
-    integer, intent(out) :: equiv_nosym_(nk_1*nk_2*nk_3), G_nosym_(3,nk_1*nk_2*nk_3)
-    integer, intent(out) :: equiv_sym_(nk_1*nk_2*nk_3), G_sym_(3,nk_1*nk_2*nk_3)
+    integer, intent(out) :: equiv_nosym_(nk_1*nk_2*nk_3)
+    integer, intent(out) :: equiv_sym_(nk_1*nk_2*nk_3)
     integer, intent(out) :: symlink_(nk_1*nk_2*nk_3,2)
     logical, intent(out) :: full_mesh_, IBZ_
 
@@ -222,9 +217,7 @@ contains
     ! is better to crash than to produce wrong results!
     !
     equiv_nosym_ = -4
-    G_nosym_ = -4
     equiv_sym_ = -4
-    G_sym_ = -4
     symlink_ = -4
     full_mesh_ = .false.
     IBZ_ = .false.
@@ -282,7 +275,6 @@ contains
         !
         kpoint_is_found_nosym(ikpt) = .true.
         equiv_nosym_(ikpt) = ikpt_irr
-        G_nosym_(:,ikpt) = G
         !
       endif !possible_full_mesh
       !
@@ -325,7 +317,6 @@ contains
           !
           kpoint_is_found_sym(ikpt) = .true.
           equiv_sym_(ikpt) = ikpt_irr
-          G_sym_(:,ikpt) = G
           !ASIER 09/03/20222
           !we are taking the inverse of the inverse twice all over the code.
           !symlink(ikpt,1) = inverse_index(isym)
@@ -356,14 +347,9 @@ contains
           !
           kpoint_is_found_sym(ikpt) = .true.
           equiv_sym_(ikpt) = ikpt_irr
-          G_sym_(:,ikpt) = -G
           ! symlink(ikpt,1) = inverse_indices(isym)
           symlink_(ikpt,1) = isym
           symlink_(ikpt,2) = 1
-          !
-          ! CAREFUL! It is now -G which enters the G_sym array
-          ! See the rotation code for details, as well as the
-          ! symmetries document.
           !
         endif ! not found
         !

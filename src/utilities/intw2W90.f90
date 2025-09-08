@@ -29,7 +29,7 @@ program intw2W90
                                intw2w90_check_mesh, generate_mmn_using_allwfc, &
                                generate_amn_using_allwfc, deallocate_nnkp
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, &
-                             nosym_G, sym_G, symlink, find_size_of_irreducible_k_set, &
+                             symlink, find_size_of_irreducible_k_set, &
                              find_the_irreducible_k_set, allocate_symmetry_related_k, &
                              find_inverse_symmetry_matrices_indices, &
                              allocate_and_build_spin_symmetry_matrices, &
@@ -39,7 +39,7 @@ program intw2W90
   use intw_input_parameters, only: outdir, prefix, intw2W_fullzone, intw2W_method, &
                                    nk1, nk2, nk3, compute_mmn, compute_amn, &
                                    read_input
-  use intw_reading, only: kpoints_QE, nspin, lspin, nkpoints_QE, nsym, &
+  use intw_reading, only: kpoints_QE, lspin, nkpoints_QE, nsym, &
                           read_parameters_data_file, get_gvec, &
                           read_kpoints_data_file, deallocate_reading_variables, &
                           num_wann_intw, num_exclude_bands_intw, &
@@ -55,8 +55,6 @@ program intw2W90
   integer :: nk_irr , nkmesh
 
   logical :: read_status, have_nnkp
-
-  logical :: k_points_consistent
 
   character(256) :: nnkp_file
 
@@ -250,8 +248,8 @@ program intw2W90
   !
   ! Fill the symmetry arrays
   call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE, &
-                              QE_folder_nosym, nosym_G, QE_folder_sym, sym_G, &
-                              symlink, full_mesh, IBZ )
+                              QE_folder_nosym, QE_folder_sym, symlink, &
+                              full_mesh, IBZ )
   !
   !
   !================================================================================
