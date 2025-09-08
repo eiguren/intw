@@ -362,7 +362,7 @@ contains
     IBZ_       = all(kpoint_is_found_sym)
     full_mesh_ = all(kpoint_is_found_nosym)
     !
-    if ( (.not. IBZ_) .and. (.not. full_mesh_) ) stop "ERROR in set_symmetry_relations: At least one k-point does not map properly"
+    if ( (.not. IBZ_) .and. (.not. full_mesh_) ) write(*,*) "WARNING in set_symmetry_relations: At least one k-point does not map properly"
 
   end subroutine set_symmetry_relations
 
