@@ -49,7 +49,7 @@ module intw_symmetries
             find_entire_nice_BZ, calculate_star_r, &
             calculate_star, echo_symmetry_1BZ, rot_atoms, rotate_wfc_test, &
             intw_check_mesh, apply_TR_to_wfc, find_size_of_irreducible_k_set, &
-            find_the_irreducible_k_set_irr, multable
+            multable
   !
   ! functions
   public :: eqvect
@@ -1101,7 +1101,7 @@ contains
   end subroutine find_size_of_irreducible_k_set
 
 
-  subroutine find_the_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr, kpoints_irr)
+  subroutine find_the_irreducible_k_set(nk_1, nk_2, nk_3, nk_irr, kpoints_irr, weight_irr)
     !------------------------------------------------------------------
     ! This subroutine finds the irreducible k-point set for the canonical
     ! 1BZ (nk_1, nk_2, nk_3) MP mesh.
@@ -1125,20 +1125,27 @@ contains
     ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
     ! it is supposed that we still do not know the value of nk_irr
 
+    real(kind=dp), optional, intent(out) :: weight_irr(nk_1*nk_2*nk_3)
+    ! The weight of of each irreducible k-point for BZ integrations.
+    ! The size of the array is nk_1*nk_2*nk_3 instead of nk_irr;
+    ! it is supposed that we still do not know the value of nk_irr
+
     !local variables
     real(kind=dp) :: k_rot(3), k_1BZ(3)
     integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
-    integer :: G(3)
-    integer :: isym
+    integer :: is, js, ks ! triple indices obtained by symmetry
     integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
+    integer :: isym
+    integer :: nstarr
+    integer :: G(3)
     logical :: found(nk_1*nk_2*nk_3)
 
 
     !
     ! Initialize output
-    kpoints_irr = 0.0_dp
     nk_irr = 0
+    kpoints_irr = 0.0_dp
+    if (present(weight_irr)) weight_irr = 0.0_dp
     !
     ! loop on the whole mesh, in the appropriate order (very important!)
     found = .false.
@@ -1152,14 +1159,13 @@ contains
           ! operate on this point only if it has not already been found!
           if (.not. found(ikpt)) then
             !
-            ! it's found now. This point is part of the IBZ.
-            found(ikpt) = .true.
-            !
             nk_irr = nk_irr + 1
             !
             kpoints_irr(1,nk_irr) = dble(i-1)/nk_1
             kpoints_irr(2,nk_irr) = dble(j-1)/nk_2
             kpoints_irr(3,nk_irr) = dble(k-1)/nk_3
+            !
+            nstarr = 0
             !
             ! loop on all symmetry operations
             do isym=1,nsym
@@ -1183,7 +1189,10 @@ contains
                 ! what is the scalar index
                 call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
-                if (.not. found(ikpts)) found(ikpts) = .true.
+                if (.not. found(ikpts)) then
+                  found(ikpts) = .true.
+                  nstarr = nstarr + 1
+                endif
                 !
               endif ! dk
               !
@@ -1206,11 +1215,16 @@ contains
                 ! what is the scalar index
                 call triple_to_joint_index_g(nk_1, nk_2, nk_3, ikpts, is, js, ks)
                 !
-                if (.not.found(ikpts)) found(ikpts) = .true.
+                if (.not. found(ikpts)) then
+                  found(ikpts) = .true.
+                  nstarr = nstarr + 1
+                endif
                 !
               endif ! dk
               !
             enddo ! isym
+            !
+            if (present(weight_irr)) weight_irr(nk_irr) = dble(nstarr)/(nk_1*nk_2*nk_3)
             !
           endif ! found(ikpt)
           !
@@ -1349,134 +1363,6 @@ contains
     if (.not. all(found)) stop "ERROR in find_the_irreducible_k_set_and_equiv: At least one k-point does not map properly"
 
   end subroutine find_the_irreducible_k_set_and_equiv
-
-
-  subroutine find_the_irreducible_k_set_irr(nk1, nk2, nk3, kmesh, nk_irr, list_ik_irr, kpoints_irr, weight_irr)
-    !------------------------------------------------------------------
-    ! This subroutine finds the irreducible k set for the canonical
-    ! 1BZ mesh.
-    !------------------------------------------------------------------
-    use intw_input_parameters, only: TR_symmetry
-    use intw_useful_constants, only: eps_8
-    use intw_utility, only: find_k_1BZ_and_G, triple_to_joint_index_g
-    use intw_reading, only: nsym, s
-
-    implicit none
-
-    !input
-    integer, intent(in) :: nk1, nk2, nk3, nk_irr
-    ! The input k division
-    real(kind=dp), intent(in) :: kmesh(3,nk1*nk2*nk3)
-    ! The full kmesh, in canonical order
-
-    !output
-    integer, intent(out) :: list_ik_irr(nk_irr)
-    real(kind=dp), intent(out) :: kpoints_irr(3,nk_irr)
-    ! The irreducible kpoints in crystal triple coordinates.
-    ! The size of the array is nk1* nk2* nk3 instead of nk_irr;
-    ! it is supposed that we still do not know the value of nk_irr
-    real(kind=dp), intent(out) :: weight_irr(nk_irr)
-
-    !local variables
-    real(kind=dp) :: k_rot(3), k_1BZ(3), dk(3)
-    integer :: nkpt ! The total number of points
-    integer :: i, j, k ! triple indices
-    integer :: is, js, ks ! triple indices  obtained by symmetry
-    integer :: G(3)
-    integer :: isym, ik_irr
-    integer :: ikpt, ikpts ! joint index, joint index obtained by symmetry
-    logical :: found(nk1*nk2*nk3)
-
-    nkpt = nk1*nk2*nk3
-    found = .false.
-    ik_irr = 0
-    weight_irr(:) = 0.d0
-    !
-    ! loop on the whole mesh, in the appropriate order (very important!)
-    do i=1,nk1
-      do j=1,nk2
-        do k=1,nk3
-          !
-          ! find scalar index of point (i,j,k)
-          call triple_to_joint_index_g(nk1,nk2,nk3,ikpt,i,j,k)
-          !
-          ! operate on this point only if it has not already been found!
-          if (.not. found(ikpt)) then
-            !
-            ! it's found now. This point is part of the IBZ.
-            found(ikpt) = .true.
-            !
-            ik_irr = ik_irr + 1
-            !
-            weight_irr(ik_irr) = weight_irr(ik_irr) + 1
-            !
-            list_ik_irr(ik_irr) = ikpt
-            !
-            kpoints_irr(:,ik_irr) = kmesh(:,ikpt)
-            !
-            ! loop on all symmetry operations
-            do isym=1,nsym
-              !
-              !perform matrix product
-              ! CAREFUL! since the matrix is in crystal coordinates,
-              ! and it acts in reciprocal space, the convention is :
-              !          k_rot(i) = sum_j s(i,j)*k(j)
-              !
-              k_rot = matmul(dble(s(:,:,isym)),kpoints_irr(:,ik_irr))
-              !
-              ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot,nk1,nk2,nk3,is,js,ks,k_1BZ,G)
-              !
-              ! check that k_1BZ+G = k_rot. If not, k_rot isn't on the mesh,
-              ! and the algorithm in "find_k_1BZ_and_G" cannot be trusted.
-              dk = k_rot - (k_1BZ + dble(G))
-              if (sqrt(dot_product(dk,dk))<eps_8) then
-                !
-                ! what is the scalar index
-                call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
-                !
-                if (.not. found(ikpts)) then
-                    found(ikpts) = .true.
-                    weight_irr(ik_irr) = weight_irr(ik_irr) + 1
-                endif
-                !
-              endif ! dk
-              !
-              ! Repeat, with Time-Reversal symmetry if present
-              if (TR_symmetry) then
-                !
-                k_rot = -k_rot
-                !
-                ! find what point in the 1BZ this corresponds to
-                call find_k_1BZ_and_G(k_rot,nk1,nk2,nk3,is,js,ks,k_1BZ,G)
-                !
-                ! we check again the value of dk, so if k_1BZ+G = k_rot
-                dk = k_rot - (k_1BZ + dble(G))
-                if (sqrt(dot_product(dk,dk))<eps_8) then
-                  !
-                  ! what is the scalar index
-                  call triple_to_joint_index_g(nk1,nk2,nk3,ikpts,is,js,ks)
-                  !
-                  if (.not.found(ikpts)) then
-                    found(ikpts) = .true.
-                    weight_irr(ik_irr) = weight_irr(ik_irr) + 1
-                  endif
-                  !
-                endif ! dk
-                !
-              endif !TR_symmetry
-              !
-            enddo ! isym
-            !
-          endif ! found(ikpt)
-          !
-        enddo ! k
-      enddo ! j
-    enddo ! i
-
-    weight_irr(:) = weight_irr(:)/nkpt
-
-  end subroutine find_the_irreducible_k_set_irr
 
 
   subroutine find_entire_nice_BZ(nk1, nk2, nk3, nspt, ksvec)
