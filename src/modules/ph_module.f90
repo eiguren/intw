@@ -770,9 +770,9 @@ contains
       !
       io_unit = find_free_unit()
       !
-      dv_name = trim(outdir)//trim(prefix)//".save.intw/"//trim(prefix)//".dvscf_q"//trim(num)
+      dv_name = trim(prefix)//".dvscf_q"//trim(num)
       !
-      open(unit=io_unit, file=dv_name, iostat = ios, &
+      open(unit=io_unit, file=trim(outdir)//trim(prefix)//".save.intw/"//trim(dv_name), iostat = ios, &
            form='unformatted', status='old', access='direct', recl=record_length)
       if (ios /= 0) stop "ERROR: read_allq_dvr: error opening dv_name."
       !
