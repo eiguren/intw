@@ -423,7 +423,8 @@ program ep_melements
     ep_mat_el = cmplx_0
     !
     qpoint = qmesh(:,iq)
-    write(*,"(a,i4,100f12.6)") "qpoint", iq, qpoint
+    write(*,"(a,i4,a,a)") "|                    qpoint ", iq, "                    |"
+    write(*,"(a,3f10.5,a)") "|         q =", qpoint, "         |"
     !
     if (                iq <   10) write(iq_loc,"(i1)")iq
     if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
@@ -449,7 +450,7 @@ program ep_melements
       kpoint_cart=matmul(bg,kpoint)
       kqpoint_cart=matmul(bg,kpoint+qpoint)
       !
-      write(*,'(a,i4,a,3(f15.8))') "ik= ", ik, ' k= ', kpoint
+      write(*,'(a,i4,a,3f10.5,a)') "|   kpoint ", ik, ': k =', kpoint, "  |"
       !
       ! Get wave functions for k and k+q
       call get_psi_general_k_all_wfc(       kpoint,  npw,  list_iGk,  wfc_k)
