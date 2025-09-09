@@ -903,7 +903,7 @@ contains
     ! We rotate dV_cart of q_irr for finding dV_cart of q_rot
     !
     call rot_dvq(q_irr_cryst(1:3,q_index_irr), nr1, nr2, nr3, s_index, &
-                 (/0,0,0/), dvscf_cart(1:nr1*nr2*nr3,q_index_irr,1:3*nat,1:nspin,1:nspin), dvr)
+                 dvscf_cart(1:nr1*nr2*nr3,q_index_irr,1:3*nat,1:nspin,1:nspin), dvr)
     !
     dv = dvr
     !
@@ -941,7 +941,7 @@ contains
   end subroutine get_dv
 
 
-  subroutine rot_dvq(qpoint_irr_cryst, nr1, nr2, nr3, s_index, GKQ, dv_in, dv_out)
+  subroutine rot_dvq(qpoint_irr_cryst, nr1, nr2, nr3, s_index, dv_in, dv_out)
 
     use intw_symmetries, only: rtau_index, spin_symmetry_matrices
     use intw_utility, only: triple_to_joint_index_r
@@ -954,7 +954,7 @@ contains
     ! I/O variables
 
     real(dp), intent(in) :: qpoint_irr_cryst(3)
-    integer, intent(in) :: nr1, nr2, nr3, s_index, GKQ(3)
+    integer, intent(in) :: nr1, nr2, nr3, s_index
     complex(dp), intent(in) :: dv_in(nr1*nr2*nr3,3*nat,nspin,nspin)
     complex(dp), intent(out) :: dv_out(nr1*nr2*nr3,3*nat,nspin,nspin)
 
