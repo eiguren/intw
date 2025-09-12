@@ -23,7 +23,7 @@ program ep_melements
   use intw_input_parameters, only: nk1, nk2, nk3, &
                                    nq1, nq2, nq3, nqirr, outdir, &
                                    ep_mat_file, &
-                                   read_input, use_exclude_bands, &
+                                   read_input, &
                                    ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, lspin, nsym, &
                           s, nGk_max, nat, tau, bg, &
@@ -39,13 +39,11 @@ program ep_melements
   use intw_utility, only: get_timing, print_date_time, &
                           find_free_unit, &
                           generate_kmesh, &
-                          conmesurate_and_coarser, &
-                          find_k_1BZ_and_G
+                          conmesurate_and_coarser
   use intw_matrix_vector, only: ainv
   use intw_useful_constants, only: cmplx_0, cmplx_1
   use intw_symmetries, only: full_mesh, IBZ, QE_folder_nosym, QE_folder_sym, symlink, &
-                             symtable, rtau_index, rtau, rtau_cryst, &
-                             rot_atoms, &
+                             symtable, rtau_index, rtau, rtau_cryst, rot_atoms, &
                              find_size_of_irreducible_k_set, &
                              allocate_symmetry_related_k, &
                              find_inverse_symmetry_matrices_indices, &
@@ -67,31 +65,31 @@ program ep_melements
   implicit none
 
   !k point related variables
-  integer                  :: ik, nk_irr, nkmesh
-  integer                  :: num_bands_ep
-  real(dp),allocatable     :: kmesh(:,:)
-  real(dp)                 :: kpoint(3), kpoint_cart(3), kqpoint_cart(3)
+  integer                  :: ik, kmesh_nkirr, nkmesh
+  real(dp), allocatable    :: kmesh(:,:)
+  real(dp)                 :: kpoint(3)
 
   !q point related variables
   real(dp)                 :: qpoint(3)
-  integer                  :: iq, nq_irr
+  integer                  :: iq, qmesh_nqirr
   logical                  :: full_mesh_q, IBZ_q
   character(len=4)         :: iq_loc
 
   !wave function realted variables
-  integer                  :: npw, npwq
+  integer                  :: nGk, nGkq
   integer, allocatable     :: list_igk(:)
   integer, allocatable     :: list_igkq(:)
-  complex(dp), allocatable :: wfc_k (:,:,:)
-  complex(dp), allocatable :: wfc_kq (:,:,:)
+  complex(dp), allocatable :: wfc_k(:,:,:)
+  complex(dp), allocatable :: wfc_kq(:,:,:)
 
   !phonon related variables
   complex(dp), allocatable :: dvq_local(:,:,:,:)
 
   !ep related variables
+  integer                  :: num_bands_ep
   complex(dp), allocatable :: dvpsi(:,:,:,:,:)
   complex(dp), allocatable :: ep_mat_el(:,:,:,:,:,:)
-  integer                  :: ep_unit, record_lengh, ierr
+  integer                  :: ep_unit, record_length, ierr
 
   !local/aux variables
   real(dp)                 :: time1, time2
@@ -193,7 +191,7 @@ program ep_melements
   allocate(rtau(3,nsym,nat))
   allocate(rtau_cryst(3,nsym,nat))
   !
-  call rot_atoms(nat,nsym,tau)
+  call rot_atoms(nat, nsym, tau)
   !
   ! Compute the indices of the inverse rotation matrices
   call find_inverse_symmetry_matrices_indices()
@@ -260,10 +258,10 @@ program ep_melements
   !
   nkmesh = nk1*nk2*nk3
   allocate(kmesh(3,nkmesh))
-  call generate_kmesh(kmesh,nk1,nk2,nk3)
+  call generate_kmesh(kmesh, nk1, nk2, nk3)
   !
   ! Find the size of the irreducible set of k-points (IBZ)
-  call find_size_of_irreducible_k_set(nk1,nk2,nk3,nk_irr)
+  call find_size_of_irreducible_k_set(nk1, nk2, nk3, kmesh_nkirr)
   !
   !
   !================================================================================
@@ -271,7 +269,7 @@ program ep_melements
   !================================================================================
   !
   ! Allocate arrays
-  call allocate_symmetry_related_k(nk1,nk2,nk3)
+  call allocate_symmetry_related_k(nk1, nk2, nk3)
   !
   ! Fill the symmetry arrays
   call set_symmetry_relations(nk1, nk2, nk3, nkpoints_QE, kpoints_QE, &
@@ -298,9 +296,9 @@ program ep_melements
     write(*,20) '* with the parameters of the input file!                 '
     write(*,20) '**********************************************************'
     write(*,20) '* debug information:                                *'
-    write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-    write(*,*) '*        nkmesh      = ',nkmesh
-    write(*,*) '*        nk_irr      = ',nk_irr
+    write(*,*) '*        nkpoints_QE = ', nkpoints_QE
+    write(*,*) '*        nkmesh      = ', nkmesh
+    write(*,*) '*        kmesh_nkirr = ', kmesh_nkirr
     stop
   end if
   !
@@ -316,7 +314,7 @@ program ep_melements
   !
   allocate(q_irr_cryst(3,nqirr))
   do iq=1,nqirr
-    q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
+    q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
   enddo
   !
   !
@@ -329,10 +327,10 @@ program ep_melements
   nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
   !
-  call generate_kmesh(qmesh,nq1,nq2,nq3)
+  call generate_kmesh(qmesh, nq1, nq2, nq3)
   !
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1,nq2,nq3,nq_irr)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh_nqirr)
   !
   !
   !================================================================================
@@ -367,9 +365,9 @@ program ep_melements
     write(*,20) '* with the parameters of the input file!                 '
     write(*,20) '**********************************************************'
     write(*,20) '* debug information:                                *'
-    write(*,*) '*        nqpoints_QE = ',nqirr
-    write(*,*) '*        nqmesh      = ',nqmesh
-    write(*,*) '*        nq_irr      = ',nq_irr
+    write(*,*) '*        nqpoints_QE = ', nqirr
+    write(*,*) '*        nqmesh      = ', nqmesh
+    write(*,*) '*        qmesh_nqirr = ', qmesh_nqirr
     stop
   end if
   !
@@ -416,7 +414,7 @@ program ep_melements
   allocate(dvpsi(nGk_max,num_bands_ep,nspin,nspin,3*nat))
   !
   ! Allocate matrix elements variable
-  allocate(ep_mat_el(nk1*nk2*nk3,num_bands_ep,num_bands_ep,nspin,nspin,3*nat))
+  allocate(ep_mat_el(nkmesh,num_bands_ep,num_bands_ep,nspin,nspin,3*nat))
   !
   do iq=1,nqmesh
     !
@@ -426,15 +424,15 @@ program ep_melements
     write(*,"(a,i4,a,a)") "|                    qpoint ", iq, "                    |"
     write(*,"(a,3f10.5,a)") "|         q =", qpoint, "         |"
     !
-    if (                iq <   10) write(iq_loc,"(i1)")iq
-    if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)")iq
-    if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)")iq
+    if (                iq <   10) write(iq_loc,"(i1)") iq
+    if ( 10 <= iq .and. iq <  100) write(iq_loc,"(i2)") iq
+    if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)") iq
     !
     ep_unit = find_free_unit()
-    inquire(iolength=record_lengh) ep_mat_el
+    inquire(iolength=record_length) ep_mat_el
     open(unit=ep_unit, iostat=ierr, &
          file=trim(outdir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
-         form='unformatted', status='unknown', access='direct', recl=record_lengh)
+         form='unformatted', status='unknown', access='direct', recl=record_length)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
     !
     ! Get induced potential for q
@@ -446,15 +444,13 @@ program ep_melements
     !
     do ik=1,nkmesh
       !
-      kpoint=kmesh(:,ik)
-      kpoint_cart=matmul(bg,kpoint)
-      kqpoint_cart=matmul(bg,kpoint+qpoint)
+      kpoint = kmesh(:,ik)
       !
       write(*,'(a,i4,a,3f10.5,a)') "|   kpoint ", ik, ': k =', kpoint, "  |"
       !
       ! Get wave functions for k and k+q
-      call get_psi_general_k_all_wfc(       kpoint,  npw,  list_iGk,  wfc_k)
-      call get_psi_general_k_all_wfc(kpoint+qpoint, npwq, list_iGkq, wfc_kq)
+      call get_psi_general_k_all_wfc(       kpoint,  nGk,  list_iGk,  wfc_k)
+      call get_psi_general_k_all_wfc(kpoint+qpoint, nGkq, list_iGkq, wfc_kq)
       !
       !
       ! Multiply induced potential + local part of KB-PP with wave function:
