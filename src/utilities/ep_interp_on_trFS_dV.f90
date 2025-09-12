@@ -133,7 +133,7 @@ program ep_on_trFS_dV
 
   ! for part II
   logical :: full_mesh_q, IBZ_q
-  integer :: nq_irr
+  integer :: qmesh_nqirr
   integer :: iq, ir, jr, ir1, ir2, ir3
   real(dp) :: qpoint(3), rvec(3)
   complex(dp) :: facq
@@ -471,7 +471,7 @@ program ep_on_trFS_dV
   call generate_kmesh(qmesh, nq1, nq2, nq3)
 
   ! Find the size of the irreducible set of q-points (IBZ)
-  call find_size_of_irreducible_k_set(nq1, nq2, nq3, nq_irr)
+  call find_size_of_irreducible_k_set(nq1, nq2, nq3, qmesh_nqirr)
 
 
   !================================================================================
@@ -504,9 +504,9 @@ program ep_on_trFS_dV
     write(*,20) '* with the parameters of the input file!                 '
     write(*,20) '**********************************************************'
     write(*,20) '* debug information:                                *'
-    write(*,*) '*        nqpoints_QE = ',nqirr
-    write(*,*) '*        nqmesh      = ',nqmesh
-    write(*,*) '*        nq_irr      = ',nq_irr
+    write(*,*) '*        nqpoints_QE = ', nqirr
+    write(*,*) '*        nqmesh      = ', nqmesh
+    write(*,*) '*        qmesh_nqirr = ', qmesh_nqirr
     stop
   end if
 

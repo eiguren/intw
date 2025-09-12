@@ -524,7 +524,7 @@ program a2F_on_trFS
     write(*,20) '* debug information:                                *'
     write(*,*) '*        nqpoints_QE = ', nqirr
     write(*,*) '*        nqmesh      = ', nqmesh
-    write(*,*) '*        nq_irr      = ', qmesh_nqirr
+    write(*,*) '*        qmesh_nqirr = ', qmesh_nqirr
     stop
   end if
 

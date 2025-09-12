@@ -52,7 +52,7 @@ program intw2W90
 !================================================================================
   implicit none
 
-  integer :: nk_irr , nkmesh
+  integer :: kmesh_nkirr , nkmesh
 
   logical :: read_status, have_nnkp
 
@@ -225,7 +225,7 @@ program intw2W90
   call generate_kmesh(kmesh, nk1, nk2, nk3)
   !
   ! Find the size of the irreducible set of k-points (IBZ)
-  call find_size_of_irreducible_k_set(nk1, nk2, nk3, nk_irr)
+  call find_size_of_irreducible_k_set(nk1, nk2, nk3, kmesh_nkirr)
   !
   !
   !================================================================================
@@ -271,9 +271,9 @@ program intw2W90
     write(*,*) '* with the parameters of the input file!                 '
     write(*,*) '**********************************************************'
     write(*,*) '* debug information:                                *'
-    write(*,*) '*        nkpoints_QE = ',nkpoints_QE
-    write(*,*) '*        nkmesh      = ',nkmesh
-    write(*,*) '*        nk_irr      = ',nk_irr
+    write(*,*) '*        nkpoints_QE = ', nkpoints_QE
+    write(*,*) '*        nkmesh      = ', nkmesh
+    write(*,*) '*        kmesh_nkirr = ', kmesh_nkirr
     stop
   end if
   !
@@ -325,7 +325,7 @@ program intw2W90
     write(*,20) '|  (this is labor intensive and may take some time) |'
     write(*,20) '|         ---------------------------------         |'
 
-    call generate_mmn_using_allwfc(intw2W_fullzone,intw2W_method)
+    call generate_mmn_using_allwfc(intw2W_fullzone, intw2W_method)
   end if
   !
   !
@@ -338,7 +338,7 @@ program intw2W90
     write(*,20) '|  (this is labor intensive and may take some time) |'
     write(*,20) '|         ---------------------------------         |'
 
-    call generate_amn_using_allwfc(intw2W_fullzone,intw2W_method)
+    call generate_amn_using_allwfc(intw2W_fullzone, intw2W_method)
   end if
   !
   !
