@@ -616,7 +616,7 @@ contains
   end subroutine find_the_irreducible_k_set
 
 
-  subroutine find_the_irreducible_k_set_and_equiv(nkpts, k_set, nk_irr, k_irr, equiv_, G_, symlink_)
+  subroutine find_the_irreducible_k_set_and_equiv(nkpts, k_set, nk_irr, k_irr, equiv_, symlink_)
     !------------------------------------------------------------------
     ! This subroutine finds the irreducible k-point set for a general k-point list
     !------------------------------------------------------------------
@@ -645,9 +645,6 @@ contains
     integer :: equiv_(nkpts)
     ! which is the equivalent point
 
-    integer, intent(out) :: G_(3,nkpts)
-    !
-
     integer, intent(out) :: symlink_(nkpts,2)
     !
 
@@ -662,7 +659,6 @@ contains
     nk_irr = 0
     k_irr = 0.0_dp
     equiv_ = -4
-    G_ = -4
     symlink_ = -4
     !
     ! Loop on all k-points in k_irr
@@ -696,7 +692,6 @@ contains
             found(jk) = .true.
             !
             equiv_(jk) = nk_irr
-            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
             symlink_(jk,1) = isym
             symlink_(jk,2) = 0
             !
@@ -728,7 +723,6 @@ contains
             found(jk) = .true.
             !
             equiv_(jk) = nk_irr
-            G_(:,jk) = nint(k_set(:,jk) - k_rot(:))
             symlink_(jk,1) = isym
             symlink_(jk,2) = 1
             !
