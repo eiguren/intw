@@ -531,7 +531,7 @@ contains
     eig(:) = ZERO
     !
     write(wfc_file, 100) ik
-    100 format('wfc'I5.5'.dat')
+    100 format('wfc',I5.5,'.dat')
     !
     if (present(altprefix)) then
       datafile = trim(trim(outdir)//trim(altprefix)//".save.intw/"//trim(wfc_file))

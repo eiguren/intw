@@ -53,8 +53,8 @@ contains
     integer, external :: find_free_unit
     character(len=256) :: pp_file, datafile
 
-    100 format(i1"-KBPP.txt")
-    200 format(i2"-KBPP.txt")
+    100 format(i1,"-KBPP.txt")
+    200 format(i2,"-KBPP.txt")
 
     do is=1,nsp
 
@@ -565,7 +565,7 @@ contains
     !
     complex(dp), allocatable :: evc_down(:, :) !JLB
 
-    100 format("wfc"I5.5".dat")
+    100 format("wfc",I5.5,".dat")
 
     io_unit = find_free_unit()
 
