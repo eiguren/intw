@@ -29,7 +29,6 @@ module intw_matrix_elements
             get_plane_wave_matrix_element_FFT, &
             compute_index_interpolation_mesh, &
             get_spin_component, &
-            write_matrix_elements, &
             wfc_G_from_1D_to_3D
   !
   private
@@ -392,48 +391,6 @@ contains
     enddo !iG
 
   end subroutine get_spin_component
-
-
-  subroutine write_matrix_elements(filename, matrix_elements, num_bands, nb1, nb2)
-    !------------------------------------------------------------------
-    ! This subroutine writes out the matrix elements in a file
-    !------------------------------------------------------------------
-    use intw_utility, only: find_free_unit
-    use intw_input_parameters, only: nk1, nk2, nk3
-    use intw_useful_constants, only: zero, one
-
-    implicit none
-
-    complex(kind=dp), intent(in) :: matrix_elements(num_bands,num_bands,0:nk1+2,0:nk2+2,0:nk3+2)
-    integer, intent(in) :: num_bands, nb1, nb2
-
-    integer :: io_unit
-    integer :: i, j, k
-    real(kind=dp) :: x, y, z
-    character(*) :: filename
-
-
-    io_unit = find_free_unit()
-    open(unit=io_unit, file=trim(filename), status='unknown')
-
-    do i=1,nk1+1
-      x = 1.0_dp*(i-1)/nk1
-
-      do j=1,nk2+1
-        y = 1.0_dp*(j-1)/nk2
-
-        do k=1,nk3+1
-          z = 1.0_dp*(k-1)/nk3
-
-          write(io_unit,"(5f12.8)") x, y, z, matrix_elements(nb1,nb2,i,j,k)
-
-        end do
-      end do
-    end do
-
-    close(io_unit)
-
-  end subroutine write_matrix_elements
 
 
   subroutine wfc_G_from_1D_to_3D(list_iG, wfc_G_1D, wfc_G_3D)
