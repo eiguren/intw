@@ -76,11 +76,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-heap-arrays" # Intel
                 )
 
-# Improves floating-point precision and consistency
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
-                 Fortran "-mp1" # Intel
-                )
-
 # Set record length units to bytes
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}"
                  Fortran "-assume byterecl" # Intel
@@ -123,13 +118,6 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                          "-Mbounds"       # Portland Group
                 )
 
-
-# Enables all check options except arg_temp_created
-SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
-                 Fortran "-check all,noarg_temp_created" # Intel
-                         "-fcheck=all,no-array-temps"    # GNU (New style)
-                )
-
 # Generate complete debugging information
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-debug extended" # Intel
@@ -139,6 +127,11 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
                  Fortran "-fpe0"              # Intel
                          "-mno-fp-exceptions" # GNU
+                )
+
+# Improves floating-point precision and consistency
+SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}"
+                 Fortran "-mp1" # Intel
                 )
 
 #####################
@@ -191,7 +184,7 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
                          "/Qip" # Intel Windows
                 )
 
-# Vectorize code
+# Vectorized code report
 #SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 #                 Fortran "-vec-report0"  # Intel
 #                         "/Qvec-report0" # Intel Windows
@@ -201,6 +194,8 @@ SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}"
 ############################
 ### RELWITHDEBINFO FLAGS ###
 ############################
+
+# NOTE: optimizations (-O2) and debugging symbols (-g) are already on by default
 
 # Traceback
 SET_COMPILE_FLAG(CMAKE_Fortran_FLAGS_RELWITHDEBINFO "${CMAKE_Fortran_FLAGS_RELWITHDEBINFO}"
