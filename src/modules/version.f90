@@ -18,14 +18,11 @@
 !
 module intw_version
 
-  ! variables
-  public :: version
-
   ! subroutines
   public :: print_intw_version
 
 #ifdef VERSION_STRING
-  character(25), parameter :: version = VERSION_STRING
+  character(25), parameter, private :: version = VERSION_STRING
   ! VERSION_STRING is passed as a pre-processing variable.
   ! This variable will be set by CMake from the version number specified in
   ! cmake project() (for example, v1.0.0), or, if possible, using 'git describe'
