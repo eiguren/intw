@@ -2,7 +2,6 @@
 
 
 set(PROGS
-  nscf
   ep_melements
   intw2W90
   w902intw
