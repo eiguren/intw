@@ -113,27 +113,16 @@ program siesta2fc
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! Read the output files for each irreducible displacements and compute FC
-  !
   call compute_force_constants()
-  !
-  ! Save FC to a file
-  call write_fc_phonopy("fc.dat_1")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! Apply permutation symmetry to the FC
   call apply_permutation_sym()
   !
-  ! Save FC to a file
-  call write_fc_phonopy("fc.dat_2")
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
   ! Apply space group symmetry to FC
   call apply_sym()
   !
-  ! Save FC to a file
-  call write_fc_phonopy("fc.dat_3")
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -155,32 +144,11 @@ program siesta2fc
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
-  call apply_sym()
-  !
-  call write_fc_phonopy("fc.dat_4")
-  !
-  !
-  call apply_asr()
-  !
-  call write_fc_phonopy("fc.dat_5")
-  !
-  !
-  call apply_asr()
-  !
-  call write_fc_phonopy("fc.dat_6")
-  !
-  !
-  call apply_permutation_sym()
-  call apply_sym()
-  call apply_permutation_sym()
-  !
-  call write_fc_phonopy("fc.dat_7")
-  !
   !
 #ifdef MPI
   call MPI_Finalize( MPIerror )
 #endif
-  stop
+
 
 contains
 
