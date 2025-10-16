@@ -247,13 +247,13 @@ program ep_on_trFS_wannier
   ! Generate coarse meshes
   !================================================================================
 
-  write(*,20) '| - Building coarse k-mesh...                              |'
+  write(*,20) '| - Building coarse k-mesh...                       |'
 
   nkmesh = nk1*nk2*nk3
   allocate(kmesh(3,nkmesh))
   call generate_kmesh(kmesh, nk1, nk2, nk3)
 
-  write(*,20) '| - Building coarse q-mesh...                              |'
+  write(*,20) '| - Building coarse q-mesh...                       |'
 
   nqmesh = nq1*nq2*nq3
   allocate(qmesh(3,nqmesh))
