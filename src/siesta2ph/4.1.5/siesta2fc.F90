@@ -152,33 +152,6 @@ program siesta2fc
 
 contains
 
-  subroutine apply_asr()
-    !
-    ! TODO: Add description
-    !
-    use siesta2ph_system, only: nat
-    !
-    implicit none
-    !
-    real(kind=dp) :: asr_tmp
-    integer :: ia_, ja_, id_, jd_
-
-
-    do id_=1,3
-      do jd_=1,3
-        do ia_=1,nat
-          asr_tmp = 0.0_dp
-          do ja_=1,nat
-            asr_tmp = asr_tmp + fc(id_,jd_,ia_,ja_)
-          end do
-          fc(id_,jd_,ia_,:) = fc(id_,jd_,ia_,:) - asr_tmp/nat
-        end do
-      end do
-    end do
-
-  end subroutine apply_asr
-
-
   subroutine write_fc_phonopy(filename)
     !
     ! Write the force constant matrix in the format used by phonpy
@@ -431,7 +404,7 @@ contains
 
   subroutine dynamical_matrix()
     !
-    ! TODO: Add description
+    ! Compute and save to file the dynamical matrices for the irreducible q points
     !
     use siesta2ph_io, only: outdir, phdir, nr1, nr2, nr3, irreducible_q
     use siesta2ph_system, only: nat, at, tau_cryst, amass, ityp
@@ -562,7 +535,7 @@ contains
 
   subroutine phonon_bands()
     !
-    ! TODO: Add description
+    ! Compute the phonon dispersion for the q point path in kpath_file
     !
     use siesta2ph_io, only: outdir, phdir, kpath_file, nr1, nr2, nr3
     use siesta2ph_system, only: nat, at, tau_cryst, amass, ityp, bg, alat
@@ -702,7 +675,7 @@ contains
 
   subroutine apply_permutation_sym()
     !
-    ! TODO: Add description
+    ! Apply permutation symmetry to the FC's
     !
     use siesta2ph_system, only: nat
     !
@@ -773,5 +746,32 @@ contains
     enddo ! ia
     !
   end subroutine apply_sym
+
+
+  subroutine apply_asr()
+    !
+    ! Apply Acoustic Sum Rule to FC's
+    !
+    use siesta2ph_system, only: nat
+    !
+    implicit none
+    !
+    real(kind=dp) :: asr_tmp
+    integer :: ia_, ja_, id_, jd_
+
+
+    do id_=1,3
+      do jd_=1,3
+        do ia_=1,nat
+          asr_tmp = 0.0_dp
+          do ja_=1,nat
+            asr_tmp = asr_tmp + fc(id_,jd_,ia_,ja_)
+          end do
+          fc(id_,jd_,ia_,:) = fc(id_,jd_,ia_,:) - asr_tmp/nat
+        end do
+      end do
+    end do
+
+  end subroutine apply_asr
 
 end program siesta2fc
