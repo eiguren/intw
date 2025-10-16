@@ -1,8 +1,6 @@
 # INTW project
 
-Hau intw-ren lehenengo bertsioa da.
-
-
+A modular software environment designed for advanced electronic structure calculations.
 
 
 ## Compilation notes
@@ -17,7 +15,7 @@ Additionally, a supported version of [Quantum Espresso](https://www.quantum-espr
 | SIESTA           | &bull; 4.1.5 <br> &bull; 5.0.0 <br> &bull; 5.0.1 <br> &bull; 5.0.2 <br> &bull; 5.2.0 <br> &bull; 5.2.1 <br> &bull; 5.2.2 |
 
 
-To build intw to work with both DFT codes:
+To build INTW to work with both DFT codes:
 
 ```bash
 mkdir build
@@ -55,19 +53,6 @@ FC=ifort cmake ..
 Similarly, CMake's variable `CMAKE_<LANG>_FLAGS` or `FFLAGS` and `CFLAGS` environmental variables can be used to set a specific set of compilation flags.
 
 
-### Building intw in Atlas
-
-To build intw in [Atlas](https://dipc.ehu.eus/en/supercomputing-center?set_language=en), one also needs to first load a toolchain and CMake.
-
-In atlas-fdf use for example `module load intel/2019b` and `module load CMake/3.15.3-GCCcore-8.3.0`.
-
-In atlas-edr, use for example `module load intel/2019b`, `module load CMake/3.20.1-GCCcore-10.3.0` and `module load Python/3.7.6-Anaconda3-2020.02`.
-
-In addition, the compilers and the QE, SIESTA or W90 directories need to be specified as follows:
-
-```bash
-cmake -DCMAKE_Fortran_COMPILER=mpiifort -DCMAKE_C_Compiler=mpiicc -DQE_HOME=/path/to/QE -DW_HOME=/path/to/W90 -DSIESTA_HOME=/path/to/SIESTA  ..
-```
 
 ## Dependencies
 
@@ -87,7 +72,7 @@ The complete list of allowed BLAS/LAPACK vendors, together with other options to
 
 [Spglib](https://spglib.readthedocs.io/) is a C library for finding and handling crystal symmetries, which also has a Fortran interface.
 
-When intw is used in conjunction with SIESTA, Spglib is used to find crystal symmetries and use them to reduce computational costs. In particular, Spglib is a used by the following components of intw:
+When INTW is used in conjunction with SIESTA, Spglib is used to find crystal symmetries and use them to reduce computational costs. In particular, Spglib is a used by the following components of INTW:
 - `siesta2ph`: Symmetries are used to reduce the required number of atomic displacements to completely determine the interatomic force constants and the induced potentials.
 - `siesta2intw`: Symmetries are used to reduce the Brillouin zone sampling to the irreducible q-points.
 
@@ -120,7 +105,7 @@ If `triangle` and `tetgen` executables are not found by CMake in the configuring
 
 ### OpenMP (optional experimental)
 
-Some parts of intw are parallelized using OpenMP.
+Some parts of INTW are parallelized using OpenMP.
 
 :heavy_exclamation_mark: The parallelization with OpenMP is currently untested.
 
@@ -138,11 +123,11 @@ Python 3 is used only in the test suite. Read [Test suite](#test-suite) section 
 
 ## Test suite
 
-Intw's test suite can be executed by using `ctest`, an executable that is available with CMake. Alternatively, when using the Makefile generator, `make test` can be used also.
+INTW's test suite can be executed by using `ctest`, an executable that is available with CMake. Alternatively, when using the Makefile generator, `make test` can be used also.
 
 The test suite has 5 differentiated parts:
 - `test_dummy`: It does not contain any actual code test at all, but consists of some simplified tests to serve as examples for developers when creating new tests.
-- `test_IO`: To check the IO routines of intw.
+- `test_IO`: To check the IO routines of INTW.
 - `test_matrix_elements`: A set of tests on different systems to check the electron-phonon matrix element calculation with `ep_melements.x`.
 - `test_mmn`: A set of tests on different systems to check the $A_{mn}$ and $M_{mn}$ matrices calculated with `intw2W90.x`.
 - `test_w902intw`: A set of tests on different systems to check the interface `w902intw.x`.
