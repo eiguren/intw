@@ -252,48 +252,6 @@ contains
   end subroutine write_fc_phonopy
 
 
-  subroutine write_fc_QE(filename)
-    !
-    ! Write the force constant matrix in the format used by Quantum Espresso
-    ! QE writtes the force constants in Ry/Boher^2
-    !
-    use siesta2ph_io, only: outdir, phdir
-    use siesta2ph_system, only: nat
-    use siesta2ph_utils, only: Hartree2Ry
-    !
-    use siesta2ph_io, only: find_free_unit
-    !
-    implicit none
-    !
-    character(*), intent(in) :: filename
-    !
-    integer :: iounit, ios
-    character(len=10) :: ia_c, ja_c
-    integer :: ia_, ja_
-
-
-    iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), &
-         action="write", status="replace", iostat=ios)
-    if (ios/=0) stop "ERROR: write_fc_QE: Error opening force constants file."
-    !
-    write(iounit,"(i4,x,i4)") nat, nat
-    do ia_=1,nat
-      write(ia_c,"(i10)") ia_
-      do ja_=1,nat
-        write(ja_c,"(i10)") ja_
-        write(iounit,"(a,x,a)") trim(adjustl(ia_c)),trim(adjustl(ja_c))
-        write(iounit,"(2(3f22.15))") fc(1,:,ia_,ja_)*Hartree2Ry
-        write(iounit,"(2(3f22.15))") fc(2,:,ia_,ja_)*Hartree2Ry
-        write(iounit,"(2(3f22.15))") fc(3,:,ia_,ja_)*Hartree2Ry
-      enddo
-    enddo
-    !
-    close(iounit)
-
-  end subroutine write_fc_QE
-
-
   subroutine compute_force_constants()
     !
     ! Compute the force constants for the irreducible atoms using symmetries and the pseudo-inverse
