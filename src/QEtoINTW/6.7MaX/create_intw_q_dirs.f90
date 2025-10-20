@@ -112,7 +112,7 @@ contains
     ! This subroutine finds the irreducible k set for the canonical
     ! 1BZ mesh.
     !------------------------------------------------------------------
-    USE symm_base, ONLY: nsym, s, t_rev
+    USE symm_base, ONLY: nsym, s, t_rev, time_reversal
 
 
     implicit none
@@ -146,44 +146,52 @@ contains
         do k=1,nk3
           !
           ! operate on this point only if it has not already been found!
-          if (.not. found(i,j,k)) then
+          if (found(i,j,k)) cycle
+          !
+          ! it's found now. This point is part of the IBZ.
+          found(i,j,k) = .true.
+          !
+          nkirr = nkirr + 1
+          !
+          kirr_cryst(1,nkirr) = dble(i-1)/nk1
+          kirr_cryst(2,nkirr) = dble(j-1)/nk2
+          kirr_cryst(3,nkirr) = dble(k-1)/nk3
+          !
+          ! loop on all symmetry operations
+          do isym=1,nsym
             !
-            ! it's found now. This point is part of the IBZ.
-            found(i,j,k) = .true.
+            !perform matrix product
+            ! CAREFUL! since the matrix is in crystal coordinates,
+            ! and it acts in reciprocal space, the convention is :
+            !          k_rot(i) = sum_j s(i,j)*k(j)
             !
-            nkirr = nkirr + 1
+            k_rot = matmul(dble(s(:,:,isym)), kirr_cryst(:,nkirr))
             !
-            kirr_cryst(1,nkirr) = dble(i-1)/nk1
-            kirr_cryst(2,nkirr) = dble(j-1)/nk2
-            kirr_cryst(3,nkirr) = dble(k-1)/nk3
+            ! Time-Reversal symmetry
+            if (t_rev(isym)==1) k_rot = -k_rot
             !
-            ! loop on all symmetry operations
-            do isym=1,nsym
+            ! find what point in the 1BZ this corresponds to
+            call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
+            !
+            ! we check again the value of dk, so if k_1BZ+G = k_rot
+            dk = k_rot - (k_1BZ + dble(G))
+            if ( norm2(dk) < eps_8 ) found(is,js,ks) = .true.
+            !
+            ! q -> -q
+            if (time_reversal) then
               !
-              !perform matrix product
-              ! CAREFUL! since the matrix is in crystal coordinates,
-              ! and it acts in reciprocal space, the convention is :
-              !          k_rot(i) = sum_j s(i,j)*k(j)
-              !
-              k_rot = matmul(dble(s(:,:,isym)), kirr_cryst(:,nkirr))
-              !
-              ! Time-Reversal symmetry
-              if (t_rev(isym)==1) k_rot = -k_rot
+              k_rot = -k_rot
               !
               ! find what point in the 1BZ this corresponds to
-              call find_k_1BZ_and_G(k_rot,nk1,nk2,nk3,is,js,ks,k_1BZ,G)
+              call find_k_1BZ_and_G(k_rot, nk1, nk2, nk3, is, js, ks, k_1BZ, G)
               !
               ! we check again the value of dk, so if k_1BZ+G = k_rot
               dk = k_rot - (k_1BZ + dble(G))
-              if (sqrt(dot_product(dk,dk))<eps_8) then
-                !
-                if (.not.found(is,js,ks)) found(is,js,ks) = .true.
-                !
-              endif ! dk
+              if ( norm2(dk) < eps_8 ) found(is,js,ks) = .true.
               !
-            enddo ! isym
+            endif
             !
-          endif ! found
+          enddo ! isym
           !
         enddo ! k
       enddo ! j
