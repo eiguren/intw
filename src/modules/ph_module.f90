@@ -442,7 +442,7 @@ contains
     ! into dynq for all q-points by using symmetries to get
     ! dynamical matrices of the non-irreducible q-points
     !
-    use intw_reading, only: nat
+    use intw_reading, only: nat, lmag
     use intw_useful_constants, only: cmplx_i, tpi, Ry_to_Ha
     use intw_utility, only: find_free_unit, &
                             triple_to_joint_index_g, find_k_1BZ_and_G
@@ -525,10 +525,12 @@ contains
         ! Find symmetry operation
         isym = symlink_q(iq,1)
         tr = symlink_q(iq,2)
-        if (tr == 1) stop "ERROR: read_dynq: TR sym. not implemented"
         !
         ! Rotate dynamical matrix
         call rotate_dyn(isym, qirr_cryst, dynq_irr(:,:,:,:), dynRq_irr)
+        !
+        ! Apply TR
+        if ( (.not. lmag) .and. tr==1) dynRq_irr = conjg(dynRq_irr) ! For magnetic symmetries TR is applied by rotate_dyn
         !
         do ia = 1, nat
           do ja = 1, nat
@@ -572,10 +574,9 @@ contains
     !
     ! Rotate dynamical matrix to the symmetry equivalent q point
     !
-    use intw_reading, only: nat, at, bg
+    use intw_reading, only: nat, at, bg, lmag, s, TR
     use intw_useful_constants, only: eps_6, cmplx_0, cmplx_i, cmplx_1, tpi
     use intw_utility, only: triple_to_joint_index_g, find_k_1BZ_and_G
-    use intw_reading, only: s, TR
     use intw_symmetries, only: rtau_index, rtau
     use intw_matrix_vector, only: ainv, det
 
@@ -595,7 +596,6 @@ contains
 
     ! Get the rotation matrix of the symmetry operation
     s_cryst = dble(s(:,:,isym))
-    ! TR(isym)
     s_cart = transpose(matmul(at, matmul(transpose(s_cryst), ainv(at))))
 
     ! Rotate the Q point
@@ -616,6 +616,9 @@ contains
         !
       enddo
     enddo
+
+    ! Apply TR if the magnetic symmetry requires it
+    if (lmag .and. TR(isym)) dynRq = conjg(dynRq)
 
   end subroutine rotate_dyn
 
