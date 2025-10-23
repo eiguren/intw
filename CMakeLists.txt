@@ -11,6 +11,17 @@ project(intw
   LANGUAGES Fortran C
 )
 
+
+include(GNUInstallDirs)
+
+include(SetCompilers)
+
+
+# Define user options
+option(USE_OPENMP "Use OpenMP for parallelization" OFF)
+option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
+
+
 # Find version of INTW with git describe
 execute_process(COMMAND git describe --tags --match "v[0-9]*.[0-9]*.[0-9]*" --dirty OUTPUT_VARIABLE GIT_VERSION RESULTS_VARIABLE GIT_RESULT OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(GIT_RESULT EQUAL 0)
@@ -22,42 +33,22 @@ else()
 endif()
 
 
-include(GNUInstallDirs)
-
-if(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-  message(FATAL_ERROR "Fortran compiler does not support F90")
-endif(NOT CMAKE_Fortran_COMPILER_SUPPORTS_F90)
-
-# if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-#   if(DEFINED ENV{CPATH})
-#     string(REPLACE ":" ";" CPATH $ENV{CPATH})
-#   endif()
-#   include_directories(${CPATH})
-# endif()
-
-option(USE_OPENMP "Use OpenMP for parallelization" OFF)
-option(USE_MPI_ON_TESTS "Use the MPI parallelization to execute the tests " OFF)
-
-
 set(CMAKE_Fortran_ARCHIVE_CREATE "<CMAKE_AR> cr <TARGET> <LINK_FLAGS> <OBJECTS>") # This are the flags used in OpenBLAS and netlib lapack
 # cr should be correct, c for crate, and r for replace (cmake uses q for quick-append instead of r).
 
 
-include(SetFortranFlags)
-
+# Find packages
 
 # Find OpenMP flag
 if(USE_OPENMP)
   find_package(OpenMP REQUIRED)
 endif()
 
-
-
-
 # Find BLAS and LAPACK
 find_package(LAPACK REQUIRED)
 
-
+# Find triangle and tetgen
+include(SetTriFS)
 
 
 # Quantum Espresso
@@ -114,6 +105,7 @@ if (USE_SIESTA)
   #
 endif()
 
+
 # Wannier90
 option(USE_WANNIER "Use Wannier90" OFF)
 
@@ -140,9 +132,7 @@ if (USE_WANNIER)
 endif()
 
 
-include(SetTriFS)
-
-
+# Add source
 add_subdirectory(src/modules)
 add_subdirectory(src/utilities)
 if (USE_QE)
@@ -154,7 +144,7 @@ if (USE_SIESTA)
 endif()
 
 
-# Find python3 for test scripts
+# Add tests
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
   enable_testing()
@@ -184,6 +174,7 @@ message("SUMMARY:")
 message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
 message(STATUS "CMAKE_Fortran_COMPILER: ${CMAKE_Fortran_COMPILER}")
 message(STATUS "Fortran compiler vendor: ${CMAKE_Fortran_COMPILER_ID}")
+message(STATUS "Fortran compiler version: ${CMAKE_Fortran_COMPILER_VERSION}")
 message(STATUS "CMAKE_AR: ${CMAKE_AR}")
 message(STATUS "CMAKE_RANLIB: ${CMAKE_RANLIB}")
 message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
