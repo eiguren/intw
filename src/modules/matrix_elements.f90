@@ -90,18 +90,8 @@ contains
       !
       call find_iG(gvec(:,list_iG_1(i)) + G, iG_1)
       !
-#if __GFORTRAN__ & __GNUC__ < 9
-      jd(1) = 0
-      do j=1,nGk_max
-        if (list_iG_2(j)==iG_1) then
-          jd(1) = j
-          exit
-        endif
-      enddo
-#else
       jd = findloc(list_iG_2, iG_1)
-#endif
-
+      !
       if (jd(1)==0) cycle
       !
       do js=1,nspin
