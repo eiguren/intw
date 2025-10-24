@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(PreventInSourceBuilds)
 
 project(intw
-  VERSION 0.0.0
+  VERSION 1.0.0
   LANGUAGES Fortran C
 )
 
