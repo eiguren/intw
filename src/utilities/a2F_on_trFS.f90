@@ -35,7 +35,7 @@ program a2F_on_trFS
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           cryst_to_cart, generate_kmesh, &
                           smeared_delta, smeared_lorentz, fermi_dirac
 
@@ -120,6 +120,7 @@ program a2F_on_trFS
   write(*,20) '|    from interpolated ep elements on the FS        |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

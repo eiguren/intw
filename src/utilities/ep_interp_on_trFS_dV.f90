@@ -74,7 +74,7 @@ program ep_on_trFS_dV
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           cryst_to_cart, generate_kmesh, &
                           joint_to_triple_index_r
 
@@ -173,6 +173,7 @@ program ep_on_trFS_dV
   write(*,20) '|  using interpolation of dV on the triangulated q  | '
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

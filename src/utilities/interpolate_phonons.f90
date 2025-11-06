@@ -28,7 +28,7 @@ program interpolatephonons
 
   use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry, tpi
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           generate_kmesh, cryst_to_cart, smeared_delta, &
                           generate_and_allocate_kpath
 
@@ -90,6 +90,7 @@ program interpolatephonons
   write(*,20) '|             program interpolatephonons            |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

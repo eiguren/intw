@@ -27,7 +27,7 @@ program interpolate
 
   use intw_version, only: print_intw_version
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           generate_and_allocate_kpath, fermi_dirac
 
   use intw_w90_setup, only: interpolate_1k, interpolated_DOS, &
@@ -72,6 +72,7 @@ program interpolate
   write(*,20) '|                program interpolate                |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

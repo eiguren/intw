@@ -36,7 +36,7 @@ program ep_melements
   use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
   use intw_pseudo_non_local, only: init_KB_PP, &
                                    multiply_psi_by_dvKB
-  use intw_utility, only: get_timing, print_date_time, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, &
                           find_free_unit, &
                           generate_kmesh, &
                           conmesurate_and_coarser
@@ -113,6 +113,7 @@ program ep_melements
   write(*,20) '|                program ep_melements               |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

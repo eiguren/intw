@@ -39,7 +39,7 @@ module intw_utility
             hpsort_integer, hpsort_real, &
             find_r_in_WS_cell, errore, simpson, sphb, &
             real_ylmr2, dosplineint, spline, splint, &
-            print_date_time
+            print_threads, print_date_time
   !
   ! functions
   public :: intgr_spline_gaussq, multiple, &
@@ -1637,6 +1637,71 @@ end function intgr_spline_gaussq
     END IF
     !
   END FUNCTION locate
+
+
+  subroutine print_threads()
+    ! Gets total number of threads used and prints it to the output
+    !
+    ! NOTE:
+    ! At this moment INTW only uses 2 nested parallel levels
+    ! (see MAX_NESTED_LEVELS parameter below), and the limit
+    ! of nested active parallel levels is set explicitly with
+    ! omp_set_max_active_levels routine (see below) to
+    ! improve performance.
+
+#ifdef _OPENMP
+  use omp_lib, only: omp_get_num_threads, omp_get_num_procs, &
+                     omp_set_max_active_levels
+#endif
+
+  implicit none
+
+#ifdef _OPENMP
+
+  integer, parameter :: MAX_NESTED_LEVELS = 2
+
+  integer :: nthreads_level1, nthreads_level2, nthreads_total
+
+  ! Get thread number in each parallel level
+  !$omp parallel
+  !$omp master
+  nthreads_level1 = omp_get_num_threads()
+  !$omp end master
+  !$omp parallel
+  !$omp master
+  nthreads_level2 = omp_get_num_threads()
+  !$omp end master
+  !$omp end parallel
+  !$omp end parallel
+
+  ! Total thread number
+  nthreads_total = nthreads_level1 * nthreads_level2
+
+  ! Print thread number
+  if (nthreads_total == 1) then
+    write(*,'("|     Running parallel version with ",I5," thread    |")') nthreads_total
+  else
+    write(*,'("|     Running parallel version with ",I5," threads   |")') nthreads_total
+  endif
+
+  ! Print warning if number of cores is smaller than thread number
+  if (nthreads_total > omp_get_num_procs()) &
+      write(*,'("|     WARNING: Only ",I5," cores available           |")') omp_get_num_procs()
+
+  ! Set max nested parallel levels
+  if (nthreads_level1 == 1 .or. nthreads_level2 == 1) then
+    call omp_set_max_active_levels(1)
+  else
+    call omp_set_max_active_levels(MAX_NESTED_LEVELS)
+  endif
+
+#else
+
+  write(*,'("|     Running serial version                        |")')
+
+#endif
+
+  end subroutine print_threads
 
 
   subroutine print_date_time(status)

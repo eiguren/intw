@@ -32,7 +32,7 @@ program ep_on_trFS_wannier
 
   use intw_useful_constants, only: cmplx_0, cmplx_i, Ha_to_eV, tpi
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           find_k_1BZ_and_G, triple_to_joint_index_g, &
                           generate_kmesh, cryst_to_cart
 
@@ -122,6 +122,7 @@ program ep_on_trFS_wannier
   write(*,20) '|               on the triangulated FS              |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

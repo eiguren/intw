@@ -33,33 +33,12 @@ contains
 
 subroutine print_intw_version()
 
-#ifdef _OPENMP
-  use omp_lib, only: omp_in_parallel, omp_get_num_threads
-#endif
-
   implicit none
 
 #ifdef VERSION_STRING
   write(*,'("|     INTW version: ",A25,"       |")') version
-#endif
-
-#ifdef _OPENMP
-
-  ! Check if running in parallel
-  !$omp parallel
-  if (omp_in_parallel()) then
-    !$omp master
-    write(*,'("|     Running parallel version with ",I3," threads     |")') omp_get_num_threads()
-    !$omp end master
-  else
-    write(*,'("|     Running parallel version in serial mode       |")')
-  endif
-  !$omp end parallel
-
 #else
-
-  write(*,'("|     Running serial version                        |")')
-
+    write(*,'("|     INTW version: ",A25,"       |")') "Unknown"
 #endif
 
 end subroutine print_intw_version
