@@ -152,12 +152,13 @@ program ep_on_trFS_dV
   real(dp) :: kpoint(3), kpoint_p(3)
   real(dp), allocatable :: QE_eig(:), QE_eig_p(:)
   complex(dp), allocatable :: wfc(:,:,:), wfc_p(:,:,:)
+  complex(dp), allocatable :: wfc_all(:,:,:)
   complex(dp), allocatable :: dvq_local(:,:,:,:)
   complex(dp), allocatable :: dvpsi(:,:,:,:,:)
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
 
   ! loop variables and indices
-  integer :: ik, ikp, ikibz, iks, iksp
+  integer :: ik, ikp, ikibz, ikibz_global, ikibz_do, iks, iksp
   integer :: ish, ishp, ib, ibp
   integer :: ik1, ik2, ik3
   integer :: ir1, ir2, ir3
@@ -564,6 +565,13 @@ program ep_on_trFS_dV
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
   dvq_local_R = cmplx_0
 
+  !$omp parallel do reduction(+: dvq_local_R) &
+  !$omp default(none) &
+  !$omp shared(nqmesh, qmesh) &
+  !$omp shared(nr1, nr2, nr3) &
+  !$omp shared(nrpts_q, irvec_q) &
+  !$omp private(qpoint, dvq_local, facq) &
+  !$omp private(ir, ir1, ir2, ir3, rvec, jr)
   do iq = 1, nqmesh
 
     qpoint = qmesh(:,iq)
@@ -591,6 +599,7 @@ program ep_on_trFS_dV
     end do ! e in unit cell
 
   end do
+  !$omp end parallel do
   dvq_local_R = dvq_local_R / real(nqmesh,dp) ! normalize Fourier transform
 
   write(*,20) '|                                                   |'
@@ -618,7 +627,8 @@ program ep_on_trFS_dV
 
   allocate(list_iG(nGk_max), list_iG_p(nGk_max))
   allocate(QE_eig(num_bands_intw), QE_eig_p(num_bands_intw))
-  allocate(wfc(nGk_max,num_bands_intw,nspin), wfc_p(nGk_max,num_bands_intw,nspin))
+  allocate(wfc_all(nGk_max,num_bands_intw,nspin))
+  allocate(wfc(nGk_max,1,nspin), wfc_p(nGk_max,1,nspin))
 
 
   altprefix = trim(prefix)//'-nscf'
@@ -628,9 +638,28 @@ program ep_on_trFS_dV
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
-    do ikibz = 1, nkpt_tr_ibz_tot
+    ikibz_global = 0
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(at, nat, nspin, nr1, nr2, nr3, nGk_max) &
+    !$omp shared(ikibz_2_ik, ik_2_iks, ik_2_ish, nfs_sheet) &
+    !$omp shared(kpts_tr, nkpt_tr_tot, nkpt_tr_ibz_tot) &
+    !$omp shared(ndegen_q, irvec_q, nrpts_q, dvq_local_R) &
+    !$omp shared(wfc_all, altprefix) &
+    !$omp shared(aep_mat_el) &
+    !$omp shared(ikibz_global) &
+    !$omp private(ikibz, ik, iks, ish, ib) &
+    !$omp private(kpoint, list_iG, wfc, QE_eig, nG) &
+    !$omp private(ikp, iksp, ishp, ibp) &
+    !$omp private(kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
+    !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq) &
+    !$omp private(qpoint, dvq_local, dvpsi) &
+    !$omp private(iat, is, js)
+    do ikibz_do = 1, nkpt_tr_ibz_tot
 
-      ! ikibz is the k-index over kpoints in the irreducible BZ wedge
+      !$omp critical
+      ikibz_global = ikibz_global + 1
+      ikibz = ikibz_global ! ikibz is the k-index over kpoints in the irreducible BZ wedge
       ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
       iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
       !
@@ -643,8 +672,27 @@ program ep_on_trFS_dV
       call cryst_to_cart(1, kpoint, at, -1)
 
       ! Read wavefunction k
-      call get_K_folder_data(ik, list_iG, wfc, QE_eig, nG, altprefix)
+      call get_K_folder_data(ik, list_iG, wfc_all, QE_eig, nG, altprefix)
+      wfc = wfc_all(:,ib:ib,:)
+      !$omp end critical
 
+
+      !$omp parallel do &
+      !$omp default(none) &
+      !$omp shared(at, nat, nspin, nr1, nr2, nr3, nGk_max) &
+      !$omp shared(ik_2_iks, ik_2_ish, nfs_sheet) &
+      !$omp shared(kpts_tr, nkpt_tr_tot) &
+      !$omp shared(ndegen_q, irvec_q, nrpts_q, dvq_local_R) &
+      !$omp shared(wfc_all, altprefix) &
+      !$omp shared(kpoint, QE_eig, nG) &
+      !$omp shared(ikibz, iks) &
+      !$omp firstprivate(list_iG, wfc) &
+      !$omp shared(aep_mat_el) &
+      !$omp private(iksp, ishp, ibp) &
+      !$omp private(kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
+      !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq) &
+      !$omp private(qpoint, dvq_local, dvpsi) &
+      !$omp private(iat, is, js)
       do ikp = 1, nkpt_tr_tot
 
         iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
@@ -656,7 +704,10 @@ program ep_on_trFS_dV
         call cryst_to_cart(1, kpoint_p, at, -1)
 
         ! Read wavefunction k'
-        call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
+        !$omp critical
+        call get_K_folder_data(ikp, list_iG_p, wfc_all, QE_eig_p, nG_p, altprefix)
+        wfc_p = wfc_all(:,ibp:ibp,:)
+        !$omp end critical
 
         qpoint = kpoint_p - kpoint
 
@@ -679,26 +730,28 @@ program ep_on_trFS_dV
 
         ! Multiply psi_k with induced potential + local part of the KB PP:
         !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
-        call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
+        call dvqpsi_local(1, list_iG, list_iG_p, wfc, dvq_local, dvpsi)
 
         ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
         !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
         !                   (local)     + (non-local)
-        call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
+        call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc, dvpsi)
 
         ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
         do iat=1,3*nat
           do js=1,nspin
             do is=1,nspin
               aep_mat_el(ikp,ikibz, js,is, iat) = &
-                        zdotc( nGk_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
+                        zdotc( nGk_max, wfc_p(:,1,js), 1, dvpsi(:,1,js,is,iat), 1 )
             enddo ! is
           enddo ! js
         enddo ! iat
 
       end do ! k'
+      !$omp end parallel do
 
     end do ! k
+    !$omp end parallel do
 
     ! Save interpolated matrix elements
 
@@ -721,8 +774,8 @@ program ep_on_trFS_dV
         !
         do js=1,nspin
           do is=1,nspin
-            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ikibz,  &
-                (aep_mat_el(ikp,ikibz, js,is, iat), iat=1,3*nat)
+            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ikibz, &
+                                                (aep_mat_el(ikp,ikibz, js,is, iat), iat=1,3*nat)
           end do
         end do
         !
