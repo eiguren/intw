@@ -162,9 +162,10 @@ contains
     !
     !This subroutine reads the information related to phonons from files.
     !
-    use intw_utility, only: find_free_unit
-    use intw_reading, only: nat
     use intw_input_parameters, only: outdir, prefix, ph_dir, qlist, nqirr, nq1, nq2, nq3
+    use intw_reading, only: nat, bg
+    use intw_matrix_vector, only: ainv
+    use intw_utility, only: find_free_unit
 
     implicit none
 
@@ -187,6 +188,7 @@ contains
 
     ! Read irreducible q list
     allocate(q_irr(3,nqirr))
+    allocate(q_irr_cryst(3,nqirr))
 
     io_unit = find_free_unit()
     open(unit=io_unit, file=trim(outdir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
@@ -194,6 +196,7 @@ contains
 
     do iq = 1, nqirr
       read(io_unit,*) dummy, q_irr(1:3,iq)
+      q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
     enddo
 
     close(unit=io_unit)

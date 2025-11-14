@@ -26,7 +26,7 @@ program ep_melements
                                    read_input, &
                                    ep_bands, ep_bands_initial, ep_bands_final
   use intw_reading, only: nkpoints_QE, kpoints_QE, nspin, lspin, nsym, &
-                          s, nGk_max, nat, tau, bg, &
+                          s, nGk_max, nat, tau, &
                           nr1, nr2, nr3, num_bands_intw, &
                           read_parameters_data_file, &
                           get_gvec, &
@@ -52,7 +52,7 @@ program ep_melements
   use intw_fft, only: generate_nl, &
                       allocate_fft
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
-                     symlink_q, q_irr, q_irr_cryst, &
+                     symlink_q, q_irr_cryst, &
                      read_ph_information, &
                      read_allq_dvr, &
                      get_dv
@@ -311,11 +311,6 @@ program ep_melements
   !
   ! Read q-points and irreducible patterns
   call read_ph_information()
-  !
-  allocate(q_irr_cryst(3,nqirr))
-  do iq=1,nqirr
-    q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
-  enddo
   !
   !
   !================================================================================

@@ -89,7 +89,7 @@ program ep_on_trFS_dV
   use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file, &
                           nGk_max, get_gvec, &
                           nspin, lspin, &
-                          at, bg, nr1, nr2, nr3, &
+                          at, nr1, nr2, nr3, &
                           nat, tau, nsym, s, &
                           get_K_folder_data
 
@@ -109,7 +109,7 @@ program ep_on_trFS_dV
   use intw_fft, only: generate_nl, allocate_fft
 
   use intw_ph, only: nqmesh, qmesh, read_ph_information, &
-                     q_irr, q_irr_cryst, read_allq_dvr, get_dv, &
+                     q_irr_cryst, read_allq_dvr, get_dv, &
                      QE_folder_nosym_q, QE_folder_sym_q, symlink_q
 
   use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
@@ -446,15 +446,6 @@ program ep_on_trFS_dV
 
   ! Read irreducible q-points and irreducible patterns
   call read_ph_information()
-
-  allocate(q_irr_cryst(3,nqirr))
-
-  write(*,20) ' q_irr_cart               q_irr_cryst'
-
-  do iq=1,nqirr
-    q_irr_cryst(:,iq) = matmul(ainv(bg),q_irr(:,iq))
-    write(*,'(6f10.4)') q_irr(:,iq), q_irr_cryst(:,iq)
-  enddo
 
   write(*,20) '|         ---------------------------------         |'
 

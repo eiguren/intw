@@ -48,11 +48,11 @@ program a2F_on_trFS
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final
 
   use intw_reading, only: read_parameters_data_file, &
-                          nspin, lspin, at, bg, volume0, alat, nat, ityp, amass, &
+                          nspin, lspin, at, volume0, alat, nat, ityp, amass, &
                           num_bands_intw, nsym, tau
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
-                     symlink_q, q_irr, q_irr_cryst, &
+                     symlink_q, q_irr_cryst, &
                      read_ph_information
 
   use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
@@ -471,11 +471,6 @@ program a2F_on_trFS
 
   ! Read q-points and irreducible patterns
   call read_ph_information()
-
-  allocate(q_irr_cryst(3,nqirr))
-  do iq=1,nqirr
-    q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
-  enddo
 
 
   !================================================================================

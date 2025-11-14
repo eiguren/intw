@@ -45,7 +45,7 @@ program interpolatephonons
                           nat, bg, at, tpiba, nsym, tau
 
   use intw_ph, only: nqmesh, qmesh, QE_folder_nosym_q, QE_folder_sym_q, &
-                     symlink_q, q_irr, q_irr_cryst, &
+                     symlink_q, q_irr_cryst, &
                      read_ph_information
 
   use intw_ph_interpolate, only: dyn_q, w2_q, u_q, dyn_diagonalize_1q, &
@@ -127,11 +127,6 @@ program interpolatephonons
   !
   ! Read q-points and irreducible patterns
   call read_ph_information()
-  !
-  allocate(q_irr_cryst(3,nqirr))
-  do iq=1,nqirr
-    q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
-  enddo
   !
   write(*,20) '|         ---------------------------------         |'
   !
