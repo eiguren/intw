@@ -116,25 +116,29 @@ program ep_on_trFS_dV
 
   implicit none
 
-  ! for part I
-  logical :: read_status
-  character(5) :: is_loc, comenta
-  character(100) :: file_off
-  integer :: unit_off
-  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-  integer :: is, js, ik, ik1, i, j, k, iface, iks, ish, iksp, ishp, ibp
-  integer :: nfs_sheets_tot ! number of sheets considered
-  integer, allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+  ! FS triangulation
+  integer :: nfs_sheets_tot ! number of FS sheets considered
+  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot ! total number of kpoints in the FS and in the irreducible BZ wedge
+  integer, allocatable :: nfs_sheet(:), & ! band indices of the FS sheets (from num_bands_intw set)
                           nkpt_tr(:), & ! number of kpoints in each FS sheet
                           nkpt_tr_ibz(:), & ! number of kpoints in each FS sheet irreducible BZ wedge
                           nface_tr(:) ! number of faces in each FS sheet
+  real(dp), allocatable :: kpts_tr(:,:), & ! list of all kpoints
+                           kpts_tr_area(:) ! area of each kpoint in the FS
+  integer, allocatable :: ikibz_2_ik(:), & ! index of the ikibz kpoint inside the irreducible BZ wedge in the list of all kpoints
+                          ik_2_ish(:), & ! FS sheet index of kpts_tr(:,ik)
+                          ik_2_iks(:) ! index of kpts_tr(:,ik) in its FS sheet kpoints list
+
+  ! for part I
+  logical :: read_status
+  character(5) :: ish_loc, comment
+  character(100) :: file_off
+  integer :: unit_off
   real(dp) :: k1(3), k2(3), k3(3), kwei
-  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
 
   ! for part II
   logical :: full_mesh_q, IBZ_q
   integer :: qmesh_nqirr
-  integer :: iq, ir, jr, ir1, ir2, ir3
   real(dp) :: qpoint(3), rvec(3)
   complex(dp) :: facq
   complex(dp), allocatable :: dvq_local_R(:,:,:,:,:)
@@ -142,15 +146,26 @@ program ep_on_trFS_dV
   ! for part III
   logical :: have_ep
   character(256) :: altprefix, file_ep
-  integer :: ib, iat, ikp, unit_ep
+  integer :: unit_ep
   integer :: nG, nG_p
   integer, allocatable :: list_iG(:), list_iG_p(:)
   real(dp) :: kpoint(3), kpoint_p(3)
   real(dp), allocatable :: QE_eig(:), QE_eig_p(:)
-  complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
   complex(dp), allocatable :: wfc(:,:,:), wfc_p(:,:,:)
   complex(dp), allocatable :: dvq_local(:,:,:,:)
   complex(dp), allocatable :: dvpsi(:,:,:,:,:)
+  complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
+
+  ! loop variables and indices
+  integer :: ik, ikp, ikibz, iks, iksp
+  integer :: ish, ishp, ib, ibp
+  integer :: ik1, ik2, ik3
+  integer :: ir1, ir2, ir3
+  integer :: iface, iedge
+  integer :: is, js
+  integer :: ir, jr
+  integer :: iat
+  integer :: iq
 
   ! timing
   real(dp) :: time1, time2
@@ -312,29 +327,29 @@ program ep_on_trFS_dV
   allocate(nkpt_tr_ibz(nfs_sheets_tot))
 
   ! open all sheet files just to see dimensions of kpoint lists
-  do is=1,nfs_sheets_tot
+  do ish=1,nfs_sheets_tot
 
-    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
     write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr(is), nface_tr(is), k ! number of vertices and faces (ignore edges)
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr(ish), nface_tr(ish), iedge ! number of vertices and faces (ignore edges)
     close(unit_off)
 
-    ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
-    ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
+    ! open the IBZ off file and search for dimension nkpt_tr_ibz(ish).
+    ! Its vertices coincide with the first nkpt_tr_ibz(ish) vertices of the full off vertex list.
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_IBZ_FS_tri.off')
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr_ibz(is), j, k ! number of vertices (ignore faces and edges)
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr_ibz(ish), iface, iedge ! number of vertices (ignore faces and edges)
     close(unit_off)
 
   end do
@@ -352,64 +367,81 @@ program ep_on_trFS_dV
 
 
   allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
+  allocate(ikibz_2_ik(nkpt_tr_ibz_tot))
+  allocate(ik_2_ish(nkpt_tr_tot))
+  allocate(ik_2_iks(nkpt_tr_tot))
+  ikibz_2_ik = -10
+  ik_2_ish = -10
+  ik_2_iks = -10
 
 
   ! open .off files again to read k-points
-  ik1 = 0
-  do is=1,nfs_sheets_tot
+  do ish=1,nfs_sheets_tot
 
-    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
 
     ! .off file for this sheet
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
-    read(unit_off,*) comenta
-    read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
+    read(unit_off,*) comment
+    read(unit_off,*) ik, iface, iedge ! number vertices, faces and edges (I will ignore edges)
     ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
-    if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
+    if ( (ik /= nkpt_tr(ish)) .or. (iface /= nface_tr(ish)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop
     end if
 
     ! read vertices
-    do ik=1,nkpt_tr(is)
-      read(unit_off,*) kpts_tr(:,ik1+ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
+    do iks=1,nkpt_tr(ish)
+      ik = iks + sum(nkpt_tr(:ish-1))
+      ik_2_ish(ik) = ish
+      ik_2_iks(ik) = iks
+      if (iks<=nkpt_tr_ibz(ish)) then
+        ! kpoint is in the irreducible BZ wedge
+        ikibz = iks + sum(nkpt_tr_ibz(:ish-1))
+        ikibz_2_ik(ikibz) = ik
+      endif
+      read(unit_off,*) kpts_tr(:,ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
     end do
 
     ! Read (triangular) faces on this sheet.
     ! Each face contributes with 1/3 of its area to the effective area of each of its vertices.
-    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik1+ik).
-    do iface = 1,nface_tr(is)
-      read(unit_off,*) i, ir1, ir2, ir3 ! indices ik of the vertices of the face, indexed from 0
-      ir1 = ir1 + 1
-      ir2 = ir2 + 1
-      ir3 = ir3 + 1 ! now, ik of the vertices of the face, indexed from 1
-      if ( i /= 3 ) then
+    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik).
+    do iface = 1, nface_tr(ish)
+      read(unit_off,*) ik, ik1, ik2, ik3 ! indices ik of the vertices of the face, indexed from 0
+      if ( ik /= 3 ) then
         write(*,*) 'Error reading ', file_off, 'Only triangles allowed. Stopping.'
         stop
       end if
+      ik1 = ik1 + 1
+      ik2 = ik2 + 1
+      ik3 = ik3 + 1 ! now, ik of the vertices of the face, indexed from 1
+      ik1 = ik1 + sum(nkpt_tr(:ish-1))
+      ik2 = ik2 + sum(nkpt_tr(:ish-1))
+      ik3 = ik3 + sum(nkpt_tr(:ish-1)) ! now, ik in the global ik list
       ! triangle vertex vectors (cartesian 2pi/alat)
-      k1 = kpts_tr(:,ik1+ir1)
-      k2 = kpts_tr(:,ik1+ir2)
-      k3 = kpts_tr(:,ik1+ir3)
+      k1 = kpts_tr(:,ik1)
+      k2 = kpts_tr(:,ik2)
+      k3 = kpts_tr(:,ik3)
       ! get spanned area and add contribution to each vertex
       ! function copied from FSH/modules/geometry.f90
       kwei = area_vec(k2-k1,k3-k1)/3.0_dp
-      kpts_tr_area(ik1+ir1) = kpts_tr_area(ik1+ir1) + kwei
-      kpts_tr_area(ik1+ir2) = kpts_tr_area(ik1+ir2) + kwei
-      kpts_tr_area(ik1+ir3) = kpts_tr_area(ik1+ir3) + kwei
+      kpts_tr_area(ik1) = kpts_tr_area(ik1) + kwei
+      kpts_tr_area(ik2) = kpts_tr_area(ik2) + kwei
+      kpts_tr_area(ik3) = kpts_tr_area(ik3) + kwei
     end do
 
     close(unit_off)
 
-    ! accumulate ik global index for the reading of next sheet
-    ik1 = ik1 + nkpt_tr(is)
-
   end do
+
+  if (any(ikibz_2_ik == -10)) stop "ERROR ikibz_2_ik"
+  if (any(ik_2_ish == -10)) stop "ERROR ik_2_ib"
+  if (any(ik_2_iks == -10)) stop "ERROR ik_2_iks"
 
   write(*,20) '|   .... reading done                               |'
 
@@ -596,122 +628,110 @@ program ep_on_trFS_dV
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
+    do ikibz = 1, nkpt_tr_ibz_tot
+
+      ! ikibz is the k-index over kpoints in the irreducible BZ wedge
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      !
+      ish = ik_2_ish(ik) ! FS sheet index for k
+      ib = nfs_sheet(ish) ! band index for k
+
+      write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ikibz, "/", nkpt_tr_ibz_tot, ' (ik: ', ik, ")                 |"
+
+      kpoint = kpts_tr(:,ik) ! this is cartesians x 2pi/alat. Transform to cryst.
+      call cryst_to_cart(1, kpoint, at, -1)
+
+      ! Read wavefunction k
+      call get_K_folder_data(ik, list_iG, wfc, QE_eig, nG, altprefix)
+
+      do ikp = 1, nkpt_tr_tot
+
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        !
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+
+        kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
+        call cryst_to_cart(1, kpoint_p, at, -1)
+
+        ! Read wavefunction k'
+        call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
+
+        qpoint = kpoint_p - kpoint
+
+        ! Fourier backtransform a la Wannier: interpolation of dV local at qpoint
+        ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
+        ! we would do in Wannier.
+
+        dvq_local = cmplx_0 ! watch out: I am reusing this array in this step of k,k' double loop
+        do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+          ! ir to (ir1,ir2,ir3), 3rd index fastest
+          call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
+          rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
+          rvec(2) = real(ir2-1,dp)/real(nr2,dp)
+          rvec(3) = real(ir3-1,dp)/real(nr3,dp)
+          do jr = 1,nrpts_q
+            facq = exp(-cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
+            dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
+          end do ! R in WS
+        end do ! r in unit cell
+
+        ! Multiply psi_k with induced potential + local part of the KB PP:
+        !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
+        call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
+
+        ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
+        !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
+        !                   (local)     + (non-local)
+        call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
+
+        ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
+        do iat=1,3*nat
+          do js=1,nspin
+            do is=1,nspin
+              aep_mat_el(ikp,ikibz, js,is, iat) = &
+                        zdotc( nGk_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
+            enddo ! is
+          enddo ! js
+        enddo ! iat
+
+      end do ! k'
+
+    end do ! k
+
+    ! Save interpolated matrix elements
+
     unit_ep = find_free_unit()
     open(unit_ep, file=file_ep, status='unknown')
     write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)'
-
-    ! ik, ikp indices implicitly contain the FS sheet index, i.e. the band indices ib, ib'
-    ! to be selected, so instead of iterating over nkpt_tr_tot, I separate over sheets
-    ! (aep_mat_el elements are stored only for the needed pair of sheets for a given kk')
-
-    ik = 0
-    ik1 = 0
-    do ish = 1, nfs_sheets_tot
-
+    !
+    do ikibz = 1, nkpt_tr_ibz_tot
+      !
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      ish = ik_2_ish(ik) ! FS sheet index for k
       ib = nfs_sheet(ish) ! band index for k
-
-      do iks = 1, nkpt_tr_ibz(ish)
-
-        ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
-        ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
-        ik = ik + 1
-        ik1 = ik1 + 1
-
-        write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ik, "/", nkpt_tr_ibz_tot, ' (ik: ', ik1, ")                 |"
-
-        kpoint = kpts_tr(:,ik1) ! this is cartesians x 2pi/alat. Transform to cryst.
-        call cryst_to_cart(1, kpoint, at, -1)
-
-        ! Read wavefunction k
-        call get_K_folder_data(ik1, list_iG, wfc, QE_eig, nG, altprefix)
-
-        do ishp = 1, nfs_sheets_tot
-
-          ibp = nfs_sheet(ishp) ! band index for k'
-
-          !$omp parallel do &
-          !$omp firstprivate(iks, ik, kpoint, list_iG, wfc, QE_eig, nG) &
-          !$omp private(iksp, ikp, kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
-          !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq, dvq_local) &
-          !$omp private(qpoint, dvpsi) &
-          !$omp private(iat, is, js)
-          do iksp = 1, nkpt_tr(ishp)
-
-            ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
-
-            kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
-            call cryst_to_cart(1, kpoint_p, at, -1)
-
-            ! Read wavefunction k'
-            !$omp critical
-            call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
-            !$omp end critical
-
-            qpoint = kpoint_p-kpoint
-
-            ! Fourier backtransform a la Wannier: interpolation of dV local at qpoint
-            ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
-            ! we would do in Wannier.
-
-            dvq_local = cmplx_0 ! watch out: I am reusing this array in this step of k,k' double loop
-            do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
-              ! ir to (ir1,ir2,ir3), 3rd index fastest
-              call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
-              rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
-              rvec(2) = real(ir2-1,dp)/real(nr2,dp)
-              rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-              do jr = 1,nrpts_q
-                facq = exp(-cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
-                dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
-              end do ! R in WS
-            end do ! r in unit cell
-
-            ! Multiply psi_k with induced potential + local part of the KB PP:
-            !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
-            call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
-
-            ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
-            !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
-            !                   (local)     + (non-local)
-            call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
-
-            ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
-            do iat=1,3*nat
-              do js=1,nspin
-                do is=1,nspin
-                  aep_mat_el(ikp,ik, js,is, iat) = &
-                            zdotc( nGk_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
-                enddo ! is
-              enddo ! js
-            enddo ! iat
-
-          end do ! k'
-          !$omp end parallel do
-
-          ! Save interpolated matrix elements for kpoint
-          do iksp = 1, nkpt_tr(ishp)
-            !
-            ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
-            !
-            do js=1,nspin
-              do is=1,nspin
-                write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
-                    (aep_mat_el(ikp,ik, js,is, iat), iat=1,3*nat)
-              end do
-            end do
-            !
-          end do ! k'
-
-        end do ! sheet'
-
-      end do ! k
-
-      ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
-
-    end do ! sheet
-
+      !
+      do ikp = 1, nkpt_tr_tot
+        !
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+        !
+        do js=1,nspin
+          do is=1,nspin
+            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ikibz,  &
+                (aep_mat_el(ikp,ikibz, js,is, iat), iat=1,3*nat)
+          end do
+        end do
+        !
+      end do ! k'
+      !
+    end do ! k
+    !
     close(unit_ep)
-
+    !
     write(*,20) '| - e-p elements interpolated and written to file:  |'
     write(*,20) "|   "//file_ep(1:max(47,len(trim(file_ep))))//" |"
 

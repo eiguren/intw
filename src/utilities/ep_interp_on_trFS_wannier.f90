@@ -62,28 +62,31 @@ program ep_on_trFS_wannier
 
   implicit none
 
-  ! read triangulation
-  logical :: read_status
-  character(5) :: is_loc, comenta
-  character(100) :: file_off
-  integer :: unit_off
-  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-  integer :: ik1, iface
-  integer :: nfs_sheets_tot ! number of sheets considered
-  integer :: nfs_sheets_initial_, nfs_sheets_final_ ! those selected sheets
-  integer, allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+  ! FS triangulation
+  integer :: nfs_sheets_tot ! number of FS sheets considered
+  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot ! total number of kpoints in the FS and in the irreducible BZ wedge
+  integer, allocatable :: nfs_sheet(:), & ! band indices of the FS sheets (from num_bands_intw set)
                           nkpt_tr(:), & ! number of kpoints in each FS sheet
                           nkpt_tr_ibz(:), & ! number of kpoints in each FS sheet irreducible BZ wedge
                           nface_tr(:) ! number of faces in each FS sheet
-  real(dp) :: k1(3), k2(3), k3(3), kwei
-  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
+  real(dp), allocatable :: kpts_tr(:,:), & ! list of all kpoints
+                           kpts_tr_area(:) ! area of each kpoint in the FS
+  integer, allocatable :: ikibz_2_ik(:), & ! index of the ikibz kpoint inside the irreducible BZ wedge in the list of all kpoints
+                          ik_2_ish(:), & ! FS sheet index of kpts_tr(:,ik)
+                          ik_2_iks(:) ! index of kpts_tr(:,ik) in its FS sheet kpoints list
 
-  ! wannier
+  ! Part I
+  logical :: read_status
+  character(5) :: ish_loc, comment
+  character(100) :: file_off
+  integer :: unit_off
+  real(dp) :: k1(3), k2(3), k3(3), kwei
+
+  ! Part II
   character(4) :: iq_loc
   integer :: record_lengh, ierr, ep_unit
-  integer :: Gkq_1bz(3), is1, is2, iq, ik, ikq, i, j, k, ir, irq
-  integer :: nkmesh, is, js, ikp
-  integer :: iat
+  integer :: ikq, irq
+  integer :: nkmesh, Gkq_1bz(3)
   integer, allocatable :: kqmap(:,:)
   real(dp) :: kpoint(3), qpoint(3), kqpoint(3), kq_1bz(3)
   real(dp), allocatable :: kmesh(:,:), kqmesh(:,:,:)
@@ -94,13 +97,22 @@ program ep_on_trFS_wannier
                               gmat_int(:,:), gmat_int_rot(:,:), gmat_aux1(:,:,:), gep_int(:,:)
   complex(dp), allocatable :: ep_mat_el_coarse(:,:,:,:,:,:,:)
 
-  ! elements
+  ! Part III
   logical :: have_ep
   character(256) :: file_ep
-  integer :: ib, unit_ep, ibp
-  integer :: iksp, iks, ish, ishp, ir1, ir2, ir3
+  integer :: unit_ep
   real(dp) :: kpoint_p(3)
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
+
+  ! loop variables and indices
+  integer :: ik, ikp, ikibz, iks, iksp
+  integer :: ish, ishp, ib, ibp
+  integer :: ik1, ik2, ik3
+  integer :: iface, iedge
+  integer :: is, js
+  integer :: ir
+  integer :: iat
+  integer :: iq
 
   ! timing
   real(dp) :: time1, time2
@@ -134,13 +146,13 @@ program ep_on_trFS_wannier
 
   if (read_status) stop
 
-  if ( use_exclude_bands /= "wannier" ) then
-    write(*,*) 'use_exclude_bands /= wannier in input. Stopping.'
+  if ( ep_interp_method /= 'wannier' ) then
+    write(*,*) 'ep_interp_method /= wannier in input. Stopping.'
     stop
   end if
 
-  if ( ep_interp_method /= 'wannier' ) then
-    write(*,*) 'ep_interp_method /= wannier in input. Stopping.'
+  if ( use_exclude_bands /= "wannier" ) then
+    write(*,*) 'use_exclude_bands /= wannier in input. Stopping.'
     stop
   end if
 
@@ -152,6 +164,7 @@ program ep_on_trFS_wannier
   write(*,20) '| - Reading calculation parameters...               |'
 
   call read_parameters_data_file()
+
 
   !================================================================================
   ! Set the number of bands
@@ -180,16 +193,12 @@ program ep_on_trFS_wannier
 
   if ( ep_interp_bands == 'intw_bands' ) then
     nfs_sheets_tot = num_bands_intw
-    nfs_sheets_initial_ = 1
-    nfs_sheets_final_ = num_bands_intw
     allocate(nfs_sheet(nfs_sheets_tot))
     do ib = 1, num_bands_intw
       nfs_sheet(ib) = ib
     end do
   else if ( ep_interp_bands == 'ef_crossing' ) then
     nfs_sheets_tot = nfs_sheets_final - nfs_sheets_initial + 1
-    nfs_sheets_initial_ = nfs_sheets_initial
-    nfs_sheets_final_ = nfs_sheets_final
     allocate(nfs_sheet(nfs_sheets_tot))
     do ib = 1, nfs_sheets_tot
       nfs_sheet(ib) = nfs_sheets_initial + ib-1
@@ -212,6 +221,148 @@ program ep_on_trFS_wannier
     stop
   end if
 
+
+  !******************************** Part I ************************************
+
+  !================================================================================
+  ! Read .off files
+  !================================================================================
+
+  write(*,20) '====================================================='
+  write(*,20) '| - Reading .off files...                           |'
+
+  allocate(nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
+  allocate(nkpt_tr_ibz(nfs_sheets_tot))
+
+  ! open all sheet files just to see dimensions of kpoint lists
+  do ish=1,nfs_sheets_tot
+
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
+
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
+    write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
+
+    unit_off = find_free_unit()
+    open(unit_off, file=file_off, status='old')
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr(ish), nface_tr(ish), iedge ! number of vertices and faces (ignore edges)
+    close(unit_off)
+
+    ! open the IBZ off file and search for dimension nkpt_tr_ibz(ish).
+    ! Its vertices coincide with the first nkpt_tr_ibz(ish) vertices of the full off vertex list.
+
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_IBZ_FS_tri.off')
+
+    unit_off = find_free_unit()
+    open(unit_off, file=file_off, status='old')
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr_ibz(ish), iface, iedge ! number of vertices (ignore faces and edges)
+    close(unit_off)
+
+  end do
+
+  ! total number of k-points to be calculated
+  nkpt_tr_tot = sum(nkpt_tr)
+  nkpt_tr_ibz_tot = sum(nkpt_tr_ibz)
+
+  write(*,20) '|   Number of k-points (total vertices):            |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_tot, '|'
+  write(*,20) '|   Number of k-points in IBZ (total vertices):     |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_ibz_tot, '|'
+  write(*,20) '|   Number of faces (total triangles):              |'
+  write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr), '|'
+
+
+  allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
+  allocate(ikibz_2_ik(nkpt_tr_ibz_tot))
+  allocate(ik_2_ish(nkpt_tr_tot))
+  allocate(ik_2_iks(nkpt_tr_tot))
+  ikibz_2_ik = -10
+  ik_2_ish = -10
+  ik_2_iks = -10
+
+
+  ! open .off files again to read k-points
+  do ish=1,nfs_sheets_tot
+
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
+
+    ! .off file for this sheet
+
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
+    unit_off = find_free_unit()
+    open(unit_off, file=file_off, status='old')
+
+    read(unit_off,*) comment
+    read(unit_off,*) ik, iface, iedge ! number vertices, faces and edges (I will ignore edges)
+    ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
+    if ( (ik /= nkpt_tr(ish)) .or. (iface /= nface_tr(ish)) ) then
+      write(*,*) 'Error reading ', file_off, '. Stopping.'
+      stop
+    end if
+
+    ! read vertices
+    do iks=1,nkpt_tr(ish)
+      ik = iks + sum(nkpt_tr(:ish-1))
+      ik_2_ish(ik) = ish
+      ik_2_iks(ik) = iks
+      if (iks<=nkpt_tr_ibz(ish)) then
+        ! kpoint is in the irreducible BZ wedge
+        ikibz = iks + sum(nkpt_tr_ibz(:ish-1))
+        ikibz_2_ik(ikibz) = ik
+      endif
+      read(unit_off,*) kpts_tr(:,ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
+    end do
+
+    ! Read (triangular) faces on this sheet.
+    ! Each face contributes with 1/3 of its area to the effective area of each of its vertices.
+    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik).
+    do iface = 1, nface_tr(ish)
+      read(unit_off,*) ik, ik1, ik2, ik3 ! indices ik of the vertices of the face, indexed from 0
+      if ( ik /= 3 ) then
+        write(*,*) 'Error reading ', file_off, 'Only triangles allowed. Stopping.'
+        stop
+      end if
+      ik1 = ik1 + 1
+      ik2 = ik2 + 1
+      ik3 = ik3 + 1 ! now, ik of the vertices of the face, indexed from 1
+      ik1 = ik1 + sum(nkpt_tr(:ish-1))
+      ik2 = ik2 + sum(nkpt_tr(:ish-1))
+      ik3 = ik3 + sum(nkpt_tr(:ish-1)) ! now, ik in the global ik list
+      ! triangle vertex vectors (cartesian 2pi/alat)
+      k1 = kpts_tr(:,ik1)
+      k2 = kpts_tr(:,ik2)
+      k3 = kpts_tr(:,ik3)
+      ! get spanned area and add contribution to each vertex
+      ! function copied from FSH/modules/geometry.f90
+      kwei = area_vec(k2-k1,k3-k1)/3.0_dp
+      kpts_tr_area(ik1) = kpts_tr_area(ik1) + kwei
+      kpts_tr_area(ik2) = kpts_tr_area(ik2) + kwei
+      kpts_tr_area(ik3) = kpts_tr_area(ik3) + kwei
+    end do
+
+    close(unit_off)
+
+  end do
+
+  if (any(ikibz_2_ik == -10)) stop "ERROR ikibz_2_ik"
+  if (any(ik_2_ish == -10)) stop "ERROR ik_2_ib"
+  if (any(ik_2_iks == -10)) stop "ERROR ik_2_iks"
+
+  write(*,20) '|   .... reading done                               |'
+
+  write(*,20) '|   Total FS area:                                  |'
+  write(*,'(A1,3X,F12.6,A19,17X,A1)') '|', sum(kpts_tr_area), ' (2 x pi / alat)^2 ', '|'
+
+  write(*,20) '|                                                   |'
+  write(*,20) '| ---------------- Part I completed --------------- |'
+  write(*,20) '|                                                   |'
+  write(*,20) '====================================================='
+
+
+  !******************************** Part II ************************************
 
   !================================================================================
   ! Read u_mesh file from w902intw
@@ -276,142 +427,16 @@ program ep_on_trFS_wannier
       kpoint = kmesh(:,ik) ! nnkp_kpoints(:,ik) is equivalent
       kqpoint = kpoint+qpoint
       kqmesh(:,iq,ik) = kqpoint
-      ! elements k+q,k are: ep_mat_el_coarse(iq,ik,:,:,is1,is2,imode)
+      ! elements k+q,k are: ep_mat_el_coarse(iq,ik,:,:,is,js,imode)
       ! locate (k+q)-point index ikq in the kmesh
-      call find_k_1BZ_and_G(kqpoint, nk1, nk2, nk3, i, j, k, kq_1bz, Gkq_1bz)
-      call triple_to_joint_index_g(nk1, nk2, nk3, ikq, i, j, k)
+      call find_k_1BZ_and_G(kqpoint, nk1, nk2, nk3, ik1, ik2, ik3, kq_1bz, Gkq_1bz)
+      call triple_to_joint_index_g(nk1, nk2, nk3, ikq, ik1, ik2, ik3)
       kqmap(iq,ik) = ikq
     end do
   end do
 
-
-  !================================================================================
-  ! Read .off files
-  !================================================================================
-
-  write(*,20) '====================================================='
-  write(*,20) '| - Reading .off files...                           |'
-
-  allocate(nkpt_tr(nfs_sheets_tot), nface_tr(nfs_sheets_tot))
-  allocate(nkpt_tr_ibz(nfs_sheets_tot))
-
-  ! open all sheet files just to see dimensions of kpoint lists
-
-  do is=1,nfs_sheets_tot
-
-    if (                is <  10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is < 100) write(is_loc,"(i2)") nfs_sheet(is)
-
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
-    write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
-
-    unit_off = find_free_unit()
-    open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr(is), nface_tr(is), k ! number of vertices and faces (ignore edges)
-    write(*,*) 'sheet, vertices, faces = ', nfs_sheet(is), nkpt_tr(is), nface_tr(is)
-    close(unit_off)
-
-    ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
-    ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
-
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
-    write(*,*) is, file_off
-
-    unit_off = find_free_unit()
-    open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr_ibz(is), j, k ! number of vertices (ignore faces and edges)
-    write(*,*) 'sheet, vertices = ', nfs_sheet(is), nkpt_tr_ibz(is)
-    close(unit_off)
-
-  end do
-
-  ! total number of k-points to be calculated
-  nkpt_tr_tot = sum(nkpt_tr)
-  nkpt_tr_ibz_tot = sum(nkpt_tr_ibz)
-
-  write(*,20) '|   Number of k-points (total vertices):            |'
-  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_tot, '|'
-  write(*,20) '|   Number of k-points in IBZ (total vertices):     |'
-  write(*,'(A1,3X,I6,42X,A1)') '|', nkpt_tr_ibz_tot, '|'
-  write(*,20) '|   Number of faces (total triangles):              |'
-  write(*,'(A1,3X,I6,42X,A1)') '|', sum(nface_tr), '|'
-
-
-  allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
-
-  ! open .off files again to read k-points
-  ik1 = 0
-  do is=1,nfs_sheets_tot
-
-    if (                is <  10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is < 100) write(is_loc,"(i2)") nfs_sheet(is)
-
-    ! .off file for this sheet
-
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
-    unit_off = find_free_unit()
-    open(unit_off, file=file_off, status='old')
-
-    read(unit_off,*) comenta
-    read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
-    ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
-    if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
-      write(*,*) 'Error reading ', file_off, '. Stopping.'
-      stop
-    end if
-
-    ! read vertices
-    do ik=1,nkpt_tr(is)
-      read(unit_off,*) kpts_tr(:,ik1+ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
-    end do
-
-    ! Read (triangular) faces on this sheet.
-    ! Each face contributes with 1/3 of its area to the effective area of each of its vertices.
-    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik1+ik).
-    do iface = 1, nface_tr(is)
-      read(unit_off,*) i, ir1, ir2, ir3 ! indices ik of the vertices of the face, indexed from 0
-      ir1 = ir1 + 1
-      ir2 = ir2 + 1
-      ir3 = ir3 + 1 ! now, ik of the vertices of the face, indexed from 1
-      if ( i /= 3 ) then
-        write(*,*) 'Error reading ', file_off, 'Only triangles allowed. Stopping.'
-        stop
-      end if
-      ! triangle vertex vectors (cartesian 2pi/alat)
-      k1 = kpts_tr(:,ik1+ir1)
-      k2 = kpts_tr(:,ik1+ir2)
-      k3 = kpts_tr(:,ik1+ir3)
-      ! get spanned area and add contribution to each vertex
-      ! function copied from FSH/modules/geometry.f90
-      kwei = area_vec(k2-k1,k3-k1)/3.0_dp
-      kpts_tr_area(ik1+ir1) = kpts_tr_area(ik1+ir1) + kwei
-      kpts_tr_area(ik1+ir2) = kpts_tr_area(ik1+ir2) + kwei
-      kpts_tr_area(ik1+ir3) = kpts_tr_area(ik1+ir3) + kwei
-    end do
-
-    close(unit_off)
-
-    ! accumulate ik global index for the reading of next sheet
-    ik1 = ik1 + nkpt_tr(is)
-
-  end do
-
-  write(*,20) '|   .... reading done                               |'
-
-  write(*,20) '|   Total FS area:                                  |'
-  write(*,'(A1,3X,F12.6,A19,17X,A1)') '|', sum(kpts_tr_area), ' (2 x pi / alat)^2 ', '|'
-
   write(*,20) '|         ---------------------------------         |'
 
-  write(*,20) '|                                                   |'
-  write(*,20) '| ---------------- Part I completed --------------- |'
-  write(*,20) '|                                                   |'
-  write(*,20) '====================================================='
-
-
-  !******************************** Part II ************************************
 
   !================================================================================
   ! Read ep mat elements
@@ -433,6 +458,7 @@ program ep_on_trFS_wannier
     close(unit=ep_unit)
   end do
   write(*,20) '|                       ...done                     |'
+  write(*,20) '|         ---------------------------------         |'
 
 
   !================================================================================
@@ -463,12 +489,10 @@ program ep_on_trFS_wannier
 
   gmatL_wann = cmplx_0
 
-  do is1=1,nspin
-    do is2=1,nspin
+  do is=1,nspin
+    do js=1,nspin
 
       do iat=1,3*nat
-
-        k = (iat-1)/3 + 1 ! atom index
 
         ! 1.
         ! rotate U^dagger(k+q) * gmat * U(k)
@@ -476,28 +500,26 @@ program ep_on_trFS_wannier
         do iq=1,nqmesh
           do ik=1,nkmesh
             ikq = kqmap(iq,ik)
-            call wann_rotate_matrix(ikq, ik, ep_mat_el_coarse(iq,ik,:,:,is1,is2,iat), &
-                                    gmatkqk_wann(:,:,iq,ik))
+            call wann_rotate_matrix(ikq, ik, ep_mat_el_coarse(iq,ik,:,:,is,js,iat), gmatkqk_wann(:,:,iq,ik))
           end do
         end do
 
         ! 2.
-        gmat_aux = cmplx_0
-        !
         ! Inverse Fourier over k-index, using kmesh and irvec grids
+        gmat_aux = cmplx_0
         do iq=1,nqmesh
-          call wann_IFT_1index(nkmesh, kmesh, gmatkqk_wann(:,:,iq,:), gmat_aux(:,:,iq,:) )
+          call wann_IFT_1index(nkmesh, kmesh, gmatkqk_wann(:,:,iq,:), gmat_aux(:,:,iq,:))
         end do
 
-        !
+        ! 3.
         ! Inverse Fourier over q-index, using qmesh and irvec_q grids
         ! (this is made "by hand")
         do iq=1,nqmesh
           do irq=1,nrpts_q
             facq = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq), irvec_q(:,irq)))/real(nqmesh,dp)
             do ir=1,nrpts
-              gmatL_wann(iat,:,:,is1,is2,irq,ir) = &
-                  gmatL_wann(iat,:,:,is1,is2,irq,ir) + gmat_aux(:,:,iq,ir) * facq
+              gmatL_wann(iat,:,:,is,js,irq,ir) = &
+                  gmatL_wann(iat,:,:,is,js,irq,ir) + gmat_aux(:,:,iq,ir) * facq
             end do
           end do
         end do
@@ -508,6 +530,7 @@ program ep_on_trFS_wannier
     end do ! spin
   end do ! spin
 
+  ! write(*,20) '|         ---------------------------------         |'
   write(*,20) '|                                                   |'
   write(*,20) '| --------------- Part II completed --------------- |'
   write(*,20) '|                                                   |'
@@ -574,96 +597,76 @@ program ep_on_trFS_wannier
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
-    unit_ep = find_free_unit()
-    open(unit_ep, file=file_ep, status='unknown')
-    write(unit_ep,*) '# ik(irr)   jk(full)    is js   g(canonical modes)'
+    do ikibz = 1, nkpt_tr_ibz_tot
 
-    ! ik, ikp indices implicitly contain the FS sheet index, i.e. the band indices ib, ib'
-    ! to be selected, so instead of iterating over nkpt_tr_tot, I separate over sheets
-    ! (aep_mat_el elements are stored only for the needed pair of sheets for a given kk')
-
-    ik = 0 ! kpoint
-    ik1 = 0
-    do ish = 1, nfs_sheets_tot
-
+      ! ikibz is the k-index over kpoints in the irreducible BZ wedge
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      !
+      ish = ik_2_ish(ik) ! FS sheet index for k
       ib = nfs_sheet(ish) ! band index for k
 
-      do iks = 1, nkpt_tr_ibz(ish)
+      write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ikibz, "/", nkpt_tr_ibz_tot, ' (ik: ', ik, ")                 |"
 
-        ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
-        ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
-        ik = ik + 1
-        ik1 = ik1 + 1
+      kpoint = kpts_tr(:,ik) ! this is cartesians x 2pi/alat. Transform to cryst.
+      call cryst_to_cart(1, kpoint, at, -1)
 
-        write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ik, "/", nkpt_tr_ibz_tot, ' (ik: ', ik1, ")                 |"
+      ! interpolated bands in k and k' calculated above
+      ! u_kint_all contains the rotation matrices (row is band and column is wannier,
+      ! i.e. the "orbital weights" for each band is in the columns)
+      u_kint = transpose(conjg(u_kint_all(:,:,ik))) ! we will need "dagger" below for U(k+q) g U^dagger(k)
 
-        kpoint = kpts_tr(:,ik1) ! this is cartesians x 2pi/alat. Transform to cryst.
-        call cryst_to_cart(1, kpoint, at, -1)
+      do ikp = 1, nkpt_tr_tot
+
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        !
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+
+        kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
+        call cryst_to_cart(1, kpoint_p, at, -1)
 
         ! interpolated bands in k and k' calculated above
         ! u_kint_all contains the rotation matrices (row is band and column is wannier,
         ! i.e. the "orbital weights" for each band is in the columns)
-        u_kint = transpose(conjg(u_kint_all(:,:,ik1))) ! we will need "dagger" below for U(k+q) g U^dagger(k)
+        u_kqint = u_kint_all(:,:,ikp)
 
-        ikp = 0 ! kpoint+qpoint
-        do ishp = 1, nfs_sheets_tot
+        qpoint = kpoint_p - kpoint
 
-          ibp = nfs_sheet(ishp) ! band index for k'
+        ! In the loop over atoms and directions below, I will
+        ! interpolate matrix elements for each displacement.
+        ! 1. interpolate irvec_q on this qpoint and store in gmat_aux1(:,:,nrpts)
+        ! 2. interpolate irvec on kpoint and store in gmat_int.
+        ! 3. Rotate Wannier as gmat_int_rot = U(k+q) * gmat_int * U(k)^dagger
+        ! 4. The ibp,ib elements are the ep element needed (in canonical atom displacement coordinates)
 
-          do iksp = 1, nkpt_tr(ishp)
+        ! TODO some of these can be done out of the 3nat and spin loops to go faster
+        do js=1,nspin
+          do is=1,nspin
 
-            ikp = ikp + 1 ! k'-index over nkpt_tr_tot
-
-            kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
-            call cryst_to_cart(1, kpoint_p, at, -1)
-
-            ! interpolated bands in k and k' calculated above
-            ! u_kint_all contains the rotation matrices (row is band and column is wannier,
-            ! i.e. the "orbital weights" for each band is in the columns)
-            u_kqint = u_kint_all(:,:,ikp)
-
-            qpoint = kpoint_p-kpoint
-
-            ! In the loop over atoms and directions below, I will
-            ! interpolate matrix elements for each displacement.
-            ! 1. interpolate irvec_q on this qpoint and store in gmat_aux1(:,:,nrpts)
-            ! 2. interpolate irvec on kpoint and store in gmat_int.
-            ! 3. Rotate Wannier as gmat_int_rot = U(k+q) * gmat_int * U(k)^dagger
-            ! 4. The ibp,ib elements are the ep element needed (in canonical atom displacement coordinates)
-
-            ! TODO some of these can be done out of the 3nat and spin loops to go faster
-            do js=1,nspin
-              do is=1,nspin
-
-                do iat=1,3*nat
-                  gmat_aux1 = cmplx_0
-                  gmat_int = cmplx_0
-                  gmat_int_rot = cmplx_0
-                  do irq=1,nrpts_q
-                    facq = exp(cmplx_i*tpi*dot_product(qpoint(:), irvec_q(:,irq)))/real(ndegen_q(irq),dp)
-                    ! TODO DUDA the spin order in gmatL_wann is correct???
-                    gmat_aux1(:,:,:) = gmat_aux1(:,:,:) + facq*gmatL_wann(iat,:,:,js,is,irq,:)
-                  end do
-                  call wann_FT_1index_1k(kpoint, gmat_aux1(:,:,:), gmat_int(:,:))
-                  gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, u_kint))
-                  aep_mat_el(ikp,ik,js,is,iat) = gmat_int_rot(ibp,ib) ! TODO DUDA exclude bands ?? (ver junto al comentario JLB en w90_setup)
-                end do
-
-                write(unit_ep, fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik, &
-                    (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
-
+            do iat=1,3*nat
+              gmat_aux1 = cmplx_0
+              gmat_int = cmplx_0
+              gmat_int_rot = cmplx_0
+              do irq=1,nrpts_q
+                facq = exp(cmplx_i*tpi*dot_product(qpoint(:), irvec_q(:,irq)))/real(ndegen_q(irq),dp)
+                ! TODO DUDA the spin order in gmatL_wann is correct???
+                gmat_aux1(:,:,:) = gmat_aux1(:,:,:) + facq*gmatL_wann(iat,:,:,js,is,irq,:)
               end do
-            end do ! spins
+              call wann_FT_1index_1k(kpoint, gmat_aux1(:,:,:), gmat_int(:,:))
+              gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, u_kint))
+              aep_mat_el(ikp,ik,js,is,iat) = gmat_int_rot(ibp,ib) ! TODO DUDA exclude bands ?? (ver junto al comentario JLB en w90_setup)
+            end do
 
-          end do ! k'
+            write(unit_ep, fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik, &
+                (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
 
-        end do ! sheet'
+          end do
+        end do ! spins
 
-      end do ! k
+      end do ! k'
 
-      ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
-
-    end do ! sheet
+    end do ! k
 
     close(unit_ep)
 
