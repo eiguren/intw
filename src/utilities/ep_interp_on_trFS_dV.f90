@@ -68,6 +68,10 @@ program ep_on_trFS_dV
   !    Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
   !    Write to file
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_get_num_threads, omp_get_thread_num
+#endif
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version
@@ -142,6 +146,12 @@ program ep_on_trFS_dV
   real(dp) :: qpoint(3), rvec(3)
   complex(dp) :: facq
   complex(dp), allocatable :: dvq_local_R(:,:,:,:,:)
+  integer :: iq_start, iq_end
+#ifdef _OPENMP
+  integer :: nq, nq_remaining
+  integer :: thread_id, thread_num
+#endif
+
 
   ! for part III
   logical :: have_ep
@@ -565,14 +575,46 @@ program ep_on_trFS_dV
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
   dvq_local_R = cmplx_0
 
+  !$omp parallel reduction(+: dvq_local_R) &
+  !$omp default(none) &
+  !$omp shared(nqmesh, qmesh) &
+  !$omp shared(nr1, nr2, nr3) &
+  !$omp shared(nrpts_q, irvec_q) &
+  !$omp private(iq, qpoint, dvq_local, facq) &
+  !$omp private(ir, ir1, ir2, ir3, rvec, jr) &
+  !$omp shared(thread_num, nq, nq_remaining) &
+  !$omp private(thread_id, iq_start, iq_end)
+  !
+  ! Calculate the range of iterations for this thread.
+  ! If nqmesh is a multiple of thread_num, each thread
+  ! will run nq iterations.
+  ! Otherwise, the first nq_remaining threads will run
+  ! an extra iteration.
+  !
+#ifdef _OPENMP
+  !$omp single
+  thread_num = omp_get_num_threads()
+  nq = int(nqmesh/thread_num) ! Number of iterations for each thread
+  nq_remaining = mod(nqmesh, thread_num) ! Remainig q-points that need to be distributed
+  !$omp end single
+  !
+  thread_id = omp_get_thread_num()
+  iq_start = nq * thread_id + min(thread_id, nq_remaining) + 1
+  iq_end = nq * (thread_id + 1) + min(thread_id + 1, nq_remaining)
+#else
+  iq_start = 1
+  iq_end = nqmesh
+#endif
+  !
   !$omp parallel do reduction(+: dvq_local_R) &
   !$omp default(none) &
   !$omp shared(nqmesh, qmesh) &
   !$omp shared(nr1, nr2, nr3) &
   !$omp shared(nrpts_q, irvec_q) &
   !$omp private(qpoint, dvq_local, facq) &
-  !$omp private(ir, ir1, ir2, ir3, rvec, jr)
-  do iq = 1, nqmesh
+  !$omp private(ir, ir1, ir2, ir3, rvec, jr) &
+  !$omp shared(iq_start, iq_end)
+  do iq = iq_start, iq_end
 
     qpoint = qmesh(:,iq)
     write(*,'(A12,I5,3f11.5,A3)') '|     qpoint', iq, qpoint, "  |"
@@ -585,14 +627,13 @@ program ep_on_trFS_dV
     call calculate_local_part_dv(qpoint, dvq_local)
 
     ! transform with phase: iq*(r-R)
-
-    do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+    do ir = 1, nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
       ! ir to (ir1,ir2,ir3), 3rd index fastest
       call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
       rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
       rvec(2) = real(ir2-1,dp)/real(nr2,dp)
       rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-      do jr = 1,nrpts_q
+      do jr = 1, nrpts_q
         facq = exp(cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))
         dvq_local_R(jr,ir,:,:,:) = dvq_local_R(jr,ir,:,:,:) + facq * dvq_local(ir,:,:,:)
       end do ! R in WS
@@ -600,6 +641,7 @@ program ep_on_trFS_dV
 
   end do
   !$omp end parallel do
+  !$omp end parallel
   dvq_local_R = dvq_local_R / real(nqmesh,dp) ! normalize Fourier transform
 
   write(*,20) '|                                                   |'
