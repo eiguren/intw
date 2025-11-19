@@ -90,7 +90,7 @@ program ep_on_trFS_wannier
   integer, allocatable :: kqmap(:,:)
   real(dp) :: kpoint(3), qpoint(3), kqpoint(3), kq_1bz(3)
   real(dp), allocatable :: kmesh(:,:), kqmesh(:,:,:)
-  real(dp), allocatable :: eig_kint(:), eig_kqint(:), eig_kint_all(:,:)
+  real(dp), allocatable :: eig_kint(:), eig_kqint(:)
   complex(dp) :: facq
   complex(dp), allocatable :: u_kint(:,:), u_kqint(:,:), u_kint_all(:,:,:)
   complex(dp), allocatable :: gmatkqk_wann(:,:,:,:), gmatL_wann(:,:,:,:,:,:,:), gmat_aux(:,:,:,:), &
@@ -105,7 +105,7 @@ program ep_on_trFS_wannier
   complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
 
   ! loop variables and indices
-  integer :: ik, ikp, ikibz, iks, iksp
+  integer :: ik, ikp, ikibz, ikibz_global, ikibz_do, iks, iksp
   integer :: ish, ishp, ib, ibp
   integer :: ik1, ik2, ik3
   integer :: iface, iedge
@@ -530,7 +530,9 @@ program ep_on_trFS_wannier
     end do ! spin
   end do ! spin
 
-  ! write(*,20) '|         ---------------------------------         |'
+  deallocate(ep_mat_el_coarse)
+  deallocate(gmat_aux, gmatkqk_wann)
+
   write(*,20) '|                                                   |'
   write(*,20) '| --------------- Part II completed --------------- |'
   write(*,20) '|                                                   |'
@@ -551,7 +553,6 @@ program ep_on_trFS_wannier
 
   ! band arrays
   allocate(eig_kint(num_wann_intw), eig_kqint(num_wann_intw))
-  allocate(eig_kint_all(num_wann_intw,nkpt_tr_tot))
   allocate(u_kint(num_wann_intw,num_wann_intw), u_kqint(num_wann_intw,num_wann_intw))
   allocate(u_kint_all(num_wann_intw,num_wann_intw,nkpt_tr_tot))
 
@@ -561,11 +562,10 @@ program ep_on_trFS_wannier
     call cryst_to_cart(1, kpoint, at, -1)
     call interpolate_1k(kpoint, eig_kint, u_kint)
     ! eig_kint = eig_kint * 2.0_dp / Ha_to_eV
-    ! eig_kint_all(:,ik) = eig_kint ! NOTE(Haritz): This is not used
     u_kint_all(:,:,ik) = u_kint
   end do
 
-  deallocate(eig_kint, eig_kint_all)
+  deallocate(eig_kint)
 
 
   !================================================================================
@@ -593,13 +593,30 @@ program ep_on_trFS_wannier
   file_ep = trim(outdir)//trim(prefix)//trim('_ep_interp.dat')
 
   inquire(file=file_ep, exist=have_ep)
-  print*, 'have_ep?', have_ep
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
-    do ikibz = 1, nkpt_tr_ibz_tot
+    ikibz_global = 0
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(at, nat, nspin) &
+    !$omp shared(kpts_tr, nkpt_tr_tot, nkpt_tr_ibz_tot, nfs_sheet) &
+    !$omp shared(ikibz_2_ik, ik_2_iks, ik_2_ish) &
+    !$omp shared(ndegen_q, irvec_q, nrpts_q, gmatL_wann) &
+    !$omp shared(u_kint_all) &
+    !$omp shared(aep_mat_el) &
+    !$omp shared(ikibz_global) &
+    !$omp private(ikibz, ik, iks, ish, ib, kpoint) &
+    !$omp private(ikp, iksp, ishp, ibp, kpoint_p, qpoint) &
+    !$omp private(gmat_aux1, gmat_int, gmat_int_rot) &
+    !$omp private(u_kint, u_kqint) &
+    !$omp private(irq, facq) &
+    !$omp private(iat, is, js)
+    do ikibz_do= 1, nkpt_tr_ibz_tot
 
-      ! ikibz is the k-index over kpoints in the irreducible BZ wedge
+      !$omp critical
+      ikibz_global = ikibz_global + 1
+      ikibz = ikibz_global ! ikibz is the k-index over kpoints in the irreducible BZ wedge
       ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
       iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
       !
@@ -615,7 +632,23 @@ program ep_on_trFS_wannier
       ! u_kint_all contains the rotation matrices (row is band and column is wannier,
       ! i.e. the "orbital weights" for each band is in the columns)
       u_kint = transpose(conjg(u_kint_all(:,:,ik))) ! we will need "dagger" below for U(k+q) g U^dagger(k)
+      !$omp end critical
 
+
+      !$omp parallel do &
+      !$omp default(none) &
+      !$omp shared(at, nat, nspin) &
+      !$omp shared(ik_2_iks, ik_2_ish, nfs_sheet) &
+      !$omp shared(kpts_tr, nkpt_tr_tot) &
+      !$omp shared(ndegen_q, irvec_q, nrpts_q, gmatL_wann) &
+      !$omp shared(u_kint_all, u_kint) &
+      !$omp shared(aep_mat_el) &
+      !$omp shared(ikibz, ib, kpoint) &
+      !$omp private(iksp, ishp, ibp, kpoint_p, qpoint) &
+      !$omp private(gmat_aux1, gmat_int, gmat_int_rot) &
+      !$omp private(u_kqint) &
+      !$omp private(irq, facq) &
+      !$omp private(iat, is, js)
       do ikp = 1, nkpt_tr_tot
 
         iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
@@ -655,19 +688,49 @@ program ep_on_trFS_wannier
               end do
               call wann_FT_1index_1k(kpoint, gmat_aux1(:,:,:), gmat_int(:,:))
               gmat_int_rot(:,:) = matmul(u_kqint, matmul(gmat_int, u_kint))
-              aep_mat_el(ikp,ik,js,is,iat) = gmat_int_rot(ibp,ib) ! TODO DUDA exclude bands ?? (ver junto al comentario JLB en w90_setup)
+              aep_mat_el(ikp,ikibz,js,is,iat) = gmat_int_rot(ibp,ib) ! TODO DUDA exclude bands ?? (ver junto al comentario JLB en w90_setup)
             end do
-
-            write(unit_ep, fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik, &
-                (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
 
           end do
         end do ! spins
 
       end do ! k'
+      !$omp end parallel do
 
     end do ! k
 
+    deallocate(gmat_aux1, gmat_int, gmat_int_rot, gep_int)
+
+    ! Save interpolated matrix elements
+
+    unit_ep = find_free_unit()
+    open(unit_ep, file=file_ep, status='unknown')
+    write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)'
+    !
+    do ikibz = 1, nkpt_tr_ibz_tot
+      !
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      ish = ik_2_ish(ik) ! FS sheet index for k
+      ib = nfs_sheet(ish) ! band index for k
+      !
+      do ikp = 1, nkpt_tr_tot
+        !
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+        !
+        do js=1,nspin
+          do is=1,nspin
+            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ikibz, &
+                                                (aep_mat_el(ikp,ikibz, js,is, iat), iat=1,3*nat)
+          end do
+        end do
+        !
+      end do ! k'
+      !
+    end do ! k
+    !
     close(unit_ep)
 
     write(*,20) '| - e-p elements interpolated and written to file:  |'
