@@ -157,8 +157,6 @@ module intw_ph_interpolate
     do i=1,3
         irvec_q(i,:) = irvec_ws(i,1:nrpts_q)
     end do
-    !
-    print *, '#max nrpts_q = ',  nrpts_q
 
   end subroutine allocate_and_build_ws_irvec_q
 

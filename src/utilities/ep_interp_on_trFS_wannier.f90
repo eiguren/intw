@@ -453,7 +453,8 @@ program ep_on_trFS_wannier
 
   write(*,20) '| - Fourier transform ep mat elements...            |'
 
-  ! write(*,*) 'nrpts = ', nrpts
+  write(*,'(A42,I4,A7)') '|   Number of WS vectors for k transform: ', nrpts, '      |'
+  write(*,'(A42,I4,A7)') '|   Number of WS vectors for q transform: ', nrpts_q, '      |'
 
   allocate(gmatkqk_wann(num_wann_intw,num_wann_intw,nqmesh,nkmesh))
   allocate(gmat_aux(num_wann_intw,num_wann_intw,nqmesh,nrpts))
