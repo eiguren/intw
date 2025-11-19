@@ -569,7 +569,7 @@ program a2F_on_trFS
   !   rcart = real(irvec_q(:,ir),dp)
   !   call cryst_to_cart(1, rcart, at, 1)
   !   rcart = rcart * alat ! bohr units
-  !   write(520,'(i5,f16.6,8e16.4)') ir, sqrt ( sum(rcart*rcart) ), &
+  !   write(1000,'(i5,f16.6,8e16.4)') ir, sqrt ( sum(rcart*rcart) ), &
   !           abs(dyn_r(1,1,ir)), abs(dyn_r(1,2,ir)), abs(dyn_r(1,4,ir)), abs(dyn_r(1,5,ir))
   ! end do
 
@@ -704,7 +704,7 @@ program a2F_on_trFS
             end if
             !
             ! for testing:
-            write(999, fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
+            ! write(2000, fmt="(5i6,2e16.6)") ikp, ik, ibp, ib, imode, w_qint(imode), abs(gep_int(imode))
             !
           end do
 
