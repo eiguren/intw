@@ -616,7 +616,7 @@ end function intgr_spline_gaussq
     integer :: io_unit
     logical :: opnd
 
-    do io_unit = 99, 1, -1
+    do io_unit = 999, 9, -1
       !
       inquire( unit = io_unit, opened = opnd )
       if ( .not. opnd ) then

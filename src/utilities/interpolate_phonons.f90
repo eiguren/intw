@@ -245,7 +245,7 @@ program interpolatephonons
   !   rcart = real(irvec_q(:,ir),dp)
   !   call cryst_to_cart(1, rcart, at, 1)
   !   rcart = rcart * alat ! bohr units
-  !   write(520,'(i5,f16.6,8e16.4)') ir, sqrt ( sum(rcart*rcart) ), &
+  !   write(1000,'(i5,f16.6,8e16.4)') ir, sqrt ( sum(rcart*rcart) ), &
   !           abs(dyn_r(1,1,ir)), abs(dyn_r(1,2,ir)), abs(dyn_r(1,4,ir)), abs(dyn_r(1,5,ir))
   ! end do
   !
