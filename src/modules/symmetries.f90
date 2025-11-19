@@ -1868,9 +1868,9 @@ contains
       enddo s_l
     enddo
 
-    do ikpt=1, nspt
-      write(123,"(100f12.6)") ksvec(:,ikpt)
-    enddo
+    ! do ikpt=1,nspt
+    !   write(*,"(3f12.6)") ksvec(:,ikpt)
+    ! enddo
 
   end subroutine find_entire_nice_BZ
 
