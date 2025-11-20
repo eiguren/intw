@@ -45,7 +45,7 @@ module intw_ph_interpolate
   ! subroutines
   public :: allocate_and_build_ws_irvec_q, allocate_and_build_ws_irvec_qtau, &
             allocate_and_build_dyn_qmesh, allocate_and_build_dyn_qmesh_from_fc, &
-            dyn_q_to_dyn_r, dyn_interp_1q, dyn_diagonalize_1q
+            dyn_q_to_dyn_r, dyn_interp_1q, dyn_diagonalize_1q, wann_IFT_1index_q
   !
   private
   !
@@ -443,5 +443,39 @@ module intw_ph_interpolate
     call diagonalize_cmat(uq, w2q)
 
   end subroutine dyn_diagonalize_1q
+
+
+  subroutine wann_IFT_1index_q (nqs, qpoints, matq, matL)
+    !
+    !----------------------------------------------------------------------------!
+    !  This does the same as wann_IFT_1index from intw_w90_setup module
+    !  but for q
+    !----------------------------------------------------------------------------!
+    !
+    use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
+    use intw_reading, only:  num_wann_intw
+    !
+    implicit none
+    !
+    integer , intent(in) :: nqs
+    real(kind=dp) , intent(in) :: qpoints(3,nqs)
+    complex(kind=dp) , intent(in) :: matq (num_wann_intw,num_wann_intw, nqs)
+    complex(kind=dp) , intent(out) :: matL (num_wann_intw,num_wann_intw, nrpts_q)
+    !
+    integer :: irq, iq
+    complex(kind=dp) :: fac
+
+
+    matL = cmplx_0
+    do irq = 1,nrpts_q
+      do iq = 1, nqs
+        fac = exp(-cmplx_i*tpi*dot_product(qpoints(:,iq),irvec_q(:,irq)))
+        matL(:,:,irq) = matL(:,:,irq) + fac*matq(:,:,iq)
+      end do
+    end do
+    matL = matL / real(nqs,dp)
+
+  end subroutine wann_IFT_1index_q
+
 
 end module intw_ph_interpolate

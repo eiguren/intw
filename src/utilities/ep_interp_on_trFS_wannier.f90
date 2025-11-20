@@ -58,7 +58,8 @@ program ep_on_trFS_wannier
   use intw_ph, only: nqmesh, qmesh, read_ph_information
 
   use intw_ph_interpolate, only: allocate_and_build_ws_irvec_q, &
-                                 irvec_q, nrpts_q, ndegen_q
+                                 irvec_q, nrpts_q, ndegen_q, &
+                                 wann_IFT_1index_q
 
   implicit none
 
@@ -489,10 +490,10 @@ program ep_on_trFS_wannier
 
   gmatL_wann = cmplx_0
 
-  do is=1,nspin
-    do js=1,nspin
+  do iat=1,3*nat
 
-      do iat=1,3*nat
+    do is=1,nspin
+      do js=1,nspin
 
         ! 1.
         ! rotate U^dagger(k+q) * gmat * U(k)
@@ -513,22 +514,16 @@ program ep_on_trFS_wannier
 
         ! 3.
         ! Inverse Fourier over q-index, using qmesh and irvec_q grids
-        ! (this is made "by hand")
-        do iq=1,nqmesh
-          do irq=1,nrpts_q
-            facq = exp(-cmplx_i*tpi*dot_product(qmesh(:,iq), irvec_q(:,irq)))/real(nqmesh,dp)
-            do ir=1,nrpts
-              gmatL_wann(iat,:,:,is,js,irq,ir) = &
-                  gmatL_wann(iat,:,:,is,js,irq,ir) + gmat_aux(:,:,iq,ir) * facq
-            end do
-          end do
+        do ir=1,nrpts
+          call wann_IFT_1index_q(nqmesh, qmesh, gmat_aux(:,:,:,ir), gmatL_wann(iat,:,:,is,js,:,ir))
         end do
-        write(*,'(A38,I4,10X,A1)') '|     IFT on WS done for displacement ', iat, '|'
 
-      end do ! iat
-
+      end do ! spin
     end do ! spin
-  end do ! spin
+
+    write(*,'(A38,I4,10X,A1)') '|     IFT on WS done for displacement ', iat, '|'
+
+  end do ! iat
 
   deallocate(ep_mat_el_coarse)
   deallocate(gmat_aux, gmatkqk_wann)
