@@ -26,6 +26,10 @@ program ep_on_trFS_wannier
   ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
   ! Finally, elements are printed to file.
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_get_num_threads, omp_get_thread_num
+#endif
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version
@@ -97,6 +101,11 @@ program ep_on_trFS_wannier
   complex(dp), allocatable :: gmatkqk_wann(:,:,:,:), gmatL_wann(:,:,:,:,:,:,:), gmat_aux(:,:,:,:), &
                               gmat_int(:,:), gmat_int_rot(:,:), gmat_aux1(:,:,:), gep_int(:,:)
   complex(dp), allocatable :: ep_mat_el_coarse(:,:,:,:,:,:,:)
+  integer :: i_start, i_end
+#ifdef _OPENMP
+  integer :: n, n_remaining
+  integer :: thread_id, thread_num
+#endif
 
   ! Part III
   logical :: have_ep
@@ -498,25 +507,111 @@ program ep_on_trFS_wannier
         ! 1.
         ! rotate U^dagger(k+q) * gmat * U(k)
         gmatkqk_wann = cmplx_0
+        !$omp parallel do &
+        !$omp default(none) &
+        !$omp shared(is, js, iat) &
+        !$omp shared(nqmesh, nkmesh, kqmap) &
+        !$omp shared(ep_mat_el_coarse, gmatkqk_wann) &
+        !$omp private(ik, ikq)
         do iq=1,nqmesh
+          !$omp parallel do &
+          !$omp default(none) &
+          !$omp shared(is, js, iat) &
+          !$omp shared(iq, nkmesh, kqmap) &
+          !$omp shared(ep_mat_el_coarse, gmatkqk_wann) &
+          !$omp private(ikq)
           do ik=1,nkmesh
             ikq = kqmap(iq,ik)
             call wann_rotate_matrix(ikq, ik, ep_mat_el_coarse(iq,ik,:,:,is,js,iat), gmatkqk_wann(:,:,iq,ik))
           end do
+          !$omp end parallel do
         end do
+        !$omp end parallel do
 
         ! 2.
         ! Inverse Fourier over k-index, using kmesh and irvec grids
         gmat_aux = cmplx_0
-        do iq=1,nqmesh
+        !$omp parallel &
+        !$omp default(none) &
+        !$omp shared(nqmesh, nkmesh, kmesh) &
+        !$omp shared(gmatkqk_wann, gmat_aux) &
+        !$omp shared(thread_num, n, n_remaining) &
+        !$omp private(thread_id, i_start, i_end)
+        !
+        ! Calculate the range of iterations for this thread.
+        ! If nqmesh is a multiple of thread_num, each thread
+        ! will run n iterations.
+        ! Otherwise, the first n_remaining threads will run
+        ! an extra iteration.
+        !
+#ifdef _OPENMP
+        !$omp single
+        thread_num = omp_get_num_threads()
+        n = int(nqmesh/thread_num) ! Number of iterations for each thread
+        n_remaining = mod(nqmesh, thread_num) ! Remainig iterations that need to be distributed
+        !$omp end single
+        !
+        thread_id = omp_get_thread_num()
+        i_start = n * thread_id + min(thread_id, n_remaining) + 1
+        i_end = n * (thread_id + 1) + min(thread_id + 1, n_remaining)
+#else
+        i_start = 1
+        i_end = nqmesh
+#endif
+        !
+        !$omp parallel do &
+        !$omp default(none) &
+        !$omp shared(nqmesh, nkmesh, kmesh) &
+        !$omp shared(gmatkqk_wann, gmat_aux) &
+        !$omp shared(i_start, i_end)
+        do iq=i_start,i_end
           call wann_IFT_1index(nkmesh, kmesh, gmatkqk_wann(:,:,iq,:), gmat_aux(:,:,iq,:))
         end do
+        !$omp end parallel do
+        !$omp end parallel
 
         ! 3.
         ! Inverse Fourier over q-index, using qmesh and irvec_q grids
-        do ir=1,nrpts
+        !$omp parallel &
+        !$omp default(none) &
+        !$omp shared(iat, is, js) &
+        !$omp shared(nrpts, nqmesh, qmesh) &
+        !$omp shared(gmat_aux, gmatL_wann) &
+        !$omp shared(thread_num, n, n_remaining) &
+        !$omp private(thread_id, i_start, i_end)
+        !
+        ! Calculate the range of iterations for this thread.
+        ! If nrpts is a multiple of thread_num, each thread
+        ! will run n iterations.
+        ! Otherwise, the first n_remaining threads will run
+        ! an extra iteration.
+        !
+#ifdef _OPENMP
+        !$omp single
+        thread_num = omp_get_num_threads()
+        n = int(nrpts/thread_num) ! Number of iterations for each thread
+        n_remaining = mod(nrpts, thread_num) ! Remainig iterations that need to be distributed
+        !$omp end single
+        !
+        thread_id = omp_get_thread_num()
+        i_start = n * thread_id + min(thread_id, n_remaining) + 1
+        i_end = n * (thread_id + 1) + min(thread_id + 1, n_remaining)
+#else
+        i_start = 1
+        i_end = nrpts
+#endif
+        !
+        !$omp parallel do &
+        !$omp default(none) &
+        !$omp shared(iat, is, js) &
+        !$omp shared(nrpts, nqmesh, qmesh) &
+        !$omp shared(gmat_aux, gmatL_wann) &
+        !$omp shared(i_start, i_end)
+        do ir=i_start,i_end
           call wann_IFT_1index_q(nqmesh, qmesh, gmat_aux(:,:,:,ir), gmatL_wann(iat,:,:,is,js,:,ir))
         end do
+        !$omp end parallel do
+        !$omp end parallel
 
       end do ! spin
     end do ! spin
