@@ -70,37 +70,31 @@ contains
 
     ! local variables
 
-    integer :: jd(1)
-    integer :: i, ibnd, jbnd, is, js, iG_1
-    complex(dp) :: pw_mat_el_local(num_bands_intw,num_bands_intw,nspin,nspin)
+    integer :: i, j, ibnd, jbnd, is, js, iG_1
 
 
     pw_mat_el = cmplx_0
 
-    !$omp parallel default(none) &
-    !$omp shared(list_iG_1,list_iG_2,ngk1,num_bands_intw,nspin,wfc_1,wfc_2, pw_mat_el,nGk_max,gvec,G) &
-    !$omp private(i,iG_1,jd,ibnd,jbnd,is,js,pw_mat_el_local)
-    !
-    ! First, build the pw_mat_el_local arrays, on each thread.
-    !
-    pw_mat_el_local = cmplx_0
-    !
-    !$omp do
+    !$omp parallel do reduction(+: pw_mat_el) &
+    !$omp default(none) &
+    !$omp shared(num_bands_intw, nspin, nGk_max, gvec, G) &
+    !$omp shared(list_iG_1, ngk1, wfc_1, list_iG_2, wfc_2) &
+    !$omp private(i, j, iG_1, ibnd, jbnd, is, js)
     do i=1,nGk1
       !
       call find_iG(gvec(:,list_iG_1(i)) + G, iG_1)
       !
-      jd = findloc(list_iG_2, iG_1)
+      j = findloc(list_iG_2, iG_1, DIM=1)
       !
-      if (jd(1)==0) cycle
+      if (j==0) cycle
       !
       do js=1,nspin
         do is=1,nspin
           do jbnd=1,num_bands_intw
             do ibnd=1,num_bands_intw
               !
-              pw_mat_el_local(ibnd,jbnd,is,js) = pw_mat_el_local(ibnd,jbnd,is,js) &
-                                                 + conjg(wfc_1(i,ibnd,is)) * wfc_2(jd(1),jbnd,js)
+              pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) &
+                                                 + conjg(wfc_1(i,ibnd,is)) * wfc_2(j,jbnd,js)
               !
             enddo !ibnd
           enddo !jbnd
@@ -108,32 +102,7 @@ contains
       enddo !js
       !
     enddo ! i loop
-    !$omp end do
-    !
-    !$omp barrier
-    ! Next, dump pw_mat_el_local into pw_mat_el;
-    ! each thread should dump all its components here, so don't
-    ! parallelize over the loop variables! We must still be in the
-    ! "parallel" environment, however, or else pw_mat_el_local becomes
-    ! undefined
-    !
-    do js=1,nspin
-      do is=1,nspin
-        do jbnd=1,num_bands_intw
-          do ibnd=1,num_bands_intw
-            !
-            ! make sure the update is atomic!
-            !$omp atomic
-            !
-            pw_mat_el(ibnd,jbnd,is,js) = pw_mat_el(ibnd,jbnd,is,js) &
-                                         + pw_mat_el_local(ibnd,jbnd,is,js)
-            !
-          enddo !ibnd
-        enddo !jbnd
-      enddo !is
-    enddo !js
-    !
-    !$omp end parallel
+    !$omp end parallel do
 
   end subroutine get_plane_wave_matrix_element_convolution_map
 
