@@ -23,6 +23,10 @@ program interpolate
   ! Projections on Wannier functions are also provided, so that "fatband"
   ! and PDOS plots can be made.
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_set_max_active_levels
+#endif
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version
@@ -72,6 +76,9 @@ program interpolate
   write(*,20) '|                program interpolate                |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+#ifdef _OPENMP
+  call omp_set_max_active_levels(1) ! This utility usea a single active parallel level
+#endif
   call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
