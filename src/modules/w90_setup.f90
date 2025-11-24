@@ -458,6 +458,11 @@ contains
   !
   allocate (ham_k(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
   ham_k = cmplx_0
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp shared(nnkp_num_kpoints, num_wann_intw, use_disentanglement) &
+  !$omp shared(ndimwin, u_mesh, eigenval_intw, lwindow, ham_k) &
+  !$omp private(nwin, jw, iw, cterm)
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
      do jw = 1,num_wann_intw
@@ -481,6 +486,7 @@ contains
        end do
      end do
   end do
+  !$omp end parallel do
   !
   return
   end subroutine allocate_and_build_ham_k
