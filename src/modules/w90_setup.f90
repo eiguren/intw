@@ -512,6 +512,11 @@ contains
   !
   allocate (ham_r(num_wann_intw, num_wann_intw,nrpts))
   ham_r = cmplx_0
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp shared(nrpts, nnkp_num_kpoints, num_wann_intw) &
+  !$omp shared(nnkp_kpoints, irvec, ham_k, ham_r) &
+  !$omp private(ik, ib, jb, phasefac)
   do i = 1,nrpts
      do ik = 1,nnkp_num_kpoints
        do ib = 1, num_wann_intw
@@ -522,6 +527,7 @@ contains
        end do
      enddo
   enddo
+  !$omp end parallel do
   ham_r = ham_r/real(nnkp_num_kpoints,dp)
 
   return
