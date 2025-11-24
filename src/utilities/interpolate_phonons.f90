@@ -22,6 +22,10 @@ program interpolatephonons
 
   ! Interpolate dynamical matrices using atom-pair-adapted WS vectors
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_set_max_active_levels
+#endif
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version
@@ -32,7 +36,6 @@ program interpolatephonons
                           generate_kmesh, cryst_to_cart, smeared_delta, &
                           generate_and_allocate_kpath
 
-  use intw_matrix_vector, only: ainv
 
   use intw_input_parameters, only: read_input, read_cards, &
                                    outdir, prefix, &
@@ -66,7 +69,7 @@ program interpolatephonons
   integer :: qmesh_nqirr
   integer :: ph_unit
   integer, allocatable :: qspecial_indices(:)
-  real(dp) :: omega_step, omega, rfacq
+  real(dp) :: omega_step, omega
   real(dp) :: qpoint(3)
   real(dp), allocatable :: qpath(:,:), dqpath(:), dosph(:,:)
   real(dp), allocatable :: w2_qint(:), w_qint(:)
@@ -90,6 +93,9 @@ program interpolatephonons
   write(*,20) '|             program interpolatephonons            |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+#ifdef _OPENMP
+  call omp_set_max_active_levels(1) ! This utility usea a single active parallel level
+#endif
   call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
@@ -283,9 +289,9 @@ program interpolatephonons
     call dyn_interp_1q(qpoint, dyn_qint)
     call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint) ! freqs are given in a.u
     w_qint = sign(sqrt(abs(w2_qint)), w2_qint) * Ha_to_eV*1000.0_dp
-    write(ph_unit,'(20e14.6)') dqpath(iq), w_qint ! meV
-    ! write(ph_unit,'(20e14.6)') dqpath(iq)/tpiba, w_qint*8.065610_dp ! Matdyn (cm^-1)
-    ! write(ph_unit,'(20e14.6)') dqpath(iq)/tpi, w_qint/4.135665538536_dp ! Phonopy (tHz)
+    write(ph_unit,'(100e14.6)') dqpath(iq), (w_qint(imode), imode=1,3*nat) ! meV
+    ! write(ph_unit,'(100e14.6)') dqpath(iq)/tpiba, (w_qint(imode)*8.065610_dp, imode=1,3*nat) ! Matdyn (cm^-1)
+    ! write(ph_unit,'(100e14.6)') dqpath(iq)/tpi, (w_qint(imode)/4.135665538536_dp, imode=1,3*nat) ! Phonopy (tHz)
   end do
   !
   ! Print special q-points information in the phonon bands file
@@ -317,11 +323,17 @@ program interpolatephonons
   omega_step = (omega_fin-omega_ini)/real(nomega-1,dp)
   !
   ! Fine q-grid
+  !$omp parallel do collapse(3) reduction(+: dosph) &
+  !$omp default(none) &
+  !$omp shared(nq1_dosph, nq2_dosph, nq3_dosph, nat) &
+  !$omp shared(nomega, omega_ini, omega_step, osmear_q, omega) &
+  !$omp private(qpoint, dyn_qint, u_qint, w2_qint, w_qint) &
+  !$omp private(imode, iomega)
   do iq1 = 1, nq1_dosph
-    qpoint(1) = real(iq1-1,dp) / real(nq1_dosph,dp)
     do iq2 = 1, nq2_dosph
-      qpoint(2) = real(iq2-1,dp) / real(nq2_dosph,dp)
       do iq3 = 1, nq3_dosph
+        qpoint(1) = real(iq1-1,dp) / real(nq1_dosph,dp)
+        qpoint(2) = real(iq2-1,dp) / real(nq2_dosph,dp)
         qpoint(3) = real(iq3-1,dp) / real(nq3_dosph,dp)
         !
         ! Interpolate frequency in qpoint
@@ -333,20 +345,20 @@ program interpolatephonons
         ! Phonon frequency in a.u.: pass to Ry
         w_qint = w_qint*Ha_to_Ry
         !
-        ! Smear omega(q) for DOS (gaussian)
+        ! Smear for DOS
         do imode = 1, 3*nat
-          do iomega=1, nomega ! Frequencies in Ry
-            omega = omega_ini + omega_step*real(iomega-1,dp)
-            rfacq = smeared_delta(omega-w_qint(imode), osmear_q)
-            dosph(imode,iomega) = dosph(imode,iomega) + rfacq
+          do iomega = 1, nomega
+            omega = omega_ini + omega_step*real(iomega-1,dp) ! in Ry
+            dosph(imode,iomega) = dosph(imode,iomega) + smeared_delta(omega-w_qint(imode), osmear_q) ! Gaussian smearing
           end do
         end do
         !
       end do
     end do
   end do
+  !$omp end parallel do
   !
-  dosph = dosph / real(nq1_dosph*nq2_dosph*nq3_dosph,dp) ! Normalize for Nq points
+  dosph = dosph / (nq1_dosph * nq2_dosph * nq3_dosph) ! Normalize for Nq points
   !
   ! Write DOS to file
   phband_file_name = trim(outdir)//trim(prefix)//".qdos_int"
@@ -357,7 +369,7 @@ program interpolatephonons
   !
   do iomega=1,nomega
     omega = omega_ini + omega_step*real(iomega-1,dp)
-    write(ph_unit,'(40e14.6)') omega, sum(dosph(:,iomega)), dosph(:,iomega)
+    write(ph_unit,'(100e14.6)') omega, sum(dosph(:,iomega)), (dosph(imode,iomega), imode=1,3*nat)
   end do
   !
   close(ph_unit)
