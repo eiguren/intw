@@ -93,7 +93,7 @@ cmake -DSPGLIB_GIT_TAG="v2.6.0" ..
 
 [triangle](https://www.cs.cmu.edu/~quake/triangle.html) is a Two-Dimensional Quality Mesh Generator and Delaunay Triangulator. And [tetgen](https://wias-berlin.de/software/index.jsp?id=TetGen) is a program to generate tetrahedral meshes of any 3D polyhedral domains.
 
-Both, `triangle` and `tetgen` codes, are used by INTW's `triFS.x` utility to obtain a fully symmetric triangulated Fermi surface. In order to `triFS.x` be compiled, ensure that both codes are installed and available in your system's `PATH`. Both codes can be downloaded directly from their official websites or, alternatively, in some distributions they can also be installed from the system's package repositories. E.g.:
+Both, `triangle` and `tetgen` codes, are used by INTW's `triFS.x` utility to obtain a fully symmetric triangulated Fermi surface. In order to `triFS.x` be compiled, ensure that both codes are installed and available in your system's `PATH`. Both codes can be downloaded directly from their official websites or, alternatively, in some distributions they can also be installed from the system's package repositories. For example:
 
 ```bash
 # Ubuntu
@@ -103,12 +103,20 @@ sudo apt install triangle-bin tetgen
 If `triangle` and `tetgen` executables are not found by CMake in the configuring step, `triFS.x` utility will not be compiled, however, the rest of the utilities will still be successfully built.
 
 
-### OpenMP (optional experimental)
+### OpenMP (optional)
 
-Some parts of INTW are parallelized using OpenMP.
+Some parts of INTW are parallelized using OpenMP to take advantage of shared-memory multicore architectures. To use the parallelized version, ensure to compile INTW with OpenMP support enabled by setting `USE_OPENMP=ON` (by default OpenMP support is disabled):
 
-:heavy_exclamation_mark: The parallelization with OpenMP is currently untested.
+```bash
+cmake -DUSE_OPENMP=ON ..
+```
 
+Additionally, depending on the size of the calculation, it may be necessary to set the OpenMP environmental variable OMP_STACKSIZE to avoid segmentation faults. For example:
+
+```bash
+#Bash
+export OMP_STACKSIZE="1GB"
+```
 
 ### Wannier90 (optional)
 
