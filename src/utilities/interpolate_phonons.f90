@@ -30,11 +30,10 @@ program interpolatephonons
 
   use intw_version, only: print_intw_version
 
-  use intw_useful_constants, only: Ha_to_eV, Ha_to_Ry, tpi
+  use intw_useful_constants, only: Ha_to_eV, tpi
 
   use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
-                          generate_kmesh, cryst_to_cart, smeared_delta, &
-                          generate_and_allocate_kpath
+                          generate_kmesh, cryst_to_cart, generate_and_allocate_kpath
 
 
   use intw_input_parameters, only: read_input, read_cards, &
@@ -55,7 +54,8 @@ program interpolatephonons
                                  dyn_q_to_dyn_r, dyn_interp_1q, &
                                  allocate_and_build_ws_irvec_qtau, &
                                  allocate_and_build_dyn_qmesh, &
-                                 allocate_and_build_dyn_qmesh_from_fc
+                                 allocate_and_build_dyn_qmesh_from_fc, &
+                                 interpolated_phonon_DOS
 
   use intw_symmetries, only: rtau, rtau_cryst, rtau_index, rot_atoms, find_size_of_irreducible_k_set, &
                              set_symmetry_relations, find_inverse_symmetry_matrices_indices
@@ -65,7 +65,7 @@ program interpolatephonons
   character(256) :: phband_file_name
   logical :: read_status
   logical :: full_mesh_q, IBZ_q
-  integer :: iq, iq1, iq2, iq3, iomega, imode
+  integer :: iq, iomega, imode
   integer :: qmesh_nqirr
   integer :: ph_unit
   integer, allocatable :: qspecial_indices(:)
@@ -294,6 +294,8 @@ program interpolatephonons
     ! write(ph_unit,'(100e14.6)') dqpath(iq)/tpi, (w_qint(imode)/4.135665538536_dp, imode=1,3*nat) ! Phonopy (tHz)
   end do
   !
+  deallocate(dyn_qint, u_qint, w2_qint, w_qint)
+  !
   ! Print special q-points information in the phonon bands file
   write(ph_unit,*) '#'
   write(ph_unit,*) '#Special q-points in the .qbnd_int file are:'
@@ -318,47 +320,8 @@ program interpolatephonons
   write(*,20) '| - Computing phonon DOS...                         |'
   !
   allocate(dosph(3*nat,nomega))
-  dosph = 0.0_dp
   !
-  omega_step = (omega_fin-omega_ini)/real(nomega-1,dp)
-  !
-  ! Fine q-grid
-  !$omp parallel do collapse(3) reduction(+: dosph) &
-  !$omp default(none) &
-  !$omp shared(nq1_dosph, nq2_dosph, nq3_dosph, nat) &
-  !$omp shared(nomega, omega_ini, omega_step, osmear_q, omega) &
-  !$omp private(qpoint, dyn_qint, u_qint, w2_qint, w_qint) &
-  !$omp private(imode, iomega)
-  do iq1 = 1, nq1_dosph
-    do iq2 = 1, nq2_dosph
-      do iq3 = 1, nq3_dosph
-        qpoint(1) = real(iq1-1,dp) / real(nq1_dosph,dp)
-        qpoint(2) = real(iq2-1,dp) / real(nq2_dosph,dp)
-        qpoint(3) = real(iq3-1,dp) / real(nq3_dosph,dp)
-        !
-        ! Interpolate frequency in qpoint
-        call dyn_interp_1q(qpoint, dyn_qint)
-        !
-        call dyn_diagonalize_1q(3*nat, dyn_qint, u_qint, w2_qint)
-        w_qint = sign(sqrt(abs(w2_qint)), w2_qint)
-        !
-        ! Phonon frequency in a.u.: pass to Ry
-        w_qint = w_qint*Ha_to_Ry
-        !
-        ! Smear for DOS
-        do imode = 1, 3*nat
-          do iomega = 1, nomega
-            omega = omega_ini + omega_step*real(iomega-1,dp) ! in Ry
-            dosph(imode,iomega) = dosph(imode,iomega) + smeared_delta(omega-w_qint(imode), osmear_q) ! Gaussian smearing
-          end do
-        end do
-        !
-      end do
-    end do
-  end do
-  !$omp end parallel do
-  !
-  dosph = dosph / (nq1_dosph * nq2_dosph * nq3_dosph) ! Normalize for Nq points
+  call interpolated_phonon_DOS(nq1_dosph, nq2_dosph, nq3_dosph, omega_ini, omega_fin, osmear_q, nomega, dosph)
   !
   ! Write DOS to file
   phband_file_name = trim(outdir)//trim(prefix)//".qdos_int"
@@ -367,6 +330,7 @@ program interpolatephonons
   !
   write(ph_unit,'(A)') '# omega[Ry]  phonon-DOS(total)  PDOS(imode=1)  PDOS(imode=2)  PDOS(imode=3) ...'
   !
+  omega_step = (omega_fin-omega_ini)/real(nomega-1,dp)
   do iomega=1,nomega
     omega = omega_ini + omega_step*real(iomega-1,dp)
     write(ph_unit,'(100e14.6)') omega, sum(dosph(:,iomega)), (dosph(imode,iomega), imode=1,3*nat)
