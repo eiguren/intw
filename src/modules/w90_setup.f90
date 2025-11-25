@@ -458,6 +458,11 @@ contains
   !
   allocate (ham_k(num_wann_intw,num_wann_intw,nnkp_num_kpoints))
   ham_k = cmplx_0
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp shared(nnkp_num_kpoints, num_wann_intw, use_disentanglement) &
+  !$omp shared(ndimwin, u_mesh, eigenval_intw, lwindow, ham_k) &
+  !$omp private(nwin, jw, iw, cterm)
   do ik = 1,nnkp_num_kpoints
      nwin = ndimwin(ik)
      do jw = 1,num_wann_intw
@@ -481,6 +486,7 @@ contains
        end do
      end do
   end do
+  !$omp end parallel do
   !
   return
   end subroutine allocate_and_build_ham_k
@@ -506,6 +512,11 @@ contains
   !
   allocate (ham_r(num_wann_intw, num_wann_intw,nrpts))
   ham_r = cmplx_0
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp shared(nrpts, nnkp_num_kpoints, num_wann_intw) &
+  !$omp shared(nnkp_kpoints, irvec, ham_k, ham_r) &
+  !$omp private(ik, ib, jb, phasefac)
   do i = 1,nrpts
      do ik = 1,nnkp_num_kpoints
        do ib = 1, num_wann_intw
@@ -516,6 +527,7 @@ contains
        end do
      enddo
   enddo
+  !$omp end parallel do
   ham_r = ham_r/real(nnkp_num_kpoints,dp)
 
   return
@@ -838,28 +850,35 @@ contains
   ! construct fine grid of kpoints, interpolate 1 by 1 and add
   ! contribution to DOS(e)
 
+  !$omp parallel do collapse(3) reduction(+: DOS, PDOS) &
+  !$omp default(none) &
+  !$omp shared(nik1, nik2, nik3, num_wann_intw) &
+  !$omp shared(ne, eini, estep, esmear) &
+  !$omp private(kpoint, eig_int, u_interp) &
+  !$omp private(ie, iw, ener, lorentz)
   do ik1 = 1,nik1
-     kpoint(1) = real(ik1-1,dp) / real(nik1,dp)
-  do ik2 = 1,nik2
-     kpoint(2) = real(ik2-1,dp) / real(nik2,dp)
-  do ik3 = 1,nik3
-     kpoint(3) = real(ik3-1,dp) / real(nik3,dp)
-     !
-     call interpolate_1k (kpoint, eig_int, u_interp)
-     do ie = 1,ne
-        ener = eini + (ie-1)*estep
-        do iw = 1,num_wann_intw
-          !lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
-          !lorentz = lorentz * 0.5_dp*esmear/tpi
-          lorentz = smeared_lorentz(ener-eig_int(iw),esmear)
-          DOS(ie) = DOS(ie) + lorentz
-          if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
+    do ik2 = 1,nik2
+      do ik3 = 1,nik3
+        kpoint(1) = real(ik1-1,dp) / real(nik1,dp)
+        kpoint(2) = real(ik2-1,dp) / real(nik2,dp)
+        kpoint(3) = real(ik3-1,dp) / real(nik3,dp)
+        !
+        call interpolate_1k (kpoint, eig_int, u_interp)
+        do ie = 1,ne
+          ener = eini + (ie-1)*estep
+          do iw = 1,num_wann_intw
+            !lorentz = 1.0_dp / ((ener-eig_int(iw))**2+esmear**2)
+            !lorentz = lorentz * 0.5_dp*esmear/tpi
+            lorentz = smeared_lorentz(ener-eig_int(iw),esmear)
+            DOS(ie) = DOS(ie) + lorentz
+            if (present(PDOS)) PDOS(ie,:) = PDOS(ie,:) + lorentz*(abs(u_interp(iw,:)))**2
+          end do
         end do
-     end do
-     !
+        !
+      end do
+    end do
   end do
-  end do
-  end do
+  !$omp end parallel do
   DOS = DOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
   PDOS = PDOS / real(nik1 * nik2 * nik3, dp)  ! normalize for Nk points
   !

@@ -36,9 +36,8 @@ program ep_melements
   use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
   use intw_pseudo_non_local, only: init_KB_PP, &
                                    multiply_psi_by_dvKB
-  use intw_utility, only: get_timing, print_date_time, &
-                          find_free_unit, &
-                          generate_kmesh, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, &
+                          find_free_unit, generate_kmesh, &
                           conmesurate_and_coarser
   use intw_matrix_vector, only: ainv
   use intw_useful_constants, only: cmplx_0, cmplx_1
@@ -71,7 +70,7 @@ program ep_melements
 
   !q point related variables
   real(dp)                 :: qpoint(3)
-  integer                  :: iq, qmesh_nqirr
+  integer                  :: iq, iq_global, iq_do, qmesh_nqirr
   logical                  :: full_mesh_q, IBZ_q
   character(len=4)         :: iq_loc
 
@@ -113,6 +112,7 @@ program ep_melements
   write(*,20) '|                program ep_melements               |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !
@@ -410,11 +410,27 @@ program ep_melements
   !
   ! Allocate matrix elements variable
   allocate(ep_mat_el(nkmesh,num_bands_ep,num_bands_ep,nspin,nspin,3*nat))
+  inquire(iolength=record_length) ep_mat_el
   !
-  do iq=1,nqmesh
+  iq_global = 0
+  !
+  !$omp parallel do &
+  !$omp default(none) &
+  !$omp shared(nkmesh, kmesh) &
+  !$omp shared(num_bands_intw, num_bands_ep, ep_bands, ep_bands_initial, ep_bands_final) &
+  !$omp shared(nat, nspin, nGk_max) &
+  !$omp shared(nqmesh, iq_global, qmesh) &
+  !$omp shared(record_length, outdir, ep_mat_file) &
+  !$omp private(iq, qpoint, ik, kpoint) &
+  !$omp private(nGk, nGkq, list_iGk, list_iGkq, wfc_k, wfc_kq) &
+  !$omp private(ep_unit, ierr, iq_loc) &
+  !$omp private(ibnd, jbnd, ispin, jspin, imode) &
+  !$omp private(dvq_local, dvpsi, ep_mat_el)
+  do iq_do=1,nqmesh
     !
-    ep_mat_el = cmplx_0
-    !
+    !$omp critical
+    iq_global = iq_global + 1
+    iq = iq_global
     qpoint = qmesh(:,iq)
     write(*,"(a,i4,a,a)") "|                    qpoint ", iq, "                    |"
     write(*,"(a,3f10.5,a)") "|         q =", qpoint, "         |"
@@ -424,11 +440,13 @@ program ep_melements
     if (100 <= iq .and. iq < 1000) write(iq_loc,"(i3)") iq
     !
     ep_unit = find_free_unit()
-    inquire(iolength=record_length) ep_mat_el
     open(unit=ep_unit, iostat=ierr, &
          file=trim(outdir)//trim(ep_mat_file)//trim('_')//adjustl(iq_loc), &
          form='unformatted', status='unknown', access='direct', recl=record_length)
     if (ierr /= 0 ) stop 'Error opening ep_mat_file'
+    !$omp end critical
+    !
+    ep_mat_el = cmplx_0
     !
     ! Get induced potential for q
     dvq_local = cmplx_0
@@ -437,16 +455,23 @@ program ep_melements
     ! Add local part of the KB-PP to the induced potential
     call calculate_local_part_dv(qpoint, dvq_local)
     !
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(nkmesh, kmesh) &
+    !$omp shared(qpoint, dvq_local, ep_mat_el) &
+    !$omp shared(num_bands_intw, num_bands_ep, ep_bands, ep_bands_initial, ep_bands_final) &
+    !$omp shared(nat, nspin, nGk_max) &
+    !$omp private(ik, kpoint) &
+    !$omp private(nGk, nGkq, list_iGk, list_iGkq, wfc_k, wfc_kq) &
+    !$omp private(ibnd, jbnd, ispin, jspin, imode) &
+    !$omp private(dvpsi)
     do ik=1,nkmesh
       !
       kpoint = kmesh(:,ik)
       !
-      write(*,'(a,i4,a,3f10.5,a)') "|   kpoint ", ik, ': k =', kpoint, "  |"
-      !
       ! Get wave functions for k and k+q
       call get_psi_general_k_all_wfc(       kpoint,  nGk,  list_iGk,  wfc_k)
       call get_psi_general_k_all_wfc(kpoint+qpoint, nGkq, list_iGkq, wfc_kq)
-      !
       !
       ! Multiply induced potential + local part of KB-PP with wave function:
       ! dvpsi: dv_q^local x | psi_k > (G)
@@ -488,6 +513,7 @@ program ep_melements
       enddo !imode
       !
     enddo !ik
+    !$omp end parallel do
     !
     write(unit=ep_unit, rec = 1, iostat = ierr) ep_mat_el(:,:,:,:,:,:)
     !
@@ -508,6 +534,7 @@ program ep_melements
 
     !
   enddo !iq
+  !$omp end parallel do
 
   !
   !

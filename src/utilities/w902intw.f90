@@ -22,7 +22,7 @@ program w902intw
 
   use intw_version, only: print_intw_version
 
-  use intw_utility, only: get_timing, print_date_time
+  use intw_utility, only: get_timing, print_threads, print_date_time
 
   use intw_w90_setup, only: read_eig, allocate_and_build_u_mesh, write_formatted_u_mesh, &
                             allocate_and_build_ws_irvec, allocate_and_build_ham_k, &
@@ -59,6 +59,7 @@ program w902intw
   write(*,20) '|                  program w902intw                 |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 

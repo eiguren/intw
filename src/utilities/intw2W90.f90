@@ -23,6 +23,9 @@ program intw2W90
   ! utilizing a minimum set of (QE generated) Bloch functions, using
   ! symmetry.
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_set_max_active_levels
+#endif
   use kinds, only: dp
   use intw_version, only: print_intw_version
   use intw_intw2wannier, only: nnkp_exclude_bands, read_nnkp_file, output_nnkp_file, nnkp_n_proj, &
@@ -45,7 +48,7 @@ program intw2W90
                           num_wann_intw, num_exclude_bands_intw, &
                           set_num_bands
   USE intw_allwfcs, only: allocate_and_get_all_irreducible_wfc
-  use intw_utility, only: get_timing, print_date_time, generate_kmesh
+  use intw_utility, only: get_timing, print_threads, print_date_time, generate_kmesh
 
 !================================================================================
 ! Declare the variables
@@ -77,6 +80,10 @@ program intw2W90
   write(*,20) '|                  program intw2W90                 |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+#ifdef _OPENMP
+  call omp_set_max_active_levels(1) ! This utility usea a single active parallel level
+#endif
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

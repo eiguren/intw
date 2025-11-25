@@ -45,7 +45,8 @@ module intw_ph_interpolate
   ! subroutines
   public :: allocate_and_build_ws_irvec_q, allocate_and_build_ws_irvec_qtau, &
             allocate_and_build_dyn_qmesh, allocate_and_build_dyn_qmesh_from_fc, &
-            dyn_q_to_dyn_r, dyn_interp_1q, dyn_diagonalize_1q
+            dyn_q_to_dyn_r, dyn_interp_1q, dyn_diagonalize_1q, interpolated_phonon_DOS, &
+            wann_IFT_1index_q
   !
   private
   !
@@ -443,5 +444,109 @@ module intw_ph_interpolate
     call diagonalize_cmat(uq, w2q)
 
   end subroutine dyn_diagonalize_1q
+
+
+  subroutine interpolated_phonon_DOS(niq1, niq2, niq3, eini, efin, esmear, ne, DOS)
+    !
+    !----------------------------------------------------------------------------!
+    !
+    !  Calculate phonon DOS using a fine grid niq1 x niq2 x niq3
+    !  and a gaussian smearing.
+    !
+    !----------------------------------------------------------------------------!
+    !
+    use intw_reading, only: nat
+    use intw_utility, only: smeared_delta
+    use intw_useful_constants, only: Ha_to_Ry
+
+    implicit none
+
+    integer, intent(in) :: niq1, niq2, niq3, ne
+    real(dp), intent(in) :: eini, efin, esmear
+    real(dp), intent(out) :: DOS(3*nat,ne)
+
+    real(dp) :: estep, ener
+    real(dp) :: qpoint(3)
+    real(dp) :: w2(3*nat), w(3*nat)
+    complex(dp) :: dyn(3*nat,3*nat), u(3*nat,3*nat)
+    integer :: iq1, iq2, iq3, imode, iener
+
+
+    estep = (efin-eini)/real(ne-1,dp)
+    !
+    DOS = 0.0_dp
+    !
+    ! Construct fine grid of qpoints, interpolate and add contribution to DOS(e)
+    !
+    !$omp parallel do collapse(3) reduction(+: DOS) &
+    !$omp default(none) &
+    !$omp shared(niq1, niq2, niq3, nat) &
+    !$omp shared(ne, eini, estep, esmear) &
+    !$omp private(qpoint, dyn, u, w2, w) &
+    !$omp private(imode, iener, ener)
+    do iq1 = 1, niq1
+      do iq2 = 1, niq2
+        do iq3 = 1, niq3
+          qpoint(1) = real(iq1-1,dp) / real(niq1,dp)
+          qpoint(2) = real(iq2-1,dp) / real(niq2,dp)
+          qpoint(3) = real(iq3-1,dp) / real(niq3,dp)
+          !
+          ! Interpolate frequency in qpoint
+          call dyn_interp_1q(qpoint, dyn)
+          call dyn_diagonalize_1q(3*nat, dyn, u, w2)
+          !
+          ! Phonon frequency in Ry
+          w = sign(sqrt(abs(w2)), w2)*Ha_to_Ry
+          !
+          ! Smear for DOS
+          do iener = 1, ne
+            ener = eini + estep*(iener-1) ! in Ry
+            do imode = 1, 3*nat
+              DOS(imode,iener) = DOS(imode,iener) + smeared_delta(ener-w(imode), esmear) ! Gaussian smearing
+            end do
+          end do
+          !
+        end do
+      end do
+    end do
+    !$omp end parallel do
+    !
+    DOS = DOS / (niq1 * niq2 * niq3) ! Normalize for Nq points
+
+  end subroutine interpolated_phonon_DOS
+
+
+  subroutine wann_IFT_1index_q (nqs, qpoints, matq, matL)
+    !
+    !----------------------------------------------------------------------------!
+    !  This does the same as wann_IFT_1index from intw_w90_setup module
+    !  but for q
+    !----------------------------------------------------------------------------!
+    !
+    use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
+    use intw_reading, only:  num_wann_intw
+    !
+    implicit none
+    !
+    integer , intent(in) :: nqs
+    real(kind=dp) , intent(in) :: qpoints(3,nqs)
+    complex(kind=dp) , intent(in) :: matq (num_wann_intw,num_wann_intw, nqs)
+    complex(kind=dp) , intent(out) :: matL (num_wann_intw,num_wann_intw, nrpts_q)
+    !
+    integer :: irq, iq
+    complex(kind=dp) :: fac
+
+
+    matL = cmplx_0
+    do irq = 1,nrpts_q
+      do iq = 1, nqs
+        fac = exp(-cmplx_i*tpi*dot_product(qpoints(:,iq),irvec_q(:,irq)))
+        matL(:,:,irq) = matL(:,:,irq) + fac*matq(:,:,iq)
+      end do
+    end do
+    matL = matL / real(nqs,dp)
+
+  end subroutine wann_IFT_1index_q
+
 
 end module intw_ph_interpolate

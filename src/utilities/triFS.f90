@@ -27,7 +27,7 @@ program triFS
                         read_tetrahedra, create_isosurface_IBZ, write_full_isosurface, DOS_isosurface, &
                         write_IBZ_isosurface
   use triFS_mesh_opt, only: mesh_optimization
-  use intw_utility, only: find_free_unit, get_timing, print_date_time
+  use intw_utility, only: find_free_unit, get_timing, print_threads, print_date_time
   use intw_input_parameters, only: input, prefix
   use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s
 
@@ -90,6 +90,7 @@ program triFS
   write(*,20) '|                   program triFS                   |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
   !

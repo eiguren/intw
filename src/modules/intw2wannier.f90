@@ -482,7 +482,7 @@ subroutine deallocate_nnkp()
 
   subroutine generate_mmn_using_allwfc (intw2W_fullzone,method)
     !----------------------------------------------------------------------------!
-    ! This subroutine computes the plane wave matrix elements  needed by Wannier90
+    ! This subroutine computes the plane wave matrix elements needed by Wannier90
     ! by using symmetry. It fetches the wfc in the IBZ, rotates them, and computes
     ! the needed matrix elements.
     !----------------------------------------------------------------------------!
@@ -490,51 +490,84 @@ subroutine deallocate_nnkp()
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
-    use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
+    use intw_input_parameters, only: outdir, prefix
     use intw_reading, only: num_bands_intw
 
     implicit none
 
-    logical        :: intw2W_fullzone
-    character(*)   :: method
+    logical     , intent(in) :: intw2W_fullzone
+    character(*), intent(in) :: method
 
-    integer        :: io_unit_mmn, io_unit_eig
-    integer        :: nkmesh
 
-    integer        :: nn
-
-    character(256) :: filename
-
-    integer        :: ikpt_1, ikpt_2
-    integer        :: nb1, nb2, nb
+    integer        :: ikpt_1, ikpt_2, ineighbor
     integer        :: G(3)
 
     integer        :: ngk1, ngk2
-
     integer        :: list_iG_1(nGk_max), list_iG_2(nGk_max)
     complex(dp)    :: wfc_1(nGk_max,num_bands_intw,nspin), wfc_2(nGk_max,num_bands_intw,nspin)
-    real(dp)       :: QE_eig(num_bands_intw)
 
-    complex(dp)    :: pw_mat_el(num_bands_intw,num_bands_intw,nspin,nspin)
-
+    character(256) :: filename
+    integer        :: io_unit_mmn, io_unit_eig
     character(256) :: header
+    integer        :: iband, jband, ispin
+
+    real(dp)       :: QE_eig(nnkp_num_kpoints,num_bands_intw)
+    complex(dp)    :: pw_mat_el(nnkp_num_kpoints,nnkp_nnkpts,num_bands_intw,num_bands_intw,nspin,nspin)
 
 
+    !loop on all points
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(nnkp_num_kpoints, nnkp_nnkpts, method) &
+    !$omp shared(nnkp_kpoints, nnkp_list_G, nnkp_list_ikpt_nn) &
+    !$omp shared(QE_eig, pw_mat_el) &
+    !$omp private(ngk1, list_iG_1, wfc_1) &
+    !$omp private(ngk2, list_iG_2, wfc_2) &
+    !$omp private(ineighbor, G, ikpt_2)
+    do ikpt_1 = 1, nnkp_num_kpoints
+
+      ! fetch the data
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_1), ngk1, list_iG_1, wfc_1, QE_eig(ikpt_1,:))
+
+      ! loop on neighbors
+      do ineighbor = 1, nnkp_nnkpts
+
+        G      = nnkp_list_G(:,ineighbor,ikpt_1)
+        ikpt_2 = nnkp_list_ikpt_nn(ineighbor,ikpt_1)
+
+        ! fetch data
+        call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_2) + G, ngk2, list_iG_2, wfc_2)
+
+        ! Compute the matrix elements
+        if ( trim(method) == 'CONVOLUTION' ) then
+          call get_plane_wave_matrix_element_convolution_map &
+                        ((/0, 0, 0/), list_iG_1, ngk1, list_iG_2, ngk2, wfc_1, wfc_2, pw_mat_el(ikpt_1,ineighbor,:,:,:,:))
+
+
+        else if ( trim(method) == 'FFT' ) then
+          call get_plane_wave_matrix_element_FFT &
+                        ((/0, 0, 0/), list_iG_1, list_iG_2, wfc_1, wfc_2, pw_mat_el(ikpt_1,ineighbor,:,:,:,:))
+        else
+          write(*,*) 'ERROR in generate_mmn'
+          stop
+        end if
+
+      end do ! ineighbor
+
+    end do ! ikpt_1
+    !$omp end parallel do
+
     !-----------------------------------
-    ! Open all the needed files
+    ! Save to file
     !-----------------------------------
-    io_unit_mmn = find_free_unit()
-    filename = trim(outdir)//trim(prefix)//trim('.mmn')
-    open(unit=io_unit_mmn,file=filename,status='unknown')
 
     io_unit_eig = find_free_unit()
     filename = trim(outdir)//trim(prefix)//trim('.eig')
     open(unit=io_unit_eig,file=filename,status='unknown')
 
-    !-----------------------------------
-    ! define a few useful variables
-    !-----------------------------------
-    nkmesh = nk1*nk2*nk3
+    io_unit_mmn = find_free_unit()
+    filename = trim(outdir)//trim(prefix)//trim('.mmn')
+    open(unit=io_unit_mmn,file=filename,status='unknown')
 
     if (intw2W_fullzone) then
       call generate_header(trim(method)//trim('-fullzone'),header)
@@ -546,62 +579,35 @@ subroutine deallocate_nnkp()
     write(io_unit_mmn,'(3i12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_nnkpts
 
     !loop on all points
-    do ikpt_1 = 1, nkmesh
-      ! fetch the data
-      call get_psi_general_k_all_wfc(nnkp_kpoints(:,ikpt_1), ngk1, list_iG_1, wfc_1, QE_eig)
+    do ikpt_1 = 1, nnkp_num_kpoints
 
       ! print out the eigenvalues
-      do nb =1, num_bands_intw
-        write(io_unit_eig,'(2(I6,x),F18.12)') nb, ikpt_1, QE_eig(nb)
+      do iband =1, num_bands_intw
+        write(io_unit_eig,'(2(I6,x),F18.12)') iband, ikpt_1, QE_eig(ikpt_1,iband)
       end do
 
       ! loop on neighbors
-      do nn = 1, nnkp_nnkpts
-        G      = nnkp_list_G(:,nn,ikpt_1)
-        ikpt_2 = nnkp_list_ikpt_nn(nn,ikpt_1)
+      do ineighbor = 1, nnkp_nnkpts
 
-        write(io_unit_mmn,'(5I7)')  ikpt_1,ikpt_2,G
+        G      = nnkp_list_G(:,ineighbor,ikpt_1)
+        ikpt_2 = nnkp_list_ikpt_nn(ineighbor,ikpt_1)
 
-        ! fetch data
-        call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt_2) + G, ngk2, list_iG_2, wfc_2, QE_eig)
+        write(io_unit_mmn,'(5I7)') ikpt_1, ikpt_2, G
 
-        ! Compute the matrix elements
-        if ( trim(method) == 'CONVOLUTION' ) then
-          call get_plane_wave_matrix_element_convolution_map      &
-                        ((/0, 0, 0/),list_iG_1,ngk1,list_iG_2,ngk2, wfc_1,wfc_2,pw_mat_el)
-
-
-        else if ( trim(method) == 'FFT' ) then
-          call get_plane_wave_matrix_element_FFT              &
-                        ((/0, 0, 0/),list_iG_1,list_iG_2, wfc_1,wfc_2,pw_mat_el)
-        else
-          write(*,*) 'ERROR in generate_mmn'
-          stop
-        end if
-
-        if (nspin==2) then
-          do nb1 = 1,num_bands_intw
-            do nb2 = 1,num_bands_intw
-              write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1) + pw_mat_el(nb2,nb1,2,2)
-            end do
+        do jband = 1, num_bands_intw
+          do iband = 1, num_bands_intw
+            write(io_unit_mmn,'(2F18.12)') &
+                sum( (/ (pw_mat_el(ikpt_1,ineighbor,iband,jband,ispin,ispin), ispin=1,nspin) /) )
           end do
-        else if  (nspin==1) then
-          do nb1 = 1,num_bands_intw
-            do nb2 = 1,num_bands_intw
-              write(io_unit_mmn,'(2F18.12)')   pw_mat_el(nb2,nb1,1,1)
-            end do
-          end do
-        endif
+        end do
 
-      end do
-
-    end do
+      end do ! ineighbor
+    end do ! ikpt_1
 
     close(io_unit_mmn)
     close(io_unit_eig)
 
   end subroutine generate_mmn_using_allwfc
-
 
   subroutine generate_amn_using_allwfc (intw2W_fullzone,method)
     !----------------------------------------------------------------------------!
@@ -617,56 +623,45 @@ subroutine deallocate_nnkp()
 
     implicit none
 
-    logical        :: intw2W_fullzone
-    character(256) :: method
+    logical       , intent(in) :: intw2W_fullzone
+    character(256), intent(in) :: method
 
-    integer        :: io_unit_amn
-    integer        :: nkmesh
-
-    character(256) :: filename
-
-    integer        :: ikpt
-    integer        :: nb, n_proj
+    integer        :: ikpt, iband, iproj
 
     integer        :: ngk, list_iG(nGk_max)
-
     complex(dp)    :: wfc(nGk_max,num_bands_intw,nspin)
-
     complex(dp)    :: guiding_function(nGk_max,nspin)
 
-    real(dp)       :: QE_eig(num_bands_intw)
+    complex(dp)    :: amn(nnkp_num_kpoints,nnkp_n_proj,num_bands_intw)
 
-    complex(dp)    :: amn(num_bands_intw)
-
+    integer        :: io_unit_amn
+    character(256) :: filename
     character(256) :: header
 
 
-    nkmesh = nk1*nk2*nk3
-
-    io_unit_amn = find_free_unit()
-    filename    = trim(outdir)//trim(prefix)//trim('.amn')
-    open(unit=io_unit_amn,file=filename,status='unknown')
-
-    call generate_header(method,header)
-    write(io_unit_amn,*) trim(header)
-    write(io_unit_amn,'(3I12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints , nnkp_n_proj
-
     !loop on all k-points
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(lspin, method) &
+    !$omp shared(nnkp_num_kpoints, nnkp_n_proj, nnkp_kpoints, nnkp_proj_s) &
+    !$omp shared(amn) &
+    !$omp private(ngk, list_iG, wfc) &
+    !$omp private(iproj, guiding_function)
     do ikpt = 1, nnkp_num_kpoints
 
       ! fetch the data
-      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt), ngk, list_iG, wfc, QE_eig)
+      call get_psi_general_k_all_wfc(nnkp_kpoints(:, ikpt), ngk, list_iG, wfc)
 
       !loop on all bands and all trial functions
-      do n_proj = 1,nnkp_n_proj
+      do iproj = 1, nnkp_n_proj
 
         ! Generate the fourier transform of the trial function (called guiding
         ! function, just like in pw2wannier).
-        call generate_guiding_function(ikpt, ngk, list_iG, n_proj, guiding_function(:,1))
+        call generate_guiding_function(ikpt, ngk, list_iG, iproj, guiding_function(:,1))
 
         !JLB spinor projection. Should be generalized to quantization axis /= z
         if (lspin) then
-          if (nnkp_proj_s(n_proj) < 0) then
+          if (nnkp_proj_s(iproj) < 0) then
             guiding_function(:,2) = guiding_function(:,1)
             guiding_function(:,1) = cmplx_0
           else
@@ -675,22 +670,40 @@ subroutine deallocate_nnkp()
         end if
 
         if (trim(method) == 'CONVOLUTION') then
-          call get_guiding_function_overlap_convolution(ngk, wfc, guiding_function, amn)
+          call get_guiding_function_overlap_convolution(ngk, wfc, guiding_function, amn(ikpt,iproj,:))
         else if (trim(method) == 'FFT') then
-          call get_guiding_function_overlap_FFT(list_iG, wfc, guiding_function, amn)
+          call get_guiding_function_overlap_FFT(list_iG, wfc, guiding_function, amn(ikpt,iproj,:))
         else
           write(*,*) 'ERROR in generate_amn'
           stop
         end if
 
-        !Write result to file $prefix.amn.
-        do nb = 1,num_bands_intw
-          write(io_unit_amn,'(3I7,2F18.12)') nb, n_proj, ikpt, amn(nb)
-        end do !nb
+      end do ! iproj
 
-      end do ! n_proj
+    end do ! ikpt
+    !$omp end parallel do
 
-    end do !ikpt
+    !-----------------------------------
+    ! Save to file
+    !-----------------------------------
+
+    io_unit_amn = find_free_unit()
+    filename    = trim(outdir)//trim(prefix)//trim('.amn')
+    open(unit=io_unit_amn,file=filename,status='unknown')
+
+    call generate_header(method,header)
+    write(io_unit_amn,*) trim(header)
+    write(io_unit_amn,'(3I12)') nbands-nnkp_exclude_bands, nnkp_num_kpoints, nnkp_n_proj
+
+    do ikpt = 1, nnkp_num_kpoints
+      do iproj = 1, nnkp_n_proj
+
+        do iband = 1,num_bands_intw
+          write(io_unit_amn,'(3I7,2F18.12)') iband, iproj, ikpt, amn(ikpt,iproj,iband)
+        end do ! iband
+
+      end do ! iproj
+    end do ! ikpt
 
     close(io_unit_amn)
 
@@ -897,47 +910,20 @@ subroutine deallocate_nnkp()
 
     !local variables
 
-    integer :: ibnd, is, iG
-    complex(dp) :: amn_local(num_bands_intw)
+    integer :: ibnd, is
+
+    complex(dp), external :: zdotc
 
 
     amn = cmplx_0
     !
-    !
-    !$omp parallel default(none) &
-    !$omp shared(num_bands_intw,nspin,wfc,amn,guiding_function,ngk) &
-    !$omp private(iG,ibnd,is,amn_local)
-    !
-    amn_local = cmplx_0
-    !
-    ! First, build the pw_mat_el_local arrays, on each thread.
-    !$omp do
-    !
-    do iG=1,ngk
-      !
-      do ibnd=1,num_bands_intw
-          do is=1,nspin
-            !
-            amn_local(ibnd) = amn_local(ibnd) + CONJG(wfc(iG,ibnd,is))*guiding_function(iG,is)
-            !
-          enddo !is
-      enddo !ibnd
-      !
-    enddo !i loop
-    !
-    !$omp end do
-    !
     do ibnd=1,num_bands_intw
-      !
-      !$omp atomic
-      !
-      amn(ibnd) = amn(ibnd) + amn_local(ibnd)
-      !
-    enddo
-    !
-    !$omp end parallel
-    !
-    return
+        do is=1,nspin
+          !
+          amn(ibnd) = amn(ibnd) + zdotc(nGk_max, wfc(:,ibnd,is), 1, guiding_function(:,is), 1)
+          !
+        enddo !is
+    enddo !ibnd
 
   end subroutine get_guiding_function_overlap_convolution
 

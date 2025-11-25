@@ -38,21 +38,21 @@ program ep_on_trFS_dV
   !    the location of pw.x and pw2intw.x executables is needed,
   !    which is also given in the intw.in file.
   !
-  !    1.- From files prefix.N_FS_tri.off, where  N is the Fermi surface (FS) sheet,
+  !    1.- From files prefix.N_FS_tri.off, where N is the Fermi surface (FS) sheet,
   !        it reads the lists of k-points at the vertices, and the faces, in order to calculate
   !        areas.
   !
-  !    2.- It writes a prefix.nscf.in input for pw.x by reading prefix.scf.in
+  !    2.- It writes a prefix-nscf.nscf.in input for pw.x by reading prefix.scf.in
   !        and replacing the k-points by the FS triangularization information.
   !
-  !    3.- It writes a nscf-pw2intw.in file, which will convert wfc data from
+  !    3.- It writes a prefix-nscf.pw2intw.in file, which will convert wfc data from
   !        prefix-nscf.save directory.
   !
   !    4.- It sets a directory prefix-nscf.save and initializes it with the scf charge density.
   !        It runs pw.x and applies pw2intw.x to the obtained wfcs. In case the prefix-nscf.save/wfc
   !        files exist, it skips this and warns the user.
   !
-  !    (2-4 done only in case prefix.nscf.out does not exist)
+  !    (In the case of using SIESTA step 2 and 3 are done with siesta2intw.x)
   !
   ! 2nd part:
   !
@@ -68,13 +68,17 @@ program ep_on_trFS_dV
   !    Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
   !    Write to file
 
+#ifdef _OPENMP
+  use omp_lib, only: omp_get_num_threads, omp_get_thread_num
+#endif
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           cryst_to_cart, generate_kmesh, &
                           joint_to_triple_index_r
 
@@ -116,41 +120,63 @@ program ep_on_trFS_dV
 
   implicit none
 
-  ! for part I
-  logical :: read_status
-  character(5) :: is_loc, comenta
-  character(100) :: file_off
-  integer :: unit_off
-  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot
-  integer :: is, js, ik, ik1, i, j, k, iface, iks, ish, iksp, ishp, ibp
-  integer :: nfs_sheets_tot ! number of sheets considered
-  integer, allocatable :: nfs_sheet(:), & ! band indices of the sheets (num_bands_intw set)
+  ! FS triangulation
+  integer :: nfs_sheets_tot ! number of FS sheets considered
+  integer :: nkpt_tr_tot, nkpt_tr_ibz_tot ! total number of kpoints in the FS and in the irreducible BZ wedge
+  integer, allocatable :: nfs_sheet(:), & ! band indices of the FS sheets (from num_bands_intw set)
                           nkpt_tr(:), & ! number of kpoints in each FS sheet
                           nkpt_tr_ibz(:), & ! number of kpoints in each FS sheet irreducible BZ wedge
                           nface_tr(:) ! number of faces in each FS sheet
+  real(dp), allocatable :: kpts_tr(:,:), & ! list of all kpoints
+                           kpts_tr_area(:) ! area of each kpoint in the FS
+  integer, allocatable :: ikibz_2_ik(:), & ! index of the ikibz kpoint inside the irreducible BZ wedge in the list of all kpoints
+                          ik_2_ish(:), & ! FS sheet index of kpts_tr(:,ik)
+                          ik_2_iks(:) ! index of kpts_tr(:,ik) in its FS sheet kpoints list
+
+  ! for part I
+  logical :: read_status
+  character(5) :: ish_loc, comment
+  character(100) :: file_off
+  integer :: unit_off
   real(dp) :: k1(3), k2(3), k3(3), kwei
-  real(dp), allocatable :: kpts_tr(:,:), kpts_tr_area(:)
 
   ! for part II
   logical :: full_mesh_q, IBZ_q
   integer :: qmesh_nqirr
-  integer :: iq, ir, jr, ir1, ir2, ir3
   real(dp) :: qpoint(3), rvec(3)
   complex(dp) :: facq
   complex(dp), allocatable :: dvq_local_R(:,:,:,:,:)
+  integer :: iq_start, iq_end
+#ifdef _OPENMP
+  integer :: nq, nq_remaining
+  integer :: thread_id, thread_num
+#endif
+
 
   ! for part III
   logical :: have_ep
   character(256) :: altprefix, file_ep
-  integer :: ib, iat, ikp, unit_ep
+  integer :: unit_ep
   integer :: nG, nG_p
   integer, allocatable :: list_iG(:), list_iG_p(:)
   real(dp) :: kpoint(3), kpoint_p(3)
   real(dp), allocatable :: QE_eig(:), QE_eig_p(:)
-  complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
   complex(dp), allocatable :: wfc(:,:,:), wfc_p(:,:,:)
+  complex(dp), allocatable :: wfc_all(:,:,:)
   complex(dp), allocatable :: dvq_local(:,:,:,:)
   complex(dp), allocatable :: dvpsi(:,:,:,:,:)
+  complex(dp), allocatable :: aep_mat_el(:,:,:,:,:)
+
+  ! loop variables and indices
+  integer :: ik, ikp, ikibz, ikibz_global, ikibz_do, iks, iksp
+  integer :: ish, ishp, ib, ibp
+  integer :: ik1, ik2, ik3
+  integer :: ir1, ir2, ir3
+  integer :: iface, iedge
+  integer :: is, js
+  integer :: ir, jr
+  integer :: iat
+  integer :: iq
 
   ! timing
   real(dp) :: time1, time2
@@ -173,6 +199,7 @@ program ep_on_trFS_dV
   write(*,20) '|  using interpolation of dV on the triangulated q  | '
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
@@ -311,29 +338,29 @@ program ep_on_trFS_dV
   allocate(nkpt_tr_ibz(nfs_sheets_tot))
 
   ! open all sheet files just to see dimensions of kpoint lists
-  do is=1,nfs_sheets_tot
+  do ish=1,nfs_sheets_tot
 
-    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
     write(*,'(A)') '|     '//file_off(1:max(45,len(trim(file_off))))//' |'
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr(is), nface_tr(is), k ! number of vertices and faces (ignore edges)
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr(ish), nface_tr(ish), iedge ! number of vertices and faces (ignore edges)
     close(unit_off)
 
-    ! open the IBZ off file and search for dimension nkpt_tr_ibz(is).
-    ! Its vertices coincide with the first nkpt_tr_ibz(is) vertices of the full off vertex list.
+    ! open the IBZ off file and search for dimension nkpt_tr_ibz(ish).
+    ! Its vertices coincide with the first nkpt_tr_ibz(ish) vertices of the full off vertex list.
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_IBZ_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_IBZ_FS_tri.off')
 
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
-    read(unit_off,*) comenta
-    read(unit_off,*) nkpt_tr_ibz(is), j, k ! number of vertices (ignore faces and edges)
+    read(unit_off,*) comment
+    read(unit_off,*) nkpt_tr_ibz(ish), iface, iedge ! number of vertices (ignore faces and edges)
     close(unit_off)
 
   end do
@@ -351,64 +378,81 @@ program ep_on_trFS_dV
 
 
   allocate(kpts_tr(3,nkpt_tr_tot), kpts_tr_area(nkpt_tr_tot))
+  allocate(ikibz_2_ik(nkpt_tr_ibz_tot))
+  allocate(ik_2_ish(nkpt_tr_tot))
+  allocate(ik_2_iks(nkpt_tr_tot))
+  ikibz_2_ik = -10
+  ik_2_ish = -10
+  ik_2_iks = -10
 
 
   ! open .off files again to read k-points
-  ik1 = 0
-  do is=1,nfs_sheets_tot
+  do ish=1,nfs_sheets_tot
 
-    if (                is <   10) write(is_loc,"(i1)") nfs_sheet(is)
-    if ( 10 <= is .and. is <  100) write(is_loc,"(i2)") nfs_sheet(is)
+    if (                 ish <  10) write(ish_loc,"(i1)") nfs_sheet(ish)
+    if ( 10 <= ish .and. ish < 100) write(ish_loc,"(i2)") nfs_sheet(ish)
 
     ! .off file for this sheet
 
-    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(is_loc))//trim('_FS_tri.off')
+    file_off = trim(outdir)//trim(prefix)//trim('.')//trim(adjustl(ish_loc))//trim('_FS_tri.off')
     unit_off = find_free_unit()
     open(unit_off, file=file_off, status='old')
 
-    read(unit_off,*) comenta
-    read(unit_off,*) i, j, k ! number vertices, faces and edges (I will ignore edges)
+    read(unit_off,*) comment
+    read(unit_off,*) ik, iface, iedge ! number vertices, faces and edges (I will ignore edges)
     ! read(unit_off,'(/)') ! DUDA... This will depend on how the line break is written in the file, I think...
-    if ( (i /= nkpt_tr(is)) .or. (j /= nface_tr(is)) ) then
+    if ( (ik /= nkpt_tr(ish)) .or. (iface /= nface_tr(ish)) ) then
       write(*,*) 'Error reading ', file_off, '. Stopping.'
       stop
     end if
 
     ! read vertices
-    do ik=1,nkpt_tr(is)
-      read(unit_off,*) kpts_tr(:,ik1+ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
+    do iks=1,nkpt_tr(ish)
+      ik = iks + sum(nkpt_tr(:ish-1))
+      ik_2_ish(ik) = ish
+      ik_2_iks(ik) = iks
+      if (iks<=nkpt_tr_ibz(ish)) then
+        ! kpoint is in the irreducible BZ wedge
+        ikibz = iks + sum(nkpt_tr_ibz(:ish-1))
+        ikibz_2_ik(ikibz) = ik
+      endif
+      read(unit_off,*) kpts_tr(:,ik) ! units in the trFS.off file are cartesian 2pi/alat ("tpiba" for QE)
     end do
 
     ! Read (triangular) faces on this sheet.
     ! Each face contributes with 1/3 of its area to the effective area of each of its vertices.
-    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik1+ik).
-    do iface = 1,nface_tr(is)
-      read(unit_off,*) i, ir1, ir2, ir3 ! indices ik of the vertices of the face, indexed from 0
-      ir1 = ir1 + 1
-      ir2 = ir2 + 1
-      ir3 = ir3 + 1 ! now, ik of the vertices of the face, indexed from 1
-      if ( i /= 3 ) then
+    ! Calculate the are on the go and add the contribution to each vertex, storing for global indices (i.e. ik).
+    do iface = 1, nface_tr(ish)
+      read(unit_off,*) ik, ik1, ik2, ik3 ! indices ik of the vertices of the face, indexed from 0
+      if ( ik /= 3 ) then
         write(*,*) 'Error reading ', file_off, 'Only triangles allowed. Stopping.'
         stop
       end if
+      ik1 = ik1 + 1
+      ik2 = ik2 + 1
+      ik3 = ik3 + 1 ! now, ik of the vertices of the face, indexed from 1
+      ik1 = ik1 + sum(nkpt_tr(:ish-1))
+      ik2 = ik2 + sum(nkpt_tr(:ish-1))
+      ik3 = ik3 + sum(nkpt_tr(:ish-1)) ! now, ik in the global ik list
       ! triangle vertex vectors (cartesian 2pi/alat)
-      k1 = kpts_tr(:,ik1+ir1)
-      k2 = kpts_tr(:,ik1+ir2)
-      k3 = kpts_tr(:,ik1+ir3)
+      k1 = kpts_tr(:,ik1)
+      k2 = kpts_tr(:,ik2)
+      k3 = kpts_tr(:,ik3)
       ! get spanned area and add contribution to each vertex
       ! function copied from FSH/modules/geometry.f90
       kwei = area_vec(k2-k1,k3-k1)/3.0_dp
-      kpts_tr_area(ik1+ir1) = kpts_tr_area(ik1+ir1) + kwei
-      kpts_tr_area(ik1+ir2) = kpts_tr_area(ik1+ir2) + kwei
-      kpts_tr_area(ik1+ir3) = kpts_tr_area(ik1+ir3) + kwei
+      kpts_tr_area(ik1) = kpts_tr_area(ik1) + kwei
+      kpts_tr_area(ik2) = kpts_tr_area(ik2) + kwei
+      kpts_tr_area(ik3) = kpts_tr_area(ik3) + kwei
     end do
 
     close(unit_off)
 
-    ! accumulate ik global index for the reading of next sheet
-    ik1 = ik1 + nkpt_tr(is)
-
   end do
+
+  if (any(ikibz_2_ik == -10)) stop "ERROR ikibz_2_ik"
+  if (any(ik_2_ish == -10)) stop "ERROR ik_2_ib"
+  if (any(ik_2_iks == -10)) stop "ERROR ik_2_iks"
 
   write(*,20) '|   .... reading done                               |'
 
@@ -531,7 +575,46 @@ program ep_on_trFS_dV
   allocate(dvq_local(nr1*nr2*nr3,3*nat,nspin,nspin))
   dvq_local_R = cmplx_0
 
-  do iq = 1, nqmesh
+  !$omp parallel reduction(+: dvq_local_R) &
+  !$omp default(none) &
+  !$omp shared(nqmesh, qmesh) &
+  !$omp shared(nr1, nr2, nr3) &
+  !$omp shared(nrpts_q, irvec_q) &
+  !$omp private(iq, qpoint, dvq_local, facq) &
+  !$omp private(ir, ir1, ir2, ir3, rvec, jr) &
+  !$omp shared(thread_num, nq, nq_remaining) &
+  !$omp private(thread_id, iq_start, iq_end)
+  !
+  ! Calculate the range of iterations for this thread.
+  ! If nqmesh is a multiple of thread_num, each thread
+  ! will run nq iterations.
+  ! Otherwise, the first nq_remaining threads will run
+  ! an extra iteration.
+  !
+#ifdef _OPENMP
+  !$omp single
+  thread_num = omp_get_num_threads()
+  nq = int(nqmesh/thread_num) ! Number of iterations for each thread
+  nq_remaining = mod(nqmesh, thread_num) ! Remainig q-points that need to be distributed
+  !$omp end single
+  !
+  thread_id = omp_get_thread_num()
+  iq_start = nq * thread_id + min(thread_id, nq_remaining) + 1
+  iq_end = nq * (thread_id + 1) + min(thread_id + 1, nq_remaining)
+#else
+  iq_start = 1
+  iq_end = nqmesh
+#endif
+  !
+  !$omp parallel do reduction(+: dvq_local_R) &
+  !$omp default(none) &
+  !$omp shared(nqmesh, qmesh) &
+  !$omp shared(nr1, nr2, nr3) &
+  !$omp shared(nrpts_q, irvec_q) &
+  !$omp private(qpoint, dvq_local, facq) &
+  !$omp private(ir, ir1, ir2, ir3, rvec, jr) &
+  !$omp shared(iq_start, iq_end)
+  do iq = iq_start, iq_end
 
     qpoint = qmesh(:,iq)
     write(*,'(A12,I5,3f11.5,A3)') '|     qpoint', iq, qpoint, "  |"
@@ -544,20 +627,21 @@ program ep_on_trFS_dV
     call calculate_local_part_dv(qpoint, dvq_local)
 
     ! transform with phase: iq*(r-R)
-
-    do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+    do ir = 1, nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
       ! ir to (ir1,ir2,ir3), 3rd index fastest
       call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
       rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
       rvec(2) = real(ir2-1,dp)/real(nr2,dp)
       rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-      do jr = 1,nrpts_q
+      do jr = 1, nrpts_q
         facq = exp(cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))
         dvq_local_R(jr,ir,:,:,:) = dvq_local_R(jr,ir,:,:,:) + facq * dvq_local(ir,:,:,:)
       end do ! R in WS
     end do ! e in unit cell
 
   end do
+  !$omp end parallel do
+  !$omp end parallel
   dvq_local_R = dvq_local_R / real(nqmesh,dp) ! normalize Fourier transform
 
   write(*,20) '|                                                   |'
@@ -585,7 +669,8 @@ program ep_on_trFS_dV
 
   allocate(list_iG(nGk_max), list_iG_p(nGk_max))
   allocate(QE_eig(num_bands_intw), QE_eig_p(num_bands_intw))
-  allocate(wfc(nGk_max,num_bands_intw,nspin), wfc_p(nGk_max,num_bands_intw,nspin))
+  allocate(wfc_all(nGk_max,num_bands_intw,nspin))
+  allocate(wfc(nGk_max,1,nspin), wfc_p(nGk_max,1,nspin))
 
 
   altprefix = trim(prefix)//'-nscf'
@@ -595,122 +680,153 @@ program ep_on_trFS_dV
 
   if (.not.have_ep) then ! calculate interpolated ep elements and write to file_ep
 
+    ikibz_global = 0
+    !$omp parallel do &
+    !$omp default(none) &
+    !$omp shared(at, nat, nspin, nr1, nr2, nr3, nGk_max) &
+    !$omp shared(ikibz_2_ik, ik_2_iks, ik_2_ish, nfs_sheet) &
+    !$omp shared(kpts_tr, nkpt_tr_tot, nkpt_tr_ibz_tot) &
+    !$omp shared(ndegen_q, irvec_q, nrpts_q, dvq_local_R) &
+    !$omp shared(wfc_all, altprefix) &
+    !$omp shared(aep_mat_el) &
+    !$omp shared(ikibz_global) &
+    !$omp private(ikibz, ik, iks, ish, ib) &
+    !$omp private(kpoint, list_iG, wfc, QE_eig, nG) &
+    !$omp private(ikp, iksp, ishp, ibp) &
+    !$omp private(kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
+    !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq) &
+    !$omp private(qpoint, dvq_local, dvpsi) &
+    !$omp private(iat, is, js)
+    do ikibz_do = 1, nkpt_tr_ibz_tot
+
+      !$omp critical
+      ikibz_global = ikibz_global + 1
+      ikibz = ikibz_global ! ikibz is the k-index over kpoints in the irreducible BZ wedge
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      !
+      ish = ik_2_ish(ik) ! FS sheet index for k
+      ib = nfs_sheet(ish) ! band index for k
+
+      write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ikibz, "/", nkpt_tr_ibz_tot, ' (ik: ', ik, ")                 |"
+
+      kpoint = kpts_tr(:,ik) ! this is cartesians x 2pi/alat. Transform to cryst.
+      call cryst_to_cart(1, kpoint, at, -1)
+
+      ! Read wavefunction k
+      call get_K_folder_data(ik, list_iG, wfc_all, QE_eig, nG, altprefix)
+      wfc = wfc_all(:,ib:ib,:)
+      !$omp end critical
+
+
+      !$omp parallel do &
+      !$omp default(none) &
+      !$omp shared(at, nat, nspin, nr1, nr2, nr3, nGk_max) &
+      !$omp shared(ik_2_iks, ik_2_ish, nfs_sheet) &
+      !$omp shared(kpts_tr, nkpt_tr_tot) &
+      !$omp shared(ndegen_q, irvec_q, nrpts_q, dvq_local_R) &
+      !$omp shared(wfc_all, altprefix) &
+      !$omp shared(kpoint, QE_eig, nG) &
+      !$omp shared(ikibz, iks) &
+      !$omp firstprivate(list_iG, wfc) &
+      !$omp shared(aep_mat_el) &
+      !$omp private(iksp, ishp, ibp) &
+      !$omp private(kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
+      !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq) &
+      !$omp private(qpoint, dvq_local, dvpsi) &
+      !$omp private(iat, is, js)
+      do ikp = 1, nkpt_tr_tot
+
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        !
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+
+        kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
+        call cryst_to_cart(1, kpoint_p, at, -1)
+
+        ! Read wavefunction k'
+        !$omp critical
+        call get_K_folder_data(ikp, list_iG_p, wfc_all, QE_eig_p, nG_p, altprefix)
+        wfc_p = wfc_all(:,ibp:ibp,:)
+        !$omp end critical
+
+        qpoint = kpoint_p - kpoint
+
+        ! Fourier backtransform a la Wannier: interpolation of dV local at qpoint
+        ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
+        ! we would do in Wannier.
+
+        dvq_local = cmplx_0 ! watch out: I am reusing this array in this step of k,k' double loop
+        do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
+          ! ir to (ir1,ir2,ir3), 3rd index fastest
+          call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
+          rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
+          rvec(2) = real(ir2-1,dp)/real(nr2,dp)
+          rvec(3) = real(ir3-1,dp)/real(nr3,dp)
+          do jr = 1,nrpts_q
+            facq = exp(-cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
+            dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
+          end do ! R in WS
+        end do ! r in unit cell
+
+        ! Multiply psi_k with induced potential + local part of the KB PP:
+        !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
+        call dvqpsi_local(1, list_iG, list_iG_p, wfc, dvq_local, dvpsi)
+
+        ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
+        !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
+        !                   (local)     + (non-local)
+        call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc, dvpsi)
+
+        ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
+        do iat=1,3*nat
+          do js=1,nspin
+            do is=1,nspin
+              aep_mat_el(ikp,ikibz, js,is, iat) = &
+                        zdotc( nGk_max, wfc_p(:,1,js), 1, dvpsi(:,1,js,is,iat), 1 )
+            enddo ! is
+          enddo ! js
+        enddo ! iat
+
+      end do ! k'
+      !$omp end parallel do
+
+    end do ! k
+    !$omp end parallel do
+
+    ! Save interpolated matrix elements
+
     unit_ep = find_free_unit()
     open(unit_ep, file=file_ep, status='unknown')
     write(unit_ep,*)'# ik(irr)   jk(full)    is js   g(canonical modes)'
-
-    ! ik, ikp indices implicitly contain the FS sheet index, i.e. the band indices ib, ib'
-    ! to be selected, so instead of iterating over nkpt_tr_tot, I separate over sheets
-    ! (aep_mat_el elements are stored only for the needed pair of sheets for a given kk')
-
-    ik = 0
-    ik1 = 0
-    do ish = 1, nfs_sheets_tot
-
+    !
+    do ikibz = 1, nkpt_tr_ibz_tot
+      !
+      ik = ikibz_2_ik(ikibz) ! ik is the corresponding k-index over kpoints in the full BZ kpts_tr list
+      iks = ik_2_iks(ik) ! iks is the corresponding k-index over the kpoints in the FS sheet
+      ish = ik_2_ish(ik) ! FS sheet index for k
       ib = nfs_sheet(ish) ! band index for k
-
-      do iks = 1, nkpt_tr_ibz(ish)
-
-        ! ik is the k-index over nkpt_tr_tot in the Irreducible BZ
-        ! ik1 is the corresponding k-index in the full BZ kpts_tr list (at the end of the loop I add the rest of nkpt_tr(ish))
-        ik = ik + 1
-        ik1 = ik1 + 1
-
-        write(*, '(A14,I4,A1,I4,A6,I5,A19)') '|     ik_IBZ: ', ik, "/", nkpt_tr_ibz_tot, ' (ik: ', ik1, ")                 |"
-
-        kpoint = kpts_tr(:,ik1) ! this is cartesians x 2pi/alat. Transform to cryst.
-        call cryst_to_cart(1, kpoint, at, -1)
-
-        ! Read wavefunction k
-        call get_K_folder_data(ik1, list_iG, wfc, QE_eig, nG, altprefix)
-
-        do ishp = 1, nfs_sheets_tot
-
-          ibp = nfs_sheet(ishp) ! band index for k'
-
-          !$omp parallel do &
-          !$omp firstprivate(iks, ik, kpoint, list_iG, wfc, QE_eig, nG) &
-          !$omp private(iksp, ikp, kpoint_p, list_iG_p, wfc_p, QE_eig_p, nG_p) &
-          !$omp private(ir, jr, ir1, ir2, ir3, rvec, facq, dvq_local) &
-          !$omp private(qpoint, dvpsi) &
-          !$omp private(iat, is, js)
-          do iksp = 1, nkpt_tr(ishp)
-
-            ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
-
-            kpoint_p = kpts_tr(:,ikp) ! this is cartesians x 2pi/alat. Transform to cryst.
-            call cryst_to_cart(1, kpoint_p, at, -1)
-
-            ! Read wavefunction k'
-            !$omp critical
-            call get_K_folder_data(ikp, list_iG_p, wfc_p, QE_eig_p, nG_p, altprefix)
-            !$omp end critical
-
-            qpoint = kpoint_p-kpoint
-
-            ! Fourier backtransform a la Wannier: interpolation of dV local at qpoint
-            ! with e^{-iq.(r-R)}, where R is a lattice vector of the WS supercell, as
-            ! we would do in Wannier.
-
-            dvq_local = cmplx_0 ! watch out: I am reusing this array in this step of k,k' double loop
-            do ir = 1,nr1*nr2*nr3 ! unit cell coordinates(1:nr1)
-              ! ir to (ir1,ir2,ir3), 3rd index fastest
-              call joint_to_triple_index_r(nr1, nr2, nr3, ir, ir1, ir2, ir3)
-              rvec(1) = real(ir1-1,dp)/real(nr1,dp) ! r-vector in fractional coord.
-              rvec(2) = real(ir2-1,dp)/real(nr2,dp)
-              rvec(3) = real(ir3-1,dp)/real(nr3,dp)
-              do jr = 1,nrpts_q
-                facq = exp(-cmplx_i*tpi*dot_product(qpoint, rvec(:)-irvec_q(:,jr)))/real(ndegen_q(jr),dp)
-                dvq_local(ir,:,:,:) = dvq_local(ir,:,:,:) + facq * dvq_local_R(jr,ir,:,:,:)
-              end do ! R in WS
-            end do ! r in unit cell
-
-            ! Multiply psi_k with induced potential + local part of the KB PP:
-            !   dvpsi_{k+q} = dv_local_{q} x |psi_{k}>
-            call dvqpsi_local(1, list_iG, list_iG_p, wfc(:,ib:ib,:), dvq_local, dvpsi)
-
-            ! Add non-local contribution: Multiply psi_k with non-local part of the KB PP:
-            !   dvpsi_{k+q} --> dvpsi_{k+q} + d_{q} [ KB ] |psi_{k}>
-            !                   (local)     + (non-local)
-            call multiply_psi_by_dvKB(kpoint, qpoint, list_iG, list_iG_p, 1, wfc(:,ib:ib,:), dvpsi)
-
-            ! Compute matrix elements: Multiply dvpsi with psi_{k+q}
-            do iat=1,3*nat
-              do js=1,nspin
-                do is=1,nspin
-                  aep_mat_el(ikp,ik, js,is, iat) = &
-                            zdotc( nGk_max, wfc_p(:,ibp,js), 1, dvpsi(:,1,js,is,iat), 1 )
-                enddo ! is
-              enddo ! js
-            enddo ! iat
-
-          end do ! k'
-          !$omp end parallel do
-
-          ! Save interpolated matrix elements for kpoint
-          do iksp = 1, nkpt_tr(ishp)
-            !
-            ikp = iksp + sum(nkpt_tr(:ishp-1)) ! k'-index over nkpt_tr_tot
-            !
-            do js=1,nspin
-              do is=1,nspin
-                write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,  &
-                    (aep_mat_el(ikp,ik, js,is, iat), iat=1,3*nat)
-              end do
-            end do
-            !
-          end do ! k'
-
-        end do ! sheet'
-
-      end do ! k
-
-      ik1 = ik1 + nkpt_tr(ish) - nkpt_tr_ibz(ish)
-
-    end do ! sheet
-
+      !
+      do ikp = 1, nkpt_tr_tot
+        !
+        iksp = ik_2_iks(ikp) ! iksp is the corresponding k-index over the kpoints in the FS sheet
+        ishp = ik_2_ish(ikp) ! FS sheet index for k
+        ibp = nfs_sheet(ishp) ! band index for k'
+        !
+        do js=1,nspin
+          do is=1,nspin
+            write(unit_ep,fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ikibz, &
+                                                (aep_mat_el(ikp,ikibz, js,is, iat), iat=1,3*nat)
+          end do
+        end do
+        !
+      end do ! k'
+      !
+    end do ! k
+    !
     close(unit_ep)
-
+    !
     write(*,20) '| - e-p elements interpolated and written to file:  |'
     write(*,20) "|   "//file_ep(1:max(47,len(trim(file_ep))))//" |"
 
@@ -743,207 +859,243 @@ contains
 
   subroutine QE_nscf()
 
-    use intw_input_parameters, only: command_pw, command_pw2intw, &
-                                     file_pw
-
     implicit none
 
-    logical :: have_nscf, have_wfcN, have_wfc1
-    logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
-    character(5) :: ik_loc
-    character(70) :: line, lleft
-    character(100) :: file_nscf, file_nscf_out
+    character(100) :: file_nscf_in, file_nscf_out
     character(100) :: file_pw2intw_in, file_pw2intw_out
-    character(100) :: dir_scf, dir_nscf
-    character(200) :: comando, datafile
-    integer :: unit_pw2intw, unit_pw, unit_nscf
-    integer :: ikpt
+    character(100) :: dir_nscf, dir_nscf_intw
+    logical :: have_nscf_out, have_nscf_wfcN, have_nscf_wfc1
+    character(5) :: ik_loc
 
     !================================================================================
-    ! Read prefix.scf.in file line by line and dump information to prefix.nscf.in .
+    ! Read prefix.scf.in file line by line and dump information to prefix-nscf.nscf.in.
     ! For that, the lines containing calculation and prefix are modified.
     ! When arriving at KPOINTS, reading stops and the triangle list is dumped to the
-    ! prefix.nscf.in file .
-    ! Note: this is done only in case the .nscf.out does not exist (otherwise,
+    ! prefix-nscf.nscf.in file.
+    ! Note: this is done only in case the nscf files do not exist (otherwise,
     ! it is assumed that the wfcs have already been calculated and transformed to intw format)
     !================================================================================
 
+    !================================================================================
+    ! Check pw2intw
+    ! Check if first and last wfc are present. If so, it probably means that the nscf
+    ! calculation was already made, so skip this step
+    !================================================================================
 
-    file_nscf = trim(outdir)//trim(prefix)//'.nscf.in'
-    file_nscf_out = trim(outdir)//trim(prefix)//'.nscf.out'
+    file_pw2intw_in = trim(outdir)//trim(prefix)//'-nscf.pw2intw.in'
+    file_pw2intw_out = trim(outdir)//trim(prefix)//'-nscf.pw2intw.out'
+    dir_nscf_intw = trim(outdir)//trim(prefix)//"-nscf.save.intw/"
+
+    inquire(file=file_pw2intw_out, exist=have_nscf_out)
+    write(ik_loc,"(i5.5)") 1
+    inquire(file=trim(dir_nscf_intw)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfc1)
+    write(ik_loc,"(i5.5)") nkpt_tr_tot
+    inquire(file=trim(dir_nscf_intw)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfcN)
+
+    if (have_nscf_out .and. have_nscf_wfc1 .and. have_nscf_wfcN) then
+      write(*,'(A)') '| - INTW nscf wfcs seem to be already available.    |'
+      write(*,'(A)') '|   Skipping nscf calculation!                      |'
+      return
+    endif
+
+    !================================================================================
+    ! Check QE nscf
+    ! Check if first and last wfc are present. If so, it probably means that the nscf
+    ! calculation was already made, so skip this step
+    !================================================================================
+
+    file_nscf_in = trim(outdir)//trim(prefix)//'-nscf.nscf.in'
+    file_nscf_out = trim(outdir)//trim(prefix)//'-nscf.nscf.out'
     dir_nscf = trim(outdir)//trim(prefix)//"-nscf.save/"
 
-    inquire(file=file_nscf_out, exist=have_nscf)
+    inquire(file=file_nscf_out, exist=have_nscf_out)
+    write(ik_loc,"(i5)") 1
+    inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfc1)
+    write(ik_loc,"(i5)") nkpt_tr_tot
+    inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfcN)
 
-    if ( .not. have_nscf ) then
-
-      ! Check if first and last wfc are present. If so, it probably means that the nscf
-      ! calculation was already made, so skip this step
-
-      inquire(file=trim(dir_nscf)//'wfc1.dat', exist=have_wfc1)
-      write(ik_loc,"(i5)") nkpt_tr_tot
-      inquire(file=trim(dir_nscf)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_wfcN)
-
-      if ( have_wfc1 .and. have_wfcN ) then
-        write(*,'(A)') '|   nscf seems to have already been performed.      |'
-        write(*,'(A)') '|   nscf calculation is skipped                     |'
-      else
-
-        write(*,'(A)') '| - Calculating nscf wfcs with QE...                |'
-
-        unit_pw = find_free_unit()
-        open(unit_pw, file=trim(file_pw), status='old')
-
-        unit_nscf = find_free_unit()
-        open(unit_nscf, file=trim(file_nscf), status='unknown')
-
-        do
-          read(unit_pw,'(a)',end=100) line
-          lleft = trim(adjustl(line))
-          if ( lleft(1:11) == 'calculation' ) then
-            write(unit_nscf,*) " calculation = 'nscf'"
-          else if ( lleft(1:6) == 'prefix' ) then
-            write(unit_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
-          else if ( lleft(1:8) == 'K_POINTS' ) then
-            exit
-          else
-            write(unit_nscf,*) line
-          end if
-        end do
-
-        close(unit_pw)
-
-        write(unit_nscf,*) " K_POINTS {tpiba} "
-        write(unit_nscf,*) nkpt_tr_tot
-        do ikpt = 1, nkpt_tr_tot
-          write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ikpt), 1.0_dp
-        end do
-
-        close(unit_nscf)
-
-        !================================================================================
-        ! Write nscf-pw2intw.in file.
-        ! nscf data will be written in prefix-nscf.save directory
-        !================================================================================
-
-        unit_pw2intw = find_free_unit()
-        file_pw2intw_in = trim(outdir)//'nscf-pw2intw.in'
-        file_pw2intw_out = trim(outdir)//'nscf-pw2intw.out'
-        open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown')
-
-        write(unit_pw2intw, *) trim(prefix)
-        write(unit_pw2intw, *) "&inputpp"
-        write(unit_pw2intw, *) "  outdir = './'"
-        write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
-        write(unit_pw2intw, *) "  phonons = .false."
-        write(unit_pw2intw, *) "/"
-
-        close(unit_pw2intw)
-
-
-        !================================================================================
-        ! Run the nscf calculation with pw.x and convert into intw format with pw2intw.x
-        !================================================================================
-
-        ! Create directory for nscf calculation prefix-nscf.save
-        comando = 'mkdir -p '//trim(dir_nscf) ! it will not create it if it already exists
-        call execute_command_line(comando)
-
-        ! copy scf input files (force copy) to prefix-nscf.save
-
-        ! If charge-density.dat and data-file-schema.xml have already been stored in
-        ! prefix.save.intw directory, first try to get them from there.
-        ! Otherwise, attempt to get them from prefix.save (the scf QE calculation directory,
-        ! if it still exists)
-
-        ! Try INTW directory (.save.intw)
-        dir_scf = trim(outdir)//trim(prefix)//".save.intw/"
-        datafile = trim(dir_scf)//'charge-density.dat'
-        inquire(file=datafile, exist=exists_charge_density)
-        datafile = trim(dir_scf)//'data-file-schema.xml'
-        inquire(file=datafile, exist=exists_schema)
-
-        if ( (.not. exists_schema) .or. (.not. exists_charge_density) ) then
-          ! Try searching them in QE scf directory (.save)
-          write(*,'(A)') '| - Continuation files for nscf not present in:     |'
-          write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
-
-          dir_scf = trim(outdir)//trim(prefix)//".save/"
-          write(*,'(A)') '| - Searching in:                                   |'
-          write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
-
-          datafile = trim(dir_scf)//'charge-density.dat'
-          inquire(file=datafile, exist=exists_charge_density_qe)
-          datafile = trim(dir_scf)//'data-file-schema.xml'
-          inquire(file=datafile, exist=exists_schema_qe)
-          if ( (.not. exists_schema_qe) .or. (.not. exists_charge_density_qe) ) then
-            write(*,*) 'Continuation files for nscf neither present in: ', trim(dir_scf)
-            write(*,*) 'Error. Stopping'
-            stop
-          end if
-        end if
-
-        write(*,'(A)') '| - Using continuation files for nscf from:         |'
-        write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
-
-        ! copy scf input files (force copy)
-        comando = 'cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
-        call execute_command_line(comando)
-        comando = 'cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
-        call execute_command_line(comando)
-
-        ! invoke QE pw.x to do nscf.
-        ! command_pw may contain running options (e.g. mpirun)
-        if ( command_pw == "unassigned" ) then
-          stop "ERROR: Unassigned command_pw variable."
-        else
-          comando = trim(command_pw)//" < "//trim(file_nscf)//" > "//trim(file_nscf_out)
-        end if
-        write(*,'(A)') "| - Running QE with command:                        |"
-        write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
-        call execute_command_line(comando)
-
-        ! Convert to INTW format invoking pw2intw.x
-        ! command_pw2intw may contain running options (e.g. mpirun)
-        if ( command_pw2intw == "unassigned" ) then
-          stop "ERROR: Unassigned command_pw2intw variable."
-        else
-          comando = trim(command_pw2intw)//" < "//trim(file_pw2intw_in)//" > "//trim(file_pw2intw_out)
-        end if
-        write(*,'(A)') "| - Running pw2intw with command:                   |"
-        write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
-
-        call execute_command_line(comando)
-
-      end if
-
-    else ! have_nscf = yes
-      write(*,'(A)') '| - File '//file_nscf_out(1:max(25,len(trim(file_nscf_out))))//' already exists:  |'
-      write(*,'(A)') '|   nscf calculation is skipped!                    |'
-    end if ! have_nscf
-
-    return
-
-    100 write(*,*) " ERROR READING scf file !!!. Stopping."
-    stop
+    if (have_nscf_out .and. have_nscf_wfc1 .and. have_nscf_wfcN) then
+      write(*,'(A)') '| - QE nscf wfcs seem to be already available.      |'
+      write(*,'(A)') '|   Skipping QE nscf calculation!                   |'
+      call run_pw2intw(file_pw2intw_in, file_pw2intw_out)
+    else
+      write(*,'(A)') '| - Calculating nscf wfcs with QE...                |'
+      call run_pw(file_nscf_in, file_nscf_out, dir_nscf)
+      call run_pw2intw(file_pw2intw_in, file_pw2intw_out)
+    end if
 
   end subroutine QE_nscf
+
+  subroutine run_pw(file_nscf_in, file_nscf_out, dir_nscf)
+    ! Create the input file and run the nscf calculation with pw.x
+
+    use intw_input_parameters, only: command_pw, file_pw
+
+    implicit none
+
+    character(100), intent(in) :: file_nscf_in, file_nscf_out
+    character(100), intent(in) :: dir_nscf
+
+    logical :: exists_charge_density, exists_schema, exists_charge_density_qe, exists_schema_qe
+    character(70) :: line, lleft
+    character(100) :: dir_scf, dir_scf_intw
+    character(200) :: comando, datafile
+    integer :: unit_pw, unit_nscf, ios
+    integer :: ikpt
+
+
+    ! Create input file for nscf calculation
+
+    unit_pw = find_free_unit()
+    open(unit_pw, file=trim(file_pw), status='old', iostat=ios)
+    if (ios /= 0) stop "ERROR opening file_pw! Stopping."
+
+    unit_nscf = find_free_unit()
+    open(unit_nscf, file=trim(file_nscf_in), status='unknown', iostat=ios)
+    if (ios /= 0) stop "ERROR opening file_nscf_in! Stopping."
+
+    do
+      read(unit_pw,'(a)', iostat=ios) line
+      if (ios /= 0) stop "ERROR reading file_pw! Stopping."
+      lleft = trim(adjustl(line))
+      if ( lleft(1:11) == 'calculation' ) then
+        write(unit_nscf,*) " calculation = 'nscf'"
+      else if ( lleft(1:6) == 'prefix' ) then
+        write(unit_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
+      else if ( lleft(1:8) == 'K_POINTS' ) then
+        exit
+      else
+        write(unit_nscf,*) line
+      end if
+    end do
+
+    write(unit_nscf,*) " K_POINTS {tpiba} "
+    write(unit_nscf,*) nkpt_tr_tot
+    do ikpt = 1, nkpt_tr_tot
+      write(unit_nscf,'(3f16.9,2x,f4.1)') kpts_tr(:,ikpt), 1.0_dp
+    end do
+
+    close(unit_pw)
+    close(unit_nscf)
+
+    ! Create directory for nscf calculation prefix-nscf.save
+
+    comando = 'mkdir -p '//trim(dir_nscf) ! it will not create it if it already exists
+    call execute_command_line(comando)
+
+    ! copy scf input files (force copy) to prefix-nscf.save
+
+    ! If charge-density.dat and data-file-schema.xml have already been stored in
+    ! prefix.save.intw directory, first try to get them from there.
+    ! Otherwise, attempt to get them from prefix.save (the scf QE calculation directory,
+    ! if it still exists)
+
+    ! Try INTW directory (.save.intw)
+    dir_scf_intw = trim(outdir)//trim(prefix)//".save.intw/"
+    datafile = trim(dir_scf_intw)//'charge-density.dat'
+    inquire(file=datafile, exist=exists_charge_density)
+    datafile = trim(dir_scf_intw)//'data-file-schema.xml'
+    inquire(file=datafile, exist=exists_schema)
+
+    if ( exists_schema .and. exists_charge_density ) then
+      ! Continuation files found in INTW directory
+      dir_scf = dir_scf_intw
+    else
+      ! Try searching them in QE scf directory (prefix.save)
+      write(*,'(A)') '| - Continuation files for nscf not present in:     |'
+      write(*,'(A)') '|   '//dir_scf_intw(1:max(47,len(trim(dir_scf_intw))))//" |"
+
+      dir_scf = trim(outdir)//trim(prefix)//".save/"
+      write(*,'(A)') '| - Searching in:                                   |'
+      write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
+
+      datafile = trim(dir_scf)//'charge-density.dat'
+      inquire(file=datafile, exist=exists_charge_density_qe)
+      datafile = trim(dir_scf)//'data-file-schema.xml'
+      inquire(file=datafile, exist=exists_schema_qe)
+      if ( (.not. exists_schema_qe) .or. (.not. exists_charge_density_qe) ) then
+        write(*,*) 'Continuation files for nscf neither present in: ', trim(dir_scf)
+        write(*,*) 'Error. Stopping'
+        stop
+      end if
+    end if
+
+    write(*,'(A)') '| - Using continuation files for nscf from:         |'
+    write(*,'(A)') '|   '//dir_scf(1:max(47,len(trim(dir_scf))))//" |"
+
+    ! copy scf input files (force copy)
+
+    comando = 'cp -f '//trim(dir_scf)//'charge-density.dat '//trim(dir_nscf)
+    call execute_command_line(comando)
+    comando = 'cp -f '//trim(dir_scf)//'data-file-schema.xml '//trim(dir_nscf)
+    call execute_command_line(comando)
+
+    ! Invoke QE pw.x to do nscf.
+    ! command_pw may contain running options (e.g. mpirun)
+
+    if ( command_pw == "unassigned" ) then
+      stop "ERROR: Unassigned command_pw variable."
+    else
+      comando = trim(command_pw)//" < "//trim(file_nscf_in)//" > "//trim(file_nscf_out)
+    end if
+    write(*,'(A)') "| - Running QE with command:                        |"
+    write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
+    call execute_command_line(comando)
+
+  end subroutine run_pw
+
+  subroutine run_pw2intw(file_pw2intw_in, file_pw2intw_out)
+    ! Create input file and run pw2intw.x
+
+    use intw_input_parameters, only: command_pw2intw
+
+    implicit none
+
+    character(100), intent(in) :: file_pw2intw_in, file_pw2intw_out
+
+    character(200) :: comando
+    integer :: unit_pw2intw, ios
+
+
+    ! Create input file for pw2intw
+
+    unit_pw2intw = find_free_unit()
+    open(unit_pw2intw, file=trim(file_pw2intw_in), status='unknown', iostat=ios)
+    if (ios /= 0) stop "ERROR opening file_pw2intw_in! Stopping."
+
+    write(unit_pw2intw, *) trim(prefix)
+    write(unit_pw2intw, *) "&inputpp"
+    write(unit_pw2intw, *) "  outdir = './'"
+    write(unit_pw2intw, *) "  prefix = '"//trim(prefix)//"-nscf'"
+    write(unit_pw2intw, *) "  phonons = .false."
+    write(unit_pw2intw, *) "/"
+
+    close(unit_pw2intw)
+
+    ! Invoke pw2intw.x to transform nscf data to INTW format
+    ! command_pw2intw may contain running options (e.g. mpirun)
+
+    if ( command_pw2intw == "unassigned" ) then
+      stop "ERROR: Unassigned command_pw2intw variable."
+    else
+      comando = trim(command_pw2intw)//" < "//trim(file_pw2intw_in)//" > "//trim(file_pw2intw_out)
+    end if
+    write(*,'(A)') "| - Running pw2intw with command:                   |"
+    write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
+
+    call execute_command_line(comando)
+
+  end subroutine run_pw2intw
 
 
   subroutine SIESTA_nscf()
 
-    use intw_input_parameters, only: command_siesta2intw, file_siesta2intw
-
     implicit none
 
-    logical :: have_nscf, write_nk
-    logical :: exists_density_matrix
-    character(70) :: line, lleft
-    character(100) :: file_s2intw_nscf, file_s2intw_nscf_out
-    character(200) :: comando, datafile
-    integer :: unit_s2intw, unit_s2intw_nscf
-    integer :: ikpt
-    real(dp), dimension(3) :: kpts_tr_cryst
+    character(100) :: file_s2intw_nscf_in, file_s2intw_nscf_out
+    character(100) :: dir_nscf_intw
+    logical :: have_nscf_out, have_nscf_wfc1, have_nscf_wfcN
+    character(5) :: ik_loc
 
     !================================================================================
     ! Read s2intw.in file line by line and dump information to s2intw.in_nscf.
@@ -954,90 +1106,118 @@ contains
     ! it is assumed that the wfcs have already been calculated and transformed to intw format)
     !================================================================================
 
-    file_s2intw_nscf = 'siesta2intw.nscf.in'
+    !================================================================================
+    ! Check siesta2intw
+    ! Check if first and last wfc are present. If so, it probably means that the nscf
+    ! calculation was already made, so skip this step
+    !================================================================================
 
-    file_s2intw_nscf_out = 'siesta2intw.nscf.out'
+    file_s2intw_nscf_in = trim(outdir)//trim(prefix)//'-nscf.siesta2intw.in'
+    file_s2intw_nscf_out = trim(outdir)//trim(prefix)//'-nscf.siesta2intw.out'
+    dir_nscf_intw = trim(outdir)//trim(prefix)//"-nscf.save.intw/"
 
-    inquire(file=file_s2intw_nscf_out, exist=have_nscf)
+    inquire(file=file_s2intw_nscf_out, exist=have_nscf_out)
+    write(ik_loc,"(i5.5)") 1
+    inquire(file=trim(dir_nscf_intw)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfc1)
+    write(ik_loc,"(i5.5)") nkpt_tr_tot
+    inquire(file=trim(dir_nscf_intw)//'wfc'//trim(adjustl(ik_loc))//'.dat', exist=have_nscf_wfcN)
 
-    if ( .not. have_nscf ) then
-      write(*,'(A)') '| - Calculating nscf wfcs with SIESTA...            |'
-
-      unit_s2intw = find_free_unit()
-      open(unit_s2intw, file=trim(file_siesta2intw), status='old')
-
-      unit_s2intw_nscf = find_free_unit()
-      open(unit_s2intw_nscf, file=trim(file_s2intw_nscf), status='unknown')
-
-      write_nk = .true.
-      do
-        read(unit_s2intw,'(a)',end=100) line
-        lleft = trim(adjustl(line))
-        if ( lleft(1:6) == 'prefix' ) then
-          write(unit_s2intw_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
-        else if ( lleft(1:7) == 'phonons' ) then
-          write(unit_s2intw_nscf,*) " phonons = .false."
-        else if ( lleft(1:3) == 'nk1' .or. lleft(1:3) == 'nk2' .or. lleft(1:3) == 'nk3' ) then
-          if (write_nk) write(unit_s2intw_nscf,*) " nk1=0, nk2=0, nk3=0"
-          write_nk = .false.
-        else if ( lleft(1:1) == '/' ) then
-          exit
-        else
-          write(unit_s2intw_nscf,*) trim(line)
-        end if
-      end do
-
-      close(unit_s2intw)
-
-      write(unit_s2intw_nscf,*) "/"
-      write(unit_s2intw_nscf,*) "KPOINTS"
-      write(unit_s2intw_nscf,*) nkpt_tr_tot
-      do ikpt = 1, nkpt_tr_tot
-        kpts_tr_cryst = kpts_tr(:,ikpt) ! this is cartesians x 2pi/alat. Transform to cryst.
-        call cryst_to_cart(1, kpts_tr_cryst, at, -1)
-        write(unit_s2intw_nscf,'(3f16.9,2x,f4.1)') kpts_tr_cryst
-      end do
-
-      close(unit_s2intw_nscf)
-
-      !================================================================================
-      ! Run the nscf calculation and convert into intw format with siesta2intw.x
-      !================================================================================
-
-      ! Check if density matrix file is present
-      datafile = trim(outdir)//trim(prefix)//".DM"
-      inquire(file=datafile, exist=exists_density_matrix)
-
-      if ( .not. exists_density_matrix ) then
-        write(*,*) 'Density matrix file needed for nscf not present: ', trim(datafile)
-        write(*,*) 'Error. Stopping'
-        stop
-      end if
-
-      write(*,'(A)') '| - Using density matrix file:                      |'
-      write(*,'(A)') '|   '//datafile(1:max(47,len(trim(datafile))))//" |"
-
-      ! invoke siesta2intw to save wfc's in INTW format.
-      ! command_siesta2intw may contain running options (e.g. mpirun)
-      if ( command_siesta2intw == "unassigned" ) then
-        stop "ERROR: Unassigned command_siesta2intw variable."
-      else
-        comando = trim(command_siesta2intw)//" < "//trim(file_s2intw_nscf)//" > "//trim(file_s2intw_nscf_out)
-      end if
-      write(*,'(A)') "| - Running siesta2intw with command:               |"
-      write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
-      call execute_command_line(comando)
-
-    else ! have_nscf = yes
-      write(*,"(A)") "| - File "//file_s2intw_nscf_out(1:max(20,len(trim(file_s2intw_nscf_out))))//" already exists:       |"
-      write(*,"(A)") "|   nscf calculation is skipped!                    |"
-    end if ! have_nscf
-
-    return
-
-    100 write(*,*) " ERROR READING scf file !!!. Stopping."
-    stop
+    if (have_nscf_out .and. have_nscf_wfc1 .and. have_nscf_wfcN) then
+      write(*,'(A)') '| - INTW nscf wfcs seem to be already available.    |'
+      write(*,'(A)') '|   Skipping nscf calculation!                      |'
+    else
+      write(*,'(A)') '| - Calculating nscf wfcs with siesta2intw...       |'
+      call run_siest2intw(file_s2intw_nscf_in, file_s2intw_nscf_out)
+    endif
 
   end subroutine SIESTA_nscf
+
+  subroutine run_siest2intw(file_s2intw_nscf_in, file_s2intw_nscf_out)
+    ! Create input file and run siesta2intw.x
+
+    use intw_input_parameters, only: command_siesta2intw, file_siesta2intw
+
+    implicit none
+
+    character(100), intent(in) :: file_s2intw_nscf_in, file_s2intw_nscf_out
+
+    logical :: exists_density_matrix
+    character(70) :: line, lleft
+    logical :: write_nk
+    character(200) :: comando, datafile
+    integer :: unit_s2intw, unit_s2intw_nscf, ios
+    integer :: ikpt
+    real(dp), dimension(3) :: kpts_tr_cryst
+
+
+    ! Create input file for siesta2intw
+
+    unit_s2intw = find_free_unit()
+    open(unit_s2intw, file=trim(file_siesta2intw), status='old', iostat=ios)
+    if (ios /= 0) stop "ERROR opening file_siesta2intw! Stopping."
+
+    unit_s2intw_nscf = find_free_unit()
+    open(unit_s2intw_nscf, file=trim(file_s2intw_nscf_in), status='unknown', iostat=ios)
+    if (ios /= 0) stop "ERROR opening file_s2intw_nscf_in! Stopping."
+
+    write_nk = .true.
+    do
+      read(unit_s2intw,'(a)', iostat=ios) line
+      if (ios /= 0) stop "ERROR reading file_siesta2intw! Stopping."
+      lleft = trim(adjustl(line))
+      if ( lleft(1:6) == 'prefix' ) then
+        write(unit_s2intw_nscf,*) " prefix = '"//trim(prefix)//"-nscf'"
+      else if ( lleft(1:7) == 'phonons' ) then
+        write(unit_s2intw_nscf,*) " phonons = .false."
+      else if ( lleft(1:3) == 'nk1' .or. lleft(1:3) == 'nk2' .or. lleft(1:3) == 'nk3' ) then
+        if (write_nk) write(unit_s2intw_nscf,*) " nk1=0, nk2=0, nk3=0"
+        write_nk = .false.
+      else if ( lleft(1:1) == '/' ) then
+        exit
+      else
+        write(unit_s2intw_nscf,*) trim(line)
+      end if
+    end do
+
+    close(unit_s2intw)
+
+    write(unit_s2intw_nscf,*) "/"
+    write(unit_s2intw_nscf,*) "KPOINTS"
+    write(unit_s2intw_nscf,*) nkpt_tr_tot
+    do ikpt = 1, nkpt_tr_tot
+      kpts_tr_cryst = kpts_tr(:,ikpt) ! this is cartesians x 2pi/alat. Transform to cryst.
+      call cryst_to_cart(1, kpts_tr_cryst, at, -1)
+      write(unit_s2intw_nscf,'(3f16.9,2x,f4.1)') kpts_tr_cryst
+    end do
+
+    close(unit_s2intw_nscf)
+
+    ! Check if density matrix file is present
+
+    datafile = trim(outdir)//trim(prefix)//".DM"
+    inquire(file=datafile, exist=exists_density_matrix)
+
+    if ( .not. exists_density_matrix ) then
+      write(*,*) 'Density matrix file needed for nscf not present: ', trim(datafile)
+      write(*,*) 'Error. Stopping'
+      stop
+    end if
+
+    write(*,'(A)') '| - Using density matrix file:                      |'
+    write(*,'(A)') '|   '//datafile(1:max(47,len(trim(datafile))))//" |"
+
+    ! Invoke siesta2intw.x to do nscf and transform nscf data to INTW format
+    ! command_siesta2intw may contain running options (e.g. mpirun)
+
+    if ( command_siesta2intw == "unassigned" ) then
+      stop "ERROR: Unassigned command_siesta2intw variable."
+    else
+      comando = trim(command_siesta2intw)//" < "//trim(file_s2intw_nscf_in)//" > "//trim(file_s2intw_nscf_out)
+    end if
+    write(*,'(A)') "| - Running siesta2intw with command:               |"
+    write(*,'(A)') "|   "//comando(1:max(47,len(trim(comando))))//" |"
+    call execute_command_line(comando)
+
+  end subroutine run_siest2intw
 
 end program ep_on_trFS_dV

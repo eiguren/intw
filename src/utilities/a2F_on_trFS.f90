@@ -35,7 +35,7 @@ program a2F_on_trFS
 
   use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_Ry, tpi, eps_8, eps_6
 
-  use intw_utility, only: get_timing, print_date_time, find_free_unit, &
+  use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
                           cryst_to_cart, generate_kmesh, &
                           smeared_delta, smeared_lorentz, fermi_dirac
 
@@ -120,6 +120,7 @@ program a2F_on_trFS
   write(*,20) '|    from interpolated ep elements on the FS        |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
+  call print_threads()
   call print_date_time("Start of execution")
   write(*,20) '====================================================='
 
@@ -602,12 +603,14 @@ program a2F_on_trFS
     open(unit_ep, file=file_ep, status='old')
     read(unit_ep,*) comenta
 
-    do i = 1, nkpt_tr_tot
-      do j = 1, nkpt_tr_ibz_tot
+    do ik = 1, nkpt_tr_ibz_tot
+      do ikp = 1, nkpt_tr_tot
         do js=1,nspin
           do is=1,nspin
-            read(unit_ep, fmt="(6i6,100e16.6)") ibp, iksp, ikp, ib, iks, ik,&
+            read(unit_ep, fmt="(6i6,100e16.6)") ibp, iksp, j, ib, iks, i,&
                   (aep_mat_el(ikp,ik, js,is,iat), iat=1,3*nat)
+            if (i/= ik) stop "ik wrong"
+            if (j/= ikp) stop "ikp wrong"
           end do
         end do
       end do
