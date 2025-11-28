@@ -181,6 +181,8 @@ Now we can run `siesta2intw.x` by typing:
 siesta2intw.x < siesta2intw.in | tee siesta2intw.out
 ```
 
+:heavy_exclamation_mark:NOTE: `siesa2intw.x` must be executed in the same directory where the SIESTA calculation was executed.
+
 This creates the `si.save.intw` directory with all the information about the system in a format readable by INTW:
 
 ```
