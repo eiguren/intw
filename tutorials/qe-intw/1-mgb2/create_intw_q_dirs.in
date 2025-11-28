@@ -1,0 +1,6 @@
+&inputpp
+  prefix = "mgb2"
+  phdir = "./phonons_333/"
+  nq1 = 3, nq2 = 3, nq3 = 3
+  reference_file = "mgb2.ph.in"
+/

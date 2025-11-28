@@ -2,10 +2,9 @@ mgb2
 &inputpp
  outdir = "./"
  prefix = "mgb2",
- phdir = "./",
  phonons = .true.,
+ phdir = "./phonons_333/",
  nqirr = 6,
  fildvscf = "dvscf"
  fildyn = "mgb2.dyn"
 /
-

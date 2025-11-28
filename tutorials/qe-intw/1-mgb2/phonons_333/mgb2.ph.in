@@ -1,0 +1,11 @@
+phonons for MgB2
+&inputph
+ outdir = './'
+ prefix = 'mgb2'
+ trans = .true.
+ ldisp = .false.
+ tr2_ph = 1.0d-16
+ fildvscf = 'dvscf'
+ fildyn = 'mgb2.dyn'
+ verbosity = 'high'
+/

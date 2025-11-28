@@ -21,7 +21,7 @@ n2 = 6
 n3 = 6
 volume_nodes = .true.
 volnodfac = 0.5
-hr_file = "mgb2_hr_intw.dat"  
+hr_file = "mgb2_hr_intw.dat"
 ef = 7.3852
 verbose = .false.
 plot_BZ = .false.
@@ -45,6 +45,7 @@ eps_vinface = 1.0E-05
  nq2 = 3
  nq3 = 3
  nqirr = 6
+ qlist = "./phonons_333/qlist.txt"
  read_for_dynmat = 'dynq'
  apply_asr = .true.
 /

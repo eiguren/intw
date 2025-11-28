@@ -20,6 +20,7 @@ Here we do `pw.x` and `ph.x` calculations with the 6.7Max version of QE. In the 
 $ tree
 .
 ├── B.pz-vbc.UPF
+├── create_intw_q_dirs.in
 ├── intw.in
 ├── intw_wann.in
 ├── mgb2_a2F.png
@@ -27,22 +28,11 @@ $ tree
 ├── mgb2_dos.png
 ├── mgb2_ph_bands.png
 ├── mgb2_ph_dos.png
+├── mgb2.pw2intw.in
 ├── mgb2.scf.in
 ├── mgb2.win
 ├── Mg.pz-n-vbc.UPF
-├── pw2intw.in
-├── qlist.txt
-├── qq1
-│   └── mgb2.ph.in
-├── qq2
-│   └── mgb2.ph.in
-├── qq3
-│   └── mgb2.ph.in
-├── qq4
-│   └── mgb2.ph.in
-├── qq5
-│   └── mgb2.ph.in
-├── qq6
+├── phonons_333
 │   └── mgb2.ph.in
 └── Tutorial.txt
 
@@ -54,35 +44,75 @@ With the pseudo files and the self-consistent (scf) calculation input, we run `p
 $ ${QE_dir}/pw.x < mgb2.scf.in > mgb2.scf.out
 ```
 
-This electronic calculation uses a $N_k$ = 12x12x12 grid. For the phonons we set a grid $N_q$ = 3x3x3, which consists of the q-points listed in the `qlist.txt` file:
+This electronic calculation uses a $N_k$ = 12x12x12 grid. For the phonons we set a grid $N_q$ = 3x3x3.
+
+`pw2intw.x` reads the phonon data from an individual directory `qq${iq}/` for each q-point index iq. Therefore, `ph.x` must be executed for one q-point at a time. For the `ph.x` input preparation and execution, a script can be used adapted to the needs of the user, or, `create_intw_q_dirs.x` code provided by INTW can be used. In this example `create_intw_q_dirs.in` is provided for this purpose:
 
 ```
-$ cat qlist.txt
-
-       1   0.000000000   0.000000000   0.000000000
-       2   0.000000000   0.000000000   0.291885581
-       3   0.000000000   0.384900179   0.000000000
-       4   0.000000000   0.384900179   0.291885581
-       5   0.333333333   0.577350269   0.000000000
-       6   0.333333333   0.577350269   0.291885581
+$ cat create_intw_q_dirs.in
+&inputpp
+  prefix = "mgb2"
+  phdir = "./phonons_333/"
+  nq1 = 3, nq2 = 3, nq3 = 3
+  reference_file = "mgb2.ph.in"
+/
 ```
 
-INTW reads the phonon data from an individual directory `qq${iq}/` for each q-point index iq. Therefore, `ph.x` must be executed for one q-point at a time. For the `ph.x` input preparation and execution, a script can be used adapted to the needs of the user and the machine. This tutorial already provides the `qq${iq}/` directories with the input files enclosed.
+Where `reference_file` located inside `phdir` is:
 
 ```
-$ cd qq1
-$ cp -r ../mgb2.save .
-$ ${QE_dir}/pw.x < mgb2.ph.in > mgb2.ph.out
+$ cat phonons_333/mgb2.ph.in
+phonons for MgB2
+&inputph
+ outdir = './'
+ prefix = 'mgb2'
+ trans = .true.
+ ldisp = .false.
+ tr2_ph = 1.0d-16
+ fildvscf = 'dvscf'
+ fildyn = 'mgb2.dyn'
+ verbosity = 'high'
+/
+```
+
+Note that, because `ldisp` is set to `.false.`, `ph.x` will expect a q-point at the end of the file, which will be added by `create_intw_q_dirs.x` automatically. Now we run:
+
+```
+$ ${QE_dir}/create_intw_q_dirs.x < create_intw_q_dirs.in > create_intw_q_dirs.out
+```
+
+This will also create the `qlist.txt` file inside `phdir`, which contains a list of the irreducible q-points:
+
+```
+cat phonons_333/qlist.txt
+  1      0.0000000000      0.0000000000      0.0000000000
+  2      0.0000000000      0.0000000000      0.2918855809
+  3      0.0000000000      0.3849001795      0.0000000000
+  4      0.0000000000      0.3849001795      0.2918855809
+  5      0.3333333333      0.5773502692      0.0000000000
+  6      0.3333333333      0.5773502692      0.2918855809
+```
+
+Then we run the `ph.x` calculation for each q-point:
+
+```
+$ cd phonons_333/qq1
+$ cp -r ../../mgb2.save .
+$ ${QE_dir}/ph.x < mgb2.ph.in > mgb2.ph.out
 $ rm -fr mgb2.save
-$ cd ..
+cd ../..
 ```
 
-and so on until al phonon calculations are completed. Back into the working directory and we are ready to transform the QE data into files readable by INTW from `mgb2.save.intw/`:
+And so on until all phonon calculations are completed. Back into the working directory and we are ready to transform the QE data into a format suitable for INTW by running `pw2intw.x`:
 
 ```
-$ ${QE_dir}/pw2intw.x < pw2intw.in
+$ ${QE_dir}/pw2intw.x < mgb2.pw2intw.in > mgb2.pw2intw.out
+```
+
+This will create `mgb2.save.intw` directory, where all the data required by INTW is stored:
+
+```
 $ tree mgb2.save.intw
-
 mgb2.save.intw
 ├── 1-KBPP.txt
 ├── 2-KBPP.txt
@@ -214,6 +244,7 @@ The `&ph` input block describes the phonon grid and dynamical matrix options. In
  nq2 = 3
  nq3 = 3
  nqirr = 6
+ qlist = "./phonons_333/qlist.txt"
  read_for_dynmat = 'dynq'
  apply_asr = .true.
 /
