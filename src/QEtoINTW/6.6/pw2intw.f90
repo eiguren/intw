@@ -48,7 +48,7 @@ program pw2intw
   !
   ! Create intwdir
   intwdir = trim(outdir)//trim(prefix)//".save.intw/"
-  call execute_command_line("mkdir -p "//intwdir)
+  call execute_command_line("mkdir -p "//trim(intwdir))
 
   !
   ! Read QE data

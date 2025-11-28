@@ -67,7 +67,7 @@ contains
       end if
       io_unit= find_free_unit()
       datafile = trim(intwdir)//trim(pp_file)
-      open(unit=io_unit, file=datafile, status="unknown", iostat= ios)
+      open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write")
       if (ios /= 0) call errore( "pw2intw", "write_pp_intw: error opening pp_file", ios )
 
       write(unit=io_unit,fmt="(a)")"ATOM LABEL"
@@ -157,7 +157,7 @@ contains
     datafile = trim(intwdir)//"scf_vr.dat"
     inquire(iolength=record_length) v%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
-        status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
+         status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
     if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_vr.dat", ios )
     !
     do ispin=1, nspin
@@ -171,7 +171,7 @@ contains
     datafile = trim(intwdir)//"scf_rhor.dat"
     inquire(iolength=record_length) rho%of_r(:,1)
     open(unit=io_unit, file=datafile, iostat=ios, &
-        status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
+         status="unknown", action="write", form="unformatted", access="direct", recl=record_length)
     if (ios /= 0) call errore( "pw2intw", "scf_v_and_rho: error opening scf_rhor.dat", ios )
     !
     do ispin=1, nspin
@@ -232,7 +232,7 @@ contains
     ! Open file for writing
     io_unit_write = find_free_unit()
     datafile = trim(intwdir)//"/irrq_patterns.dat"
-    open(unit=io_unit_write, file=datafile, status="replace", form="formatted", iostat=ios)
+    open(unit=io_unit_write, file=datafile, iostat=ios, status="replace", action="write")
     if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening irrq_patterns.dat", ios )
     !
     do iq=1,nqirr
@@ -240,7 +240,7 @@ contains
       call write_tag("qq", iq, q_dir)
       !
       ! Read irreducible patterns
-      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
+      datafile = trim(outdir)//trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".phsave/patterns.1.xml"
       inquire(file=datafile, exist=existitu)
       if (.not. existitu) call errore( "pw2intw", "write_phonon_info: patterns.1.xml not found", 1 )
       !
@@ -321,17 +321,17 @@ contains
       !
       ! Open file for reading
       io_unit_read = find_free_unit()
-      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
-      open( unit=io_unit_read, file=trim(datafile), iostat=ios, &
-            form="unformatted", status="old", action="read", access="direct", recl=rl )
+      datafile = trim(outdir)//trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//"."//trim(fildvscf)//"1"
+      open(unit=io_unit_read, file=trim(datafile), iostat=ios, &
+           status="old", action="read", form="unformatted", access="direct", recl=rl)
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to read", ios )
       !
       ! Open file for writing
       io_unit_write = find_free_unit()
       call write_tag(trim(prefix)//".dvscf_q", iq, dv_file)
       datafile = trim(intwdir)//trim(dv_file)
-      open( unit=io_unit_write, file=trim(datafile), iostat=ios, &
-            form="unformatted", status="replace", action="write", access="direct", recl=rl )
+      open(unit=io_unit_write, file=trim(datafile), iostat=ios, &
+           status="replace", action="write", form="unformatted", access="direct", recl=rl)
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening dvscf file to write", ios )
       !
       do imode=1,3*nat
@@ -391,15 +391,15 @@ contains
       !
       ! Open file for reading
       io_unit_read = find_free_unit()
-      datafile = trim(phdir)//trim(q_dir)//"/"//trim(fildyn)
-      open( unit=io_unit_read, file=trim(datafile), iostat=ios, status="old", action="read" )
+      datafile = trim(outdir)//trim(phdir)//trim(q_dir)//"/"//trim(fildyn)
+      open(unit=io_unit_read, file=datafile, iostat=ios, status="old", action="read")
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to read", ios )
       !
       ! Open file for writing
       io_unit_write = find_free_unit()
       call write_tag(trim(prefix)//".dyn_q", iq, dyn_file)
       datafile = trim(intwdir)//trim(dyn_file)
-      open( unit=io_unit_write, file=trim(datafile), iostat=ios, status="replace", action="write" )
+      open(unit=io_unit_write, file=datafile, iostat=ios, status="replace", action="write")
       if ( ios /= 0 ) call errore( "pw2intw", "write_phonon_info: error opening fildyn file to write", ios )
       !
       !
@@ -484,7 +484,7 @@ contains
       !
       call write_tag("qq", iq, q_dir)
       !
-      datafile = trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
+      datafile = trim(outdir)//trim(phdir)//trim(q_dir)//"/_ph0/"//trim(prefix)//".rho1"
       inquire(file=datafile, exist=existitu)
       if (existitu) then
         call write_tag(trim(prefix)//".rho_q", iq, rho_file)
@@ -584,7 +584,7 @@ contains
 
         write(wfc_file,100) ik
         datafile = trim(intwdir)//trim(wfc_file)
-        open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
+        open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
         if (ios /= 0) call errore( "pw2intw", "write_wfc: error opening wfc_file", ios )
         !
         ! Read spin-up wf contained in ik
@@ -615,7 +615,7 @@ contains
 
         write(wfc_file,100) ik
         datafile = trim(intwdir)//trim(wfc_file)
-        open(unit=io_unit, file=datafile, status="unknown", action="write", form="unformatted", iostat=ios)
+        open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write", form="unformatted")
         if (ios /= 0) call errore( "pw2intw", "write_wfc: error opening wfc_file", ios )
         !
         call davcio (evc, 2*nwordwfc, iunwfc, ik, -1 )
@@ -670,7 +670,7 @@ contains
 
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"crystal.dat"
-    open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
+    open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write")
     if (ios /= 0) call errore( "pw2intw", "write_crystal_info: error opening crystal.dat", ios )
 
     ! JLB: adapt spin-polarized calculation from QE to spinor in INTW
@@ -768,7 +768,7 @@ contains
 
     io_unit = find_free_unit()
     datafile = trim(intwdir)//"kpoints.dat"
-    open(unit=io_unit, file=datafile, status="unknown", action="write", form="formatted", iostat=ios)
+    open(unit=io_unit, file=datafile, iostat=ios, status="unknown", action="write")
     if (ios /= 0) call errore( "pw2intw", "write_crystal_info: error openeing kpoints.dat", ios )
     !
     do ik=1,nkstot_intw !nkstot
