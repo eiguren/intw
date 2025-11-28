@@ -89,11 +89,12 @@ PROGRAM create_intw_q_dirs
     call write_tag("qq", iq, q_dir)
     !
     ! Create directory
-    call execute_command_line("mkdir -p "//trim(phdir)//trim(q_dir))
+    call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(q_dir))
     !
     ! Write input file
     qirr_cart = matmul(bg, qirr_cryst(:, iq))
-    call write_ph_in(trim(phdir)//trim(reference_file), trim(phdir)//trim(q_dir)//"/"//trim(reference_file), qirr_cart)
+    call write_ph_in(trim(outdir)//trim(phdir)//trim(reference_file), &
+                     trim(outdir)//trim(phdir)//trim(q_dir)//"/"//trim(reference_file), qirr_cart)
     !
     write(iounit, "(i3,3f18.10)") iq, qirr_cart
     !
