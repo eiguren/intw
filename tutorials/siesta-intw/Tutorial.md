@@ -1,12 +1,12 @@
 
 
-# Using intw with SIESTA
+# Using INTW with SIESTA
 
 
 ### Table of contents
 - [Silicon band structure with SIESTA and Wannier](#silicon-band-structure-with-siesta-and-wannier)
    - [Band structure Calculation with SIESTA](#band-structure-calculation-with-siesta)
-   - [intw's Wannier90 interface](#intws-wannier90-interface)
+   - [INTW's Wannier90 interface](#intws-wannier90-interface)
    - [SIESTA's Wannier90 interface](#siestas-wannier90-interface)
 - [Graphene phonon dispersion](#graphene-phonon-dispersion)
 - [Copper electron-phonon matrix elements](#copper-electron-phonon-matrix-elements)
@@ -21,7 +21,7 @@ The input for the calculation is given in Flexible Data Format (FDF).
 
 ## Silicon band structure with SIESTA and Wannier
 
-In this example, first of all, we will do a small introduction to a band structure calculation with SIESTA. And in second place, we will see how to use the interface `siesta2intw.x` and intw's `intw2W90.x` utility to construct the Wannier functions, comparing the Wannier interpolated band structure with SIESTA's band structure. At the end, we will also show how can be used SIESTA's own interface to `wannier90.x`.
+In this example, first of all, we will do a small introduction to a band structure calculation with SIESTA. And in second place, we will see how to use the interface `siesta2intw.x` and INTW's `intw2W90.x` utility to construct the Wannier functions, comparing the Wannier interpolated band structure with SIESTA's band structure. At the end, we will also show how can be used SIESTA's own interface to `wannier90.x`.
 
 All files to run this example can be found in the `1-silicon` directory.
 
@@ -153,9 +153,9 @@ gnuplot -p -e "p for [c=2:*] 'bands_siesta.dat' u 1:c w l lc 'black'"
 [Back to top :arrow_heading_up:](#using-intw-with-siesta)
 
 
-### intw's Wannier90 interface
+### INTW's Wannier90 interface
 
-In this second part, we will learn how to interpolate the band structure using intw and `wannier90.x`. In order to constructing the Wannier functions with `wannier90.x` the `si.amn`, `si.mmn` and `si.eig` files are needed. intw's `intw2W90.x` utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for intw by running the interface `siesta2intw.x`. So, let's check the `siesta2intw.in` input file:
+In this second part, we will learn how to interpolate the band structure using INTW and `wannier90.x`. In order to constructing the Wannier functions with `wannier90.x` the `si.amn`, `si.mmn` and `si.eig` files are needed. INTW's `intw2W90.x` utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for INTW by running the interface `siesta2intw.x`. So, let's check the `siesta2intw.in` input file:
 
 ```
 $ cat siesta2intw.in
@@ -181,7 +181,7 @@ Now we can run `siesta2intw.x` by typing:
 siesta2intw.x < siesta2intw.in | tee siesta2intw.out
 ```
 
-This creates the `si.save.intw` directory with all the information about the system in a format readable by intw:
+This creates the `si.save.intw` directory with all the information about the system in a format readable by INTW:
 
 ```
 $ tree si.save.intw
@@ -200,7 +200,7 @@ si.save.intw/
 
 `1-KBPP.txt` contains the pseudo-potential in its Kleyman-Bylander form. `crystal.dat` stores all the information related to the unit cell, symmetries, etc. `wfc00001.dat` to `wfc00029.dat` contain the Fourier transform of the wave functions for each k-point, where the list of k-points is given in `kpoints.dat`. Finally, `gvectors.dat` contains the global list of G-vectors used in the Fourier transform and `iGlist.dat` has the lists of G-vectors for each k-point.
 
-All the data read by intw is written here, and therefore, now we can already run intw in the same way as if we were using Quantum Espresso and `pw2intw.x`.
+All the data read by INTW is written here, and therefore, now we can already use INTW in the same way as if we were using Quantum Espresso and `pw2intw.x`.
 
 To create the `si.amn`, `si.mmn` and `si.eig` files we have to run `wannier90.x` in pre-processing mode first to create the nnkp file:
 
@@ -211,7 +211,7 @@ wannier90.x -pp si
 Since the aim of this tutorial is not to show how to use wannier, we will not analyze the `si.win` file, but for the curious, since we have specified the band range from `nbnd_initial=1` to `nbnd_final=4` in `siesta2intw.x` we will use four s-orbitals, centered in the bonds, as our initial guess.
 
 Now, that we have the `si.save.intw` and the `si.nnkp` file, we can run `intw2W90.x` to generate the `si.amn`, etc. But
-first, let's check the input file for intw:
+first, let's check the input file for `intw2W90.x`:
 
 ```
 $ cat intw.in
@@ -289,7 +289,7 @@ Siesta2Wannier90.WriteEig true
 
 ## Graphene phonon dispersion
 
-intw contains set of utilities to compute phonon structures using SIESTA and finite differences, `siesta2ph`, which consists of three independent utilities: `siesta2ph.x`, `siesta2fc.x` and `siesta2dv.x`.
+INTW contains set of utilities to compute phonon structures using SIESTA and finite differences, `siesta2ph`, which consists of three independent utilities: `siesta2ph.x`, `siesta2fc.x` and `siesta2dv.x`.
 
 The first one, `siesta2ph.x`, reads SIESTA's fdf file, creates a super-cell of the system and computes the minimum set of atomic displacements needed to compute the phonon structure (the irreducible displacements), creating all the fdf input files to run SIESTA.
 
@@ -423,7 +423,7 @@ $ cat siesta2ph.in
 
 ## Copper electron-phonon matrix elements
 
-In this third example we will show how to calculate the electron-phonon matrix elements for copper using intw's `ep_melements.x` utility. For that, first of all, we will compute the electronic and phonon structures of cooper using SIESTA and `siesta2ph`. In a second step, we will transforming all the calculation data to a format readable by intw with `siesta2intw.x`. And finally, we will execute `ep_melements.x` to compute the electron-phonon matrix elements.
+In this third example we will show how to calculate the electron-phonon matrix elements for copper using INTW's `ep_melements.x` utility. For that, first of all, we will compute the electronic and phonon structures of cooper using SIESTA and `siesta2ph`. In a second step, we will transforming all the calculation data to a format readable by INTW with `siesta2intw.x`. And finally, we will execute `ep_melements.x` to compute the electron-phonon matrix elements.
 
 Folder `3-copper` has all the files needed to run the example:
 
@@ -467,7 +467,7 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
 
    After this steps, we already have computed all the information about the electronic and phonon structures that we will need to calculate the electron-phonon matrix elements.
 
-2. Then, the second step is to run `siesta2intw.x` to store all the data in a format that intw can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `siesta2intw.in`:
+2. Then, the second step is to run `siesta2intw.x` to store all the data in a format that INTW can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in `siesta2intw.in`:
 
    ```
    $ cat siesta2intw.in
@@ -492,9 +492,9 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
    siesta2intw.x < siesta2intw.in | tee siesta2intw.out
    ```
 
-   This will create the same files that we have seen in the first examples inside `cu.save.intw`, plus `cu.dyn_q*` files for the dynamical matrices, and `cu.dvscf_q*` and `irrq_patterns.dat` files for the induced potentials and the displacement patterns related to them, respectively. Additionally, `qlist.txt` file will also be created, which is needed by intw and contains a list of the irreducible q-points in Cartesian coordinates.
+   This will create the same files that we have seen in the first examples inside `cu.save.intw`, plus `cu.dyn_q*` files for the dynamical matrices, and `cu.dvscf_q*` and `irrq_patterns.dat` files for the induced potentials and the displacement patterns related to them, respectively. Additionally, `qlist.txt` file will also be created, which is needed by INTW and contains a list of the irreducible q-points in Cartesian coordinates.
 
-3. Now that we have all the required information in a format that intw can read, we can run intw's `ep_melements.x` utility to compute the electron-phonon matrix elements. But first, let's check `intw.in` file:
+3. Now that we have all the required information in a format that INTW can read, we can run INTW's `ep_melements.x` utility to compute the electron-phonon matrix elements. But first, let's check `intw.in` file:
 
    ```
    $ cat intw.in
@@ -535,6 +535,6 @@ copper.fdf  Cu.psf  intw.in  siesta2intw.in  siesta2ph.in
    ep_mat.dat_5  ep_mat.dat_6  ep_mat.dat_7  ep_mat.dat_8
    ```
 
-   :heavy_exclamation_mark:NOTE: intw will compute the matrix elements for the entire `nq1, nq2, nq3` q-mesh.
+   :heavy_exclamation_mark:NOTE: INTW will compute the matrix elements for the entire `nq1, nq2, nq3` q-mesh.
 
 [Back to top :arrow_heading_up:](#using-intw-with-siesta)
