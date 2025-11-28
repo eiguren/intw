@@ -68,17 +68,17 @@ PROGRAM create_intw_q_dirs
   strlen = len_trim(phdir)
   if ( phdir(strlen:strlen+1) .ne. "/" ) phdir(strlen+1:strlen+2) = "/"
 
-  ! create phdir
-  call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir))
   !
   ! Read QE data
   prefix_QE = prefix
   CALL read_file()
 
+  !
   ! Find q-mesh and irreducible q-points
   allocate(qirr_cryst(3,nq1*nq2*nq3))
   call find_the_irreducible_k_set(nq1, nq2, nq3, qirr_cryst, nq_irr)
 
+  !
   ! Create qlist_file and qq directories
   iounit = find_free_unit()
   open(unit=iounit, file=trim(outdir)//trim(qlist_file), status="replace", action="write", iostat=iostat)
