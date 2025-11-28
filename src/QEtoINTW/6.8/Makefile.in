@@ -25,6 +25,7 @@ MODULES = $(PWOBJS) $(QEMODS)
 
 EXECS = pw2intw.x create_intw_q_dirs.x
 PW2INTW_OBJS = pw2intw_io.o pw2intw_utils.o pw2intw_write.o
+CREATE_INTW_Q_DIRS_OBJS = pw2intw_utils.o
 
 all : $(EXECS)
 
@@ -32,7 +33,7 @@ pw2intw.x : pw2intw.o $(PW2INTW_OBJS)
 	$(LD) $(LDFLAGS) -o $@ \
 		$^ $(MODULES) $(LIBOBJS) $(QELIBS)
 
-create_intw_q_dirs.x : create_intw_q_dirs.o
+create_intw_q_dirs.x : create_intw_q_dirs.o $(CREATE_INTW_Q_DIRS_OBJS)
 	$(LD) $(LDFLAGS) -o $@ \
 		$^ $(MODULES) $(LIBOBJS) $(QELIBS)
 

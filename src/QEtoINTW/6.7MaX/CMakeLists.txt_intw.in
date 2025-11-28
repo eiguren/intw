@@ -540,7 +540,8 @@ endif()
 ###########################################################
 # create_intw_q_dirs.x
 ###########################################################
-set(src_create_intw_q_dirs_x src/intw/create_intw_q_dirs.f90)
+set(src_create_intw_q_dirs_x src/intw/pw2intw_utils.f90
+                             src/intw/create_intw_q_dirs.f90)
 qe_add_executable(qe_pp_create_intw_q_dirs_exe ${src_create_intw_q_dirs_x})
 set_target_properties(qe_pp_create_intw_q_dirs_exe PROPERTIES OUTPUT_NAME create_intw_q_dirs.x)
 target_link_libraries(qe_pp_create_intw_q_dirs_exe
