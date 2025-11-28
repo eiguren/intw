@@ -23,7 +23,7 @@ module siesta2ph_io
   implicit none
 
   public :: stdin, stdout
-  public :: outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
+  public :: prefix, phdir, v0dir, dvscfdir, kpath_file, &
             nr1, nr2, nr3, dx, lpm, disp_along_cart, dv_precision, &
             irreducible_q, xsf, full_xsf, verbose, use_sym
 
@@ -36,7 +36,7 @@ module siesta2ph_io
   integer, parameter :: stdout = 6
 
   ! input variables
-  character(len=256) :: outdir, prefix, phdir, v0dir, dvscfdir, kpath_file
+  character(len=256) :: prefix, phdir, v0dir, dvscfdir, kpath_file
   integer :: nr1, nr2, nr3
   real(kind=dp) :: dx
   logical :: lpm
@@ -47,7 +47,7 @@ module siesta2ph_io
   character(len=2) :: dv_precision
   logical :: verbose
   !
-  namelist / input / outdir, prefix, phdir, v0dir, dvscfdir, kpath_file, &
+  namelist / input / prefix, phdir, v0dir, dvscfdir, kpath_file, &
                      nr1, nr2, nr3, dx, lpm, disp_along_cart, dv_precision, &
                      use_sym, irreducible_q, xsf, full_xsf, verbose
 
@@ -64,7 +64,6 @@ contains
 
 
     ! Set default values for variables in namelist
-    outdir = "./"
     prefix = ""
     phdir = "ph/"
     v0dir = "v0/"
@@ -94,7 +93,6 @@ contains
     !
     if (dv_precision /= "dp" .and. dv_precision /= "sp") stop "ERROR: Invalid value for precision"
     !
-    if (outdir(len(trim(outdir)):len(trim(outdir))+1) /= "/") outdir(len(trim(outdir))+1:len(trim(outdir))+2) = "/"
     if (phdir(len(trim(phdir)):len(trim(phdir))+1) /= "/") phdir(len(trim(phdir))+1:len(trim(phdir))+2) = "/"
     if (v0dir(len(trim(v0dir)):len(trim(v0dir))+1) /= "/") v0dir(len(trim(v0dir))+1:len(trim(v0dir))+2) = "/"
     if (dvscfdir(len(trim(dvscfdir)):len(trim(dvscfdir))+1) /= "/") dvscfdir(len(trim(dvscfdir))+1:len(trim(dvscfdir))+2) = "/"
@@ -132,12 +130,12 @@ contains
     if (size(cell, dim=1) /= 3 .or. size(cell, dim=2) /= 3) stop "write_fdf: cell must have dimensions (3,3)"
     !
     iounit_reference = find_free_unit()
-    open(unit=iounit_reference, file=trim(outdir)//trim(reference_fdffile), status="old", action="read", iostat=ios)
-    if ( ios /= 0 ) stop "write_fdf: Error opening file outdir/reference_fdffile"
+    open(unit=iounit_reference, file=trim(reference_fdffile), status="old", action="read", iostat=ios)
+    if ( ios /= 0 ) stop "write_fdf: Error opening file reference_fdffile"
     !
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(fdffilename), status="replace", action="write", iostat=ios)
-    if ( ios /= 0 ) stop "write_fdf: Error opening file outdir/filename"
+    open(unit=iounit, file=trim(fdffilename), status="replace", action="write", iostat=ios)
+    if ( ios /= 0 ) stop "write_fdf: Error opening file filename"
     !
     do
       !

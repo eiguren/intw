@@ -54,7 +54,7 @@ contains
                    fdf_bline, fdf_bmatch, fdf_bintegers, fdf_bvalues, leqi, fdf_get, &
                    fdf_bnnames, fdf_bnintegers, fdf_bnreals, fdf_breals, fdf_bnames, fdf_defined
     !
-    use siesta2ph_io, only: stdout, outdir, prefix, use_sym
+    use siesta2ph_io, only: stdout, prefix, use_sym
     use siesta2ph_utils, only: pi
     !
     use siesta2ph_linalg, only: ainv
@@ -84,7 +84,7 @@ contains
     if (present(fdffilename)) then
       fdfin = trim(fdffilename)
     else
-      fdfin = trim(outdir)//trim(prefix)
+      fdfin = trim(prefix)
     endif
     fdfout = "fdf.log"
     call fdf_init(fdfin, fdfout)

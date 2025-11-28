@@ -29,7 +29,7 @@ program siesta2ph
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: outdir, v0dir, phdir, prefix, nr1, nr2, nr3, lpm, verbose, stdout
+  use siesta2ph_io, only: v0dir, phdir, prefix, nr1, nr2, nr3, lpm, verbose, stdout
   use siesta2ph_system, only: nat, at, alat, tau, ityp
   use siesta2ph_symmetry, only: irred_atm, irred_disp
   !
@@ -175,7 +175,7 @@ contains
     call check_mesh_sizes(rmesh_uc)
     rmesh_sc = rmesh_uc*(/nr1, nr2, nr3/)
     !
-    call execute_command_line("mkdir -p "//trim(outdir)//trim(v0dir))
+    call execute_command_line("mkdir -p "//trim(v0dir))
     call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(v0dir)//"supercell-"//trim(prefix))
     !
     ! Check kgrid
@@ -235,7 +235,7 @@ contains
         !
         tau_sc(:,ia) = tau(:,ia) + disp(:,id)/alat ! add the positive displacement to the atom
         !
-        call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispp_folder))
+        call execute_command_line("mkdir -p "//trim(phdir)//trim(dispp_folder))
         call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispp_folder)//"supercell-"//trim(prefix))
         !
         if (any(kgrid_sc /= 0)) then
@@ -253,7 +253,7 @@ contains
           !
           tau_sc(:,ia) = tau(:,ia) - disp(:,id)/alat ! add the negative displacement to the atom
           !
-          call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dispn_folder))
+          call execute_command_line("mkdir -p "//trim(phdir)//trim(dispn_folder))
           call write_fdf(nat_sc, tau_sc, ityp_sc, at_sc, prefix, trim(phdir)//trim(dispn_folder)//"supercell-"//trim(prefix))
           !
           if (any(kgrid_sc /= 0)) then
@@ -361,15 +361,15 @@ contains
     endif
     !
     ! Backup the original fdf
-    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(fdffilename)//" "//trim(fdffilename)//"_backup")
     !
     ! Modify kgrid
     iounit_reference = find_free_unit()
-    open(unit=iounit_reference, file=trim(outdir)//trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
+    open(unit=iounit_reference, file=trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
     if ( ios /= 0 ) stop "modify_kgrid: Error opening backup fdf file"
     !
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(fdffilename), status="replace", action="write", iostat=ios)
+    open(unit=iounit, file=trim(fdffilename), status="replace", action="write", iostat=ios)
     if ( ios /= 0 ) stop "modify_kgrid: Error opening new fdf file"
     !
     found = .false.
@@ -410,9 +410,9 @@ contains
     close(iounit_reference)
     !
     if (backup) then
-      write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
+      write(stdout,*) "- Backup "//trim(fdffilename)//"..."
     else
-      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_kgrid
@@ -519,7 +519,7 @@ contains
       !
       if (compatible) then
         write(stdout, "(a36,f6.1,a3,f6.1)") "WARNING: Increaseing MeshCutoff from", g2cut, " to", suggested_g2cut
-        call modify_MeshCutoff(suggested_g2cut, trim(outdir)//trim(prefix), .true.)
+        call modify_MeshCutoff(suggested_g2cut, trim(prefix), .true.)
         return
       endif
       !
@@ -527,7 +527,7 @@ contains
       suggested_mesh_sizes = nint(dble(mesh_sizes_uc)/(2*3*5))*2*3*5
       !
       write(stdout, "(a27,3i5,a1)") "WARNING: Using MeshSizes [", suggested_mesh_sizes, "]"
-      call modify_MeshSizes(suggested_mesh_sizes, trim(outdir)//trim(prefix), .true.)
+      call modify_MeshSizes(suggested_mesh_sizes, trim(prefix), .true.)
       !
     endif
 
@@ -570,15 +570,15 @@ contains
     endif
     !
     ! Backup the original fdf
-    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(fdffilename)//" "//trim(fdffilename)//"_backup")
     !
     ! Modify MeshCutoff
     iounit_reference = find_free_unit()
-    open(unit=iounit_reference, file=trim(outdir)//trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
+    open(unit=iounit_reference, file=trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
     if ( ios /= 0 ) stop "modify_MeshCutoff: Error opening backup fdf file"
     !
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(fdffilename), status="replace", action="write", iostat=ios)
+    open(unit=iounit, file=trim(fdffilename), status="replace", action="write", iostat=ios)
     if ( ios /= 0 ) stop "modify_MeshCutoff: Error opening new fdf file"
     !
     found = .false.
@@ -611,9 +611,9 @@ contains
     close(iounit_reference)
     !
     if (backup) then
-      write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
+      write(stdout,*) "- Backup "//trim(fdffilename)//"..."
     else
-      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_MeshCutoff
@@ -652,15 +652,15 @@ contains
     defined_block = fdf_isblock("MeshSizes")
     !
     ! Backup the original fdf
-    call execute_command_line("cp "//trim(outdir)//trim(fdffilename)//" "//trim(outdir)//trim(fdffilename)//"_backup")
+    call execute_command_line("cp "//trim(fdffilename)//" "//trim(fdffilename)//"_backup")
     !
     ! Modify MeshCutoff
     iounit_reference = find_free_unit()
-    open(unit=iounit_reference, file=trim(outdir)//trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
+    open(unit=iounit_reference, file=trim(fdffilename)//"_backup", status="old", action="read", iostat=ios)
     if ( ios /= 0 ) stop "modify_MeshSizes: Error opening backup fdf file"
     !
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(fdffilename), status="replace", action="write", iostat=ios)
+    open(unit=iounit, file=trim(fdffilename), status="replace", action="write", iostat=ios)
     if ( ios /= 0 ) stop "modify_MeshSizes: Error opening new fdf file"
     !
     found = .false.
@@ -712,9 +712,9 @@ contains
     close(iounit_reference)
     !
     if (backup) then
-      write(stdout,*) "- Backup "//trim(outdir)//trim(fdffilename)//"..."
+      write(stdout,*) "- Backup "//trim(fdffilename)//"..."
     else
-      call execute_command_line("rm "//trim(outdir)//trim(fdffilename)//"_backup")
+      call execute_command_line("rm "//trim(fdffilename)//"_backup")
     endif
 
   end subroutine modify_MeshSizes

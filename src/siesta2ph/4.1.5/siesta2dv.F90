@@ -30,7 +30,7 @@ program siesta2dv
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: stdout, outdir, prefix, v0dir, verbose
+  use siesta2ph_io, only: stdout, prefix, v0dir, verbose
   !
   use siesta2ph_io, only: read_input
   use siesta2ph_system, only: read_unit_cell_data, print_unit_cell_data
@@ -79,7 +79,7 @@ program siesta2dv
   call read_input()
   !
   ! Read the supercell data from the fdf created by siesta2ph
-  call read_unit_cell_data(trim(outdir)//trim(v0dir)//"/supercell-"//trim(prefix))
+  call read_unit_cell_data(trim(v0dir)//"/supercell-"//trim(prefix))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -139,7 +139,7 @@ contains
     use precision, only: sp, grid_p
     use m_iorho, only: read_rho
     !
-    use siesta2ph_io, only: outdir, v0dir, phdir, dx, nr1, nr2, nr3, dv_precision, lpm, phdir, dvscfdir, &
+    use siesta2ph_io, only: v0dir, phdir, dx, nr1, nr2, nr3, dv_precision, lpm, phdir, dvscfdir, &
                             irreducible_q, xsf, full_xsf
     use siesta2ph_system, only: nat, slabel, tau, tau_cryst, at, alat, ityp, atom_labels
     use siesta2ph_symmetry, only: nsite_sym, nsite_rot, irred_atm, irred_disp, site_atm, atom_mapping, site_s_cart, site_sinv, &
@@ -251,7 +251,7 @@ contains
       !
       write(filename,"(a5,i4.4,a4)") "dvscf", iq, ".dat"
       dvq_unit(iq) = find_free_unit()
-      dvq_file = trim(outdir)//trim(phdir)//trim(dvscfdir)//trim(filename)
+      dvq_file = trim(phdir)//trim(dvscfdir)//trim(filename)
       open( unit=dvq_unit(iq), file=trim(dvq_file), iostat=ios, form="unformatted", &
             status="replace", action="write", access="direct", recl=rl )
       if (ios .ne. 0) stop "Error opening dvq_file"
@@ -320,20 +320,20 @@ contains
         if (lpm) then
           !
           write(dispp_folder,"(a5,i4.4,a1)") "disp-", 2*iirred-1, "/"
-          disp_filename = trim(outdir)//trim(phdir)//trim(dispp_folder)//trim(slabel)//".VT"
+          disp_filename = trim(phdir)//trim(dispp_folder)//trim(slabel)//".VT"
           call read_rho( disp_filename, cell, mesh, nsm, maxp, nspin, rhop)
           !
           write(dispn_folder,"(a5,i4.4,a1)") "disp-", 2*iirred, "/"
-          disp_filename = trim(outdir)//trim(phdir)//trim(dispn_folder)//trim(slabel)//".VT"
+          disp_filename = trim(phdir)//trim(dispn_folder)//trim(slabel)//".VT"
           call read_rho( disp_filename, cell, mesh, nsm, maxp, nspin, rhon)
           !
         else
           !
           write(dispp_folder,"(a5,i4.4,a1)") "disp-", iirred, "/"
-          disp_filename = trim(outdir)//trim(phdir)//trim(dispp_folder)//trim(slabel)//".VT"
+          disp_filename = trim(phdir)//trim(dispp_folder)//trim(slabel)//".VT"
           call read_rho( disp_filename, cell, mesh, nsm, maxp, nspin, rhop)
           !
-          disp_filename = trim(outdir)//trim(v0dir)//trim(slabel)//".VT"
+          disp_filename = trim(v0dir)//trim(slabel)//".VT"
           call read_rho( disp_filename, cell, mesh, nsm, maxp, nspin, rhon)
           !
         endif
@@ -555,7 +555,7 @@ contains
                 enddo
               enddo
               !
-              call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh(1), mesh(2), at, alat, nat, tau, atom_labels, ityp, xsfiounit, trim(outdir)//trim(phdir)//trim(xsf_file))
+              call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh(1), mesh(2), at, alat, nat, tau, atom_labels, ityp, xsfiounit, trim(phdir)//trim(xsf_file))
               !
             enddo ! id
             !
@@ -643,7 +643,7 @@ contains
                   enddo
                 enddo
                 !
-                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh(1), mesh(2), at, alat, nat, tau, atom_labels, ityp, xsfiounit, trim(outdir)//trim(phdir)//trim(xsf_file))
+                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh(1), mesh(2), at, alat, nat, tau, atom_labels, ityp, xsfiounit, trim(phdir)//trim(xsf_file))
                 !
               enddo ! id
               !
@@ -736,7 +736,7 @@ contains
                   enddo
                 enddo
                 !
-                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh_uc(1), mesh_uc(2), at_uc, alat, nat_uc, tau(:,1:nat_uc), atom_labels(1:nat_uc), ityp(1:nat_uc), xsfiounit, trim(outdir)//trim(phdir)//trim(xsf_file))
+                call xsf_datagrid_2d(rho_xsf, x0, e1, e2, mesh_uc(1), mesh_uc(2), at_uc, alat, nat_uc, tau(:,1:nat_uc), atom_labels(1:nat_uc), ityp(1:nat_uc), xsfiounit, trim(phdir)//trim(xsf_file))
                 !
               enddo ! id
               !
@@ -766,7 +766,7 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: outdir, phdir, dvscfdir, dv_precision
+    use siesta2ph_io, only: phdir, dvscfdir, dv_precision
     use siesta2ph_system, only: nat
     use siesta2ph_symmetry, only: irred_atm, nsite_sym, atom_mapping
     !
@@ -783,8 +783,8 @@ contains
     !
     ! Open the dvscf.info file
     iounit = find_free_unit()
-    filename = trim(outdir)//trim(phdir)//trim(dvscfdir)//"dvscf.info"
-    call execute_command_line("mkdir -p "//trim(outdir)//trim(phdir)//trim(dvscfdir))
+    filename = trim(phdir)//trim(dvscfdir)//"dvscf.info"
+    call execute_command_line("mkdir -p "//trim(phdir)//trim(dvscfdir))
     open( unit=iounit, file=trim(filename), iostat=iostat, form="formatted", &
           status="replace", action="write" )
     if (iostat .ne. 0) stop "ERROR: write_dvscf_info: Error opening file."
@@ -821,7 +821,7 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: outdir, v0dir, verbose
+    use siesta2ph_io, only: v0dir, verbose
     use siesta2ph_system, only: at, alat, slabel
     !
     use siesta2ph_io, only: find_free_unit
@@ -836,7 +836,7 @@ contains
 
     write(stdout,*) "- Reading grid dimensions..."
     !
-    filename = trim(outdir)//trim(v0dir)//trim(slabel)//".VT"
+    filename = trim(v0dir)//trim(slabel)//".VT"
     !
     ! Check if file exists
     inquire(file=filename, exist=found )

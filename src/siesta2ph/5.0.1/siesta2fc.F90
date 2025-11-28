@@ -29,7 +29,7 @@ program siesta2fc
 #endif
   use parallel, only: Node, Nodes
   !
-  use siesta2ph_io, only: stdout, outdir, prefix, v0dir, kpath_file, verbose
+  use siesta2ph_io, only: stdout, prefix, v0dir, kpath_file, verbose
   !
   use siesta2ph_io, only: read_input
   use siesta2ph_system, only: read_unit_cell_data, print_unit_cell_data
@@ -74,7 +74,7 @@ program siesta2fc
   call read_input()
   !
   ! Read the supercell data from the fdf created by siesta2ph
-  call read_unit_cell_data(trim(outdir)//trim(v0dir)//"/supercell-"//trim(prefix))
+  call read_unit_cell_data(trim(v0dir)//"/supercell-"//trim(prefix))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -210,8 +210,7 @@ contains
     !
     ! Write the force constant matrix in the format used by phonpy
     !
-    use siesta2ph_io, only: outdir, phdir
-    use siesta2ph_system, only: nat
+    use siesta2ph_io, only:   use siesta2ph_system, only: nat
     use siesta2ph_utils, only: Hartree2eV, Bohr2Ang
     !
     use siesta2ph_io, only: find_free_unit
@@ -226,7 +225,7 @@ contains
 
 
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), &
+    open(unit=iounit, file=trim(phdir)//trim(filename), &
          action="write", status="replace", iostat=ios)
     if (ios/=0) stop "ERROR: write_fc_phonopy: Error opening force constants file."
     !
@@ -252,8 +251,7 @@ contains
     ! Write the force constant matrix in the format used by Quantum Espresso
     ! QE writtes the force constants in Ry/Boher^2
     !
-    use siesta2ph_io, only: outdir, phdir
-    use siesta2ph_system, only: nat
+    use siesta2ph_io, only:   use siesta2ph_system, only: nat
     use siesta2ph_utils, only: Hartree2Ry
     !
     use siesta2ph_io, only: find_free_unit
@@ -268,7 +266,7 @@ contains
 
 
     iounit = find_free_unit()
-    open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), &
+    open(unit=iounit, file=trim(phdir)//trim(filename), &
          action="write", status="replace", iostat=ios)
     if (ios/=0) stop "ERROR: write_fc_QE: Error opening force constants file."
     !
@@ -293,7 +291,7 @@ contains
     !
     ! Compute the force constants for the irreducible atoms using symmetries and the pseudo-inverse
     !
-    use siesta2ph_io, only: outdir, v0dir, phdir, lpm
+    use siesta2ph_io, only: hdir, lpm
     use siesta2ph_utils, only: eV2Hartree, Ang2Bohr
     use siesta2ph_system, only: nat, slabel, tau_cryst
     use siesta2ph_symmetry, only: irred_atm, nsite_sym, nsite_rot, irred_disp, site_atm, site_s_cart, site_sinv, &
@@ -374,25 +372,25 @@ contains
           write(dispp_filename,"(a5,i4.4,a1)") "disp-", 2*iirred-1, "/"
           !
           dispp_unit = find_free_unit()
-          open(unit=dispp_unit, file=trim(outdir)//trim(phdir)//trim(dispp_filename)//trim(slabel)//".FA", &
+          open(unit=dispp_unit, file=trim(phdir)//trim(dispp_filename)//trim(slabel)//".FA", &
           status="old", action="read", iostat=ios)
           if ( ios /= 0 ) stop "Error opening file dispp SystemLabel.FA"
           !
           write(dispn_filename,"(a5,i4.4,a1)") "disp-", 2*iirred, "/"
           dispn_unit = find_free_unit()
-          open(unit=dispn_unit, file=trim(outdir)//trim(phdir)//trim(dispn_filename)//trim(slabel)//".FA", &
+          open(unit=dispn_unit, file=trim(phdir)//trim(dispn_filename)//trim(slabel)//".FA", &
           status="old", action="read", iostat=ios)
           if ( ios /= 0 ) stop "Error opening file dispn SystemLabel.FA"
         else
           write(dispp_filename,"(a5,i4.4,a1)") "disp-", iirred, "/"
           !
           dispp_unit = find_free_unit()
-          open(unit=dispp_unit, file=trim(outdir)//trim(phdir)//trim(dispp_filename)//trim(slabel)//".FA", &
+          open(unit=dispp_unit, file=trim(phdir)//trim(dispp_filename)//trim(slabel)//".FA", &
           status="old", action="read", iostat=ios)
           if ( ios /= 0 ) stop "Error opening file dispp SystemLabel.FA"
           !
           dispn_unit = find_free_unit()
-          open(unit=dispn_unit, file=trim(outdir)//trim(v0dir)//trim(slabel)//".FA", status="old", action="read", iostat=ios)
+          open(unit=dispn_unit, file=trim(v0dir)//trim(slabel)//".FA", status="old", action="read", iostat=ios)
           if ( ios /= 0 ) stop "Error opening file dispn SystemLabel.FA"
         endif
         !
@@ -502,7 +500,7 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: outdir, phdir, nr1, nr2, nr3, irreducible_q
+    use siesta2ph_io, only: r1, nr2, nr3, irreducible_q
     use siesta2ph_system, only: nat, at, tau_cryst, amass, ityp
     use siesta2ph_utils, only: tpi, cmplx_0, cmplx_i, pmass, Hartree2meV, au2THz
     !
@@ -560,7 +558,7 @@ contains
       !
       iounit = find_free_unit()
       write(filename,"(a3,i4.4,a4)") "dyn", iqirr, ".dat"
-      open(unit=iounit, file=trim(outdir)//trim(phdir)//trim(filename), action="write", status="replace")
+      open(unit=iounit, file=trim(phdir)//trim(filename), action="write", status="replace")
       !
       ! Count symmetry equivalent q points
       nq_star = 0
@@ -633,7 +631,7 @@ contains
     !
     ! TODO: Add description
     !
-    use siesta2ph_io, only: outdir, phdir, kpath_file, nr1, nr2, nr3
+    use siesta2ph_io, only: path_file, nr1, nr2, nr3
     use siesta2ph_system, only: nat, at, tau_cryst, amass, ityp, bg, alat
     use siesta2ph_utils, only: tpi, cmplx_0, cmplx_i, pmass, Hartree2meV, au2cm1, au2THz
     !
@@ -664,7 +662,7 @@ contains
 
     ! Read kpath_file
     iounit = find_free_unit()
-    filename = trim(outdir)//trim(kpath_file)
+    filename = trim(kpath_file)
     open( unit=iounit, file=trim(filename), iostat=iostat, form="formatted", &
           status="old", action="read" )
     if (iostat .ne. 0) stop "ERROR: phonon_bands: Error opening kpath_file."
@@ -689,7 +687,7 @@ contains
     dm = cmplx_0
     !
     iounit = find_free_unit()
-    filename = trim(outdir)//trim(phdir)//"phonons.dat"
+    filename = trim(phdir)//"phonons.dat"
     open(unit=iounit, file=trim(filename), action="write", status="replace", iostat=iostat)
     if (iostat .ne. 0) stop "ERROR: phonon_bands: Error opening phonons.dat."
     !
