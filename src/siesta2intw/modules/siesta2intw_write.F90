@@ -444,7 +444,7 @@ contains
       !
       write(filename_read,"(a3,i4.4,a4)") "dyn", iq, ".dat"
       io_unit_read = find_free_unit()
-      open( unit=io_unit_read, file=trim(outdir)//trim(phdir)//trim(filename_read), iostat=ios, &
+      open( unit=io_unit_read, file=trim(phdir)//trim(filename_read), iostat=ios, &
             action="read", status="old" )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening dynamical matrix file."
 
@@ -527,7 +527,7 @@ contains
     ! Open the dvscf.info file
     io_unit = find_free_unit()
     filename_read = trim(dvscfdir)//"dvscf.info"
-    open( unit=io_unit, file=trim(outdir)//trim(phdir)//trim(filename_read), iostat=ios, form='formatted', &
+    open( unit=io_unit, file=trim(phdir)//trim(filename_read), iostat=ios, form='formatted', &
           status='old', action='read' )
     if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening dvscf.info file."
     !
@@ -578,7 +578,7 @@ contains
       !
       write(filename_read,"(a5,i4.4,a4)") "dvscf", iq, ".dat"
       io_unit_read = find_free_unit()
-      open( unit=io_unit_read, file=trim(outdir)//trim(phdir)//trim(dvscfdir)//trim(filename_read), iostat=ios, &
+      open( unit=io_unit_read, file=trim(phdir)//trim(dvscfdir)//trim(filename_read), iostat=ios, &
             form='unformatted', status='old', action='read', access='direct', recl=rl )
       if (ios .ne. 0) stop "ERROR: write_phonon_info: Error opening dv_file_read file."
       !
