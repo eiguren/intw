@@ -162,7 +162,7 @@ contains
     !
     !This subroutine reads the information related to phonons from files.
     !
-    use intw_input_parameters, only: outdir, prefix, ph_dir, qlist, nqirr, nq1, nq2, nq3
+    use intw_input_parameters, only: outdir, prefix, qlist, nqirr, nq1, nq2, nq3
     use intw_reading, only: nat, bg
     use intw_matrix_vector, only: ainv
     use intw_utility, only: find_free_unit
@@ -191,7 +191,7 @@ contains
     allocate(q_irr_cryst(3,nqirr))
 
     io_unit = find_free_unit()
-    open(unit=io_unit, file=trim(outdir)//trim(ph_dir)//trim(qlist), status="old", iostat=ios)
+    open(unit=io_unit, file=trim(outdir)//trim(qlist), status="old", iostat=ios)
     if (ios /= 0) stop "ERROR: read_ph_information: error opening qlist."
 
     do iq = 1, nqirr

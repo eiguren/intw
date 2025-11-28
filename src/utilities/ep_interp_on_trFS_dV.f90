@@ -76,47 +76,44 @@ program ep_on_trFS_dV
 
   use intw_version, only: print_intw_version
 
-  use intw_useful_constants, only: cmplx_1, cmplx_0, cmplx_i, Ha_to_eV, tpi, eps_8
+  use intw_useful_constants, only: cmplx_0, cmplx_i, tpi
 
   use intw_utility, only: get_timing, print_threads, print_date_time, find_free_unit, &
-                          cryst_to_cart, generate_kmesh, &
-                          joint_to_triple_index_r
+                          cryst_to_cart, generate_kmesh, joint_to_triple_index_r
 
-  use intw_matrix_vector, only: area_vec, ainv
+  use intw_matrix_vector, only: area_vec
 
-  use intw_input_parameters, only: outdir, prefix, read_input, &
-                                   intw2W_method, intw2W_fullzone, nk1, nk2, nk3, chemical_potential, &
-                                   nq1, nq2, nq3, nqirr, ph_dir, &
-                                   ep_interp_method, ep_interp_bands, nfs_sheets_initial, nfs_sheets_final, &
-                                   nscf_code
+  use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3, &
+                                   nq1, nq2, nq3, nqirr, &
+                                   ep_interp_method, ep_interp_bands, &
+                                   nfs_sheets_initial, nfs_sheets_final, &
+                                   nscf_code, read_input
 
-  use intw_reading, only: num_bands_intw, set_num_bands, read_parameters_data_file, &
-                          nGk_max, get_gvec, &
-                          nspin, lspin, &
-                          at, nr1, nr2, nr3, &
-                          nat, tau, nsym, s, &
-                          get_K_folder_data
+  use intw_reading, only: num_bands_intw, nGk_max, at, nr1, nr2, nr3, &
+                          nat, tau, nsym, s, nspin, lspin, &
+                          read_parameters_data_file, set_num_bands, &
+                          get_gvec, get_K_folder_data
 
   use intw_pseudo, only: read_all_pseudo
 
   use intw_pseudo_local, only: calculate_local_part_dv, dvqpsi_local
 
-  use intw_pseudo_non_local, only: init_KB_PP, &
-                                   multiply_psi_by_dvKB
+  use intw_pseudo_non_local, only: init_KB_PP, multiply_psi_by_dvKB
 
-  use intw_symmetries, only: set_symmetry_relations, multable, rot_atoms, &
-                             symtable, rtau_index, rtau, rtau_cryst, &
+  use intw_symmetries, only: rtau, rtau_cryst, rtau_index, symtable, &
+                             set_symmetry_relations, multable, rot_atoms, &
                              allocate_and_build_spin_symmetry_matrices, &
                              find_inverse_symmetry_matrices_indices, &
                              find_size_of_irreducible_k_set
 
   use intw_fft, only: generate_nl, allocate_fft
 
-  use intw_ph, only: nqmesh, qmesh, read_ph_information, &
-                     q_irr_cryst, read_allq_dvr, get_dv, &
-                     QE_folder_nosym_q, QE_folder_sym_q, symlink_q
+  use intw_ph, only: nqmesh, qmesh, q_irr_cryst, &
+                     QE_folder_nosym_q, QE_folder_sym_q, symlink_q, &
+                     read_ph_information, read_allq_dvr, get_dv
 
-  use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, allocate_and_build_ws_irvec_q
+  use intw_ph_interpolate, only: irvec_q, nrpts_q, ndegen_q, &
+                                 allocate_and_build_ws_irvec_q
 
   implicit none
 

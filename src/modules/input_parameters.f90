@@ -36,7 +36,7 @@ module intw_input_parameters
   ! &intw2W
   public :: intw2W, intw2W_fullzone, intw2W_method, compute_mmn, compute_amn
   ! &ph
-  public :: ph, ph_dir, qlist, read_for_dynmat, fc_mat, &
+  public :: ph, qlist, read_for_dynmat, fc_mat, &
             nq1, nq2, nq3, nqirr, apply_asr
   ! &DOS
   public :: DOS, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, nk1_dos, nk2_dos, nk3_dos
@@ -112,15 +112,11 @@ module intw_input_parameters
   ! &ph namelist variables
   !----------------------------------------------------------------------------!
 
-  character(256) :: ph_dir = './'
-  ! Haritz 22/05/2024: At this moment this is only used as the directory where qlist and fc_mat are present
-  ! I think that could be removed
-
   character(256) :: qlist = 'qlist.txt'
-  ! Name of the file containing the irreducible q-points list
+  ! Name of the file containing the irreducible q-points list (relative to outdir)
 
   character(256) :: fc_mat = '--.fc'
-  ! Name of the force constants matrix
+  ! Name of the force constants matrix (relative to outdir)
 
   character(256) :: read_for_dynmat = 'dynq'
   ! read_for_dynmat = 'fc' --> this will read force constants from fc_mat file
@@ -253,7 +249,7 @@ module intw_input_parameters
   NAMELIST / intw2W / intw2W_fullzone, intw2W_method, &
                       compute_mmn, compute_amn
 
-  NAMELIST / ph / ph_dir, qlist, read_for_dynmat, fc_mat, ep_mat_file, &
+  NAMELIST / ph / qlist, read_for_dynmat, fc_mat, ep_mat_file, &
                   nq1, nq2, nq3, nqirr, apply_asr
 
   NAMELIST / DOS / nk1_dos, nk2_dos, nk3_dos, ne_dos, &
@@ -457,7 +453,6 @@ contains
       write(*,*) "             compute_mmn     = T or F"
       write(*,*) "/"
       write(*,*) "&ph"
-      write(*,*) "             ph_dir          = 'directory'"
       write(*,*) "             qlist           = 'file'"
       write(*,*) "             read_for_dynmat = 'fc' or 'dynq' (D)"
       write(*,*) "             fc_mat          = 'file'"
@@ -506,8 +501,6 @@ contains
 
     strlen = len_trim(outdir)
     if ( outdir(strlen:strlen+1) .ne. "/" ) outdir(strlen+1:strlen+2) = "/"
-    strlen = len_trim(ph_dir)
-    if ( ph_dir(strlen:strlen+1) .ne. "/" ) ph_dir(strlen+1:strlen+2) = "/"
 
     return
 
