@@ -35,7 +35,6 @@ PROGRAM create_intw_q_dirs
   ! I/O
   CHARACTER(len=256) :: prefix = " "
   CHARACTER(len=256) :: outdir = "./"
-  CHARACTER(len=256) :: qlist_file = "qlist.txt"
   CHARACTER(len=256) :: phdir = "./"
   INTEGER :: nq1, nq2, nq3
   CHARACTER(len=256) :: reference_file
@@ -81,9 +80,9 @@ PROGRAM create_intw_q_dirs
   call find_the_irreducible_k_set(nq1, nq2, nq3, qirr_cryst, nq_irr)
 
   !
-  ! Create qlist_file and qq directories
+  ! Create qlist.txt and qq directories
   iounit = find_free_unit()
-  open(unit=iounit, file=trim(outdir)//trim(qlist_file), status="replace", action="write", iostat=iostat)
+  open(unit=iounit, file=trim(outdir)//trim(phdir)//"qlist.txt", status="replace", action="write", iostat=iostat)
   if ( iostat /= 0 ) call errore( "create_intw_q_dirs", "ERROR: create_intw_q_dirs: Error opening qlist_file", 1 )
   !
   do iq=1,nq_irr
