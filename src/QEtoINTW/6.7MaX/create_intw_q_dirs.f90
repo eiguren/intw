@@ -86,6 +86,8 @@ PROGRAM create_intw_q_dirs
   !
   do iq=1,nq_irr
     !
+    print"(i3,3f18.10)", iq, qirr_cryst(:, iq)
+    !
     call write_tag("qq", iq, q_dir)
     !
     ! Create directory
