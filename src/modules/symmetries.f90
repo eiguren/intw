@@ -18,18 +18,23 @@
 !
 module intw_symmetries
 
-  !---------------------------------------------------------------------------!
-  ! The subroutines in this module handle the space group symmetries and      !
-  ! their effect on wave-functions and matrix elements. They also allow the   !
-  ! identification of an irreducible set of k-vectors in the 1BZ, forming the !
-  ! IBZ.                                                                      !
-  !                                                                           !
-  ! It is advantageous to perform symmetry operations in crystal coordinates; !
-  ! indeed, in these coordinates, the zone is simply a cube and MP meshes are !
-  ! nice and regular. However, the crystal coordinate system introduces minor !
-  ! complications in the application of point group symmetry. A full          !
-  ! description is given in algorithms.pdf.                                   !
-  !---------------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module handles the space group symmetry operations.
+  !!
+  !! ### Details
+  !!
+  !! The subroutines in this module handle the space group symmetries and
+  !! their effect on wave functions and matrix elements. They also allow the
+  !! identification of an irreducible set of k-vectors in the 1BZ, forming the
+  !! IBZ.
+  !!
+  !! It is advantageous to perform symmetry operations in crystal coordinates;
+  !! indeed, in these coordinates, the zone is simply a cube and MP meshes are
+  !! nice and regular. However, the crystal coordinate system introduces minor
+  !! complications in the application of point group symmetry. A full
+  !! description is given in algorithms.pdf.
+  !!
 
   use kinds, only: dp
 

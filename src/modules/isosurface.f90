@@ -18,10 +18,11 @@
 !
 module triFS_isosurface
 
-  !------------------------------------------------------------------!
-  ! Module that contains all the necessary variables and subroutines !
-  ! to read Wannier hamiltonian and create symmetric isosurface.     !
-  !------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains all the variables and subroutines for reading
+  !! Wannier hamiltonian and creating symmetric isosurface for [[triFS]] utility.
+  !!
 
   use kinds, only: dp
 

@@ -18,6 +18,30 @@
 !
 program w902intw
 
+  !! display: none
+  !!
+  !! Build and save Wannier U and H(R) matrices for use within INTW.
+  !!
+  !! ### Details
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     nk1                   = integer
+  !!     nk2                   = integer
+  !!     nk3                   = integer
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
+
   use kinds, only: dp
 
   use intw_version, only: print_intw_version

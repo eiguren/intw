@@ -18,7 +18,11 @@
 !
 module intw_matrix_elements
 
-  ! TODO: Add a description.
+  !! display: none
+  !!
+  !! This module contains subroutines for computing matrix elements of operators
+  !! between wave functions, particularly for plane wave matrix elements.
+  !!
 
   use kinds, only: dp
 

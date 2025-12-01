@@ -18,9 +18,10 @@
 !
 module intw_ph
 
-  !------------------------------------------------------------------!
-  ! This module contains the main variables related to phonon modes. !
-  !------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains the main variables related to phonon modes.
+  !!
 
   use kinds, only: dp
 

@@ -17,7 +17,13 @@
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_useful_constants
-  !
+
+  !! display: none
+  !!
+  !! This module defines useful constants including mathematical values,
+  !! physical constants, conversion factors, and Pauli matrices.
+  !!
+
   use kinds, only: dp
   !
   implicit none

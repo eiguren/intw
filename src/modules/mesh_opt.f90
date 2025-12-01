@@ -18,7 +18,11 @@
 !
 module triFS_mesh_opt
 
-  ! TODO: Add a description.
+  !! display: none
+  !!
+  !! This module contains all the necessary subroutines for optimizing a
+  !! triangulated FS mesh for [[triFS]] utility.
+  !!
 
   use kinds, only: dp
 

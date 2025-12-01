@@ -17,9 +17,12 @@
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_fft_interp
-  ! Haritz 29/11/2024: This module is not used anywhere and it is not tested, so it could be removed.
 
-  ! TODO: Add a description.
+  !! display: none
+  !!
+  !! @note
+  !! 29/11/2024: This module is not used anywhere and it is not tested, so it could be removed.
+  !!
 
   use kinds, only: dp
   !

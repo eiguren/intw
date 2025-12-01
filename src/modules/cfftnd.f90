@@ -10,7 +10,7 @@ integer, parameter :: prec=kind(1.d0)
 end module
 
 subroutine cfftnd(nd,n,sgn,c)
-!
+!*
 ! DESCRIPTION:
 !  In-place fast Fourier transform for complex arrays in $n_d$ dimensions. The
 !  forward transform is scaled by one over the size of the array. Uses a
@@ -26,9 +26,11 @@ subroutine cfftnd(nd,n,sgn,c)
 !  Distributed under the terms of the GNU General Public License.
 !  See the file COPYING for license details.
 !
-!Notes by ASIER
+! ```
+! Notes by ASIER
 ! sgn=+1 Means         Fourier Transform, i.e. Sum_{r=1,N} Exp[+I*k*r] u_r
 ! sgn=-1 Means Inverse Fourier Transform, i.e. Sum_{k=1,N} Exp[-I*k*r] u_k/N
+! ```
 !
 use fftpack5
 implicit none

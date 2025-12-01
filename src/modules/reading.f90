@@ -18,7 +18,11 @@
 !
 module intw_reading
 
-  ! TODO: Add a description.
+  !! display: none
+  !!
+  !! This module contains variables and subroutines for reading and
+  !! managing input data from DFT calculations.
+  !!
 
   use kinds, only: dp
 
@@ -50,161 +54,161 @@ module intw_reading
 
   private
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! unit cell variables
-  ! system / configuration variables
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !==================================!
+  ! unit cell variables              !
+  ! system / configuration variables !
+  !==================================!
 
   real(dp) :: alat
-  ! The lattice parameter TODOD: Units
+  !! The lattice parameter TODOD: Units
 
   real(dp):: tpiba
-  ! tpi/alat
+  !! tpi/alat
 
   real(dp) :: tpiba2
-  ! tpiba**2
+  !! tpiba**2
 
   real(dp) :: at(3, 3)
-  ! The a1 a2 and a3 lattice vectors column wise TODO: Units
+  !! The a1 a2 and a3 lattice vectors column wise TODO: Units
 
   real(dp) :: volume0
-  ! The volume of the unit cell TODO: units
+  !! The volume of the unit cell TODO: units
 
   real(dp) :: bg(3, 3)
-  ! The reciprocal lattice vectors column wise TODO: units
+  !! The reciprocal lattice vectors column wise TODO: units
 
   integer :: ntyp
-  ! The number types of atoms in the cell
+  !! The number types of atoms in the cell
 
   character(len=3), allocatable :: atom_labels(:)
-  ! atom_label( j ) = name of the j-th atomic type (or species)
+  !! atom_label( j ) = name of the j-th atomic type (or species)
 
   real(dp), allocatable :: amass(:)
-  ! amass(1:ntyp) = atomic masses TODOD: units
+  !! amass(1:ntyp) = atomic masses TODOD: units
 
   character(len=80), allocatable :: atom_pfile(:)
-  ! atom_pfile( j ) = name of pseudopotential file for
-  ! the j-th atomic type (or species)
+  !! atom_pfile( j ) = name of pseudopotential file for
+  !! the j-th atomic type (or species)
 
   integer :: nat
-  ! The number of atoms in the cell
+  !! The number of atoms in the cell
 
   real(dp), allocatable :: tau(:, :)
-  ! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
+  !! tau( 1:3, i ) = position of the i-th atom (in cartesian, alat units)
 
   real(dp), allocatable :: tau_cryst(:, :)
-  ! tau( 1:3, i ) = position of the i-th atom (in Crystal units)
+  !! tau( 1:3, i ) = position of the i-th atom (in Crystal units)
 
   integer, allocatable :: ityp(:)
-  ! ityp( i ) = type of the i-th atom
+  !! ityp( i ) = type of the i-th atom
 
-  !!!!!!!!!!!!!!!!!!!!!!
-  ! Symmetry variables
-  !!!!!!!!!!!!!!!!!!!!!!
+  !====================!
+  ! Symmetry variables !
+  !====================!
 
   integer :: nsym
-  ! Number of crystal symmetries
+  !! Number of crystal symmetries
 
   integer, allocatable :: s(:, :, :)
-  ! Symmetry matrices, in crystal coordinates,
-  ! CAREFUL!!! since the symmetry matrices are expressed
-  ! in the crystal coordinates, they may not *look* like
-  ! rotation matrices: convert to cartesian coordinates
-  ! and they'll have a sensible form.
+  !! Symmetry matrices, in crystal coordinates,
+  !! CAREFUL!!! since the symmetry matrices are expressed
+  !! in the crystal coordinates, they may not *look* like
+  !! rotation matrices: convert to cartesian coordinates
+  !! and they'll have a sensible form.
 
   real(dp), allocatable :: ftau(:, :)
-  ! Fractional translations, in crystal coordinates.
+  !! Fractional translations, in crystal coordinates.
 
   logical, allocatable :: TR(:)
-  ! This array indicates if TR can (should) be used
-  ! with a given point group operation. TR is optional
-  ! if the ground state is not magnetically polarized, but
-  ! can become mandatory; for a magnetic ground state,
-  ! certain rotations can only be permitted in conjunction
-  ! with time reversal symmetry (ie: the rotation flips B, and
-  ! TR flips it back). This array will take note of
-  ! which point group symmetries require TR.
+  !! This array indicates if TR can (should) be used
+  !! with a given point group operation. TR is optional
+  !! if the ground state is not magnetically polarized, but
+  !! can become mandatory; for a magnetic ground state,
+  !! certain rotations can only be permitted in conjunction
+  !! with time reversal symmetry (ie: the rotation flips B, and
+  !! TR flips it back). This array will take note of
+  !! which point group symmetries require TR.
 
-  !!!!!!!!!!!!!!!!!!!
-  ! k-point variables
-  !!!!!!!!!!!!!!!!!!!
+  !===================!
+  ! k-point variables !
+  !===================!
 
   integer :: nkpoints_QE
-  ! Number of k points used in the DFT calculation
+  !! Number of k points used in the DFT calculation
 
   real(dp), allocatable :: kpoints_QE(:, :)
-  ! The kpoints used in the DFT calculation TODO: crystal or Cartesian?
+  !! The kpoints used in the DFT calculation TODO: crystal or Cartesian?
 
-  !!!!!!!!!!!!!!!!!!!
-  ! Bands variables
-  !!!!!!!!!!!!!!!!!!!
+  !=================!
+  ! Bands variables !
+  !=================!
 
   integer :: nbands
-  ! The number of bands computed in the DFT calculation
+  !! The number of bands computed in the DFT calculation
 
-  !! JLB: These are not read from the DFT calculation, but I think it's cleanest to put them here.
-  !!      They are set in the subroutine "set_num_bands" in this module.
-  !!      To be discussed.
+  ! JLB: These are not read from the DFT calculation, but I think it's cleanest to put them here.
+  !      They are set in the subroutine "set_num_bands" in this module.
+  !      To be discussed.
   integer :: num_bands_intw
-  ! Number of bands forming the subspace from which Wannier functions are to be obtained
-  ! Might be different from nbands if exclude_bands is used
+  !! Number of bands forming the subspace from which Wannier functions are to be obtained
+  !! Might be different from nbands if exclude_bands is used
 
   integer :: num_wann_intw
-  ! Number of Wannier functions, or equivalently bands/KS states to be interpolated
-  ! Might be different from num_bands_intw if disentanglement is used
+  !! Number of Wannier functions, or equivalently bands/KS states to be interpolated
+  !! Might be different from num_bands_intw if disentanglement is used
 
   integer :: num_exclude_bands_intw
-  ! Number of bands to be excluded
+  !! Number of bands to be excluded
 
   logical, allocatable :: band_excluded_intw(:)
-  ! Array determining the bands to be excluded
+  !! Array determining the bands to be excluded
 
-  !!!!!!!!!!!!!!!!!!!
-  ! Spin variables
-  !!!!!!!!!!!!!!!!!!!
+  !================!
+  ! Spin variables !
+  !================!
 
   integer :: nspin
-  ! nspin = 1 for non-polarized calculations, nspin = 2 for spin-polarized ones.
-  ! NOTE: Colinear spin-polarized calculations are transformed to a non-colinear
-  !       spinor format by pw2intw or siesta2intw.
+  !! nspin = 1 for non-polarized calculations, nspin = 2 for spin-polarized ones.
+  !! NOTE: Colinear spin-polarized calculations are transformed to a non-colinear
+  !!       spinor format by pw2intw or siesta2intw.
 
   logical :: lspin
-  ! If a spin-polarized calculation (colinear or non-collinear) lspin = T
+  !! If a spin-polarized calculation (colinear or non-collinear) lspin = T
 
   logical :: lspinorb
-  ! If spin-orbit non-collinear calculation lspinorb = T
+  !! If spin-orbit non-collinear calculation lspinorb = T
 
   logical :: lmag
-  ! If the calculation is magnetic (time-reversal broken) lmag = T
-  ! NOTE: In QE, if the system has TR symmetry (no magnetization),
-  !       only one spin component of the induced potential is calculated
-  !       and saved to the file, even if the calculation is non-collinear.
+  !! If the calculation is magnetic (time-reversal broken) lmag = T
+  !! NOTE: In QE, if the system has TR symmetry (no magnetization),
+  !!       only one spin component of the induced potential is calculated
+  !!       and saved to the file, even if the calculation is non-collinear.
 
-  !!!!!!!!!!!!!!!!!!!
-  ! Plane-waves variables
-  !!!!!!!!!!!!!!!!!!!
+  !=======================!
+  ! Plane-waves variables !
+  !=======================!
 
   integer :: nr1, nr2, nr3
-  ! The FFT grid
+  !! The FFT grid
 
   real(dp) :: ecutwfc
-  ! Cutoff energy for wave functions (Rydberg)
+  !! Cutoff energy for wave functions (Rydberg)
 
   real(dp) :: ecutrho
-  ! Cutoff energy for charge density (Rydberg)
+  !! Cutoff energy for charge density (Rydberg)
 
   integer :: nG
-  ! The number of g vectors
+  !! The number of g vectors
 
   integer, allocatable :: gvec(:, :)
-  ! The global g vectors (to which indices refer). TODO: crystal or Cartesian?
+  !! The global g vectors (to which indices refer). TODO: crystal or Cartesian?
 
   integer :: nGk_max
-  ! The maximum number of G vectors for any k point
+  !! The maximum number of G vectors for any k point
 
   logical :: gamma_only
-  ! If Gamma is the only k-point and Gamma only tricks are used (half of the G-vectors are used)
-  ! gamma_only = .true.
+  !! If Gamma is the only k-point and Gamma only tricks are used (half of the G-vectors are used)
+  !! gamma_only = .true.
 
 contains
 

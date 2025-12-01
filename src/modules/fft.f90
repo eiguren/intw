@@ -18,10 +18,17 @@
 !
 module intw_fft
 
-  !--------------------------------------------------------------!
-  ! The subroutines in this module handle most of the g -> r and !
-  ! r -> g tasks using FFT.                                      !
-  !--------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains variables and subroutines for handling most of the g -> r and
+  !! r -> g transformations using FFT.
+  !!
+  !! ### Details
+  !!
+  !! The correspondence between the nr1 nr2 nr3 FFT grid with the G list
+  !! of the calculation is taken into account, and for wave functions,
+  !! the reduced G list inside the cut-off is considered.
+  !!
 
   use kinds, only: dp
   !

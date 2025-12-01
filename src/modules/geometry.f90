@@ -18,10 +18,11 @@
 !
 module triFS_geometry
 
-  !------------------------------------------------------------------!
-  ! Module that contains all the necessary variables and subroutines !
-  ! related to triangles and tetrahedra.                             !
-  !------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains all the necessary variables and subroutines
+  !! related to triangles and tetrahedra for [[triFS]] utility.
+  !!
 
   use kinds, only: dp
 

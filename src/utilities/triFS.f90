@@ -16,10 +16,155 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-program triFS
+module triFS_input_parameters
+
+  !! display: public
+  !!
+  !! This module contains the definitions of input parameters for [[triFS]] utility.
+  !!
+  !! ### Details
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &tri_FS
+  !!     n1           = integer
+  !!     n2           = integer
+  !!     n3           = integer
+  !!     volume_nodes = T or F (Default: T)
+  !!     volnodfac    = real (Default: 1.0)
+  !!     hr_file      = 'file'
+  !!     ef           = real (Default: 0.0 eV)
+  !!     verbose      = T or F (Default: F)
+  !!     plot_BZ      = T or F (Default: T)
+  !!     dos          = T or F (Default: T)
+  !!     eps_dupv     = real (Default: 1.0E-06)
+  !! /
+  !! &FS_opt
+  !!     collapse          = T or F (Default: T)
+  !!     collapse_criteria = real (Default: 0.2)
+  !!     relax             = T or F (Default: T)
+  !!     relax_iter        = integer (Default: 1000)
+  !!     newton_raphson    = 0: not applied, 1: only in the end, 2: beginning and end (Default: 2)
+  !!     newton_iter       = integer (Default: 10)
+  !!     relax_vinface     = T or F (Default: F)
+  !!     eps_vinface       = real (Default: 1.0E-5)
+  !! /
+  !! ```
+  !!
+  !! Variables without default values must be explicitly set in the input
+  !! file; otherwise, an error will be raised.
+  !!
 
   use kinds, only: dp
-  use intw_version, only: print_intw_version
+
+  implicit none
+
+  public :: tri_FS, TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
+  public :: FS_opt, collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
+
+  private
+
+  ! tri_FS
+
+  logical :: TR_sym = .true.
+  !! TR symmetry operation
+  integer :: n1 = -1, n2 = -1, n3 = -1
+  !! BZ sampling for creating tetrahedra
+  logical :: volume_nodes = .true.
+  !! .true. if nodes are to be added inside the IBZ volume as Steiner points
+  real(kind=dp) :: volnodfac = 1.0_dp
+  !! Factor with which multiply n1, n2, n3 to add points within IBZ volume
+  character(len=256) :: hr_file = 'unassigned'
+  !! Wannier90 $seedname.hr file
+  real(kind=dp) :: ef = 0.0_dp
+  !! Fermi level (Units: eV)
+  logical :: verbose = .false.
+  !! Verbose output
+  logical :: plot_BZ = .true.
+  !! Plot BZ edges
+  logical :: dos = .true.
+  !! Compute Fermi level DOS
+  real(kind=dp) :: eps_dupv = 1.0E-06_dp
+  !! Threshold parameter to detect duplicated vertices
+
+  ! FS_opt
+
+  logical :: collapse = .true.
+  !! Collapse edges of triangulated mesh
+  real(kind=dp) :: collapse_criteria = 0.2_dp
+  !! Shortest edge to longest edge ratio to proceed with collapse
+  logical :: relax = .true.
+  !! Tangentially relax edges of triangulated mesh
+  integer :: relax_iter = 1000
+  !! Number of tangential relax iterations
+  integer :: newton_raphson = 2
+  !! Newthon-Raphson relax edges of triangulated mesh:
+  !!
+  !! - `0`: not applied
+  !! - `1`: applied only at the end
+  !! - `2`: applied at beginning and end
+  integer :: newton_iter = 10
+  !! Number of Newthon-Raphson relax iterations
+  logical :: relax_vinface = .false.
+  !! Relax vertices on faces. May give erros in some examples.
+  real(kind=dp) :: eps_vinface = 1.0E-5_dp
+  !! Threshold to detect vertices on BZ faces
+
+  ! Input namelists
+  NAMELIST / tri_FS / TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
+  NAMELIST / FS_opt / collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
+
+end module triFS_input_parameters
+!
+program triFS
+
+  !! display: none
+  !!
+  !! Triangulate Fermi surface.
+  !!
+  !! ### Details
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir = 'directory'
+  !!     prefix = 'prefix'
+  !! /
+  !! &tri_FS
+  !!     TR_sym = T or F
+  !!     n1           = integer
+  !!     n2           = integer
+  !!     n3           = integer
+  !!     volume_nodes = T or F
+  !!     volnodfac    = real
+  !!     hr_file      = 'file'
+  !!     ef           = real
+  !!     verbose      = T or F
+  !!     plot_BZ      = T or F
+  !!     dos          = T or F
+  !!     eps_dupv     = real
+  !! /
+  !! &FS_opt
+  !!     collapse          = T or F
+  !!     collapse_criteria = real
+  !!     relax             = T or F
+  !!     relax_iter        = integer
+  !!     newton_raphson    = 0: not applied, 1: only in the end, 2: beginning and end
+  !!     newton_iter       = integer
+  !!     relax_vinface     = T or F
+  !!     eps_vinface       = real
+  !! /
+  !! ```
+  !!
+  !! `triFS.x` utility uses special `tri_FS` and `FS_opt` namelists,
+  !! see [[triFS_input_parameters]] module for the description of each parameter in those namelists.
+  !! See [[intw_input_parameters]] module for the description of each parameter in the `input` namelist.
+  !!
+
+  use kinds, only: dp
+  use triFS_input_parameters
   use triFS_geometry, only: wigner_seitz_cell, plot_poly, polyhedra_off, tetrasym, plot_tetra_off, compact_tetra, &
                       tetraIBZ_2_vert_faces_edges, irr_faces, triangulate_faces, add_nodes_IBZ_volume
   use triFS_isosurface, only: vert_veloc_rot, vert_veloc, vert_index_rot, vert_coord_rot, ntri_rot, nvert_rot, &
@@ -27,19 +172,14 @@ program triFS
                         read_tetrahedra, create_isosurface_IBZ, write_full_isosurface, DOS_isosurface, &
                         write_IBZ_isosurface
   use triFS_mesh_opt, only: mesh_optimization
+  use intw_version, only: print_intw_version
   use intw_utility, only: find_free_unit, get_timing, print_threads, print_date_time
   use intw_input_parameters, only: input, prefix
   use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s
 
-
-
   implicit none
-  integer :: n1, n2, n3
-  ! Symmetry operations
-  logical :: TR_sym
+
   ! Tetrahedra variables
-  logical :: volume_nodes = .true. ! .true. if nodes are to be added inside the IBZ volume as Steiner points
-  real(kind=dp) :: volnodfac = 1.0_dp ! factor with which multiply n1,n2,n3 to add points within IBZ volume
   integer, parameter :: ntetmax = 400
   integer :: n_BZ_tetra_irr, n_BZ_tetra_all, tetra_equiv(ntetmax), tetra_symlink(ntetmax,1:2)
   real(kind=dp), dimension(1:3, 1:4, ntetmax) :: BZ_tetra_irr, BZ_tetra_all
@@ -47,33 +187,17 @@ program triFS
   real(kind=dp), allocatable :: vert_IBZ(:,:)
   integer, allocatable :: faces_IBZ_as_vert(:,:), edges_IBZ(:,:)
   integer, allocatable :: faces_Gsymlink(:,:,:,:,:), faces_indx(:), faces_inv_indx(:)
+
   ! Wannier and isosurface variables
-  character(len=256) :: hr_file
   integer :: hr_unit, num_wann, irpt, nrpts, iwann, jwann
-  real(kind=dp) :: ef
   integer, dimension(:), allocatable :: ndegen
   integer, dimension(:,:), allocatable :: irvec
   complex(kind=dp), dimension(:,:,:), allocatable :: ham_r
-  ! Mesh optimization variables
-  logical :: collapse, relax
-  integer :: newton_raphson ! 0 not applied, 1 only in the end, 2 beginning and end
-  real(kind=dp) :: collapse_criteria = 0.2_dp ! Shortest edge to longest edge ratio to proceed with collapse
-  integer :: newton_iter = 10, relax_iter = 1000
-  logical :: relax_vinface = .false. ! relax vertices on faces. May give erros in some examples.
-  real(kind=dp) :: eps_vinface = 1.0E-5_dp ! threshold to detect vertices on BZ faces
-  ! Local
+
   integer :: i, j
   character(len=25) :: tag_in
-  ! Input files
   integer :: ios1, ios2, ios3
-  logical :: verbose = .true., plot_BZ = .true., dos = .true.
-  real(kind=dp) :: eps_dupv = 1.0E-06_dp ! Threshold parameter to detect duplicated vertices
-  !
-  ! timing
   real(dp) :: time1, time2
-  !
-  NAMELIST /tri_FS/ TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
-  NAMELIST /FS_opt/ collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
 
 
   20 format(A)
@@ -155,7 +279,7 @@ program triFS
   do irpt=1,nrpts
      do i=1,num_wann
         do j=1,num_wann
-           !! JL: This is the accuracy on output hr file of wannier90, it seems too low...
+           ! JL: This is the accuracy on output hr file of wannier90, it seems too low...
            read(unit=hr_unit, fmt='(5I5,2F12.6)') irvec(:,irpt), jwann, iwann, ham_r(j,i,irpt)
            !read(unit=hr_unit, fmt='(5I5,2ES18.10)') irvec(:,irpt), jwann, iwann, ham_r(j,i,irpt)
         end do
@@ -179,7 +303,7 @@ program triFS
   ! Write BZ border lines in plotting format if needed
   if(plot_BZ) call plot_poly()
   !
-  ! Write BZ in OFF format (reads polyhedra.dat) !! JL this should be improved to write directly in OFF format...
+  ! Write BZ in OFF format (reads polyhedra.dat) ! JL this should be improved to write directly in OFF format...
   call polyhedra_off()
   !
   ! Find tetrahedra forming the irreducible BZ volume

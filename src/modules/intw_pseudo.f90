@@ -18,10 +18,11 @@
 !
 module intw_pseudo
 
-  !-------------------------------------------------------------------!
-  ! This module contains the pseudo-potentials in intwpseudo type,    !
-  ! and the subroutine read_all_pseudo to read them from the PP files !
-  !-------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains the pseudo-potentials in intwpseudo type,
+  !! and the subroutine read_all_pseudo for reading them from the PP files.
+  !!
 
   use kinds, only: dp
 
