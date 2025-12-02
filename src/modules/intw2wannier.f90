@@ -28,11 +28,9 @@ module intw_intw2wannier
   !---------------------------------------------------------------------------!
 
   use kinds, only: dp
-  use intw_reading, only: nbands, nGk_max, nG, nspin
-  use intw_useful_constants, only: bohr, pi, tpi, fpi, eps_8, ZERO, cmplx_0, cmplx_i
 
   implicit none
-  !
+
   ! variables
   public :: nnkp_exclude_bands, nnkp_real_lattice, nnkp_recip_lattice, &
             nnkp_num_kpoints, nnkp_nnkpts, nnkp_n_proj, nnkp_kpoints, &
@@ -40,7 +38,7 @@ module intw_intw2wannier
             nnkp_proj_n, nnkp_proj_l, nnkp_proj_m, &
             nnkp_proj_s, nnkp_proj_spin_axis, &
             nnkp_list_ikpt_nn, nnkp_list_G, nnkp_excluded_bands
-  !
+
   ! subroutines
   public :: deallocate_nnkp, read_nnkp_file, output_nnkp_file, &
             intw2W90_check_mesh, generate_header,  &
@@ -48,11 +46,10 @@ module intw_intw2wannier
             generate_guiding_function, &
             get_guiding_function_overlap_FFT, &
             get_guiding_function_overlap_convolution, get_radial_part, &
-            get_angular_part, ylm_wannier  !, get_bvec_list
-  !
+            get_angular_part, ylm_wannier !, get_bvec_list
+
   private
-  !
-  save
+
   ! declare some global variables; the prefix "nnkp" will indicate
   ! variables read from the $prefix.nnkp file, which must be checked with
   ! the data read from the input file for consistency.
@@ -129,7 +126,8 @@ subroutine deallocate_nnkp()
     ! opened.
     !----------------------------------------------------------------------------!
 
-  use intw_reading, only: alat, lspin, scan_file_to
+  use intw_useful_constants, only: bohr, tpi, eps_8
+  use intw_reading, only: nbands, alat, lspin, scan_file_to
   use intw_utility, only: find_free_unit
 
   implicit none
@@ -405,6 +403,8 @@ subroutine deallocate_nnkp()
     ! read from the nnkp file are related.
     !--------------------------------------------------------------------!
 
+  use intw_useful_constants, only: eps_8
+
   implicit none
 
   !I/O variables
@@ -491,7 +491,7 @@ subroutine deallocate_nnkp()
     use intw_utility, only: find_free_unit
     use intw_matrix_elements, only: get_plane_wave_matrix_element_FFT, get_plane_wave_matrix_element_convolution_map
     use intw_input_parameters, only: outdir, prefix
-    use intw_reading, only: num_bands_intw
+    use intw_reading, only: nbands, num_bands_intw, nGk_max, nspin
 
     implicit none
 
@@ -618,7 +618,7 @@ subroutine deallocate_nnkp()
     use intw_allwfcs, only: get_psi_general_k_all_wfc
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
-    use intw_reading, only : lspin, num_bands_intw
+    use intw_reading, only : nbands, num_bands_intw, nGk_max, lspin, nspin
     use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
 
     implicit none
@@ -718,7 +718,8 @@ subroutine deallocate_nnkp()
     ! This subroutine is heavily inspired by a similar routine in pw2wannier.
     !---------------------------------------------------------------------------
 
-    use intw_reading, only: gvec, alat
+    use intw_reading, only: gvec, alat, nGk_max
+    use intw_useful_constants, only: tpi, fpi, ZERO, cmplx_0, cmplx_i
 
     implicit none
 
@@ -840,7 +841,8 @@ subroutine deallocate_nnkp()
     ! The computation is done over all bands using FFT.
     !------------------------------------------------------------------------
 
-    use intw_reading, only: nGk_max, nr1, nr2, nr3, num_bands_intw
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only: nGk_max, nr1, nr2, nr3, num_bands_intw, nspin
     use intw_fft, only: wfc_from_g_to_r, wfc_from_r_to_g
 
     implicit none
@@ -897,7 +899,8 @@ subroutine deallocate_nnkp()
     ! The computation is done over all bands.
     !--------------------------------------------------------------------------
 
-    use intw_reading, only: nGk_max, num_bands_intw
+    use intw_useful_constants, only: cmplx_0
+    use intw_reading, only: nGk_max, num_bands_intw, nspin
 
     implicit none
 
@@ -1211,6 +1214,8 @@ subroutine deallocate_nnkp()
     !   See the LICENSE file in the original Quantum Espresso source for license details.
     !   For the original source visit: https://www.quantum-espresso.org/
     !
+    use intw_useful_constants, only: pi, eps_8
+
     implicit none
 
     !I/O variables
