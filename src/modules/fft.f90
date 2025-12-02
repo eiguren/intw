@@ -543,7 +543,7 @@ contains
   end subroutine find_iG
 
 
-  subroutine coarse_to_smooth(n1,n2,n3,FR_coarse, n1s,n2s,n3s,FR_smooth)
+  subroutine coarse_to_smooth(n1, n2, n3, FR_coarse, n1s, n2s, n3s, FR_smooth)
     !-------------------------------------------
     ! This subroutine puts the coarse force
     ! constants in the smooth force constant
@@ -554,10 +554,10 @@ contains
     implicit none
 
     ! input/output variables
-    complex(dp) :: FR_coarse(n1,n2,n3)
-    complex(dp) :: FR_smooth(n1s,n2s,n3s)
+    integer, intent(in) :: n1, n2, n3, n1s, n2s, n3s
 
-    integer :: n1, n2, n3, n1s, n2s, n3s
+    complex(dp), intent(in) :: FR_coarse(n1,n2,n3)
+    complex(dp), intent(out) :: FR_smooth(n1s,n2s,n3s)
 
     ! local variables
     integer :: i1, i2, i3, i1s, i2s, i3s
