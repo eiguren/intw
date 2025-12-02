@@ -51,11 +51,12 @@ contains
     logical, intent(in) :: verbose
     real(dp), intent(in) :: ef ! Energy of isosurface
     integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
+    integer, intent(in) :: n_bnd
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
     real(dp), intent(in) :: alat, at(3,3), bg(3,3) ! real and reciprocal lattice vectors
     integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
-    integer, intent(in) :: nfaces_IBZ, n_bnd
+    integer, intent(in) :: nfaces_IBZ
     integer, intent(in) :: faces_IBZ_as_vert(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: vert_IBZ(:,:) ! IBZ big tetra vertex coordinates
     integer, intent(inout) :: n_tri(n_bnd), n_vert(n_bnd)
@@ -188,11 +189,12 @@ contains
     real(dp), intent(in) :: eps_dupv, eps_vinface
     real(dp), intent(in) :: ef
     integer, intent(in) :: nrpts, irvec(3,nrpts), ndegen(nrpts) ! Wannier/Fourier space variables
+    integer, intent(in) :: n_bnd
     complex(dp), intent(in) :: ham_r(n_bnd,n_bnd,nrpts) ! Hamiltonian in Wannier basis
     real(dp), intent(in) :: alat, ag(3,3), bg(3,3) ! real and reciprocal lattice vectors
     integer, intent(in) :: nsym, s(3,3,nsym) ! symmetry variables
     logical, intent(in) :: TR_sym ! time-reversal symmetry
-    integer, intent(in) :: newton_iter, nibz_faces, n_bnd
+    integer, intent(in) :: newton_iter, nibz_faces
     integer, intent(in) :: faces_ibz(:,:) ! vertex indeces of IBZ big tetra faces
     real(dp), intent(in) :: verts_ibz(:,:) ! IBZ big tetra vertex coordinates
     integer, intent(in) :: n_vert(:)
