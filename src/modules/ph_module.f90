@@ -28,8 +28,8 @@ module intw_ph
   !
   save
   ! variables
-  public :: q_irr, u_irr, dvscf_cart, dvscf_irr, &
-            nqmesh, qmesh, q_irr_cryst, &
+  public :: q_irr_cryst, u_irr, dvscf_cart, dvscf_irr, &
+            nqmesh, qmesh, &
             QE_folder_nosym_q, QE_folder_sym_q, symlink_q
   !
   ! subroutines
@@ -43,13 +43,12 @@ module intw_ph
   private
   !
   !
-  real(dp), allocatable :: q_irr(:,:) ! coo. of irr. q points
+  real(dp), allocatable :: q_irr_cryst(:,:) ! coo. of irr. q points
   complex(dp), allocatable :: u_irr(:,:,:) ! displacement patterns for the irr.  q.
   complex(dp), allocatable :: dvscf_cart(:,:,:,:,:), dvscf_irr(:,:,:,:)
 
   integer :: nqmesh
   real(dp), allocatable :: qmesh(:,:)
-  real(dp), allocatable :: q_irr_cryst(:,:)
 
   integer, allocatable :: QE_folder_nosym_q(:)
   integer, allocatable :: QE_folder_sym_q(:)
@@ -170,11 +169,9 @@ contains
     implicit none
 
     integer :: io_unit, ios
-
     character(256) :: datafile
-
+    real(dp) :: qpoint(3)
     integer :: imode, jmode, iq
-    !
     character(8) :: dummy
 
 
@@ -187,7 +184,6 @@ contains
     write(*,"(A)") "| - Reading irreducible q-point list...             |"
 
     ! Read irreducible q list
-    allocate(q_irr(3,nqirr))
     allocate(q_irr_cryst(3,nqirr))
 
     io_unit = find_free_unit()
@@ -195,8 +191,8 @@ contains
     if (ios /= 0) stop "ERROR: read_ph_information: error opening qlist."
 
     do iq = 1, nqirr
-      read(io_unit,*) dummy, q_irr(1:3,iq)
-      q_irr_cryst(:,iq) = matmul(ainv(bg), q_irr(:,iq))
+      read(io_unit,*) dummy, qpoint(1:3)
+      q_irr_cryst(:,iq) = matmul(ainv(bg), qpoint)
     enddo
 
     close(unit=io_unit)
