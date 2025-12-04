@@ -1,13 +1,13 @@
 # Electron-phonon interpolation with INTW
 
 ### Table of contents
-- [Preparation of QE data](#INTW-Wannier90-interface)
-- [INTW-Wannier90 interface](#INTW-Wannier90-interface)
-- [Triangularization of the Fermi surface](#Triangularization-of-the-Fermi-surface)
-- [Electron-phonon by Method I](#Electron-phonon-by-Method-I)
-- [Electron-phonon by Method II](#Electron-phonon-by-Method-II)
+- [Preparation of QE data](#preparation-of-qe-data)
+- [INTW-Wannier90 interface](#intw-wannier90-interface)
+- [Triangulation of the Fermi surface](#triangulation-of-the-fermi-surface)
+- [Electron-phonon by Method I](#electron-phonon-by-method-i)
+- [Electron-phonon by Method II](#electron-phonon-by-method-ii)
 
-In this tutorial we showcase INTW electron-phonon interpolation utilities taking hexagonal MgB2 as example and using QuantumEspresso (QE) as DFT code. As part of the workflow, we also make use of the INTW-Wannier90 interface and the Fermi surface (FS) triangulation utility.
+In this tutorial we showcase INTW electron-phonon interpolation utilities taking hexagonal MgB2 as example and using Quantum ESPRESSO (QE) as DFT code. As part of the workflow, we also make use of the INTW-Wannier90 interface and the Fermi surface (FS) triangulation utility.
 
 Note, the provided `intw.in` contains all the necessary input to perform the calculations described below until the interpolation by Method I. For Method II, the `&elphon` block has to be rewritten.
 
@@ -134,7 +134,7 @@ mgb2.save.intw
 └── wfc00133.dat
 ```
 
-[Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
+[Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
 
 
 ## INTW-Wannier90 interface
@@ -205,10 +205,10 @@ gnuplot> p 'mgb2.bnd_int' u 1:2 w l
 ![image](./mgb2_bands.png)
 ![image](./mgb2_dos.png)
 
-[Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
+[Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
 
 
-## Triangularization of the Fermi surface
+## Triangulation of the Fermi surface
 
 The `triFS.x` utility needs the input file blocks `&tri_FS` and `&FS_opt`. At this point, a different energy isosurface can be selected. The `mgb2_hr_intw.dat` file is used internally by triFS.x.
 
@@ -228,10 +228,10 @@ mgb2.${ish}_IBZ_FS_tri_v_k.dat
 ...
 ```
 
-where `ish`=3,4,5 are band indices of the Fermi sheets identified by `triFS.x`. :heavy_exclamation_mark:NOTE:  bands are labelled according to `set_num_bands`. If we had used `exclude_bands` earlier, the labels would count the bands in the non-excluded set. These `*.off` files contain the triangularization of the FS in the irreducible Brillouin zone wedge (IBZ) and in the full zone. The `*v_k.dat` files contain the Fermi velocities.
+where `ish`=3,4,5 are band indices of the Fermi sheets identified by `triFS.x`. :heavy_exclamation_mark:NOTE:  bands are labelled according to `set_num_bands`. If we had used `exclude_bands` earlier, the labels would count the bands in the non-excluded set. These `*.off` files contain the triangulated FS in the irreducible Brillouin zone wedge (IBZ) and in the full zone. The `*v_k.dat` files contain the Fermi velocities.
 
 
-[Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
+[Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
 
 
 ## Electron-phonon by Method I
@@ -272,7 +272,7 @@ gnuplot> p 'mgb2.qdos_int' w l
 ![image](./mgb2_ph_bands.png)
 ![image](./mgb2_ph_dos.png)
 
-The `ep_interp_on_trFS_dV.x` utility calculates the electron-phonon matrix elements for $k+q,k$ pairs on the Fermi surface, including inter-sheet ones, by interpolation of the induced potential (see A. Eiguren and C. Ambrosch-Draxl, Phys. Rev. B 78 (2008) 045124]. The interpolation method has to be explicity invoked by the flag `ep_interp_method`. In this example we specify that the sheets labelled 3-5 are to be used with the `ep_interp_bands` option and the range. The k-points will be read in from the `.off` files. :heavy_exclamation_mark:NOTE:  we must provide the commands for running non-self-consistent (nscf) QE calculations and the name of the QE input file of the scf calculation, as INTW will use it as a template to generate the nscf calculations. Here machine options can be introduced, for example, to run `pw.x` in parallel.
+The `ep_interp_on_trFS_dV.x` utility calculates the electron-phonon matrix elements for $k+q,k$ pairs on the Fermi surface, including inter-sheet ones, by interpolation of the induced potential (see A. Eiguren and C. Ambrosch-Draxl, Phys. Rev. B 78 (2008) 045124). The interpolation method has to be explicity invoked by the flag `ep_interp_method`. In this example we specify that the sheets labelled 3-5 are to be used with the `ep_interp_bands` option and the range. The k-points will be read in from the `.off` files. :heavy_exclamation_mark:NOTE:  we must provide the commands for running non-self-consistent (nscf) QE calculations and the name of the QE input file of the scf calculation, as INTW will use it as a template to generate the nscf calculations. Here machine options can be introduced, for example, to run `pw.x` in parallel.
 
 ```
 &elphon
@@ -320,7 +320,7 @@ mv imgb2_ep_interp.dat mgb2_ep_interp_dV.dat
 mv mgb2_a2F_interp.dat mgb2_a2F_interp_dV.dat
 ```
 
-[Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
+[Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
 
 
 ## Electron-phonon by Method II
@@ -374,4 +374,4 @@ gnuplot> p 'mgb2_a2F_interp_dV.dat' w l,'mgb2_a2F_interp_wann.dat' w l
 ```
 ![image](./mgb2_a2F.png)
 
-[Back to top :arrow_heading_up:](#Electron-phonon-interpolation-with-INTW)
+[Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
