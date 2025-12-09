@@ -173,7 +173,7 @@ program triFS
   use intw_version, only: print_intw_version
   use intw_utility, only: find_free_unit, get_timing, print_threads, print_date_time
   use intw_input_parameters, only: input, outdir, prefix, TR_sym => TR_symmetry
-  use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s
+  use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s, lmag
 
   implicit none
 
@@ -270,6 +270,13 @@ program triFS
   write(*,20) "| - Reading calculation parameters...               |"
   !
   call read_parameters_data_file()
+  !
+  ! Check TR symmetry for magnetic calculations
+  if (lmag .and. TR_sym) then
+    write(*,*) "WARNING: Magnetic symmetry operations with TR not implemented."
+    write(*,*) "         Set TR_symmetry = .false. in input."
+    stop "Stopping..."
+  endif
   !
   !
   !================================================================================
