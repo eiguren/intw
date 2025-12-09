@@ -174,7 +174,7 @@ program triFS
   use triFS_mesh_opt, only: mesh_optimization
   use intw_version, only: print_intw_version
   use intw_utility, only: find_free_unit, get_timing, print_threads, print_date_time
-  use intw_input_parameters, only: input, prefix
+  use intw_input_parameters, only: input, outdir, prefix
   use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s
 
   implicit none
@@ -250,6 +250,17 @@ program triFS
     write(*,*) "PLEASE CHECK INPUT NAMELIST  &FS_opt  as it is not OK!"
     stop
   end if
+  !
+  ! Check input parameters
+  if ( outdir == 'unassigned' ) stop 'MISSING outdir!'
+  !
+  if ( prefix == 'unassigned' ) stop 'MISSING prefix!'
+  !
+  if ( hr_file == 'unassigned' ) stop 'MISSING hr_file!'
+  !
+  if ( n1 == -1 .or. n2 == -1 .or. n3 == -1) stop 'MISSING n1, n2, n3!'
+  !
+  if ( newton_raphson /= 0 .and. newton_raphson /= 1 .and. newton_raphson /= 2 ) stop 'INVALID newton_raphson!'
   !
   write(*,20) "====================================================="
   !
