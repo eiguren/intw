@@ -14,4 +14,5 @@ Include any extra information or considerations for reviewers, such as impacted 
 - [ ] Compiles with ifort.
 - [ ] Compiles with gfortran.
 - [ ] Passes all tests.
+- [ ] Documentation is updated.
 - [ ] Tutorials are updated.
