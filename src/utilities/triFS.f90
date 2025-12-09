@@ -60,15 +60,13 @@ module triFS_input_parameters
 
   implicit none
 
-  public :: tri_FS, TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
+  public :: tri_FS, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
   public :: FS_opt, collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
 
   private
 
   ! tri_FS
 
-  logical :: TR_sym = .true.
-  !! TR symmetry operation
   integer :: n1 = -1, n2 = -1, n3 = -1
   !! BZ sampling for creating tetrahedra
   logical :: volume_nodes = .true.
@@ -112,7 +110,7 @@ module triFS_input_parameters
   !! Threshold to detect vertices on BZ faces
 
   ! Input namelists
-  NAMELIST / tri_FS / TR_sym, n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
+  NAMELIST / tri_FS / n1, n2, n3, volume_nodes, volnodfac, hr_file, ef, verbose, plot_BZ, dos, eps_dupv
   NAMELIST / FS_opt / collapse, collapse_criteria, relax, relax_iter, newton_raphson, newton_iter, relax_vinface, eps_vinface
 
 end module triFS_input_parameters
@@ -131,9 +129,9 @@ program triFS
   !! &input
   !!     outdir = 'directory'
   !!     prefix = 'prefix'
+  !!     TR_symmetry = T or F
   !! /
   !! &tri_FS
-  !!     TR_sym = T or F
   !!     n1           = integer
   !!     n2           = integer
   !!     n3           = integer
@@ -174,7 +172,7 @@ program triFS
   use triFS_mesh_opt, only: mesh_optimization
   use intw_version, only: print_intw_version
   use intw_utility, only: find_free_unit, get_timing, print_threads, print_date_time
-  use intw_input_parameters, only: input, outdir, prefix
+  use intw_input_parameters, only: input, outdir, prefix, TR_sym => TR_symmetry
   use intw_reading, only: read_parameters_data_file, alat, at, bg, volume0, nsym, s
 
   implicit none
