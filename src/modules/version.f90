@@ -18,6 +18,11 @@
 !
 module intw_version
 
+  !! display: none
+  !!
+  !! This module handles the version information of INTW.
+  !!
+
   ! subroutines
   public :: print_intw_version
 

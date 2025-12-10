@@ -18,10 +18,11 @@
 !
 module intw_matrix_vector
 
-  !------------------------------------------------------------------!
-  ! Module that contains all the necessary functions and subroutines !
-  ! to perform matrix and vector operations.                         !
-  !------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains functions and subroutines for matrix
+  !! and vector operations.
+  !!
 
   use kinds, only: dp
 

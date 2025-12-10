@@ -18,13 +18,56 @@
 !
 program ep_on_trFS_wannier
 
-  ! MBR 24/04/2024
-
-  ! This utility reads the electron-phonon matrix elements calculated by the utility
-  ! ep_melements.f90 of INTW and interpolates them on a triangulated Fermi surface,
-  ! following the method of:
-  ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
-  ! Finally, elements are printed to file.
+  !! display: none
+  !!
+  !! Compute electron-phonon matrix elements on a triangulated Fermi
+  !! surface using Wannier interpolation.
+  !!
+  !! ### Details
+  !!
+  !! This utility reads the electron-phonon matrix elements calculated by the utility
+  !! [[ep_melements]] of INTW and interpolates them on a triangulated Fermi surface,
+  !! following the method of:
+  !! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
+  !! Finally, interpolated matrix elements are saved to file.
+  !!
+  !! MBR 24/04/2024
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     nk1                   = integer
+  !!     nk2                   = integer
+  !!     nk3                   = integer
+  !!     TR_symmetry           = T or F
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &ph
+  !!     qlist           = 'file'
+  !!     nq1             = integer
+  !!     nq2             = integer
+  !!     nq3             = integer
+  !!     nqirr           = integer
+  !! /
+  !! &elphon
+  !!     ep_mat_file         = 'file'
+  !!     ep_bands            = 'intw' or 'custom'
+  !!     ep_bands_initial    = integer
+  !!     ep_bands_final      = integer
+  !!     ep_interp_method    = 'wannier'
+  !!     ep_interp_bands     = 'intw_bands' or 'ef_crossing'
+  !!     nfs_sheets_initial  = integer
+  !!     nfs_sheets_final    = integer
+  !! /
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
 
 #ifdef _OPENMP
   use omp_lib, only: omp_get_num_threads, omp_get_thread_num
@@ -232,7 +275,7 @@ program ep_on_trFS_wannier
   end if
 
 
-  !******************************** Part I ************************************
+  !================================ Part I ====================================
 
   !================================================================================
   ! Read .off files
@@ -372,7 +415,7 @@ program ep_on_trFS_wannier
   write(*,20) '====================================================='
 
 
-  !******************************** Part II ************************************
+  !================================ Part II ====================================
 
   !================================================================================
   ! Read u_mesh file from w902intw
@@ -629,7 +672,7 @@ program ep_on_trFS_wannier
   write(*,20) '====================================================='
 
 
-  !******************************* Part III *************************************
+  !=============================== Part III =====================================
 
   !================================================================================
   ! Interpolate bands

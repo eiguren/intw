@@ -18,10 +18,49 @@
 !
 program interpolate
 
-  ! MBR 2024
-  ! Uses nnkp and ham_r files to write an interpolated band structure and DOS.
-  ! Projections on Wannier functions are also provided, so that "fatband"
-  ! and PDOS plots can be made.
+  !! display: none
+  !!
+  !! Interpolate electron band structure and DOS using Wannier interpolation.
+  !!
+  !! ### Details
+  !!
+  !! Uses nnkp and ham_r files to write an interpolated band structure and DOS.
+  !! Projections on Wannier functions are also provided, so that "fatband"
+  !! and PDOS plots can be made.
+  !!
+  !! MBR 2024
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     chemical_potential    = real
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &DOS
+  !!     nk1_dos    = integer
+  !!     nk2_dos    = integer
+  !!     nk3_dos    = integer
+  !!     ne_dos     = integer
+  !!     eini_dos   = real
+  !!     efin_dos   = real
+  !!     esmear_dos = real
+  !!     kTsmear    = real
+  !! /
+  !! K_PATH
+  !!     nkpath nkspecial
+  !!     label(1) kspecial_x(1) kspecial_y(1) kspecial_z(1)
+  !!     label(2) kspecial_x(2) kspecial_y(2) kspecial_z(2)
+  !!     ...
+  !!     label(nkspecial) kspecial_x(nkspecial) kspecial_y(nkspecial) kspecial_z(nkspecial)
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
 
 #ifdef _OPENMP
   use omp_lib, only: omp_set_max_active_levels
@@ -37,7 +76,7 @@ program interpolate
   use intw_w90_setup, only: interpolate_1k, interpolated_DOS, &
                             allocate_and_read_ham_r
 
-  use intw_input_parameters, only: nk1, nk2, nk3, outdir, prefix, read_input, &
+  use intw_input_parameters, only: outdir, prefix, read_input, &
                                    read_cards, exist_kpath, nkpath, nkspecial, kspecial, &
                                    nk1_dos, nk2_dos, nk3_dos, ne_dos, eini_dos, efin_dos, esmear_dos, ktsmear, &
                                    chemical_potential

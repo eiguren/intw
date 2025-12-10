@@ -17,20 +17,25 @@
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 module intw_w90_setup
-  !
-  !----------------------------------------------------------------------------!
-  !
-  ! The utility W902INTW should:
-  ! 1.- call read_nnkp_file in intw_intw2wannier to obtain nnkp_exclude_bands, nnkp_kpoints, etc (see use line)
-  ! 2.- call this read_w90_chk
-  ! 3.- call allocate_and_build_u_mesh
-  ! 4.- write_formatted_u_mesh
-  !
-  ! Then, any utility using u_mesh can simply use the information obtained by
-  ! read_formatted_u_mesh
-  !
-  !----------------------------------------------------------------------------!
-  !
+
+  !! display: none
+  !!
+  !! This module contains subroutines and variables for reading and storing
+  !! Wannier90 data, and for preforming Wannier interpolation.
+  !!
+  !! ### Details
+  !!
+  !! The utility W902INTW should:
+  !! 1. call read_nnkp_file in intw_intw2wannier module to obtain
+  !!     nnkp_exclude_bands, nnkp_kpoints, etc.
+  !! 2. call read_w90_chk
+  !! 3. call allocate_and_build_u_mesh
+  !! 4. call write_formatted_u_mesh
+  !!
+  !! Then, any utility using u_mesh can simply obtain it by using
+  !! read_formatted_u_mesh
+  !!
+
   use kinds, only: dp
 
   implicit none
@@ -478,7 +483,7 @@ contains
               cterm = sum( conjg(u_mesh(:,iw,ik)) * eigenval_intw(:,ik) * u_mesh(:,jw,ik) )
            end if
            !ham_k(iw,jw,ik) = ham_k(iw,jw,ik) + cterm
-           !! force hermiticity
+           ! force hermiticity
            !ham_k(jw,iw,ik) = ham_k(jw,iw,ik) + cterm
            !JLB (also changed order of jw, iw loops above):
            ham_k(iw,jw,ik) = cterm
@@ -491,7 +496,7 @@ contains
   return
   end subroutine allocate_and_build_ham_k
 
-  !!TODO we may need another routine allocate_and_build_ham_k_for1k_only.
+  ! TODO we may need another routine allocate_and_build_ham_k_for1k_only.
   ! Will need to find the k in the list first
 
   !
@@ -744,7 +749,7 @@ contains
 
 
 
-!!! Finally, modules for interpolation utilities
+  ! Finally, modules for interpolation utilities
 
   subroutine interpolate_1k (kpoint, eig_int, u_interp)
   !

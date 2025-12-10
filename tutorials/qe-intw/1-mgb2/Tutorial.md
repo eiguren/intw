@@ -202,8 +202,8 @@ gnuplot> set ylabel 'E-E_F (eV)'
 gnuplot> p 'mgb2.bnd_int' u 1:2 w l
 ```
 
-![image](./mgb2_bands.png)
-![image](./mgb2_dos.png)
+![image](mgb2_bands.png)
+![image](mgb2_dos.png)
 
 [Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)
 
@@ -269,8 +269,8 @@ gnuplot> set xlabel 'omega (Ry)'
 gnuplot> p 'mgb2.qdos_int' w l
 ```
 
-![image](./mgb2_ph_bands.png)
-![image](./mgb2_ph_dos.png)
+![image](mgb2_ph_bands.png)
+![image](mgb2_ph_dos.png)
 
 The `ep_interp_on_trFS_dV.x` utility calculates the electron-phonon matrix elements for $k+q,k$ pairs on the Fermi surface, including inter-sheet ones, by interpolation of the induced potential (see A. Eiguren and C. Ambrosch-Draxl, Phys. Rev. B 78 (2008) 045124). The interpolation method has to be explicity invoked by the flag `ep_interp_method`. In this example we specify that the sheets labelled 3-5 are to be used with the `ep_interp_bands` option and the range. The k-points will be read in from the `.off` files. :heavy_exclamation_mark:NOTE:  we must provide the commands for running non-self-consistent (nscf) QE calculations and the name of the QE input file of the scf calculation, as INTW will use it as a template to generate the nscf calculations. Here machine options can be introduced, for example, to run `pw.x` in parallel.
 
@@ -372,6 +372,6 @@ gnuplot> set ylabel 'a2F(omega)'
 gnuplot> set xlabel 'omega(Ry)'
 gnuplot> p 'mgb2_a2F_interp_dV.dat' w l,'mgb2_a2F_interp_wann.dat' w l
 ```
-![image](./mgb2_a2F.png)
+![image](mgb2_a2F.png)
 
 [Back to top :arrow_heading_up:](#electron-phonon-interpolation-with-intw)

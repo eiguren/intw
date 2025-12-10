@@ -18,6 +18,51 @@
 !
 program ep_melements
 
+  !! display: none
+  !!
+  !! Compute electron-phonon matrix elements in a regular k- and q-mesh.
+  !!
+  !! ### Details
+  !!
+  !! This program calculates the electron-phonon matrix elements for
+  !! a given mesh of k- and q-points. It reads wave functions,
+  !! pseudopotentials, and phonon data, then computes the matrix elements
+  !! by integrating over the Brillouin zone.
+  !!
+  !! The program can handle custom band selections or all available bands.
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     nk1                   = integer
+  !!     nk2                   = integer
+  !!     nk3                   = integer
+  !!     TR_symmetry           = T or F
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &ph
+  !!     qlist = 'file'
+  !!     nq1   = integer
+  !!     nq2   = integer
+  !!     nq3   = integer
+  !!     nqirr = integer
+  !! /
+  !! &elphon
+  !!     ep_mat_file      = 'file'
+  !!     ep_bands         = 'intw' or 'custom'
+  !!     ep_bands_initial = integer
+  !!     ep_bands_final   = integer
+  !! /
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
+
   use kinds, only: dp
   use intw_version, only: print_intw_version
   use intw_input_parameters, only: nk1, nk2, nk3, &

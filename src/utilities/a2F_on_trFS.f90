@@ -18,16 +18,58 @@
 !
 program a2F_on_trFS
 
-  ! MBR 26/04/2024
-
-  ! Calculate Eliashberg function from electron-phonon coupling
-  ! matrix elements interpolated on a triangulated Fermi surface.
-
-  ! a2F integral = double loop on kpoints of the FS triangulation.
-  ! The ep element calculated for q=k'-k is read from a file.
-  ! The needed phonons and dynamical matrices calculated by QE are
-  ! read in and then interpolated as in the method of:
-  ! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
+  !! display: none
+  !!
+  !! Calculate Eliashberg function from electron-phonon coupling
+  !! matrix elements interpolated on a triangulated Fermi surface.
+  !!
+  !! ### Details
+  !!
+  !! a2F integral = double loop on kpoints of the FS triangulation.
+  !! The ep element calculated for q=k'-k is read from a file.
+  !! The needed phonons and dynamical matrices calculated by QE are
+  !! read in and then interpolated as in the method of:
+  !! F. Giustino et al, Phys. Rev. B 76, 165108 (2007)
+  !!
+  !! MBR 26/04/2024
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     TR_symmetry           = T or F
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &ph
+  !!     qlist           = 'file'
+  !!     read_for_dynmat = 'fc' or 'dynq'
+  !!     fc_mat          = 'file'
+  !!     nq1             = integer
+  !!     nq2             = integer
+  !!     nq3             = integer
+  !!     nqirr           = integer
+  !!     apply_asr       = T or F
+  !! /
+  !! &DOS_ph
+  !!     nomega    = integer
+  !!     omega_ini = real
+  !!     omega_fin = real
+  !!     osmear_q  = real
+  !!     omega_cut = real
+  !! /
+  !! &elphon
+  !!     ep_interp_bands     = 'intw_bands' or 'ef_crossing'
+  !!     nfs_sheets_initial  = integer
+  !!     nfs_sheets_final    = integer
+  !! /
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
 
   use kinds, only: dp
 
@@ -42,7 +84,7 @@ program a2F_on_trFS
   use intw_matrix_vector, only: ainv, area_vec
 
   use intw_input_parameters, only: outdir, prefix, read_input, &
-                                   nk1, nk2, nk3, nq1, nq2, nq3, nqirr, fc_mat, &
+                                   nq1, nq2, nq3, nqirr, fc_mat, &
                                    nomega, omega_ini, omega_fin, osmear_q, omega_cut, &
                                    read_for_dynmat, &
                                    ep_interp_bands, nfs_sheets_initial, nfs_sheets_final

@@ -18,10 +18,100 @@
 !
 module intw_input_parameters
 
-  !-----------------------------------------------------------------------!
-  ! This module contains the definitions of all input parameters for intw !
-  ! as well as subroutines to read and test the input.                    !
-  !-----------------------------------------------------------------------!
+  !! display: public
+  !!
+  !! This module contains the definitions of all input parameters for INTW
+  !! as well as subroutines for reading and checking the input.
+  !!
+  !! ### Details
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     nk1                   = integer
+  !!     nk2                   = integer
+  !!     nk3                   = integer
+  !!     tr_symmetry           = T or F (Default: T)
+  !!     chemical_potential    = real (Default: 0.0 eV)
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &intw2W
+  !!     intw2w_fullzone = T or F (Default: F)
+  !!     intw2w_method   = 'CONVOLUTION' or 'FFT' (Default: 'CONVOLUTION')
+  !!     compute_amn     = T or F (Default: T)
+  !!     compute_mmn     = T or F (Default: T)
+  !! /
+  !! &ph
+  !!     qlist           = 'file' (Default: 'qlist.txt')
+  !!     read_for_dynmat = 'fc' or 'dynq' (Default: 'dynq')
+  !!     fc_mat          = 'file'
+  !!     nq1             = integer
+  !!     nq2             = integer
+  !!     nq3             = integer
+  !!     nqirr           = integer
+  !!     apply_asr       = T or F (Default: T)
+  !! /
+  !! &DOS
+  !!     nk1_dos    = integer (Default: 20)
+  !!     nk2_dos    = integer (Default: 20)
+  !!     nk3_dos    = integer (Default: 20)
+  !!     ne_dos     = integer (Default: 100)
+  !!     eini_dos   = real (Default: -10.0 eV)
+  !!     efin_dos   = real (Default: 10.0 eV)
+  !!     esmear_dos = real (Default: 0.05 eV)
+  !!     ktsmear    = real (Default: 0.01 eV)
+  !! /
+  !! &DOS_ph
+  !!     nq1_dosph = integer (Default: 20)
+  !!     nq2_dosph = integer (Default: 20)
+  !!     nq3_dosph = integer (Default: 20)
+  !!     nomega    = integer (Default: 100)
+  !!     omega_ini = real (Default: 0.0 Ry)
+  !!     omega_fin = real (Default: 0.005 Ry)
+  !!     osmear_q  = real (Default: 0.000075 Ry)
+  !!     omega_cut = real (Default: 0.0 Ry)
+  !! /
+  !! &elphon
+  !!     ep_mat_file         = 'file' (Default: 'ep_mat.dat')
+  !!     ep_bands            = 'intw' or 'custom' (Default: 'intw')
+  !!     ep_bands_initial    = integer
+  !!     ep_bands_final      = integer
+  !!     ep_interp_method    = 'wannier' or 'dV_interpolate'
+  !!     ep_interp_bands     = 'intw_bands' or 'ef_crossing' (Default: 'intw_bands')
+  !!     nfs_sheets_initial  = integer
+  !!     nfs_sheets_final    = integer
+  !!     nscf_code           = 'QE' or 'SIESTA'
+  !!     command_pw          = 'command'
+  !!     command_pw2intw     = 'command'
+  !!     file_pw             = 'file'
+  !!     command_siesta2intw = 'command'
+  !!     file_siesta2intw    = 'file'
+  !! /
+  !! K_PATH
+  !!     nkpath nkspecial
+  !!     label(1) kspecial_x(1) kspecial_y(1) kspecial_z(1)
+  !!     label(2) kspecial_x(2) kspecial_y(2) kspecial_z(2)
+  !!     ...
+  !!     label(nkspecial) kspecial_x(nkspecial) kspecial_y(nkspecial) kspecial_z(nkspecial)
+  !! Q_PATH
+  !!     nqpath nqspecial
+  !!     label(1) qspecial_x(1) qspecial_y(1) qspecial_z(1)
+  !!     label(2) qspecial_x(2) qspecial_y(2) qspecial_z(2)
+  !!     ...
+  !!     label(nqspecial) qspecial_x(nqspecial) qspecial_y(nqspecial) qspecial_z(nqspecial)
+  !! ```
+  !!
+  !! `K_PATH` and `Q_PATH` cards are used to generate the path along the Brilloin zone
+  !! to plot electron band structure and phonon frequency dispersion, respectively.
+  !!
+  !! Variables without default values must be explicitly set in the input
+  !! file; otherwise, an error will be raised.
+  !!
 
   use kinds, only: dp
   !
@@ -62,84 +152,102 @@ module intw_input_parameters
   !----------------------------------------------------------------------------!
 
   character(len=256) :: outdir = 'unassigned'
-  ! The directory where the DFT calculations are stored
+  !! The directory where the DFT calculations are stored
 
   character(len=256) :: prefix = 'unassigned'
-  ! The prefix of the DFT calculation
+  !! The prefix of the DFT calculation
 
-  integer :: nk1 = 0, nk2 = 0, nk3 = 0
-  ! Monkhorst-Pack mesh indices for the coarse k-mesh
+  integer :: nk1 = -1, nk2 = -1, nk3 = -1
+  !! Monkhorst-Pack mesh indices for the coarse k-mesh
 
   real(dp) :: chemical_potential = 0.0_dp
-  ! The value which determines the occupation factors, in eV
+  !! The value which determines the occupation factors (Units: eV)
 
-  logical :: TR_symmetry
-  ! If TR symmetry is present TR_symmetry = .true.
+  logical :: TR_symmetry = .true.
+  !! If TR symmetry is present TR_symmetry = .true.
 
-  character(256) :: use_exclude_bands="unassigned"
-  ! Three options to exclude bands from INTW
-  ! This flags is to control the bands used in various utilities:
-  !     use_exclude_bands="none": we don't exclude any band and therefore we use all bands from the DFT calculation (nbands)
-  !          (Error if nnkp file is present)
-  !          TODO: Haritz 17/07/2025: Should we raise this error?
-  !     use_exclude_bands="wannier": we exclude the bands indicated by Wannier90 in nnkp file
-  !          (Error if nnkp file is NOT present)
-  !     use_exclude_bands="custom": will read a range of bands out of the whole nbands list and exclude the rest of bands
-  !          (Error if include_bands_initial, include_bands_final not present)
-  integer ::  include_bands_initial = 0, include_bands_final = 0
+  character(256) :: use_exclude_bands = "unassigned"
+  !! Three options to select the bands used in various utilities:
+  !!
+  !! - `use_exclude_bands='none'`: we don't exclude any band and therefore we use all bands from the DFT calculation
+  !!   (Error if nnkp file is present)
+  !    NOTE: Haritz 17/07/2025: Should we raise this error?
+  !!
+  !! - `use_exclude_bands='wannier'`: we exclude the bands indicated by Wannier90 in nnkp file
+  !!   (Error if nnkp file is NOT present)
+  !!
+  !! - `use_exclude_bands='custom'`: use the subset of bands (`include_bands_initial:include_bands_final`)
+  !!   from the bands considered by the DFT calculation and exclude the rest of bands
+  !!   (Error if include_bands_initial, include_bands_final not present)
+
+  integer :: include_bands_initial = 0, include_bands_final = 0
+  !! The initial and final band indices for `use_exclude_bands='custom'`
 
   !----------------------------------------------------------------------------!
   ! &intw2W namelist variables
   !----------------------------------------------------------------------------!
 
-  logical :: intw2W_fullzone = .False.
-  ! If True, the code wil assume that a full zone DFT calculation
-  ! has been performed and that wavefunctions for every k-point
-  ! are available. This is mostly for testing and directly comparing
-  ! the results of intw2W90 and pw2wannier
+  logical :: intw2W_fullzone = .false.
+  !! If True, the code wil assume that a full zone DFT calculation
+  !! has been performed and that wavefunctions for every k-point
+  !! are available. This is mostly for testing and directly comparing
+  !! the results of intw2W90 and pw2wannier
 
   character(256) :: intw2W_method = 'CONVOLUTION'
-  ! What method should be used to compute matrix elements:
-  ! CONVOLUTION or FFT?
+  !! Two options to select which method use to compute matrix elements:
+  !!
+  !! - `intw2W_method = 'CONVOLUTION'`
+  !! - `intw2W_method = 'FFT'`
 
   logical :: compute_mmn = .true.
-  ! If True, the code produces the $prefix.mmn and $prefix.eig files
+  !! If True, the code produces the $prefix.mmn and $prefix.eig files
 
   logical :: compute_amn = .true.
-  ! If True, the code produces the $prefix.amn file
+  !! If True, the code produces the $prefix.amn file
 
   !----------------------------------------------------------------------------!
   ! &ph namelist variables
   !----------------------------------------------------------------------------!
 
   character(256) :: qlist = 'qlist.txt'
-  ! Name of the file containing the irreducible q-points list (relative to outdir)
+  !! Name of the file containing the irreducible q-points list (relative to outdir)
 
   character(256) :: fc_mat = '--.fc'
-  ! Name of the force constants matrix (relative to outdir)
+  !! Name of the force constants matrix (relative to outdir)
 
   character(256) :: read_for_dynmat = 'dynq'
-  ! read_for_dynmat = 'fc' --> this will read force constants from fc_mat file
-  ! read_for_dynmat = 'dynq' --> this will read .dyn files from the phonon calculations
+  !! Two options to choose:
+  !!
+  !! - `read_for_dynmat = 'fc'`: to read force constants from fc_mat file
+  !! - `read_for_dynmat = 'dynq'`: to read .dyn files from the phonon calculations
 
   logical :: apply_asr = .true.
-  ! Whether apply Acoustic Sum Rule or not
+  !! Whether apply Acoustic Sum Rule or not
 
-  integer :: nq1 = -1, nq2 = -1, nq3 = -1, nqirr = -1
-  ! Monkhorst-Pack mesh indices for the coarse q-mesh and number of irreducible q-points
+  integer :: nq1 = -1, nq2 = -1, nq3 = -1
+  !! Monkhorst-Pack mesh indices for the coarse q-mesh
+
+  integer :: nqirr = -1
+  !! Number of irreducible q-points
 
   !----------------------------------------------------------------------------!
   ! &DOS namelist variables for Wannier interpolatied DOS plot
   !----------------------------------------------------------------------------!
 
   integer :: nk1_dos = 20, nk2_dos = 20, nk3_dos = 20
-  ! Interpolation k-grid for DOS plot
+  !! Interpolation k-grid for DOS plot
 
   integer :: ne_dos = 100
-  ! Number of energy points in DOS plot
+  !! Number of energy points in DOS plot
 
-  real(dp) :: eini_dos = -10.0_dp, efin_dos = 10.0_dp, esmear_dos = 0.05_dp, ktsmear = 0.01_dp
-  ! Energy range and smearing width, Fermi level smearing (kT). In eV!!!
+  real(dp) :: eini_dos = -10.0_dp, efin_dos = 10.0_dp
+  !! Energy range for electron DOS plot (Units: eV)
+
+  real(dp) :: esmear_dos = 0.05_dp
+  !! Smearing width for electron DOS plot (Units: eV)
+
+  real(dp) :: ktsmear = 0.01_dp
+  !! Smearing (kT) for Fermi level electron DOS calculation (Units: eV)
 
   !----------------------------------------------------------------------------!
   ! &DOS_ph namelist variables for intepolated phonon DOS plot
@@ -147,70 +255,83 @@ module intw_input_parameters
   !----------------------------------------------------------------------------!
 
   integer :: nq1_dosph = 20, nq2_dosph = 20, nq3_dosph = 20
-  ! Interpolation q-grid for phonon DOS plot
+  !! Interpolation q-grid for phonon DOS plot
 
   integer :: nomega = 100
-  ! Number of energy points in DOS plot
+  !! Number of energy points in DOS plot
 
-  real(dp) :: omega_ini = 0.0_dp, omega_fin = 0.005_dp, osmear_q = 0.000075
-  ! Energy range and smearing width for phonon DOS plot (Units: Ry)
+  real(dp) :: omega_ini = 0.0_dp, omega_fin = 0.005_dp
+  !! Energy range for phonon DOS plot (Units: Ry)
 
-  real(dp) :: omega_cut = 0.0_dp
-  ! Phonon energy cut-off for removing w -> 0 peak in a2F (Units: Ry)
+  real(dp) :: osmear_q = 0.000075
+  !! Smearing width for phonon DOS plot (Units: Ry)
+
+  real(dp) :: omega_cut = -1.0_dp
+  !! Phonon frequency cut-off for removing w -> 0 peak in a2F (Units: Ry)
 
   !----------------------------------------------------------------------------!
   ! &elphon namelist variables for ep elements calculation
   !----------------------------------------------------------------------------!
 
   character(256) :: ep_mat_file = "ep_mat.dat"
-  ! Name of the electron-phonon matrix elements file
+  !! Name of the electron-phonon matrix elements file
 
   character(256) :: ep_bands = 'intw'
-  ! Will calculate ep elements for all bands (num_bands_intw, as by set_num_bands) or a
-  ! selected substet:
-  !   ep_bands = 'intw'   : all bands
-  !   ep_bands = 'custom' : subset selected with ep_bands_initial and ep_bands_final
+  !! Two options to select the subset of bands for computing the electron-phonon
+  !! matrix elements:
+  !!
+  !! - `ep_bands = 'intw'`: compute matrix elements for all bands considered by INTW (See [[use_exclude_bands]] variable)
+  !! - `ep_bands = 'custom'`: compute matrix elements for the custom subset of bands (ep_bands_initial:ep_bands_final)
+  !!   from the bands considered by INTW (See [[use_exclude_bands]] variable)
 
-  integer ::  ep_bands_initial = 0, ep_bands_final = 0
-  ! If ep_bands = 'custom', use the range ep_bands_initial:ep_bands_final subset
-  ! from the num_bands_intw set
+  integer :: ep_bands_initial = 0
+  !! The initial and final band indices for `ep_bands = 'custom'`
+  integer :: ep_bands_final = 0
+  !! The initial and final band indices for `ep_bands = 'custom'`
 
   ! For ep elements interpolation utilities:
   character(256) :: ep_interp_method = 'unassigned'
-  !    ep_interp_method = 'wannier'
-  !    ep_interp_method = 'dV_interpolate'
+  !! Two options to choose the interpolation method:
+  !!
+  !! - `ep_interp_method = 'wannier'`
+  !! - `ep_interp_method = 'dV_interpolate'`
 
   character(256) :: ep_interp_bands = 'intw_bands'
-  ! Will interpolate ep elements for all bands (num_bands_intw, as by set_num_bands) or a
-  ! selected substet formed by those that cross the Fermi level (note, these indices
-  ! must be provided by the user)
-  !   ep_interp_bands = 'intw_bands'  : all bands
-  !   ep_interp_bands = 'ef_crossing' : subset selected with nfs_sheets_initial and nfs_sheets_final
+  !! Two options to select the subset of bands to interpolate electron-phonon matrix elements:
+  !!
+  !! - `ep_interp_bands = 'intw_bands'`: interpolate matrix elements for all bands considered by INTW (See use_exclude_bands variable)
+  !! - `ep_interp_bands = 'ef_crossing'`: interpolate matrix elements for the substet of bands that cross the Fermi level (nfs_sheets_initial:nfs_sheets_final)
+  !!   from the bands considered by INTW (See use_exclude_bands variable)
 
-  integer :: nfs_sheets_initial=0, nfs_sheets_final=0
-  ! If ef_crossing, use the range nfs_sheets_initial:nfs_sheets_final
-  ! subset from the num_bands_intw set
+  integer :: nfs_sheets_initial=0
+  !! The initial band index for `ep_interp_bands = 'ef_crossing'`
+  integer :: nfs_sheets_final=0
+  !! The final band index for `ep_interp_bands = 'ef_crossing'`
 
   character(len=256) :: nscf_code = 'unassigned'
-  ! The DFT code used for running the nscf calculation (only needed if
-  ! ep_interp_method = 'dV_interpolate' is chosen).
-  !   nscf_code = 'QE'
-  !   nscf_code = 'SIESTA'
+  !! The DFT code used for running the nscf calculation (only needed if
+  !! `ep_interp_method = 'dV_interpolate'` is chosen):
+  !!
+  !! - `nscf_code = 'QE'`
+  !! - `nscf_code = 'SIESTA'`
 
   character(len=256) :: command_pw = 'unassigned'
+  !! pw.x executable, with optional running options
+  !! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
+
   character(len=256) :: command_pw2intw = 'unassigned'
-  ! pw.x and pw2intw.x executables, with optional running options
-  ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
+  !! pw2intw.x executable, with optional running options
+  !! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
 
   character(len=256) :: file_pw = 'unassigned'
-  ! The input file for pw.x.
+  !! The input file for pw.x.
 
   character(len=256) :: command_siesta2intw = 'unassigned'
-  ! siesta2intw.x executable, with optional running options
-  ! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
+  !! siesta2intw.x executable, with optional running options
+  !! that go ahead of the executable like 'mpirun -np N', 'nice', etc.
 
   character(len=256) :: file_siesta2intw = 'unassigned'
-  ! The input file for siesta2intw.x.
+  !! The input file for siesta2intw.x.
 
   !----------------------------------------------------------------------------!
   ! K_PATH card variables
@@ -219,11 +340,14 @@ module intw_input_parameters
   logical :: exist_kpath
   ! Whether K_PATH card for plotting electron bands exists or not
 
-  integer :: nkpath, nkspecial
-  ! Number of total k-points and number of special k-points in the path
+  integer :: nkpath
+  !! Number of total k-points in the path
+
+  integer :: nkspecial
+  !! Number of special k-points in the path
 
   real(dp) , allocatable :: kspecial(:,:)
-  ! Special k-points in crystal coordinates
+  !! List of special k-points in crystal coordinates
 
   !----------------------------------------------------------------------------!
   ! Q_PATH card variables
@@ -232,11 +356,14 @@ module intw_input_parameters
   logical :: exist_qpath
   ! Whether Q_PATH card for plotting phonons bands exists or not
 
-  integer :: nqpath, nqspecial
-  ! Number of total q-points and number of special q-points in the path
+  integer :: nqpath
+  !! Number of total q-points in the path
+
+  integer :: nqspecial
+  !! Number of special q-points in the path
 
   real(dp) , allocatable :: qspecial(:,:)
-  ! Special q-points in crystal coordinates
+  !! List of special q-points in crystal coordinates
 
   !----------------------------------------------------------------------------!
   ! Define namelists
@@ -271,9 +398,10 @@ module intw_input_parameters
 contains
 
   subroutine read_input(read_status)
-    !------------------------------------------------------------------
-    ! This subroutine reads outdir and prefix from standard input
-    !------------------------------------------------------------------
+
+    !! This subroutine reads all namelists from standard input,
+    !! and checks their validity and consistency.
+
     use intw_useful_constants, only: eps_10
 
     implicit none
@@ -511,28 +639,34 @@ contains
 
 
   subroutine read_cards ()
-    ! MBR 03/05/2024
 
     ! Namelists have already been read from unit 5.
     ! Continue parsing unit until finding cards.
 
-    ! IMPORTANT: some cards may be missing, but the present
-    ! ones must be ordered as described below.
-
-    ! Format:
-    !   K_PATH
-    !      nkpath  nkspecial
-    !      k1 k2 k3
-    !      k1 k2 k3
-    !      ....
-    !   Q_PATH
-    !      nqpath  nqspecial
-    !      q1 q2 q3
-    !      q1 q2 q3
-    !      ....
-    ! where nkpath are the # points sought and nkspecial are
-    ! the number ofintermediate special points, given below in
-    ! FRACTIONAL coordinates.
+    !! This subroutine reads K_PATH and Q_PATH cards from standard input if present.
+    !!
+    !! IMPORTANT: some cards may be missing, but the present
+    !! ones must be ordered as described below.
+    !!
+    !! ```{.txt}
+    !! K_PATH
+    !!     label(1) k_x(1) k_y(1) k_z(1)
+    !!     label(2) k_x(2) k_y(2) k_z(2)
+    !!     ...
+    !!     label(nkspecial) k_x(nkspecial) k_y(nkspecial) k_z(nkspecial)
+    !! Q_PATH
+    !!     nqpath nqspecial
+    !!     label(1) q_x(1) q_y(1) q_z(1)
+    !!     label(2) q_x(2) q_y(2) q_z(2)
+    !!     ...
+    !!     label(nqspecial) q_x(nqspecial) q_y(nqspecial) q_z(nqspecial)
+    !! ```
+    !!
+    !! where `nkpath` indicate the desired total number of k-points along the path,
+    !! and `nkspecial` specifies the number of intermediate special points,
+    !! which are given below in crystal coordinates.
+    !!
+    !! MBR 03/05/2024
 
     implicit none
 

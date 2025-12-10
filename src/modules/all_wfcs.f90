@@ -18,11 +18,15 @@
 !
 module intw_allwfcs
 
-  !---------------------------------------------------------------------------------!
-  ! This module contains variables and subroutines to obtain wave functions.        !
-  ! Wave functions for irreducible k points are read and stored, and wave functions !
-  ! for general k points are obtained using symmetry.                               !
-  !---------------------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains variables and subroutines for obtaining wave functions.
+  !!
+  !! ### Details
+  !!
+  !! Wave functions for irreducible k points are read and stored, and wave functions
+  !! for general k points are obtained using symmetry.
+  !!
 
   use kinds, only: dp
 

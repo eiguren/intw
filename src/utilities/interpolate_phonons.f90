@@ -16,11 +16,58 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
-program interpolatephonons
+program interpolate_phonons
 
-  ! MBR June 2024
-
-  ! Interpolate dynamical matrices using atom-pair-adapted WS vectors
+  !! display: none
+  !!
+  !! Interpolate phonon dispersion and DOS using Fourier interpolation.
+  !!
+  !! ### Details
+  !!
+  !! Uses atom-pair-adapted WS vectors to interpolate dynamical matrices.
+  !!
+  !! MBR June 2024
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     TR_symmetry           = T or F
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &ph
+  !!     qlist           = 'file'
+  !!     read_for_dynmat = 'fc' or 'dynq'
+  !!     fc_mat          = 'file'
+  !!     nq1             = integer
+  !!     nq2             = integer
+  !!     nq3             = integer
+  !!     nqirr           = integer
+  !!     apply_asr       = T or F
+  !! /
+  !! &DOS_ph
+  !!     nq1_dosph = integer
+  !!     nq2_dosph = integer
+  !!     nq3_dosph = integer
+  !!     nomega    = integer
+  !!     omega_ini = real
+  !!     omega_fin = real
+  !!     osmear_q  = real
+  !! /
+  !! Q_PATH
+  !!     nqpath nqspecial
+  !!     label(1) qspecial_x(1) qspecial_y(1) qspecial_z(1)
+  !!     label(2) qspecial_x(2) qspecial_y(2) qspecial_z(2)
+  !!     ...
+  !!     label(nqspecial) qspecial_x(nqspecial) qspecial_y(nqspecial) qspecial_z(nqspecial)
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
 
 #ifdef _OPENMP
   use omp_lib, only: omp_set_max_active_levels
@@ -90,7 +137,7 @@ program interpolatephonons
   call get_timing(time1)
   !
   write(*,20) '====================================================='
-  write(*,20) '|             program interpolatephonons            |'
+  write(*,20) '|            program interpolate_phonons            |'
   write(*,20) '|         ---------------------------------         |'
   call print_intw_version()
 #ifdef _OPENMP
@@ -359,4 +406,4 @@ program interpolatephonons
   call print_date_time('End of execution  ')
   write(*,20) '====================================================='
 
-end program interpolatephonons
+end program interpolate_phonons

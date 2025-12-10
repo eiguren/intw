@@ -18,6 +18,12 @@
 !
 module kinds
 
+  !! display: none
+  !!
+  !! This module defines kind parameters for specifying the precision
+  !! of real and integer variables.
+  !!
+
   implicit none
 
   INTEGER, PARAMETER :: DP = selected_real_kind(14,200)

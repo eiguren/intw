@@ -18,18 +18,20 @@
 !
 module intw_ph_interpolate
 
-  !-------------------------------------------------------------------------------!
-  ! MBR 24/01/24                                                                  !
-  ! intw_ph_interpolate contains routines to generate Wigner-Seitz real meshes,   !
-  ! Fourier transforms of the dynamical matrix, interpolation at a given q-point. !
-  ! So far, it contains the necessary tools to interpolate phonons.               !
-  !                                                                               !
-  ! Those tools are similar to some routines in w90_setup, which have been        !
-  ! adapted here for phonon meshes.                                               !
-  !                                                                               !
-  ! This is a mid result for EP interpolation. The goal is to have two ways of    !
-  ! doing this: Wannier and Asier's method.                                       !
-  !-------------------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains the necessary tools for interpolating phonons.
+  !!
+  !! ### Details
+  !!
+  !! So far, it contains routines to generate Wigner-Seitz real meshes,
+  !! Fourier transforms of the dynamical matrix, interpolation at a given q-point.
+  !!
+  !! Those tools are similar to some routines in w90_setup, which have been
+  !! adapted here for phonon meshes.
+  !!
+  !! MBR 24/01/24
+  !!
 
   use kinds, only: dp
 
@@ -52,22 +54,22 @@ module intw_ph_interpolate
   !
   save
   !
-  !!! these will substitute w90_hamiltonian: irvec, nrpts, ndegen
+  ! these will substitute w90_hamiltonian: irvec, nrpts, ndegen
   integer :: nrpts_q
   integer, allocatable :: ndegen_q(:), irvec_q(:,:)
 
-  !!! as above, but corrected with atom positions
+  ! as above, but corrected with atom positions
   integer :: nrpts_qtau
   integer, allocatable :: ndegen_qtau(:,:,:), irvec_qtau(:,:,:,:), nrpts_qtau12(:,:)
 
-  !!! search space for WS vectors
-  integer, parameter :: n_wss_q=27  !! TODO give somewhere as input
-  integer, dimension(3) , parameter :: n_ws_search_q = (/ 1,1,1 /) !! TODO give somewhere as input
+  ! search space for WS vectors
+  integer, parameter :: n_wss_q=27 ! TODO give somewhere as input
+  integer, dimension(3) , parameter :: n_ws_search_q = (/ 1,1,1 /) ! TODO give somewhere as input
 
-  !!! dynamical matrix in qmesh and real space (WS vectors)
+  ! dynamical matrix in qmesh and real space (WS vectors)
   complex(kind=dp), allocatable :: dyn_q(:,:,:), dyn_r(:,:,:)
 
-  !!! omega^q and eigenvectors in qmesh
+  ! omega^q and eigenvectors in qmesh
   real(kind=dp), allocatable :: w2_q(:,:)
   complex(kind=dp), allocatable :: u_q(:,:,:) ! in a.u. (without the mass factor)
   !
@@ -130,7 +132,7 @@ module intw_ph_interpolate
           call cryst_to_cart(1, r_cart, at, 1)
           r_length_l1 = alat * sqrt( sum(r_cart*r_cart) )  ! distance of r-R(l) to O' (cartesian, bohr)
           ! compare distances leaving a gap eps_8
-            ! TODO !!! put tolerance as parameter. It depends a lot on this!
+            ! TODO: put tolerance as parameter. It depends a lot on this!
             ! I guess that we need a smaller one the less nq...
           if ( r_length_l > r_length_l1 + eps_8*1000. .and. l1/=l0 ) then ! not in the WS => remove vector from list
             in_ws = .false.
@@ -232,7 +234,7 @@ module intw_ph_interpolate
               call cryst_to_cart(1, r_cart, at, 1)
               r_length_l1 =  alat * sqrt( sum(r_cart*r_cart) )  ! distance of r-R(l) to O' (cartesian, bohr)
               ! compare distances leaving a gap eps_8*1000.
-              ! TODO !!! put tolerance as parameter. It depends a lot on this!
+              ! TODO: put tolerance as parameter. It depends a lot on this!
               ! I guess that we need a smaller one the less nq...
               if ( r_length_l > r_length_l1 + eps_8*1000. .and. l1/=l0 ) then ! not in the WS => remove vector from list
                 in_ws = .false.

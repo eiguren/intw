@@ -18,14 +18,19 @@
 !
 module intw_intw2wannier
 
-  !---------------------------------------------------------------------------!
-  ! This module contains subroutines which will perform the same tasks        !
-  ! as the Quantum Espresso utility program "pw2wannier", but utilizing       !
-  ! symmetries.                                                               !
-  !                                                                           !
-  ! In particular, this module will produce the $seed.mmn and $seed.amn files !
-  ! using only the wavefunctions in the IBZ, rotating them appropriately.     !
-  !---------------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains variables and subroutines to perform the same tasks
+  !! as the Quantum Espresso post-processing program "pw2wannier90", but using
+  !! symmetries.
+  !!
+  !! ### Details
+  !!
+  !! In particular, this module contains:
+  !! - subroutines and variables for reading and storing $seed.nnkp file data.
+  !! - subroutines for producing the $seed.mmn and $seed.amn files using
+  !!   only the wave functions in the IBZ, rotating them appropriately.
+  !!
 
   use kinds, only: dp
 
@@ -619,7 +624,7 @@ subroutine deallocate_nnkp()
     use intw_utility, only: find_free_unit
     use intw_useful_constants, only: cmplx_0
     use intw_reading, only : nbands, num_bands_intw, nGk_max, lspin, nspin
-    use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3
+    use intw_input_parameters, only: outdir, prefix
 
     implicit none
 

@@ -18,12 +18,16 @@
 !
 module intw_utility
 
-  !---------------------------------------------------------------!
-  ! This module contains useful functions which implement common  !
-  ! tasks. It will be VERY useful to call these functions instead !
-  ! of reimplementing them every time they are needed, especially !
-  ! to ensure CONSISTENCY.                                        !
-  !---------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains useful functions and subroutines that implement common tasks.
+  !!
+  !! ### Details
+  !!
+  !! It will be VERY useful to call these functions instead
+  !! of reimplementing them every time they are needed, especially
+  !! to ensure CONSISTENCY.
+  !!
 
   use kinds, only: dp
 

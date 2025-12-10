@@ -18,10 +18,11 @@
 !
 module intw_pseudo_local
 
-  !--------------------------------------------------------------------!
-  ! This module contains variables and subroutines to obtain the local !
-  ! part of the pseudo-potentials.                                     !
-  !--------------------------------------------------------------------!
+  !! display: none
+  !!
+  !! This module contains variables and subroutines for obtaining the local
+  !! part of the pseudo-potentials.
+  !!
 
   use kinds, only: dp
 

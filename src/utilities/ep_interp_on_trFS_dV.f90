@@ -18,55 +18,92 @@
 !
 program ep_on_trFS_dV
 
-  ! MBR 24/04/2024
-  !
-  ! This utility calculates electron-phonon matrix elements interpolated on a Fermi surface triangulation
-  ! following the method of:
-  !
-  ! A. Eiguren, C. Ambrosch-Draxl, Phys. Rev. B 78, 045124 (2008)
-  !
-  ! For that, the induced potentials calculated with QE on the q-grid are read in
-  ! and interpolated to the non-uniform q-list corresponding to the triangulation (q=k'-k)
-  ! Needed wavefunctions on the triangulated k-points are calculated on the fly by calling QE and stored.
-  ! If such calculations preexist, those wavefunctions are read.
-  !
-  ! 1st part:
-  !
-  !    This utility uses < intw.in as others.
-  !    It uses outdir, prefix, and info on which FS sheets are needed.
-  !    Unlike with Wannier g-element interpolation, here
-  !    the location of pw.x and pw2intw.x executables is needed,
-  !    which is also given in the intw.in file.
-  !
-  !    1.- From files prefix.N_FS_tri.off, where N is the Fermi surface (FS) sheet,
-  !        it reads the lists of k-points at the vertices, and the faces, in order to calculate
-  !        areas.
-  !
-  !    2.- It writes a prefix-nscf.nscf.in input for pw.x by reading prefix.scf.in
-  !        and replacing the k-points by the FS triangularization information.
-  !
-  !    3.- It writes a prefix-nscf.pw2intw.in file, which will convert wfc data from
-  !        prefix-nscf.save directory.
-  !
-  !    4.- It sets a directory prefix-nscf.save and initializes it with the scf charge density.
-  !        It runs pw.x and applies pw2intw.x to the obtained wfcs. In case the prefix-nscf.save/wfc
-  !        files exist, it skips this and warns the user.
-  !
-  !    (In the case of using SIESTA step 2 and 3 are done with siesta2intw.x)
-  !
-  ! 2nd part:
-  !
-  !    Read derivative of local potential (dvq_local) on the real space unit cell for
-  !    q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
-  !    as the first step of the interpolation.
-  !    The non-local part will be added on the fly when interpolating over the triangulated k-points.
-  !
-  ! 3rd part:
-  !
-  !    Loop over FS (one over irreducible, one over full).
-  !    Interpolate the potential.
-  !    Calculate ep elements (local + non-local) as done in ep_melements.f90 utility.
-  !    Write to file
+  !! display: none
+  !!
+  !! Compute electron-phonon matrix elements on a triangulated Fermi
+  !! surface using induced potential interpolation.
+  !!
+  !! ### Details
+  !!
+  !! This utility calculates electron-phonon matrix elements interpolated on a Fermi surface triangulation
+  !! following the method of:
+  !!
+  !! A. Eiguren, C. Ambrosch-Draxl, Phys. Rev. B 78, 045124 (2008)
+  !!
+  !! For that, the induced potentials calculated with QE on the q-grid are read in
+  !! and interpolated to the non-uniform q-list corresponding to the triangulation (q=k'-k)
+  !! Needed wavefunctions on the triangulated k-points are calculated on the fly by calling QE and stored.
+  !! If such calculations preexist, those wavefunctions are read.
+  !!
+  !! ##### 1st part:
+  !!
+  !! 1.- From files prefix.N_FS_tri.off, where N is the Fermi surface (FS) sheet,
+  !!     it reads the lists of k-points at the vertices, and the faces, in order to calculate
+  !!     areas.
+  !!
+  !! 2.- It writes a prefix-nscf.nscf.in input for pw.x by reading prefix.scf.in
+  !!     and replacing the k-points by the FS triangulation information.
+  !!
+  !! 3.- It writes a prefix-nscf.pw2intw.in file, which will convert wfc data from
+  !!     prefix-nscf.save directory.
+  !!
+  !! 4.- It sets a directory prefix-nscf.save and initializes it with the scf charge density.
+  !!     It runs pw.x and applies pw2intw.x to the obtained wfcs. In case the prefix-nscf.save/wfc
+  !!     files exist, it skips this and warns the user.
+  !!
+  !!    (In the case of using SIESTA step 2 to 4 are done with siesta2intw.x)
+  !!
+  !! ##### 2nd part:
+  !!
+  !! Read derivative of local potential (dvq_local) on the real space unit cell for
+  !! q-vectors of full BZ and Fourier transform to R (Wigner-Seitz)
+  !! as the first step of the interpolation.
+  !! The non-local part will be added on the fly when interpolating over the triangulated k-points.
+  !!
+  !! ##### 3rd part:
+  !!
+  !! Loop over FS (one loop over irreducible BZ wedge, one loop over full BZ).
+  !! For each k, k' interpolate the potential for q = k' - k.
+  !! Read the wave functions for k and k' from their corresponding prefix-nscf.save/wfc files.
+  !! Calculate electron-phonon matrix elements (local + non-local) as done in [[ep_melements]] utility.
+  !! Finally, interpolated matrix elements are saved to file.
+  !!
+  !! MBR 24/04/2024
+  !!
+  !! #### Input parameters
+  !!
+  !! ```{.txt}
+  !! &input
+  !!     outdir                = 'directory'
+  !!     prefix                = 'prefix'
+  !!     TR_symmetry           = T or F
+  !!     use_exclude_bands     = 'none', 'wannier' or 'custom'
+  !!     include_bands_initial = integer
+  !!     include_bands_final   = integer
+  !! /
+  !! &ph
+  !!     qlist           = 'file'
+  !!     nq1             = integer
+  !!     nq2             = integer
+  !!     nq3             = integer
+  !!     nqirr           = integer
+  !! /
+  !! &elphon
+  !!     ep_interp_method    = 'dV_interpolate'
+  !!     ep_interp_bands     = 'intw_bands' or 'ef_crossing'
+  !!     nfs_sheets_initial  = integer
+  !!     nfs_sheets_final    = integer
+  !!     nscf_code           = 'QE' or 'SIESTA'
+  !!     command_pw          = 'command'
+  !!     command_pw2intw     = 'command'
+  !!     file_pw             = 'file'
+  !!     command_siesta2intw = 'command'
+  !!     file_siesta2intw    = 'file'
+  !! /
+  !! ```
+  !!
+  !! See [[intw_input_parameters]] module for the description of each parameter.
+  !!
 
 #ifdef _OPENMP
   use omp_lib, only: omp_get_num_threads, omp_get_thread_num
@@ -83,7 +120,7 @@ program ep_on_trFS_dV
 
   use intw_matrix_vector, only: area_vec
 
-  use intw_input_parameters, only: outdir, prefix, nk1, nk2, nk3, &
+  use intw_input_parameters, only: outdir, prefix, &
                                    nq1, nq2, nq3, nqirr, &
                                    ep_interp_method, ep_interp_bands, &
                                    nfs_sheets_initial, nfs_sheets_final, &
@@ -322,7 +359,7 @@ program ep_on_trFS_dV
   end if
 
 
-  !******************************** Part I ************************************
+  !================================ Part I ====================================
 
   !================================================================================
   ! Read .off files
@@ -477,7 +514,7 @@ program ep_on_trFS_dV
   write(*,20) '====================================================='
 
 
-  !******************************** Part II ************************************
+  !================================ Part II ====================================
 
   !================================================================================
   ! Read phonon information
@@ -649,7 +686,7 @@ program ep_on_trFS_dV
   ! DUDA dvq_local_R in the supercell should be real?
 
 
-  !******************************* Part III *************************************
+  !=============================== Part III =====================================
 
   write(*,20) '| - Interpolating e-p elements...                   |'
 
