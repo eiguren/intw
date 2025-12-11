@@ -1,6 +1,14 @@
 # INTW project
 
-A modular software environment designed for advanced electronic structure calculations.
+[![GitHub release](https://img.shields.io/github/v/release/eiguren/intw?logo=github)](https://github.com/eiguren/intw/releases)
+[![License](https://img.shields.io/github/license/eiguren/intw)](https://github.com/eiguren/intw/blob/main/COPYING)
+[![Documentation](https://img.shields.io/badge/documentation-https://eiguren.github.io/intw-brightgreen.svg)](https://eiguren.github.io/intw)
+
+INTW is a modular set of Fortran tools designed for advanced electronic structure calculations, helping researchers to create customized utilities for specific applications.
+
+INTW implements a collection of functions and subroutines for computing various electron- and phonon-related properties, particularly standig out in the use of crystal symmetry to enhance efficiency, and it is capable of reading Density Functional Theory (DFT) results from both the plane-wave based [Quantum Espresso](https://www.quantum-espresso.org/) code and from the localized basis set [SIESTA](https://siesta-project.org/siesta/) code.
+
+Additionally, INTW provides a set of ready-to-use utilities for calculating electron-phonon coupling matrix elements and Eliashberg functions, Wannier functions, elctron band structure and phonon dispersion interpolations, and Fermi surface triangulations.
 
 
 ## Compilation notes
