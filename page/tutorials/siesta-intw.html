@@ -1,0 +1,526 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="Welcome to the documentation for the INTW project">
+    <meta name="author" content="INTW group" >
+    <link rel="icon" href="../../favicon.png">
+
+    <title>SIESTA &ndash; INTW</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../../css/brands.min.css" rel="stylesheet">
+    <link href="../../css/regular.min.css" rel="stylesheet">
+    <link href="../../css/solid.min.css" rel="stylesheet">
+    <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../../css/local.css" rel="stylesheet">
+    <link href="../../css/pygments.css" rel="stylesheet">
+    <script src="../../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../../index.html">INTW </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="../index.html">User Guide</a></li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="../../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../../lists/programs.html">Programs</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>SIESTA</h1>
+    <div class="container p-2 mb-4 bg-light border rounded-3">
+      <div class="row align-items-center justify-content-between">
+        <div class="col">
+          <ul class="list-inline" style="margin-bottom:0px; display:inline">
+          </ul>
+        </div>
+        <div class="col">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../index.html'>User Guide</a></li>
+                <li class="breadcrumb-item"><a href='index.html'>Tutorials</a></li>
+              <li class="breadcrumb-item active" aria-current="page">SIESTA</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+      <div class="col-3">
+        <div class="card card-body bg-light" id="sidebar-toc">
+          <ul class="nav flex-column align-items">
+            <li class="nav-item">
+              <a class="nav-link" href="../index.html">User Guide</a>
+            </li>
+          </ul>
+          <hr>
+          <nav class="nav nav-pills flex-column">
+              <a class="nav-link" href="index.html">Tutorials</a>
+                <nav class="nav nav-pills flex-column">
+                                <a class="nav-link" href="qe-intw.html">Quantum ESPRESSO</a>
+              <a class="nav-link active disabled" href="siesta-intw.html">SIESTA</a>
+
+                </nav>
+              <a class="nav-link" href="../tests.html">Test suite</a>
+              <a class="nav-link" href="../other.html">Other</a>
+          </nav>
+        </div>
+      </div>
+
+    <div class="col-9" id='text'>
+      <h1 id="using-intw-with-siesta">Using INTW with SIESTA</h1>
+<h3 id="table-of-contents">Table of contents</h3>
+<ul>
+<li><a href="#silicon-band-structure-with-siesta-and-wannier">Silicon band structure with SIESTA and Wannier</a></li>
+<li><a href="#band-structure-calculation-with-siesta">Band structure Calculation with SIESTA</a></li>
+<li><a href="#intws-wannier90-interface">INTW's Wannier90 interface</a></li>
+<li><a href="#siestas-wannier90-interface">SIESTA's Wannier90 interface</a></li>
+<li><a href="#graphene-phonon-dispersion">Graphene phonon dispersion</a></li>
+<li><a href="#copper-electron-phonon-matrix-elements">Copper electron-phonon matrix elements</a></li>
+</ul>
+<p>In this tutorial we will use the 4.1.5 version of SIESTA.</p>
+<p>SIESTA uses PSF pseudo-potentials. (In the recently released 5.0.0 version PSML pseudo-potential from pseudo-dojo can be used).</p>
+<p>The input for the calculation is given in Flexible Data Format (FDF).</p>
+<h2 id="silicon-band-structure-with-siesta-and-wannier">Silicon band structure with SIESTA and Wannier</h2>
+<p>In this example, first of all, we will do a small introduction to a band structure calculation with SIESTA. And in second place, we will see how to use the interface <code>siesta2intw.x</code> and INTW's <code>intw2W90.x</code> utility to construct the Wannier functions, comparing the Wannier interpolated band structure with SIESTA's band structure. At the end, we will also show how can be used SIESTA's own interface to <code>wannier90.x</code>.</p>
+<p>All files to run this example can be found in the <code>1-silicon</code> directory.</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>ls<span class="w"> </span><span class="m">1</span>-silicon/
+intw.in<span class="w">                 </span>siesta2intw.in<span class="w">    </span>si.win
+bands_siesta2nxy.bash<span class="w">   </span>silicon.fdf
+bands_wannier2nxy.bash<span class="w">  </span>Si.psf
+</code></pre></div>
+
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+<h3 id="band-structure-calculation-with-siesta">Band structure calculation with SIESTA</h3>
+<p>First, let's take a look at the input <code>silicon.fdf</code> file where the system and the different calculation parameters are specified:</p>
+<ul>
+<li>System name and label:</li>
+</ul>
+<p><code>SystemName          bulk silicon
+   SystemLabel         si</code></p>
+<ul>
+<li>Unit cell information:</li>
+</ul>
+<p>```
+   NumberOfAtoms       2
+   NumberOfSpecies     1</p>
+<p>%block ChemicalSpeciesLabel
+    1  14  Si
+   %endblock ChemicalSpeciesLabel</p>
+<p>LatticeConstant    10.2048933684 Bohr
+   %block LatticeVectors
+    -0.500  0.000  0.500
+     0.000  0.500  0.500
+    -0.500  0.500  0.000
+   %endblock LatticeVectors</p>
+<p>AtomicCoordinatesFormat  ScaledByLatticeVectors
+   %block AtomicCoordinatesAndAtomicSpecies
+    -0.125  -0.125  -0.125     1
+     0.125   0.125   0.125     1
+   %endblock AtomicCoordinatesAndAtomicSpecies
+   ```</p>
+<ul>
+<li>Exchange correlation:</li>
+</ul>
+<p><code>XC.Functional LDA
+   XC.Authors PZ</code></p>
+<ul>
+<li>Basis set:</li>
+</ul>
+<p><code>PAO.BasisSize          DZ</code></p>
+<ul>
+<li>Self-consistent loop:</li>
+</ul>
+<p><code>DM.UseSaveDM           true
+   DM.MixingWeight        0.3
+   DM.NumberPulay         3
+   DM.Tolerance           1.d-5</code></p>
+<ul>
+<li>Electronic structure parameters:</li>
+</ul>
+<p><code>SolutionMethod         diagon
+   Diag.Algorithm         expert
+   Diag.ParallelOverK     false
+   NumberOfEigenStates    10
+   OccupationFunction     FD
+   ElectronicTemperature  25 meV</code></p>
+<ul>
+<li>Brillouin-zone sampling:</li>
+</ul>
+<p><code>%block kgrid_Monkhorst_Pack
+    8   0   0    0.
+    0   8   0    0.
+    0   0   8    0.
+   %endblock kgrid_Monkhorst_Pack</code></p>
+<ul>
+<li>Band block:</li>
+</ul>
+<p><code>BandLinesScale ReciprocalLatticeVectors
+   %block BandPoints
+    0.500000    0.500000    0.500000
+    0.475000    0.475000    0.475000
+    .
+    .
+    .
+   %endblock BandPoints</code></p>
+<p>After taking a look at the parameters used in the fdf, we can run the calculation by typing:</p>
+<div class="codehilite"><pre><span></span><code>siesta &lt; silicon.fdf | tee silicon.out
+</code></pre></div>
+
+<p>SIESTA produces many output files, such as <code>si.DM</code> for the density matrix, <code>si.EIG</code> for the eigenvalues, <code>si.FA</code> for the atomic forces, <code>Si.ion</code> and <code>Si.ion.xml</code> for the basis orbitals and non-local pseudo-potential, or <code>si.KP</code> for the k-points (see SIESTA's documentation for more information). But, for this example, we are interested in the <code>si.bands</code> file, which contains the band structure. However, in order to plot the band structure the <code>si.bands</code> file needs to be transformed to a format suitable for plotting. Although SIESTA has its own code for that (<code>gnubands</code>), in this tutorial we have prepared a script for simplicity:</p>
+<div class="codehilite"><pre><span></span><code>./bands_siesta2nxy.bash &gt; bands_siesta.dat
+</code></pre></div>
+
+<p>This script transforms the <code>si.bands</code> file into a format that can be easily plotted with different programs:</p>
+<div class="codehilite"><pre><span></span><code>xmgrace -nxy bands_siesta.dat
+</code></pre></div>
+
+<p>or</p>
+<div class="codehilite"><pre><span></span><code>gnuplot -p -e &quot;p for [c=2:*] &#39;bands_siesta.dat&#39; u 1:c w l lc &#39;black&#39;&quot;
+</code></pre></div>
+
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+<h3 id="intws-wannier90-interface">INTW's Wannier90 interface</h3>
+<p>In this second part, we will learn how to interpolate the band structure using INTW and <code>wannier90.x</code>. In order to constructing the Wannier functions with <code>wannier90.x</code> the <code>si.amn</code>, <code>si.mmn</code> and <code>si.eig</code> files are needed. INTW's <code>intw2W90.x</code> utility can be used used for that, but first of all, we have to transform all the data of the SIESTA calculation to format suitable for INTW by running the interface <code>siesta2intw.x</code>. So, let's check the <code>siesta2intw.in</code> input file:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>siesta2intw.in
+<span class="p">&amp;</span>inputpp
+<span class="w">  </span><span class="nv">outdir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span>
+<span class="w">  </span><span class="nv">prefix</span><span class="o">=</span><span class="s2">&quot;si&quot;</span>
+<span class="w">  </span><span class="nv">fdf_file</span><span class="o">=</span><span class="s2">&quot;silicon.fdf&quot;</span>
+<span class="w">  </span><span class="nv">nk1</span><span class="o">=</span><span class="m">8</span>,<span class="w"> </span><span class="nv">nk2</span><span class="o">=</span><span class="m">8</span>,<span class="w"> </span><span class="nv">nk3</span><span class="o">=</span><span class="m">8</span>
+<span class="w">  </span><span class="nv">cutoff</span><span class="o">=</span><span class="m">40</span>.0
+<span class="w">  </span><span class="nv">nbnd_initial</span><span class="o">=</span><span class="m">1</span>
+<span class="w">  </span><span class="nv">nbnd_final</span><span class="o">=</span><span class="m">4</span>
+<span class="w">  </span><span class="nv">use_sym</span><span class="o">=</span>.true.
+/
+</code></pre></div>
+
+<p>The <code>outdir</code> and <code>prefix</code> variables specify where will be placed the <code>si.save.intw</code> directory and the label used in the siesta calculation, respectively. The <code>fdf_file</code> variable specifies the fdf file used for the siesta calculation. <code>nk1</code>, <code>nk2</code> and <code>nk3</code> indicate the k-mesh where the Fourier transform of the wave functions will be computed, being <code>cutoff</code> the plane-wave cut-off for the wave functions. <code>nbnd_initial</code> and <code>nbnd_final</code> can be specified to reduce the amount of wave functions to be transformed. And finally, the <code>use_sym</code> variable is used to reduce the number of k-points by using the symmetry of the system.</p>
+<p>:heavy_exclamation_mark:NOTE: <code>nk1</code>, <code>nk2</code> and <code>nk3</code> don't need to match the k-points of the SIESTA calculation. <code>siesa2intw.x</code> will execute a normal self-consistent SIESTA calculation, and then, it will run a non self-consistent calculation to compute the wave functions for the k-points specified by <code>nk1</code>, <code>nk2</code> and <code>nk3</code>.</p>
+<p>Now we can run <code>siesta2intw.x</code> by typing:</p>
+<div class="codehilite"><pre><span></span><code>siesta2intw.x &lt; siesta2intw.in | tee siesta2intw.out
+</code></pre></div>
+
+<p>:heavy_exclamation_mark:NOTE: <code>siesa2intw.x</code> must be executed in the same directory where the SIESTA calculation was executed.</p>
+<p>This creates the <code>si.save.intw</code> directory with all the information about the system in a format readable by INTW:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>tree<span class="w"> </span>si.save.intw
+si.save.intw/
+├──<span class="w"> </span><span class="m">1</span>-KBPP.txt
+├──<span class="w"> </span>crystal.dat
+├──<span class="w"> </span>gvectors.dat
+├──<span class="w"> </span>iGlist.dat
+├──<span class="w"> </span>kpoints.dat
+├──<span class="w"> </span>wfc00001.dat
+├<span class="w">   </span>.
+├<span class="w">   </span>.
+├<span class="w">   </span>.
+└──<span class="w"> </span>wfc00029.dat
+</code></pre></div>
+
+<p><code>1-KBPP.txt</code> contains the pseudo-potential in its Kleyman-Bylander form. <code>crystal.dat</code> stores all the information related to the unit cell, symmetries, etc. <code>wfc00001.dat</code> to <code>wfc00029.dat</code> contain the Fourier transform of the wave functions for each k-point, where the list of k-points is given in <code>kpoints.dat</code>. Finally, <code>gvectors.dat</code> contains the global list of G-vectors used in the Fourier transform and <code>iGlist.dat</code> has the lists of G-vectors for each k-point.</p>
+<p>All the data read by INTW is written here, and therefore, now we can already use INTW in the same way as if we were using Quantum Espresso and <code>pw2intw.x</code>.</p>
+<p>To create the <code>si.amn</code>, <code>si.mmn</code> and <code>si.eig</code> files we have to run <code>wannier90.x</code> in pre-processing mode first to create the nnkp file:</p>
+<div class="codehilite"><pre><span></span><code>wannier90.x -pp si
+</code></pre></div>
+
+<p>Since the aim of this tutorial is not to show how to use wannier, we will not analyze the <code>si.win</code> file, but for the curious, since we have specified the band range from <code>nbnd_initial=1</code> to <code>nbnd_final=4</code> in <code>siesta2intw.x</code> we will use four s-orbitals, centered in the bonds, as our initial guess.</p>
+<p>Now, that we have the <code>si.save.intw</code> and the <code>si.nnkp</code> file, we can run <code>intw2W90.x</code> to generate the <code>si.amn</code>, etc. But
+first, let's check the input file for <code>intw2W90.x</code>:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>intw.in
+<span class="p">&amp;</span>input
+<span class="w">    </span><span class="nv">outdir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;./&#39;</span>
+<span class="w">    </span><span class="nv">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;si&#39;</span>
+<span class="w">    </span><span class="nv">nk1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span>
+<span class="w">    </span><span class="nv">nk2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span>
+<span class="w">    </span><span class="nv">nk3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">8</span>
+<span class="w">    </span><span class="nv">TR_symmetry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.false.
+<span class="w">    </span><span class="nv">use_exclude_bands</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;wannier&#39;</span>
+/
+
+<span class="p">&amp;</span>intw2W
+<span class="w">    </span><span class="nv">intw2W_fullzone</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.false.
+<span class="w">    </span><span class="nv">intw2W_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CONVOLUTION&#39;</span>
+/
+
+<span class="p">&amp;</span>ph
+/
+</code></pre></div>
+
+<p>In the <code>input</code> namelist, <code>outdir</code> indicates where is placed the <code>si.save.intw</code> directory, and <code>prefix</code> the label used in SIESTA. <code>nk1</code>, <code>nk2</code> and <code>nk3</code> indicate the k-mesh, which must be the same used for <code>siesta2intw.x</code>, <code>TR_symmetry</code> indicates if time-reversal symmetry can be used to obtain the full k-mesh form the irreducible k-points or not and <code>use_exclude_bands = 'wannier'</code> specifies to use the <code>exclude_bands</code> specified in <code>wannier90</code> input. In the <code>intw2W</code> namelist, <code>intw2W_fullzone</code> indicates wether the full Brillouin zone is present in the <code>si.save.intw</code> directory or not, while <code>intw2W_method</code> specifies the method used to compute the amm's. Finally, the <code>ph</code> namelist is empty in this example, but it is used to specify information about the phonon structure.</p>
+<p>Now, we can run <code>intw2W90.x</code> by tying:</p>
+<div class="codehilite"><pre><span></span><code>intw2W90.x &lt; intw.in | tee intw2W90.out
+</code></pre></div>
+
+<p>Which will create <code>si.amn</code>, <code>si.mmn</code> and <code>si.eig</code> files, and finally we can run <code>wannier90.x</code>:</p>
+<div class="codehilite"><pre><span></span><code>wannier90.x si
+</code></pre></div>
+
+<p>This will construct the Wannier functions, and use them to interpolate the band structure. The interpolated band structure can be found in <code>si_bands.dat</code> and can be plotted using the <code>gnuplot</code> script <code>si_bands.gnu</code>. However, in order to compare the interpolated bands with the original bands calculated with SIESTA, for simplicity, we have prepared an script to write the bands in the same format used previously:</p>
+<div class="codehilite"><pre><span></span><code>./bands_wannier2nxy.bash &gt; bands_wannier_intw.dat
+</code></pre></div>
+
+<p>And therefore, the band structure can be compared directly by</p>
+<div class="codehilite"><pre><span></span><code>xmgrace -nxy bands_siesta.dat -nxy bands_wannier_intw.dat
+</code></pre></div>
+
+<p>or by</p>
+<div class="codehilite"><pre><span></span><code>gnuplot -p -e &quot;p for [c=2:*] &#39;bands_siesta.dat&#39; u 1:c w l lc &#39;black&#39;, for [c=2:*] &#39;bands_wannier_intw.dat&#39; u 1:c w l lc &#39;red&#39;&quot;
+</code></pre></div>
+
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+<h3 id="siestas-wannier90-interface">SIESTA's Wannier90 interface</h3>
+<p>SIESTA has its own interface to <code>wannier90.x</code>, so <code>si.mmn</code>, <code>si.amn</code> and <code>si.eig</code> files can be generated adding the following lines to the input fdf file:</p>
+<div class="codehilite"><pre><span></span><code>Siesta2Wannier90.WriteMmn true
+Siesta2Wannier90.WriteAmn true
+Siesta2Wannier90.WriteEig true
+</code></pre></div>
+
+<p>:heavy_exclamation_mark:NOTE: Remember executing <code>wannier90.x</code> in pre-processing mode to create the <code>si.nnkp</code> file before executing SIESTA.</p>
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+<h2 id="graphene-phonon-dispersion">Graphene phonon dispersion</h2>
+<p>INTW contains set of utilities to compute phonon structures using SIESTA and finite differences, <code>siesta2ph</code>, which consists of three independent utilities: <code>siesta2ph.x</code>, <code>siesta2fc.x</code> and <code>siesta2dv.x</code>.</p>
+<p>The first one, <code>siesta2ph.x</code>, reads SIESTA's fdf file, creates a super-cell of the system and computes the minimum set of atomic displacements needed to compute the phonon structure (the irreducible displacements), creating all the fdf input files to run SIESTA.</p>
+<p>Then, once SIESTA has been executed for all the irreducible displacements, <code>siesta2fc.x</code> can be used to compute the interatomic force constants and dynamical matrices of the system, or, optionally, to compute the phonon dispersion along a path, and <code>siesta2dv.x</code> can be used to compute the potential induced by the displacement of the atoms from their equilibrium positions, which is an essential quantity to compute electron-phonon matrix elements.</p>
+<p>In this example we will learn how to use this utilities to compute the interatomic force constants, the dynamical matrices and the phonon dispersion of graphene, together with the induced potential.</p>
+<p>Folder <code>2-graphene</code> has all the files needed to run this example:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>ls<span class="w"> </span><span class="m">2</span>-graphene
+C.psf<span class="w">  </span>graphene.fdf<span class="w">  </span>path.dat<span class="w">  </span>siesta2ph.in
+</code></pre></div>
+
+<p>First of all, let's check the input file for all the three utilities of <code>siesta2ph</code>:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>cat<span class="w"> </span>siesta2ph.in
+<span class="p">&amp;</span>input
+<span class="w">    </span><span class="nv">prefix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;graphene.fdf&quot;</span>
+<span class="w">    </span><span class="nv">v0dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./441/v0/&quot;</span>
+<span class="w">    </span><span class="nv">phdir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./441/0.01/&quot;</span>
+<span class="w">    </span><span class="nv">nr1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span>
+<span class="w">    </span><span class="nv">nr2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">4</span>
+<span class="w">    </span><span class="nv">nr3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+<span class="w">    </span><span class="nv">dx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>.01
+<span class="w">    </span><span class="nv">lpm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+<span class="w">    </span><span class="nv">use_sym</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+<span class="w">    </span><span class="nv">irreducible_q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+<span class="w">    </span><span class="nv">kpath_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;path.dat&quot;</span>
+<span class="w">    </span><span class="nv">xsf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+<span class="w">    </span><span class="nv">full_xsf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.false.
+<span class="w">    </span><span class="nv">dv_precision</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;dp&quot;</span>
+<span class="w">    </span><span class="nv">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>.true.
+/
+</code></pre></div>
+
+<p><code>prefix</code> specifies the actual fdf file of the system being studied. <code>v0dir</code> and <code>phdir</code> can be used to properly organize all the files generated by <code>siesta2ph.x</code>. <code>v0dir</code> and <code>phdir</code> specify where will be located the fdf of the super-cell used in the phonon structure calculation, and where will be created the fdf files for the irreducible displacements, respectively. <code>nr1</code>, <code>nr2</code> and <code>nr3</code> indicate the size of the super-cell to be used, while <code>dx</code> is the amplitude used for the atomic displacements in Bohr atomic units. <code>lpm</code> can be used to displace the atoms also in the negative direction in order to use a more precise second order centered finite difference formula. <code>use_sym</code> is used to specify whether symmetries will be used to calculate irreducible displacements or whether all atoms will be displaced in all directions. On the other hand, <code>irreducible_q</code> is used to indicate if the dynamical matrices and induced potentials will be computed for the whole q-points commensurate with <code>nr1</code>, <code>nr2</code> and <code>nr3</code>, or just for the irreducible q-points. The <code>kpath_file</code> variable designates the name of the file where the k-path for computing the phonon dispersion is stored. While <code>xsf</code> indicates if the induced potentials are stored in a 2D XSF file to be plotted by XCrysDen, <code>full_xsf</code> determines if the xsf files are stored only for the irreducible displacements, or for all possible atomic displacements. Additionally, <code>dv_precision</code> specifies the precision used to compute the induced potentials, and can be used to reduce the amount of disk space used. And finally, <code>verbose</code> specifies the level of verbosity of the output.</p>
+<ol>
+<li>The first step to compute the phonon structure with <code>siesta2ph</code> is to create the fdf files for the irreducible displacements using <code>siesta2ph.x</code>:</li>
+</ol>
+<p><code>siesta2ph.x &lt; siesta2ph.in | tee siesta2ph.out</code></p>
+<p>This creates all the directory structure and the fdf files needed:</p>
+<p><code>$ tree 441/
+   441/
+   ├── 0.01
+   │   ├── disp-0001
+   │   │   └── supercell-graphene.fdf
+   │   ├── disp-0002
+   │   │   └── supercell-graphene.fdf
+   │   ├── disp-0003
+   │   │   └── supercell-graphene.fdf
+   │   └── disp-0004
+   │       └── supercell-graphene.fdf
+   └── v0
+         └── supercell-graphene.fdf</code></p>
+<p>:heavy_exclamation_mark:NOTE: Notice that even if only two irreducible displacements have been found by <code>siesta2ph.x</code>, four displacement files have been created because <code>lpm=.true.</code> has been specified in the input.</p>
+<ol>
+<li>Once that all the fdf files have been created for all the irreducible displacements, the next step is to execute a SIESTA calculation for each of them.</li>
+</ol>
+<p>Usually, it is very convenient to run first the calculation of the super-cell with the atoms in their equilibrium positions (the fdf in <code>v0</code>), in order to use the density matrix of this calculation as starting point for the displaced atoms calculations:</p>
+<p><code>cp C.psf 441/v0/
+   cd 441/v0/
+   mpirun -n 4 siesta &lt; supercell-graphene.fdf | tee out</code></p>
+<p>And after this, we can execute the calculations for all the displacements by using an script included in <code>siesta2ph</code> for this purpose:</p>
+<p><code>cd ../../
+   run-disps.x --dm 441/v0/g.DM -n 4 -v 441/0.01/</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nx">You</span><span class="w"> </span><span class="nx">can</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="err">`</span><span class="nx">run</span><span class="o">-</span><span class="nx">disps</span><span class="p">.</span><span class="nx">x</span><span class="w"> </span><span class="o">--</span><span class="nx">help</span><span class="err">`</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">all</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">information</span><span class="w"> </span><span class="nx">about</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">command</span><span class="w"> </span><span class="nx">line</span><span class="w"> </span><span class="nx">arguments</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">script</span><span class="p">.</span>
+</code></pre></div>
+
+<p>:heavy_exclamation_mark:NOTE: Remember to include <code>DM.UseSaveDM true</code> in the original fdf file in order to take advantage of the close-to-convergence charge density as a starting point for the calculations.</p>
+<p>:heavy_exclamation_mark:NOTE: Since in this calculations the atoms are displaced from their equilibrium positions, it is important to use <code>MD.Steps 0</code> in the input fdf to avoid relaxing the system.</p>
+<ol>
+<li>Now that all SIESTA calculations have been executed, we already can compute the force constants, dynamical matrices and phonon dispersion with <code>siesta2fc.x</code>:</li>
+</ol>
+<p><code>siesta2fc.x &lt; siesta2ph.in | tee siesta2fc.out</code></p>
+<p>This will generate the interatomic force constants file <code>fc.dat</code>, the phonon dispersion file <code>phonons.dat</code> and the dynamical matrices files <code>dyn0001.dat</code> to <code>dyn0004.dat</code> for each q-point in the <code>phdir</code> directory.</p>
+<p>To plot the phonon dispersion we can use:</p>
+<p><code>xmgrace -nxy 441/0.01/phonons.dat</code></p>
+<p>or</p>
+<p><code>gnuplot -p -e "p for [c=2:*] '441/0.01/phonons.dat' u 1:c w l lc 'black'"</code></p>
+<ol>
+<li>And finally, the induced potential can be computed by <code>siesta2dv.x</code>:</li>
+</ol>
+<p><code>siesta2dv.x &lt; siesta2ph.in | tee siesta2dv.out</code></p>
+<p>This creates the folder <code>dvscf</code> inside <code>phdir</code>, where induced potentials for each q-point are stored in files <code>dvscf0001.dat</code> to <code>dvscf0004.dat</code>. Since <code>xsf=.true.</code> was specified, the xsf files are also created in <code>phdir</code>. This files can be plotted with XCrySDen:</p>
+<p><code>xcrysden --xsf 441/0.01/dVR_ia001_id1.xsf</code></p>
+<p><code>dVR_ia001_id1.xsf</code> file contains the potential induced in the super-cell by the displacement of the first atom along the first Cartesian direction $x$: $\partial V_{I\alpha} = dV/du_{I}^{\alpha}$ for the atomic index $I=1$ and the Cartesian index $\alpha=x$. In a similar way, <code>dVq_iq01_ia001_id1.xsf</code> contains the potential induced in the super-cell, but for the displacement pattern with the periodicity of the first q-point: $\partial V_{I\alpha}(\mathbf{q}) = dV/(u_{1}^{x} e^{i\mathbf{q}\cdot\mathbf{R}})$, being $\mathbf{R}$ a lattice vector. And finally, <code>dvq_iq01_ia001_id1.xsf</code> contains the periodic part of the same induced potential: $\partial v_{I\alpha}(\mathbf{q}) = \partial V_{I\alpha}(\mathbf{q}) e^{-i\mathbf{q}\cdot\mathbf{r}}$, which is the same induced potential stored in <code>dvscf0001.dat</code>.</p>
+<p>:heavy_exclamation_mark:NOTE: In order to compute the induced potential <code>SaveTotalPotential T</code> must be added to de fdf (if you only want to compute the force constants it's not needed).</p>
+<p>:heavy_exclamation_mark:NOTE: At this moment, running the <code>v0</code> calculation is mandatory, as some of its output is read by <code>siesta2dv.x</code></p>
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+<h2 id="copper-electron-phonon-matrix-elements">Copper electron-phonon matrix elements</h2>
+<p>In this third example we will show how to calculate the electron-phonon matrix elements for copper using INTW's <code>ep_melements.x</code> utility. For that, first of all, we will compute the electronic and phonon structures of cooper using SIESTA and <code>siesta2ph</code>. In a second step, we will transforming all the calculation data to a format readable by INTW with <code>siesta2intw.x</code>. And finally, we will execute <code>ep_melements.x</code> to compute the electron-phonon matrix elements.</p>
+<p>Folder <code>3-copper</code> has all the files needed to run the example:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>ls
+copper.fdf<span class="w">  </span>Cu.psf<span class="w">  </span>intw.in<span class="w">  </span>siesta2intw.in<span class="w">  </span>siesta2ph.in
+</code></pre></div>
+
+<ol>
+<li>The first step for a calculation of this type would be computing the electronic structure of the system to be studied:</li>
+</ol>
+<p><code>mpirun -n 4 siesta &lt; copper.fdf | tee copper.fdf</code></p>
+<p>:heavy_exclamation_mark:NOTE: Before continuing with the calculation of the phonon structure, users should ensure that the parameters used in the fdf yield an electronic structure that is accurate enough for the requirements of their calculations.</p>
+<p>After the electronic structure, we will calculate the dynamical matrices and the induced potentials with <code>siesta2ph.x</code>, <code>siesta2fc.x</code> and <code>siesta2dv.x</code>. Following the procedure that we have seen in the previous example:</p>
+<ul>
+<li>
+<p>Create the input files of the irreducible displacements:</p>
+<p><code>siesta2ph.x &lt; siesta2ph.in | tee siesta2ph.out</code></p>
+</li>
+<li>
+<p>Execute all SIESTA calculations:</p>
+<p><code>cp Cu.psf 222/v0/
+ cd 222/v0/
+ mpirun -n 4 siesta &lt; supercell-copper.fdf | tee out
+ cd ../../
+ run-disps.x --dm 222/v0/cu.DM -n 4 -v 222/0.02/</code></p>
+</li>
+<li>
+<p>Compute the dynamical matrices and induced potentials:</p>
+<p><code>siesta2fc.x &lt; siesta2ph.in | tee siesta2fc.out
+ siesta2dv.x &lt; siesta2ph.in | tee siesta2dv.out</code></p>
+</li>
+</ul>
+<p>After this steps, we already have computed all the information about the electronic and phonon structures that we will need to calculate the electron-phonon matrix elements.</p>
+<ol>
+<li>Then, the second step is to run <code>siesta2intw.x</code> to store all the data in a format that INTW can read. However, in this case, together with the electronic structure, we also need the phonon structure. Therefore, let's check the flags that we have to add in <code>siesta2intw.in</code>:</li>
+</ol>
+<p><code>$ cat siesta2intw.in
+   &amp;inputpp
+     outdir="./"
+     prefix="cu"
+     fdf_file="copper.fdf"
+     nk1=4, nk2=4, nk3=4
+     nbnd_final=10
+     cutoff=80.0
+     phonons=.true.
+     phdir="./222/0.02/"
+     nqirr=3
+   /</code></p>
+<p><code>phonons=.true.</code> indicates that also the phonon structure has to be copied to the <code>cu.save.intw</code> directory, <code>phdir</code> specifies where are placed the dynamical matrices and induced potentials, and <code>nqirr</code> indicates the number of irreducible q-points to be copied.</p>
+<p>So, let's run <code>siesta2intw.x</code> by typing:</p>
+<p><code>siesta2intw.x &lt; siesta2intw.in | tee siesta2intw.out</code></p>
+<p>This will create the same files that we have seen in the first examples inside <code>cu.save.intw</code>, plus <code>cu.dyn_q*</code> files for the dynamical matrices, and <code>cu.dvscf_q*</code> and <code>irrq_patterns.dat</code> files for the induced potentials and the displacement patterns related to them, respectively. Additionally, <code>qlist.txt</code> file will also be created, which is needed by INTW and contains a list of the irreducible q-points in Cartesian coordinates.</p>
+<ol>
+<li>Now that we have all the required information in a format that INTW can read, we can run INTW's <code>ep_melements.x</code> utility to compute the electron-phonon matrix elements. But first, let's check <code>intw.in</code> file:</li>
+</ol>
+<p><code>$ cat intw.in
+   &amp;input
+     outdir = './'
+     prefix = 'cu'
+     nk1 = 4
+     nk2 = 4
+     nk3 = 4
+     TR_symmetry = .false.
+     use_exclude_bands = 'none'
+   /
+   &amp;intw2W
+     intw2W_fullzone = .false.
+     intw2W_method   = 'CONVOLUTION'
+   /
+   &amp;ph
+     nq1 = 2
+     nq2 = 2
+     nq3 = 2
+     nqirr = 3
+   /</code></p>
+<p>In this example, <code>use_exclude_bands = 'none'</code> indicates to don't exclude any band, i.e. to use all bands from the calculation. And in addition to the parameters that we have already seen in the first example, in this case we also need to specfy the <code>ph</code> namelist, where <code>nq1</code>, <code>nq2</code> and <code>nq3</code> indicate the q-mesh, and <code>nqirr</code> the number of irreducible q-points.</p>
+<p>So, let's run <code>ep_melements.x</code> by typing:</p>
+<p><code>ep_melements.x &lt; intw.in | tee ep_melements.out</code></p>
+<p>And as you can see, the electron-phonon matrix elements for each q-point have been calculated and saved into files <code>ep_mat.dat_1</code> to <code>ep_mat.dat_8</code>:</p>
+<p><code>$ ls ep_mat.*
+   ep_mat.dat_1  ep_mat.dat_2  ep_mat.dat_3  ep_mat.dat_4
+   ep_mat.dat_5  ep_mat.dat_6  ep_mat.dat_7  ep_mat.dat_8</code></p>
+<p>:heavy_exclamation_mark:NOTE: INTW will compute the matrix elements for the entire <code>nq1, nq2, nq3</code> q-mesh.</p>
+<p><a href="#using-intw-with-siesta">Back to top :arrow_heading_up:</a></p>
+    </div>
+  </div>
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              INTW
+ was developed by INTW group<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+            </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

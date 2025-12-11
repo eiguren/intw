@@ -1,0 +1,1515 @@
+<!-- -*- mode: jinja2 -*- -->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="Welcome to the documentation for the INTW project">
+    <meta name="author" content="INTW group" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>intw_input_parameters &ndash; INTW</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="../css/fontawesome.min.css" rel="stylesheet">
+    <link href="../css/brands.min.css" rel="stylesheet">
+    <link href="../css/regular.min.css" rel="stylesheet">
+    <link href="../css/solid.min.css" rel="stylesheet">
+    <link href="../css/v4-font-face.min.css" rel="stylesheet">
+    <link href="../css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="../css/local.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <script src="../js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="../index.html">INTW </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="../page/index.html">User Guide</a></li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="../lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/programs.html">Programs</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="../search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <div class="row">
+    <h1>intw_input_parameters
+      <small>Module</small>
+      
+    </h1>
+      <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
+        <ul class="list-inline" style="margin-bottom:0px;display:inline">
+
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
+                 title=" 3.1% of total for modules and submodules.">297 statements</a>
+            </li>
+
+            <li class="list-inline-item" id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="../src/input_parameters.f90"> Source File</a>
+            </li>
+        </ul>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+                <li class="breadcrumb-item"><a href='../sourcefile/input_parameters.f90.html'>input_parameters.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">intw_input_parameters</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Enable Bootstrap tooltips
+    (function () {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    })();
+  </script>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-3">
+        <div id="sidebar">
+      <h3>Contents</h3>
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-outdir">outdir</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-prefix">prefix</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk1">nk1</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk2">nk2</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk3">nk3</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-chemical_potential">chemical_potential</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-tr_symmetry">TR_symmetry</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-use_exclude_bands">use_exclude_bands</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-include_bands_initial">include_bands_initial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-include_bands_final">include_bands_final</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-intw2w_fullzone">intw2W_fullzone</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-intw2w_method">intw2W_method</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-compute_mmn">compute_mmn</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-compute_amn">compute_amn</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-qlist">qlist</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-fc_mat">fc_mat</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-read_for_dynmat">read_for_dynmat</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-apply_asr">apply_asr</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq1">nq1</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq2">nq2</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq3">nq3</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nqirr">nqirr</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk1_dos">nk1_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk2_dos">nk2_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nk3_dos">nk3_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ne_dos">ne_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-eini_dos">eini_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-efin_dos">efin_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-esmear_dos">esmear_dos</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ktsmear">ktsmear</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq1_dosph">nq1_dosph</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq2_dosph">nq2_dosph</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nq3_dosph">nq3_dosph</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nomega">nomega</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-omega_ini">omega_ini</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-omega_fin">omega_fin</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-osmear_q">osmear_q</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-omega_cut">omega_cut</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_mat_file">ep_mat_file</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_bands">ep_bands</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_bands_initial">ep_bands_initial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_bands_final">ep_bands_final</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_interp_method">ep_interp_method</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-ep_interp_bands">ep_interp_bands</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nfs_sheets_initial">nfs_sheets_initial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nfs_sheets_final">nfs_sheets_final</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nscf_code">nscf_code</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-command_pw">command_pw</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-command_pw2intw">command_pw2intw</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-file_pw">file_pw</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-command_siesta2intw">command_siesta2intw</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-file_siesta2intw">file_siesta2intw</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-exist_kpath">exist_kpath</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nkpath">nkpath</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nkspecial">nkspecial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-kspecial">kspecial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-exist_qpath">exist_qpath</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nqpath">nqpath</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-nqspecial">nqspecial</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#variable-qspecial">qspecial</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/intw_input_parameters.html#proc-read_input">read_input</a>
+            <a class="list-group-item" href="../module/intw_input_parameters.html#proc-read_cards">read_cards</a>
+        </div>
+      </div>
+    </div>
+
+  
+  
+  
+  
+  
+  
+  
+
+
+  </div>
+
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <p>This module contains the definitions of all input parameters for INTW
+as well as subroutines for reading and checking the input.</p>
+<h3 id="details">Details</h3>
+<h4 id="input-parameters">Input parameters</h4>
+<div class="codehilite"><pre><span></span><code>&amp;input
+    outdir                = &#39;directory&#39;
+    prefix                = &#39;prefix&#39;
+    nk1                   = integer
+    nk2                   = integer
+    nk3                   = integer
+    tr_symmetry           = T or F (Default: T)
+    chemical_potential    = real (Default: 0.0 eV)
+    use_exclude_bands     = &#39;none&#39;, &#39;wannier&#39; or &#39;custom&#39;
+    include_bands_initial = integer
+    include_bands_final   = integer
+/
+&amp;intw2W
+    intw2w_fullzone = T or F (Default: F)
+    intw2w_method   = &#39;CONVOLUTION&#39; or &#39;FFT&#39; (Default: &#39;CONVOLUTION&#39;)
+    compute_amn     = T or F (Default: T)
+    compute_mmn     = T or F (Default: T)
+/
+&amp;ph
+    qlist           = &#39;file&#39; (Default: &#39;qlist.txt&#39;)
+    read_for_dynmat = &#39;fc&#39; or &#39;dynq&#39; (Default: &#39;dynq&#39;)
+    fc_mat          = &#39;file&#39;
+    nq1             = integer
+    nq2             = integer
+    nq3             = integer
+    nqirr           = integer
+    apply_asr       = T or F (Default: T)
+/
+&amp;DOS
+    nk1_dos    = integer (Default: 20)
+    nk2_dos    = integer (Default: 20)
+    nk3_dos    = integer (Default: 20)
+    ne_dos     = integer (Default: 100)
+    eini_dos   = real (Default: -10.0 eV)
+    efin_dos   = real (Default: 10.0 eV)
+    esmear_dos = real (Default: 0.05 eV)
+    ktsmear    = real (Default: 0.01 eV)
+/
+&amp;DOS_ph
+    nq1_dosph = integer (Default: 20)
+    nq2_dosph = integer (Default: 20)
+    nq3_dosph = integer (Default: 20)
+    nomega    = integer (Default: 100)
+    omega_ini = real (Default: 0.0 Ry)
+    omega_fin = real (Default: 0.005 Ry)
+    osmear_q  = real (Default: 0.000075 Ry)
+    omega_cut = real (Default: 0.0 Ry)
+/
+&amp;elphon
+    ep_mat_file         = &#39;file&#39; (Default: &#39;ep_mat.dat&#39;)
+    ep_bands            = &#39;intw&#39; or &#39;custom&#39; (Default: &#39;intw&#39;)
+    ep_bands_initial    = integer
+    ep_bands_final      = integer
+    ep_interp_method    = &#39;wannier&#39; or &#39;dV_interpolate&#39;
+    ep_interp_bands     = &#39;intw_bands&#39; or &#39;ef_crossing&#39; (Default: &#39;intw_bands&#39;)
+    nfs_sheets_initial  = integer
+    nfs_sheets_final    = integer
+    nscf_code           = &#39;QE&#39; or &#39;SIESTA&#39;
+    command_pw          = &#39;command&#39;
+    command_pw2intw     = &#39;command&#39;
+    file_pw             = &#39;file&#39;
+    command_siesta2intw = &#39;command&#39;
+    file_siesta2intw    = &#39;file&#39;
+/
+K_PATH
+    nkpath nkspecial
+    label(1) kspecial_x(1) kspecial_y(1) kspecial_z(1)
+    label(2) kspecial_x(2) kspecial_y(2) kspecial_z(2)
+    ...
+    label(nkspecial) kspecial_x(nkspecial) kspecial_y(nkspecial) kspecial_z(nkspecial)
+Q_PATH
+    nqpath nqspecial
+    label(1) qspecial_x(1) qspecial_y(1) qspecial_z(1)
+    label(2) qspecial_x(2) qspecial_y(2) qspecial_z(2)
+    ...
+    label(nqspecial) qspecial_x(nqspecial) qspecial_y(nqspecial) qspecial_z(nqspecial)
+</code></pre></div>
+
+<p><code>K_PATH</code> and <code>Q_PATH</code> cards are used to generate the path along the Brilloin zone
+to plot electron band structure and phonon frequency dispersion, respectively.</p>
+<p>Variables without default values must be explicitly set in the input
+file; otherwise, an error will be raised.</p>
+<br>          <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='kinds.html'>kinds</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
+
+      
+      <br>
+
+
+        <section>
+          <h2>Variables</h2>
+            <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Visibility</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-outdir"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>outdir</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>The directory where the DFT calculations are stored</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-prefix"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>prefix</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>The prefix of the DFT calculation</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk1"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk1</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse k-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk2</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse k-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk3"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk3</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse k-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-chemical_potential"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>chemical_potential</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>The value which determines the occupation factors (Units: eV)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tr_symmetry"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>TR_symmetry</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>If TR symmetry is present TR_symmetry = .true.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-use_exclude_bands"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>use_exclude_bands</strong></td>
+<td> =</td>
+                <td>&#34;unassigned&#34;</td>
+            <td>
+                <p>Three options to select the bands used in various utilities:</p>
+<ul>
+<li>
+<p><code>use_exclude_bands='none'</code>: we don't exclude any band and therefore we use all bands from the DFT calculation
+  (Error if nnkp file is present)</p>
+</li>
+<li>
+<p><code>use_exclude_bands='wannier'</code>: we exclude the bands indicated by Wannier90 in nnkp file
+  (Error if nnkp file is NOT present)</p>
+</li>
+<li>
+<p><code>use_exclude_bands='custom'</code>: use the subset of bands (<code>include_bands_initial:include_bands_final</code>)
+  from the bands considered by the DFT calculation and exclude the rest of bands
+  (Error if include_bands_initial, include_bands_final not present)</p>
+</li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-include_bands_initial"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>include_bands_initial</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The initial and final band indices for <code>use_exclude_bands='custom'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-include_bands_final"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>include_bands_final</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The initial and final band indices for <code>use_exclude_bands='custom'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intw2w_fullzone"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intw2W_fullzone</strong></td>
+<td> =</td>
+                <td>.false.</td>
+            <td>
+                <p>If True, the code wil assume that a full zone DFT calculation
+has been performed and that wavefunctions for every k-point
+are available. This is mostly for testing and directly comparing
+the results of intw2W90 and pw2wannier</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-intw2w_method"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>intw2W_method</strong></td>
+<td> =</td>
+                <td>&#39;CONVOLUTION&#39;</td>
+            <td>
+                <p>Two options to select which method use to compute matrix elements:</p>
+<ul>
+<li><code>intw2W_method = 'CONVOLUTION'</code></li>
+<li><code>intw2W_method = 'FFT'</code></li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compute_mmn"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>compute_mmn</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>If True, the code produces the $prefix.mmn and $prefix.eig files</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-compute_amn"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>compute_amn</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>If True, the code produces the $prefix.amn file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-qlist"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>qlist</strong></td>
+<td> =</td>
+                <td>&#39;qlist.txt&#39;</td>
+            <td>
+                <p>Name of the file containing the irreducible q-points list (relative to outdir)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-fc_mat"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>fc_mat</strong></td>
+<td> =</td>
+                <td>&#39;--.fc&#39;</td>
+            <td>
+                <p>Name of the force constants matrix (relative to outdir)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-read_for_dynmat"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>read_for_dynmat</strong></td>
+<td> =</td>
+                <td>&#39;dynq&#39;</td>
+            <td>
+                <p>Two options to choose:</p>
+<ul>
+<li><code>read_for_dynmat = 'fc'</code>: to read force constants from fc_mat file</li>
+<li><code>read_for_dynmat = 'dynq'</code>: to read .dyn files from the phonon calculations</li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-apply_asr"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>apply_asr</strong></td>
+<td> =</td>
+                <td>.true.</td>
+            <td>
+                <p>Whether apply Acoustic Sum Rule or not</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq1"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq1</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse q-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq2"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq2</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse q-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq3"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq3</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Monkhorst-Pack mesh indices for the coarse q-mesh</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nqirr"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nqirr</strong></td>
+<td> =</td>
+                <td>-1</td>
+            <td>
+                <p>Number of irreducible q-points</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk1_dos"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk1_dos</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation k-grid for DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk2_dos"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk2_dos</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation k-grid for DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nk3_dos"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nk3_dos</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation k-grid for DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ne_dos"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ne_dos</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+                <p>Number of energy points in DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-eini_dos"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>eini_dos</strong></td>
+<td> =</td>
+                <td>-10.0_dp</td>
+            <td>
+                <p>Energy range for electron DOS plot (Units: eV)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-efin_dos"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>efin_dos</strong></td>
+<td> =</td>
+                <td>10.0_dp</td>
+            <td>
+                <p>Energy range for electron DOS plot (Units: eV)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-esmear_dos"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>esmear_dos</strong></td>
+<td> =</td>
+                <td>0.05_dp</td>
+            <td>
+                <p>Smearing width for electron DOS plot (Units: eV)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ktsmear"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ktsmear</strong></td>
+<td> =</td>
+                <td>0.01_dp</td>
+            <td>
+                <p>Smearing (kT) for Fermi level electron DOS calculation (Units: eV)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq1_dosph"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq1_dosph</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation q-grid for phonon DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq2_dosph"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq2_dosph</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation q-grid for phonon DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nq3_dosph"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nq3_dosph</strong></td>
+<td> =</td>
+                <td>20</td>
+            <td>
+                <p>Interpolation q-grid for phonon DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nomega"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nomega</strong></td>
+<td> =</td>
+                <td>100</td>
+            <td>
+                <p>Number of energy points in DOS plot</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-omega_ini"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>omega_ini</strong></td>
+<td> =</td>
+                <td>0.0_dp</td>
+            <td>
+                <p>Energy range for phonon DOS plot (Units: Ry)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-omega_fin"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>omega_fin</strong></td>
+<td> =</td>
+                <td>0.005_dp</td>
+            <td>
+                <p>Energy range for phonon DOS plot (Units: Ry)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-osmear_q"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>osmear_q</strong></td>
+<td> =</td>
+                <td>0.000075</td>
+            <td>
+                <p>Smearing width for phonon DOS plot (Units: Ry)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-omega_cut"></span>
+              real(kind=dp),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>omega_cut</strong></td>
+<td> =</td>
+                <td>-1.0_dp</td>
+            <td>
+                <p>Phonon frequency cut-off for removing w -&gt; 0 peak in a2F (Units: Ry)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_mat_file"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_mat_file</strong></td>
+<td> =</td>
+                <td>&#34;ep_mat.dat&#34;</td>
+            <td>
+                <p>Name of the electron-phonon matrix elements file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_bands"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_bands</strong></td>
+<td> =</td>
+                <td>&#39;intw&#39;</td>
+            <td>
+                <p>Two options to select the subset of bands for computing the electron-phonon
+matrix elements:</p>
+<ul>
+<li><code>ep_bands = 'intw'</code>: compute matrix elements for all bands considered by INTW (See <a href="../module/intw_input_parameters.html#variable-use_exclude_bands">use_exclude_bands</a> variable)</li>
+<li><code>ep_bands = 'custom'</code>: compute matrix elements for the custom subset of bands (ep_bands_initial:ep_bands_final)
+  from the bands considered by INTW (See <a href="../module/intw_input_parameters.html#variable-use_exclude_bands">use_exclude_bands</a> variable)</li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_bands_initial"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_bands_initial</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The initial and final band indices for <code>ep_bands = 'custom'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_bands_final"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_bands_final</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The initial and final band indices for <code>ep_bands = 'custom'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_interp_method"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_interp_method</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>Two options to choose the interpolation method:</p>
+<ul>
+<li><code>ep_interp_method = 'wannier'</code></li>
+<li><code>ep_interp_method = 'dV_interpolate'</code></li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ep_interp_bands"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ep_interp_bands</strong></td>
+<td> =</td>
+                <td>&#39;intw_bands&#39;</td>
+            <td>
+                <p>Two options to select the subset of bands to interpolate electron-phonon matrix elements:</p>
+<ul>
+<li><code>ep_interp_bands = 'intw_bands'</code>: interpolate matrix elements for all bands considered by INTW (See use_exclude_bands variable)</li>
+<li><code>ep_interp_bands = 'ef_crossing'</code>: interpolate matrix elements for the substet of bands that cross the Fermi level (nfs_sheets_initial:nfs_sheets_final)
+  from the bands considered by INTW (See use_exclude_bands variable)</li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nfs_sheets_initial"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nfs_sheets_initial</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The initial band index for <code>ep_interp_bands = 'ef_crossing'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nfs_sheets_final"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nfs_sheets_final</strong></td>
+<td> =</td>
+                <td>0</td>
+            <td>
+                <p>The final band index for <code>ep_interp_bands = 'ef_crossing'</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nscf_code"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nscf_code</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>The DFT code used for running the nscf calculation (only needed if
+<code>ep_interp_method = 'dV_interpolate'</code> is chosen):</p>
+<ul>
+<li><code>nscf_code = 'QE'</code></li>
+<li><code>nscf_code = 'SIESTA'</code></li>
+</ul>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-command_pw"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>command_pw</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>pw.x executable, with optional running options
+that go ahead of the executable like 'mpirun -np N', 'nice', etc.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-command_pw2intw"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>command_pw2intw</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>pw2intw.x executable, with optional running options
+that go ahead of the executable like 'mpirun -np N', 'nice', etc.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-file_pw"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>file_pw</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>The input file for pw.x.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-command_siesta2intw"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>command_siesta2intw</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>siesta2intw.x executable, with optional running options
+that go ahead of the executable like 'mpirun -np N', 'nice', etc.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-file_siesta2intw"></span>
+              character(len=256),
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>file_siesta2intw</strong></td>
+<td> =</td>
+                <td>&#39;unassigned&#39;</td>
+            <td>
+                <p>The input file for siesta2intw.x.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-exist_kpath"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>exist_kpath</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nkpath"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nkpath</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Number of total k-points in the path</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nkspecial"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nkspecial</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Number of special k-points in the path</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kspecial"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>kspecial</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>List of special k-points in crystal coordinates</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-exist_qpath"></span>
+              logical,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>exist_qpath</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nqpath"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nqpath</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Number of total q-points in the path</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-nqspecial"></span>
+              integer,
+            </td>
+              <td>public</td>
+            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>nqspecial</strong></td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>Number of special q-points in the path</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-qspecial"></span>
+              real(kind=dp),
+            </td>
+              <td>public,</td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>qspecial</strong>(:,:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                <p>List of special q-points in crystal coordinates</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+        </section>
+        <br>
+
+
+
+
+
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_input"></span> <h3>public  subroutine <a href='../proc/read_input.html'>read_input</a>(read_status)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>This subroutine reads all namelists from standard input,
+and checks their validity and consistency.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-read_status~2"></span>
+              logical
+            </td>
+<td></td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>read_status</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-read_cards"></span> <h3>public  subroutine <a href='../proc/read_cards.html'>read_cards</a>()  
+</h3></div>
+    <div class="card-body">
+          
+  <p>This subroutine reads K_PATH and Q_PATH cards from standard input if present.</p><a href="../proc/read_cards.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+
+  <h4>Arguments</h4>
+    <em>None</em>
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+
+
+    </div>
+  </div>
+
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              INTW
+ was developed by INTW group<br>              &copy; 2025 
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+            </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
